@@ -1,0 +1,25 @@
+build
+target
+lib
+*.dot
+
+# use glob syntax.
+syntax: glob
+creds.clj
+Manifest.txt
+pom.xml
+aws.clj
+*.ser
+*.class
+*.jar
+*~
+*.bak
+*.off
+*.old
+.DS_Store
+*.#*
+*#*
+*.classpath
+*.project
+*.settings
+*.pyc
