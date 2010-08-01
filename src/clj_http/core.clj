@@ -1,0 +1,40 @@
+(ns clj-http.core
+  "Core HTTP request/response implementation."
+  (:import (org.apache.http.util EntityUtils))
+  (:import (org.apache.http.entity ByteArrayEntity))
+  (:import (org.apache.http.client.methods HttpGet HttpPut HttpPost HttpDelete))
+  (:import (org.apache.http.impl.client DefaultHttpClient)))
+
+(defn request
+  "Executes the HTTP request corresponding to the given Ring request map and
+   returns the Ring response map corresponding to the resulting HTTP response.
+
+   Note that where Ring uses InputStreams for the request and response bodies,
+   the clj-http uses ByteArrays for the bodies."
+  [{:keys [request-method scheme server-name server-port uri query-string
+           headers content-type character-encoding body]}]
+  (let [http-client (DefaultHttpClient.)]
+    (try
+      (let [http-url (str scheme "://" server-name
+                          (if server-port (str ":" server-port))
+                          uri
+                          (if query-string (str "?" query-string)))
+            http-req (case request-method
+                       :get    (HttpGet. http-url)
+                       :put    (HttpPut. http-url)
+                       :post   (HttpPost. http-url)
+                       :delete (HttpDelete. http-url))]
+        (doseq [[header-n header-v] headers]
+          (.addHeader http-req header-n header-v))
+        (if body
+          (let [http-body (ByteArrayEntity. body)]
+            (.setEntity http-req http-body)))
+        (let [http-resp (.execute http-client http-req)
+              http-entity (.getEntity http-resp)
+              resp {:status (.getStatusCode (.getStatusLine http-resp))
+                    :headers (into {} (map (fn [h] [(.toLowerCase (.getName h))
+                                                    (.getValue h)])
+                                           (iterator-seq (.headerIterator http-resp))))
+                    :body (EntityUtils/toByteArray (.getEntity http-resp))}]
+          (.shutdown (.getConnectionManager http-client))
+          resp)))))
