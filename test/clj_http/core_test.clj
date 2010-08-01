@@ -13,7 +13,13 @@
     [:head "/head"]
       {:status 200}
     [:get "/content-type"]
-      {:status 200 :body (:content-type req)}))
+      {:status 200 :body (:content-type req)}
+    [:get "/header"]
+      {:status 200 :body (get-in req [:headers "x-my-header"])}
+    [:post "/post"]
+      {:status 200 :body (io/slurp* (:body req))}
+    [:get "/error"]
+      {:status 500 :body "o noes"}))
 
 (def base-req
   {:scheme "http"
@@ -23,17 +29,44 @@
 (defn request [req]
   (core/request (merge base-req req)))
 
+(defn slurp-body [req]
+  (io/slurp* (:body req)))
+
 (deftest makes-get-request
   (let [resp (request {:request-method :get :uri "/get"})]
     (is (= 200 (:status resp)))
-    (is (= "get\n" (io/slurp* (:body resp))))))
+    (is (= "get\n" (slurp-body resp)))))
 
 (deftest makes-head-request
   (let [resp (request {:request-method :head :uri "/head"})]
-    (is (= 200 (:status resp)))))
+    (is (= 200 (:status resp)))
+    (is (nil? (:body resp)))))
 
 (deftest sets-content-type-with-charset
   (let [resp (request {:request-method :get :uri "/content-type"
                        :content-type "text/plain" :character-encoding "UTF-8"})]
+    (is (= "text/plain; charset=UTF-8\n" (slurp-body resp)))))
+
+(deftest sets-content-type-without-charset
+  (let [resp (request {:request-method :get :uri "/content-type"
+                       :content-type "text/plain"})]
+    (is (= "text/plain\n" (slurp-body resp)))))
+
+(deftest sets-arbitrary-headers
+  (let [resp (request {:request-method :get :uri "/header"
+                       :headers {"X-My-Header" "header-val"}})]
+    (is (= "header-val\n" (slurp-body resp)))))
+
+(deftest sends-and-returns-byte-array-body
+  (let [resp (request {:request-method :post :uri "/post"
+                       :body (.getBytes "contents" "UTF-8")})]
     (is (= 200 (:status resp)))
-    (is (= "text/plain; charset=UTF-8\n" (io/slurp* (:body resp))))))
+    (is (= "contents\n" (slurp-body resp)))))
+
+(deftest returns-arbitrary-headers
+  (let [resp (request {:request-method :get :uri "/get"})]
+    (is (string? (get-in resp [:headers "date"])))))
+
+(deftest returns-status-on-exceptional-responses
+  (let [resp (request {:request-method :get :uri "/error"})]
+    (is (= 500 (:status resp)))))
