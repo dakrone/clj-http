@@ -1,8 +1,5 @@
-(ns travelconnect.http
-  (:use [clojure.contrib.java-utils :only [as-str]]
-	[clojure.contrib.str-utils :only [str-join]])
-  (:import (java.net URL
-                     URLEncoder))
+(ns clj-http.http
+  (:import (java.net URL URLEncoder))
   (:import org.apache.http.HttpEntity)
   (:import org.apache.http.HttpResponse)
   (:import org.apache.http.HttpRequestInterceptor)
@@ -17,8 +14,10 @@
   (:import org.apache.http.client.protocol.ClientContext)
   (:import org.apache.http.protocol.HttpContext)
   (:import org.apache.http.impl.client.DefaultHttpClient)
+  (:use [clojure.contrib.java-utils :only [as-str]])
+	(:use [clojure.contrib.str-utils :only [str-join]])
   (:require [clojure.contrib.http.agent :as ha])
-  (:require [clojure.contrib.duck-streams :as ds]))
+  (:require [clojure.contrib.io :as io]))
 
 (defn url
   [link]
@@ -76,7 +75,7 @@ representation of argument, either a string or map."
                                      (if (= "https" (.getScheme u))
                                        443
                                        80))]
-                 
+
                  (when-not (.getAuthScheme auth-state)
                    (.setCredentials (.getAttribute context ClientContext/CREDS_PROVIDER)
 				    (AuthScope. target-host target-port) creds)
@@ -85,7 +84,7 @@ representation of argument, either a string or map."
 
 ;;http://svn.apache.org/repos/asf/httpcomponents/httpclient/branches/4.0.x/httpclient/src/examples/org/apache/http/examples/client/ClientAuthentication.java
 (defn request
-  ([u] 
+  ([u]
      (ha/string
       (ha/http-agent
        (url u))))
@@ -110,7 +109,7 @@ representation of argument, either a string or map."
 	   status (.getStatusLine res)
 	   response {:code (.getStatusCode status)
                      :reason (.getReasonPhrase status)
-                     :content (ds/slurp* (.getContent entity))
+                     :content (io/slurp* (.getContent entity))
                      :headers (iterator-seq (.headerIterator res))}
 	   _ (.shutdown (.getConnectionManager client))]
        response)))
@@ -118,7 +117,7 @@ representation of argument, either a string or map."
 
 ;; example calls
 ;; (defn trip [id]
-;;   (let [params (merge {"id" id} 
+;;   (let [params (merge {"id" id}
 ;; 		      {"include_objects" "true"
 ;; 		       "format" "json"})]
 ;;     (decode-from-str (:content
@@ -128,7 +127,7 @@ representation of argument, either a string or map."
 ;; 		      "username" "password")))))
 
 ;; (defn- get-session []
-;; (request 
+;; (request
 ;; "http://www.kayak.com/k/ident/apisession?token=3PWihQksZae68TfQ0jnlyA"))
 
 ;; (defn- extract-sid [x]
@@ -142,7 +141,7 @@ representation of argument, either a string or map."
 ;; (defn- search-hotels
 ;; "location must be the region code (same as airporrt code) - city names do not seem to work."
 ;; [session-id location]
-;;   (request 
+;;   (request
 ;;    (str "http://www.kayak.com/s/apisearch?basicmode=true&othercity=" location "&destcode=&checkin_date=09/09/2010&checkout_date=09/13/2010&guests=&1&rooms=1cabin=b&action=dohotels&apimode=1&_sid_=" session-id)))
 
 ;; (defn- get-hotels [session-id search-id]
