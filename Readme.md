@@ -60,6 +60,12 @@ To Do:
  * Expose timeout options
  * Request and response logging
 
+Running the tests:
+
+    $ lein deps
+    $ clj test/server.clj
+    $ lein test
+
 ## License
 
 Released under the MIT License: <www.opensource.org/licenses/mit-license.php>
