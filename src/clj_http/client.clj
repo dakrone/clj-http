@@ -30,7 +30,8 @@
 (defn wrap-body-coerce [client]
   (fn [{:keys [body] :as req}]
     (if (string? body)
-      (client (-> req (assoc :body (.toString body "UTF-8"))))
+      (client (-> req (assoc :body (.toString body "UTF-8")
+                             :character-encoding "UTF-8")))
       (client req))))
 
 
@@ -56,7 +57,7 @@
     (if accept-encoding
       (client (-> req (dissoc :accept)
                       (assoc-in [:headers "Accept-Encoding"]
-                        (accept-encoding-value accept-encoding))))
+                        (content-type-value accept-encoding))))
       (client req))))
 
 
@@ -139,6 +140,7 @@
     (wrap-basic-auth)
     (wrap-accept)
     (wrap-accept-encoding)
+    (wrap-content-type)
     (wrap-method)
     (wrap-url)))
 

@@ -52,6 +52,7 @@ The client in `clj-http.core` makes HTTP requests according to a given Ring requ
 To Do:
 
  * Design and implement streaming request and response body support
+ * Determine approach to content typing w.r.t. interface and Ring spec
  * Automated tests against an embedded Ring app
  * Gzip and deflate decompression, accepted by default
  * Redirect following
