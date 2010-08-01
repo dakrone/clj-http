@@ -5,6 +5,10 @@
   (:import (org.apache.http.client.methods HttpGet HttpPut HttpPost HttpDelete))
   (:import (org.apache.http.impl.client DefaultHttpClient)))
 
+(defn parse-headers [http-resp]
+  (into {} (map (fn [h] [(.toLowerCase (.getName h)) (.getValue h)])
+                (iterator-seq (.headerIterator http-resp)))))
+
 (defn request
   "Executes the HTTP request corresponding to the given Ring request map and
    returns the Ring response map corresponding to the resulting HTTP response.
@@ -32,9 +36,7 @@
         (let [http-resp (.execute http-client http-req)
               http-entity (.getEntity http-resp)
               resp {:status (.getStatusCode (.getStatusLine http-resp))
-                    :headers (into {} (map (fn [h] [(.toLowerCase (.getName h))
-                                                    (.getValue h)])
-                                           (iterator-seq (.headerIterator http-resp))))
+                    :headers (parse-headers http-resp)
                     :body (EntityUtils/toByteArray (.getEntity http-resp))}]
           (.shutdown (.getConnectionManager http-client))
           resp)))))
