@@ -4,9 +4,9 @@ A Clojure HTTP library wrapping the [Apache HttpComponents](http://hc.apache.org
 
 ## Usage
 
-The main HTTP client functionality is provided in the `clj-http.client` namespace:
+The main HTTP client functionality is provided by the `clj-http.client` namespace:
 
-    (use '[clj-http.client :as client])
+    (require '[clj-http.client :as client])
 
 The client supports simple `get`, `head`, `put`, `post`, and `delete` requests. Responses are returned as Ring-style response maps:
 
