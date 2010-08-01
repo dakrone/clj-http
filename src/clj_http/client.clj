@@ -35,17 +35,25 @@
       (client req))))
 
 
-(defn accept-value [accept]
-  (if (keyword? accept)
-    (str "application/" (name accept))
-    accept))
+(defn content-type-value [type]
+  (if (keyword? type)
+    (str "application/" (name type))
+    type))
+
+(defn wrap-content-type [client]
+  (fn [{:keys [content-type] :as req}]
+    (if content-type
+      (client (-> req (assoc :content-type
+                        (content-type-value content-type))))
+      (client req))))
+
 
 (defn wrap-accept [client]
   (fn [{:keys [accept] :as req}]
     (if accept
       (client (-> req (dissoc :accept)
                       (assoc-in [:headers "Accept"]
-                        (accept-value accept))))
+                        (content-type-value accept))))
       (client req))))
 
 
@@ -121,6 +129,7 @@
    * :method
    * :query-params
    * :basic-auth
+   * :content-type
    * :accept
    * :accept-encoding
    * :body-as
@@ -140,6 +149,7 @@
     (wrap-basic-auth)
     (wrap-accept)
     (wrap-accept-encoding)
+    (wrap-content-type)
     (wrap-method)
     (wrap-url)))
 
