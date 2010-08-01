@@ -2,7 +2,7 @@
   "Core HTTP request/response implementation."
   (:import (org.apache.http.util EntityUtils))
   (:import (org.apache.http.entity ByteArrayEntity))
-  (:import (org.apache.http.client.methods HttpGet HttpPut HttpPost HttpDelete))
+  (:import (org.apache.http.client.methods HttpGet HttpHead HttpPut HttpPost HttpDelete))
   (:import (org.apache.http.impl.client DefaultHttpClient)))
 
 (defn parse-headers [http-resp]
@@ -25,6 +25,7 @@
                           (if query-string (str "?" query-string)))
             http-req (case request-method
                        :get    (HttpGet. http-url)
+                       :head   (HttpHead. http-url)
                        :put    (HttpPut. http-url)
                        :post   (HttpPost. http-url)
                        :delete (HttpDelete. http-url))]
