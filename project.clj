@@ -9,4 +9,5 @@
   :dev-dependencies
     [[swank-clojure "1.2.0"]
      [lein-clojars "0.5.0"]
-     [ring/ring-jetty-adapter "0.2.5"]])
+     [ring/ring-jetty-adapter "0.2.5"]
+     [ring/ring-devel "0.2.5"]])
