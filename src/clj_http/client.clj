@@ -57,7 +57,7 @@
     (if accept-encoding
       (client (-> req (dissoc :accept)
                       (assoc-in [:headers "Accept-Encoding"]
-                        (content-type-value accept-encoding))))
+                        (accept-encoding-value accept-encoding))))
       (client req))))
 
 
@@ -140,7 +140,6 @@
     (wrap-basic-auth)
     (wrap-accept)
     (wrap-accept-encoding)
-    (wrap-content-type)
     (wrap-method)
     (wrap-url)))
 
