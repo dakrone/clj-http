@@ -30,6 +30,11 @@
                        :delete (HttpDelete. http-url))]
         (doseq [[header-n header-v] headers]
           (.addHeader http-req header-n header-v))
+        (if (and content-type character-encoding)
+          (.addHeader http-req "Content-Type"
+                      (str content-type "; charset=" character-encoding)))
+        (if (and content-type (not character-encoding))
+          (.addHeader http-req "Content-Type" content-type))
         (if body
           (let [http-body (ByteArrayEntity. body)]
             (.setEntity http-req http-body)))
