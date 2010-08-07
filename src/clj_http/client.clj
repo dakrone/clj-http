@@ -172,12 +172,10 @@
    * :accept-encoding
    * :as
 
-  Note that where Ring uses InputStreams for the request and response bodies,
-  the clj-http uses ByteArrays for the bodies.
-
   The following additional behaviors over also automatically enabled:
    * string request bodies are converted to byte arrays
-   * exceptions are thrown for status codes other than 200-207, 300-303, or 307"}
+   * exceptions are thrown for status codes other than 200-207, 300-303, or 307
+   * gzip and deflate responses are accepted and decompressed"}
   request
   (-> #'core/request
     (wrap-redirects)
