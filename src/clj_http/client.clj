@@ -108,7 +108,7 @@
 (defn wrap-accept-encoding [client]
   (fn [{:keys [accept-encoding] :as req}]
     (if accept-encoding
-      (client (-> req (dissoc :accept)
+      (client (-> req (dissoc :accept-encoding)
                       (assoc-in [:headers "Accept-Encoding"]
                         (accept-encoding-value accept-encoding))))
       (client req))))

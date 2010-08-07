@@ -14,6 +14,15 @@
     (is (= "get\n" (:body resp)))))
 
 
+(defn is-passed [middleware req]
+  (let [client (middleware identity)]
+    (is (= req (client req)))))
+
+(defn is-applied [middleware req-in req-out]
+  (let [client (middleware identity)]
+    (is (= req-out (client req-in)))))
+
+
 (deftest redirect-on-get
   (let [client (fn [req]
                  (if (= "foo.com" (:server-name req))
@@ -61,6 +70,36 @@
         e-client (client/wrap-exceptions client)
         resp (e-client {})]
     (is (= 200 (:status resp)))))
+
+
+(deftest apply-on-accept
+  (is-applied client/wrap-accept
+    {:accept :json}
+    {:headers {"Accept" "application/json"}}))
+
+(deftest pass-on-no-accept
+  (is-passed client/wrap-accept
+    {:uri "/foo"}))
+
+
+(deftest apply-on-accept-encoding
+  (is-applied client/wrap-accept-encoding
+    {:accept-encoding [:identity :gzip]}
+    {:headers {"Accept-Encoding" "identity, gzip"}}))
+
+(deftest pass-on-no-accept-encoding
+  (is-passed client/wrap-accept-encoding
+    {:uri "/foo"}))
+
+
+(deftest apply-on-content-type
+  (is-applied client/wrap-content-type
+    {:content-type :json}
+    {:content-type "application/json"}))
+
+(deftest pass-on-no-content-type
+  (is-passed client/wrap-content-type
+    {:uri "/foo"}))
 
 
 (deftest apply-on-method
