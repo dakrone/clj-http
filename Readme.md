@@ -42,9 +42,9 @@ More example requests:
 
 A more general `response` function is available, which is useful as a primitive for building higher-level interfaces:
 
-   (defn api-action [method path & [opts]]
-     (client/request
-       (merge {:method method :url (str "http://site.com/" path)} opts)))
+    (defn api-action [method path & [opts]]
+      (client/request
+        (merge {:method method :url (str "http://site.com/" path)} opts)))
 
 The client will throw exceptions on, well, exceptional status codes:
 
