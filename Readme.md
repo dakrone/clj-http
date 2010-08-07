@@ -76,4 +76,4 @@ Running the tests:
 
 ## License
 
-Released under the MIT License: <www.opensource.org/licenses/mit-license.php>
+Released under the MIT License: <http://www.opensource.org/licenses/mit-license.php>
