@@ -1,12 +1,14 @@
 (ns clj-http.core
   "Core HTTP request/response implementation."
+  (:import (org.apache.http HttpRequest HttpResponse Header))
   (:import (org.apache.http.util EntityUtils))
   (:import (org.apache.http.entity ByteArrayEntity))
+  (:import (org.apache.http.message BasicHttpEntityEnclosingRequest))
   (:import (org.apache.http.client.methods HttpGet HttpHead HttpPut HttpPost HttpDelete))
   (:import (org.apache.http.impl.client DefaultHttpClient)))
 
-(defn parse-headers [http-resp]
-  (into {} (map (fn [h] [(.toLowerCase (.getName h)) (.getValue h)])
+(defn parse-headers [#^HttpResponse http-resp]
+  (into {} (map (fn [#^Header h] [(.toLowerCase (.getName h)) (.getValue h)])
                 (iterator-seq (.headerIterator http-resp)))))
 
 (defn request
@@ -23,12 +25,13 @@
                           (if server-port (str ":" server-port))
                           uri
                           (if query-string (str "?" query-string)))
-            http-req (case request-method
-                       :get    (HttpGet. http-url)
-                       :head   (HttpHead. http-url)
-                       :put    (HttpPut. http-url)
-                       :post   (HttpPost. http-url)
-                       :delete (HttpDelete. http-url))]
+            #^HttpRequest
+              http-req (case request-method
+                         :get    (HttpGet. http-url)
+                         :head   (HttpHead. http-url)
+                         :put    (HttpPut. http-url)
+                         :post   (HttpPost. http-url)
+                         :delete (HttpDelete. http-url))]
         (doseq [[header-n header-v] headers]
           (.addHeader http-req header-n header-v))
         (if (and content-type character-encoding)
@@ -38,7 +41,7 @@
           (.addHeader http-req "Content-Type" content-type))
         (if body
           (let [http-body (ByteArrayEntity. body)]
-            (.setEntity http-req http-body)))
+            (.setEntity #^BasicHttpEntityEnclosingRequest http-req http-body)))
         (let [http-resp (.execute http-client http-req)
               http-entity (.getEntity http-resp)
               resp {:status (.getStatusCode (.getStatusLine http-resp))
