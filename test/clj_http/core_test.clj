@@ -2,7 +2,8 @@
   (:use clojure.test)
   (:require [clojure.contrib.pprint :as pp])
   (:require [clojure.contrib.io :as io])
-  (:require [clj-http.core :as core]))
+  (:require [clj-http.core :as core])
+  (:require [clj-http.util :as util]))
 
 (defn handler [req]
   (pp/pprint req)
@@ -59,7 +60,7 @@
 
 (deftest sends-and-returns-byte-array-body
   (let [resp (request {:request-method :post :uri "/post"
-                       :body (.getBytes "contents" "UTF-8")})]
+                       :body (util/utf8-bytes "contents")})]
     (is (= 200 (:status resp)))
     (is (= "contents\n" (slurp-body resp)))))
 

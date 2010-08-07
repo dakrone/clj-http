@@ -7,6 +7,12 @@
                           GZIPInputStream GZIPOutputStream))
   (:import (org.apache.commons.io IOUtils)))
 
+(defn utf8-bytes [#^String s]
+  (.getBytes s "UTF-8"))
+
+(defn utf8-string [b]
+  (String. b "UTF-8"))
+
 (defn url-encode
   "Returns an UTF-8 URL encoded version of the given string."
   [unencoded]
@@ -15,7 +21,7 @@
 (defn base64-encode
   "Encode an array of bytes into a base64 encoded string."
   [unencoded]
-  (String. (Base64/encodeBase64 unencoded)))
+  (utf8-string (Base64/encodeBase64 unencoded)))
 
 (defn gunzip
   "Returns a gunzip'd version of the given byte array."

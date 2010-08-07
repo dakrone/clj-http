@@ -75,18 +75,18 @@
 
 
 (deftest apply-on-compressed
-  (let [client (fn [req] {:body (util/gzip (.getBytes "foofoofoo" "UTF-8"))
+  (let [client (fn [req] {:body (util/gzip (util/utf8-bytes "foofoofoo"))
                           :headers {"Content-Encoding" "gzip"}})
         c-client (client/wrap-decompression client)
         resp (c-client {})]
-    (is (= "foofoofoo" (String. (:body resp) "UTF-8")))))
+    (is (= "foofoofoo" (util/utf8-string (:body resp))))))
 
 (deftest apply-on-deflated
-  (let [client (fn [req] {:body (util/deflate (.getBytes "barbarbar" "UTF-8"))
+  (let [client (fn [req] {:body (util/deflate (util/utf8-bytes "barbarbar"))
                           :headers {"Content-Encoding" "deflate"}})
         c-client (client/wrap-decompression client)
         resp (c-client {})]
-    (is (= "barbarbar" (String. (:body resp) "UTF-8")))))
+    (is (= "barbarbar" (util/utf8-string (:body resp))))))
 
 (deftest pass-on-non-compressed
   (let [c-client (client/wrap-decompression (fn [req] {:body "foo"}))
@@ -115,6 +115,12 @@
 
 
 (deftest apply-on-output-coercion
+  (let [client (fn [req] {:body (util/utf8-bytes "foo")})
+        o-client (client/wrap-output-coercion client)
+        resp (o-client {:uri "/foo"})]
+    (is (= "foo" (:body resp)))))
+
+(deftest pass-on-no-output-coercion
   (let [client (fn [req] {:body nil})
         o-client (client/wrap-output-coercion client)
         resp (o-client {:uri "/foo"})]
@@ -124,22 +130,16 @@
         resp (o-client {:uri "/foo" :as :bytes})]
     (is (= :thebytes (:body resp)))))
 
-(deftest pass-on-no-output-coercion
-  (let [client (fn [req] {:body (.getBytes "foo" "UTF-8")})
-        o-client (client/wrap-output-coercion client)
-        resp (o-client {:uri "/foo"})]
-    (is (= "foo" (:body resp)))))
-
 
 (deftest apply-on-input-coercion
   (let [i-client (client/wrap-input-coercion identity)
         resp (i-client {:body "foo"})]
     (is (= "UTF-8" (:character-encoding resp)))
-    (is (Arrays/equals (.getBytes "foo" "UTF-8") (:body resp)))))
+    (is (Arrays/equals (util/utf8-bytes "foo") (:body resp)))))
 
 (deftest pass-on-no-input-coercion
   (is-passed client/wrap-input-coercion
-    {:body (.getBytes "foo" "UTF-8")}))
+    {:body (util/utf8-bytes "foo")}))
 
 
 (deftest apply-on-content-type

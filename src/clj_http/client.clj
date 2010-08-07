@@ -75,7 +75,7 @@
 (defn wrap-input-coercion [client]
   (fn [{:keys [body] :as req}]
     (if (string? body)
-      (client (-> req (assoc :body (.getBytes body "UTF-8")
+      (client (-> req (assoc :body (util/utf8-bytes body)
                              :character-encoding "UTF-8")))
       (client req))))
 
@@ -131,7 +131,7 @@
 
 (defn basic-auth-value [user password]
   (str "Basic "
-       (util/base64-encode (.getBytes (str user ":" password) "UTF-8"))))
+       (util/base64-encode (util/utf8-bytes (str user ":" password)))))
 
 (defn wrap-basic-auth [client]
   (fn [req]
