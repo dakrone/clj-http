@@ -63,15 +63,30 @@
     (is (= 200 (:status resp)))))
 
 
-(deftest pass-on-no-method
-  (let [m-client (client/wrap-method identity)
-        echo (m-client {:key :val})]
-    (is (= :val (:key echo)))
-    (is (not (:request-method echo)))))
-
 (deftest apply-on-method
   (let [m-client (client/wrap-method identity)
         echo (m-client {:key :val :method :post})]
     (is (= :val (:key echo)))
     (is (= :post (:request-method echo)))
     (is (not (:method echo)))))
+
+(deftest pass-on-no-method
+  (let [m-client (client/wrap-method identity)
+        echo (m-client {:key :val})]
+    (is (= :val (:key echo)))
+    (is (not (:request-method echo)))))
+
+
+(deftest apply-on-url
+  (let [u-client (client/wrap-url identity)
+        resp (u-client {:url "http://google.com:8080/foo?bar=bat"})]
+    (is (= "http" (:scheme resp)))
+    (is (= "google.com" (:server-name resp)))
+    (is (= 8080 (:server-port resp)))
+    (is (= "/foo" (:uri resp)))
+    (is (= "bar=bat" (:query-string resp)))))
+
+(deftest pass-on-no-url
+  (let [u-client (client/wrap-url identity)
+        resp (u-client {:uri "/foo"})]
+    (is (= "/foo" (:uri resp)))))
