@@ -50,6 +50,19 @@
     (is (= "ok" (:body resp)))))
 
 
+(deftest throw-on-exceptional
+  (let [client (fn [req] {:status 500})
+        e-client (client/wrap-exceptions client)]
+    (is (thrown-with-msg? Exception #"500"
+      (e-client {})))))
+
+(deftest pass-on-non-exceptional
+  (let [client (fn [req] {:status 200})
+        e-client (client/wrap-exceptions client)
+        resp (e-client {})]
+    (is (= 200 (:status resp)))))
+
+
 (deftest pass-on-no-method
   (let [m-client (client/wrap-method identity)
         echo (m-client {:key :val})]
