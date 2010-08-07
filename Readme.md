@@ -32,11 +32,25 @@ Other simple query options:
 
     (client/get "http://site.com/search" {:query-params {"q" "foo, bar"}})
 
+    (client/post "http://site.com/api"
+      {:basic-auth ["user" "pass"]
+       :body "{\"json\": \"input\"}"
+       :headers {"X-Api-Version" "2"}
+       :content-type :json
+       :character-encoding "UTF-8"
+       :accept :json})
+
+A more general `response` function is available, which is useful as a primitive for building higher-level interfaces:
+
+   (defn api-action [method path & [opts]]
+     (client/request
+       (merge {:method method :url (str "http://site.com/" path)} opts)))
+
 The client will throw exceptions on, well, exceptional status codes:
 
     (client/get "http://site.com/broken")
     => Exception: 500
-  
+
 ## Installation
 
 `clj-http` is available as a Maven artifact from [Clojars](http://clojars.org/clj-http).
