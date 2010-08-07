@@ -55,7 +55,10 @@ The client will also follow redirects on the appropriate `30*` status codes.
 
 ## Installation
 
-`clj-http` is available as a Maven artifact from [Clojars](http://clojars.org/clj-http).
+`clj-http` is available as a Maven artifact from [Clojars](http://clojars.org/clj-http):
+
+    :dependencies
+      [[clj-http "0.1.0-SNAPSHOT"] ...]
 
 ## Design
 
