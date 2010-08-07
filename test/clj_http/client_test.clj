@@ -23,8 +23,9 @@
     (is (= :val (:key echo)))
     (is (not (:request-method echo)))))
 
-(deftest method-pass
+(deftest method-apply
   (let [echo (method-client {:key :val :method :post})]
     (is (= :val (:key echo)))
     (is (= :post (:request-method echo)))
     (is (not (:method echo)))))
+
