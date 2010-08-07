@@ -16,7 +16,7 @@ The client supports simple `get`, `head`, `put`, `post`, and `delete` requests. 
                   "cache-control" "private, max-age=0"
                   "content-type" "text/html; charset=ISO-8859-1"
                   ...}
-        :body #<byte[] [B@aaaec4e>}
+        :body "<!doctype html>..."}
 
 More example requests:
 
