@@ -114,6 +114,23 @@
     {:uri "/foo"}))
 
 
+(deftest apply-on-output-coercion
+  (let [client (fn [req] {:body nil})
+        o-client (client/wrap-output-coercion client)
+        resp (o-client {:uri "/foo"})]
+    (is (nil? (:body resp))))
+  (let [client (fn [req] {:body :thebytes})
+        o-client (client/wrap-output-coercion client)
+        resp (o-client {:uri "/foo" :as :bytes})]
+    (is (= :thebytes (:body resp)))))
+
+(deftest pass-on-no-output-coercion
+  (let [client (fn [req] {:body (.getBytes "foo" "UTF-8")})
+        o-client (client/wrap-output-coercion client)
+        resp (o-client {:uri "/foo"})]
+    (is (= "foo" (:body resp)))))
+
+
 (deftest apply-on-input-coercion
   (let [i-client (client/wrap-input-coercion identity)
         resp (i-client {:body "foo"})]
