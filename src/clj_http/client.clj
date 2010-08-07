@@ -121,11 +121,11 @@
          params)))
 
 (defn wrap-query-params [client]
-  (fn [req]
-    (if-let [qp (:query-params client)]
-      (let [qs (generate-query-string qp)]
-        (client (-> req (dissoc :query-params)
-                        (assoc :query-string qs))))
+  (fn [{:keys [query-params] :as req}]
+    (if query-params
+      (client (-> req (dissoc :query-params)
+                      (assoc :query-string
+                             (generate-query-string query-params))))
       (client req))))
 
 

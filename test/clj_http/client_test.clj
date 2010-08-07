@@ -102,6 +102,16 @@
     {:uri "/foo"}))
 
 
+(deftest apply-on-query-params
+  (is-applied client/wrap-query-params
+    {:query-params {"foo" "bar" "dir" "<<"}}
+    {:query-string "foo=bar&dir=%3C%3C"}))
+
+(deftest pass-on-no-query-params
+  (is-passed client/wrap-query-params
+    {:uri "/foo"}))
+
+
 (deftest apply-on-basic-auth
   (is-applied client/wrap-basic-auth
     {:basic-auth ["Aladdin" "open sesame"]}
