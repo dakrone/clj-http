@@ -38,6 +38,7 @@
                       (str content-type "; charset=" character-encoding)))
         (if (and content-type (not character-encoding))
           (.addHeader http-req "Content-Type" content-type))
+        (.addHeader http-req "Connection" "close")
         (if body
           (let [http-body (ByteArrayEntity. body)]
             (.setEntity #^HttpEntityEnclosingRequest http-req http-body)))
