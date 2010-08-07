@@ -4,10 +4,7 @@
   (:require [clojure.contrib.string :as str])
   (:require [clj-http.core :as core])
   (:require [clj-http.util :as util])
-  (:refer-clojure :exclude (get))
-  (:import (java.io ByteArrayInputStream))
-  (:import (java.util.zip InflaterInputStream GZIPInputStream))
-  (:import (org.apache.commons.io IOUtils)))
+  (:refer-clojure :exclude (get)))
 
 (defn update [m k f & args]
   (assoc m k (apply f (m k) args)))
@@ -51,21 +48,15 @@
           resp))))
 
 
-(defn gunzip [b]
-  (IOUtils/toByteArray (GZIPInputStream. (ByteArrayInputStream. b))))
-
-(defn inflate [b]
-  (IOUtils/toByteArray (InflaterInputStream. (ByteArrayInputStream. b))))
-
 (defn wrap-decompression [client]
   (fn [req]
     (let [req-c (update req :headers assoc "Accept-Encoding" "gzip, deflate")
           resp-c (client req)]
       (case (get-in resp-c [:headers "Content-Encoding"])
         "gzip"
-          (update resp-c :body gunzip)
+          (update resp-c :body util/gunzip)
         "deflate"
-          (update resp-c :body inflate)
+          (update resp-c :body util/inflate)
         resp-c))))
 
 
