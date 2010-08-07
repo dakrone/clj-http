@@ -2,6 +2,17 @@
   (:use clojure.test)
   (:require [clj-http.client :as client]))
 
+(def base-req
+  {:scheme "http"
+   :server-name "localhost"
+   :server-port 8080})
+
+(deftest rountrip
+  (let [resp (client/request (merge base-req {:uri "/get" :method :get}))]
+    (is (= 200 (:status resp)))
+    (is (= "4" (get-in resp [:headers "content-length"])))
+    (is (= "get\n" (:body resp)))))
+
 (def echo-client identity)
 
 (def method-client
