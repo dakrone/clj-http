@@ -50,14 +50,16 @@
 
 (defn wrap-decompression [client]
   (fn [req]
-    (let [req-c (update req :headers assoc "Accept-Encoding" "gzip, deflate")
-          resp-c (client req)]
-      (case (get-in resp-c [:headers "Content-Encoding"])
-        "gzip"
-          (update resp-c :body util/gunzip)
-        "deflate"
-          (update resp-c :body util/inflate)
-        resp-c))))
+    (if (get-in req [:headers "Accept-Encoding"])
+      (client req)
+      (let [req-c (update req :headers assoc "Accept-Encoding" "gzip, deflate")
+            resp-c (client req)]
+        (case (get-in resp-c [:headers "Content-Encoding"])
+          "gzip"
+            (update resp-c :body util/gunzip)
+          "deflate"
+            (update resp-c :body util/inflate)
+          resp-c)))))
 
 
 (defn wrap-output-coercion [client]

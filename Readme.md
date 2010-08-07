@@ -24,7 +24,7 @@ More example requests:
 
     (client/get "http://site.com/resources/3" {:accept :json})
 
-    (client/post "http://site.com/resources" {:body byte-array})
+    (client/post "http://site.com/resources" {:body byte-array :as :bytes})
 
     (client/post "http://site.com/resources" {:body "string"})
 
@@ -40,7 +40,7 @@ More example requests:
        :character-encoding "UTF-8"
        :accept :json})
 
-A more general `response` function is available, which is useful as a primitive for building higher-level interfaces:
+A more general `response` function is also available, which is useful as a primitive for building higher-level interfaces:
 
     (defn api-action [method path & [opts]]
       (client/request
@@ -52,6 +52,8 @@ The client will throw exceptions on, well, exceptional status codes:
     => Exception: 500
 
 The client will also follow redirects on the appropriate `30*` status codes.
+
+The client transparently accepts and decompresses the `gzip` and `deflate` content encodings.
 
 ## Installation
 
