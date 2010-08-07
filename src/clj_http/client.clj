@@ -8,8 +8,17 @@
   (:import (java.util.zip InflaterInputStream GZIPInputStream))
   (:import (org.apache.commons.io IOUtils))))
 
-(defn- update [m k f & args]
+(defn update [m k f & args]
   (assoc m k (apply f (get m k) args)))
+
+(defn parse-url [url]
+  (let [url-parsed (URL. url)]
+    {:scheme (.getProtocol url-parsed)
+     :server-name (.getHost url-parsed)
+     :server-port (if-pos (.getPort url-parsed))
+     :uri (.getPath url-parsed)
+     :query-string (.getQuery url-parsed)}))
+
 
 (def unexceptional-status?
   #{200 201 202 203 204 205 206 207 300 301 302 303 307})
@@ -20,6 +29,22 @@
       (if (unexceptional-status? status)
         resp
         (throw (Exception. (str status)))))))
+
+
+(defn follow-redirects [req resp]
+  (let [url (get-in resp :headers "location")]
+    (client (merge req (parse-url url)))))
+
+(defn wrap-redirects [client]
+  (fn [{:keys [request-method] :as req}]
+    (let [{:keys [status] :as resp} (client req)]
+      (cond
+        (and (#{301 302 307} status) (#{:get :head} request-method))
+          (follow-redirect client req resp)
+        (and (= 303 status) (= :get request-method))
+          (follow-redirect client (assoc req :request-method :get) resp)
+        :else
+          resp))))
 
 
 (defn gunzip [b]
@@ -40,7 +65,7 @@
         resp-c))))
 
 
-(defn wrap-coerce-output-body [client]
+(defn wrap-output-coercion [client]
   (fn [{:keys [as] :as req}]
     (let [{:keys [body] :as resp} (client req)]
       (cond
@@ -50,7 +75,7 @@
           (assoc resp :body (String. body "UTF-8"))))))
 
 
-(defn wrap-coerce-input-body [client]
+(defn wrap-input-coercion [client]
   (fn [{:keys [body] :as req}]
     (if (string? body)
       (client (-> req (assoc :body (.toString body "UTF-8")
@@ -134,12 +159,7 @@
 (defn wrap-url [client]
   (fn [req]
     (if-let [url (:url req)]
-      (let [url-parsed (URL. url)]
-        (client (-> req (assoc :scheme (.getProtocol url-parsed)
-                               :server-name (.getHost url-parsed)
-                               :server-port (if-pos (.getPort url-parsed))
-                               :uri  (.getPath url-parsed)
-                               :query-string (.getQuery url-parsed)))))
+      (client (-> req (dissoc :url) (merge (parse-url url))))
       (client req))))
 
 (def #^{:doc
@@ -165,10 +185,11 @@
    * exceptions are thrown for status codes other than 200-207, 300-303, or 307"}
   request
   (-> #'core/request
+    (wrap-redirects)
     (wrap-exceptions)
     (wrap-decompression)
-    (wrap-coerce-input-body)
-    (wrap-coerce-output-body)
+    (wrap-input-coercion)
+    (wrap-output-coercion)
     (wrap-query-params)
     (wrap-basic-auth)
     (wrap-accept)

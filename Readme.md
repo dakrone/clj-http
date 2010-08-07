@@ -51,6 +51,8 @@ The client will throw exceptions on, well, exceptional status codes:
     (client/get "http://site.com/broken")
     => Exception: 500
 
+The client will also follow redirects on the appropriate 30* status codes.
+
 ## Installation
 
 `clj-http` is available as a Maven artifact from [Clojars](http://clojars.org/clj-http).
@@ -66,7 +68,6 @@ The client in `clj-http.core` makes HTTP requests according to a given Ring requ
 To Do:
 
  * Design and implement streaming request and response body support
- * Redirect following
  * Documentation and/or library for using form, JSON, and XML params
  * Multipart requests
  * Expose timeout options
