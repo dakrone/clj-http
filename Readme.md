@@ -18,7 +18,7 @@ The client supports simple `get`, `head`, `put`, `post`, and `delete` requests. 
                   ...}
         :body #<byte[] [B@aaaec4e>}
 
-Other simple query options:
+More example requests:
 
     (client/get "http://site.com/resources/id")
 
