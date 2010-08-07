@@ -178,18 +178,18 @@
    * gzip and deflate responses are accepted and decompressed"}
   request
   (-> #'core/request
-    (wrap-redirects)
-    (wrap-exceptions)
-    (wrap-decompression)
-    (wrap-input-coercion)
-    (wrap-output-coercion)
-    (wrap-query-params)
-    (wrap-basic-auth)
-    (wrap-accept)
-    (wrap-accept-encoding)
-    (wrap-content-type)
-    (wrap-method)
-    (wrap-url)))
+    wrap-redirects
+    wrap-exceptions
+    wrap-decompression
+    wrap-input-coercion
+    wrap-output-coercion
+    wrap-query-params
+    wrap-basic-auth
+    wrap-accept
+    wrap-accept-encoding
+    wrap-content-type
+    wrap-method
+    wrap-url))
 
 (defn get
   "Like #'request, but sets the :method and :url as appropriate."
