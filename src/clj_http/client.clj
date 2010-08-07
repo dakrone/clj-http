@@ -4,7 +4,12 @@
   (:require [clojure.contrib.string :as str])
   (:require [clj-http.core :as core])
   (:require [clj-http.util :as util])
-  (:refer-clojure :exclude (get)))
+  (:refer-clojure :exclude (get))
+  (:import (java.util.zip InflaterInputStream GZIPInputStream))
+  (:import (org.apache.commons.io IOUtils))))
+
+(defn- update [m k f & args]
+  (assoc m k (apply f (get m k) args)))
 
 (def unexceptional-status?
   #{200 201 202 203 204 205 206 207 300 301 302 303 307})
@@ -15,6 +20,24 @@
       (if (unexceptional-status? status)
         resp
         (throw (Exception. (str status)))))))
+
+
+(defn gunzip [b]
+  (IOUtils/toByteArray (GZIPInputStream. (ByteArrayInputStream. b))))
+
+(defn inflate [b]
+  (IOUtils/toByteArray (InflaterInputStream. (ByteArrayInputStream. b))))
+
+(defn wrap-decompression [client]
+  (fn [req]
+    (let [req-c (update req :headers assoc "Accept-Encoding" "gzip, deflate")
+          resp-c (client req)]
+      (case (get-in resp-c [:headers "Content-Encoding"])
+        "gzip"
+          (update resp-c :body gunzip)
+        "deflate"
+          (update resp-c :body inflate)
+        resp-c))))
 
 
 (defn wrap-expect-string-output-body [client]
@@ -143,6 +166,7 @@
   request
   (-> #'core/request
     (wrap-exceptions)
+    (wrap-decompression)
     (wrap-coerce-input-body)
     (wrap-expect-string-output-body)
     (wrap-query-params)
