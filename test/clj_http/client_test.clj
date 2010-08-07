@@ -1,7 +1,8 @@
 (ns clj-http.client-test
   (:use clojure.test)
   (:require [clj-http.client :as client])
-  (:require [clj-http.util :as util]))
+  (:require [clj-http.util :as util])
+  (:import (java.util Arrays)))
 
 (def base-req
   {:scheme "http"
@@ -111,6 +112,17 @@
 (deftest pass-on-no-accept-encoding
   (is-passed client/wrap-accept-encoding
     {:uri "/foo"}))
+
+
+(deftest apply-on-input-coercion
+  (let [i-client (client/wrap-input-coercion identity)
+        resp (i-client {:body "foo"})]
+    (is (= "UTF-8" (:character-encoding resp)))
+    (is (Arrays/equals (.getBytes "foo" "UTF-8") (:body resp)))))
+
+(deftest pass-on-no-input-coercion
+  (is-passed client/wrap-input-coercion
+    {:body (.getBytes "foo" "UTF-8")}))
 
 
 (deftest apply-on-content-type

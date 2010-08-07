@@ -75,7 +75,7 @@
 (defn wrap-input-coercion [client]
   (fn [{:keys [body] :as req}]
     (if (string? body)
-      (client (-> req (assoc :body (.toString body "UTF-8")
+      (client (-> req (assoc :body (.getBytes body "UTF-8")
                              :character-encoding "UTF-8")))
       (client req))))
 
