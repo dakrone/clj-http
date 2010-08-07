@@ -1,6 +1,7 @@
 (ns clj-http.client-test
   (:use clojure.test)
-  (:require [clj-http.client :as client]))
+  (:require [clj-http.client :as client])
+  (:require [clj-http.util :as util]))
 
 (def base-req
   {:scheme "http"
@@ -70,6 +71,26 @@
         e-client (client/wrap-exceptions client)
         resp (e-client {})]
     (is (= 200 (:status resp)))))
+
+
+(deftest apply-on-compressed
+  (let [client (fn [req] {:body (util/gzip (.getBytes "foofoofoo" "UTF-8"))
+                          :headers {"Content-Encoding" "gzip"}})
+        c-client (client/wrap-decompression client)
+        resp (c-client {})]
+    (is (= "foofoofoo" (String. (:body resp) "UTF-8")))))
+
+(deftest apply-on-deflated
+  (let [client (fn [req] {:body (util/deflate (.getBytes "barbarbar" "UTF-8"))
+                          :headers {"Content-Encoding" "deflate"}})
+        c-client (client/wrap-decompression client)
+        resp (c-client {})]
+    (is (= "barbarbar" (String. (:body resp) "UTF-8")))))
+
+(deftest pass-on-non-compressed
+  (let [c-client (client/wrap-decompression (fn [req] {:body "foo"}))
+        resp (c-client {:uri "/foo"})]
+    (is (= "foo" (:body resp)))))
 
 
 (deftest apply-on-accept
