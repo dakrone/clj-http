@@ -40,7 +40,7 @@
         resp-c))))
 
 
-(defn wrap-expect-string-output-body [client]
+(defn wrap-coerce-output-body [client]
   (fn [{:keys [as] :as req}]
     (let [{:keys [body] :as resp} (client req)]
       (cond
@@ -168,7 +168,7 @@
     (wrap-exceptions)
     (wrap-decompression)
     (wrap-coerce-input-body)
-    (wrap-expect-string-output-body)
+    (wrap-coerce-output-body)
     (wrap-query-params)
     (wrap-basic-auth)
     (wrap-accept)
