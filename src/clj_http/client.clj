@@ -33,7 +33,7 @@
 
 
 (defn follow-redirect [client req resp]
-  (let [url (get-in resp :headers "location")]
+  (let [url (get-in resp [:headers "location"])]
     (client (merge req (parse-url url)))))
 
 (defn wrap-redirects [client]
@@ -42,7 +42,7 @@
       (cond
         (and (#{301 302 307} status) (#{:get :head} request-method))
           (follow-redirect client req resp)
-        (and (= 303 status) (= :get request-method))
+        (and (= 303 status) (= :head request-method))
           (follow-redirect client (assoc req :request-method :get) resp)
         :else
           resp))))

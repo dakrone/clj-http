@@ -13,19 +13,52 @@
     (is (= "4" (get-in resp [:headers "content-length"])))
     (is (= "get\n" (:body resp)))))
 
-(def echo-client identity)
 
-(def method-client
-  (client/wrap-method echo-client))
+(deftest redirect-on-get
+  (let [client (fn [req]
+                 (if (= "foo.com" (:server-name req))
+                   {:status 302
+                    :headers {"location" "http://bar.com/bat"}}
+                   {:status 200
+                    :req req}))
+        r-client (client/wrap-redirects client)
+        resp (r-client {:server-name "foo.com" :request-method :get})]
+    (is (= 200 (:status resp)))
+    (is (= :get (:request-method (:req resp))))
+    (is (= "http" (:scheme (:req resp))))
+    (is (= "/bat" (:uri (:req resp))))))
 
-(deftest method-pass
-  (let [echo (method-client {:key :val})]
+(deftest redirect-to-get-on-head
+  (let [client (fn [req]
+                 (if (= "foo.com" (:server-name req))
+                   {:status 303
+                    :headers {"location" "http://bar.com/bat"}}
+                   {:status 200
+                    :req req}))
+        r-client (client/wrap-redirects client)
+        resp (r-client {:server-name "foo.com" :request-method :head})]
+    (is (= 200 (:status resp)))
+    (is (= :get (:request-method (:req resp))))
+    (is (= "http" (:scheme (:req resp))))
+    (is (= "/bat" (:uri (:req resp))))))
+
+(deftest pass-on-non-redirect
+  (let [client (fn [req] {:status 200 :body (:body req)})
+        r-client (client/wrap-redirects client)
+        resp (r-client {:body "ok"})]
+    (is (= 200 (:status resp)))
+    (is (= "ok" (:body resp)))))
+
+
+(deftest pass-on-no-method
+  (let [m-client (client/wrap-method identity)
+        echo (m-client {:key :val})]
     (is (= :val (:key echo)))
     (is (not (:request-method echo)))))
 
-(deftest method-apply
-  (let [echo (method-client {:key :val :method :post})]
+(deftest apply-on-method
+  (let [m-client (client/wrap-method identity)
+        echo (m-client {:key :val :method :post})]
     (is (= :val (:key echo)))
     (is (= :post (:request-method echo)))
     (is (not (:method echo)))))
-
