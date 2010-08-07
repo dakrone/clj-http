@@ -65,14 +65,6 @@ The client in `clj-http.core` makes HTTP requests according to a given Ring requ
 
 ## Development
 
-To Do:
-
- * Design and implement streaming request and response body support
- * Documentation and/or library for using form, JSON, and XML params
- * Multipart requests
- * Expose timeout options
- * Request and response logging
-
 Running the tests:
 
     $ lein deps
