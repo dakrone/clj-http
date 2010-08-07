@@ -64,7 +64,7 @@ The client will also follow redirects on the appropriate `30*` status codes.
 
 The design of `clj-http` is inspired by the [Ring](http://github.com/mmcgrana/ring) protocol for Clojure HTTP server applications.
 
-The client in `clj-http.core` makes HTTP requests according to a given Ring request map and returns Ring response maps corresponding the resulting HTTP response. The function `clj-http.client/request` using Ring-style middleware to add several layers of sugar and functionality to the core HTTP request/response implementation. Finally, methods like `clj-http.client/get` are simple sugar over the this main `clj-http.client/request` function.
+The client in `clj-http.core` makes HTTP requests according to a given Ring request map and returns Ring response maps corresponding to the resulting HTTP response. The function `clj-http.client/request` uses Ring-style middleware to layer functionality over the core HTTP request/response implementation. Methods like `clj-http.client/get` are sugar over this `clj-http.client/request` function.
 
 ## Development
 
