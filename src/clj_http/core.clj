@@ -1,9 +1,8 @@
 (ns clj-http.core
   "Core HTTP request/response implementation."
-  (:import (org.apache.http HttpRequest HttpResponse Header))
+  (:import (org.apache.http HttpRequest HttpEntityEnclosingRequest HttpResponse Header))
   (:import (org.apache.http.util EntityUtils))
   (:import (org.apache.http.entity ByteArrayEntity))
-  (:import (org.apache.http.message BasicHttpEntityEnclosingRequest))
   (:import (org.apache.http.client.methods HttpGet HttpHead HttpPut HttpPost HttpDelete))
   (:import (org.apache.http.impl.client DefaultHttpClient)))
 
@@ -41,7 +40,7 @@
           (.addHeader http-req "Content-Type" content-type))
         (if body
           (let [http-body (ByteArrayEntity. body)]
-            (.setEntity #^BasicHttpEntityEnclosingRequest http-req http-body)))
+            (.setEntity #^HttpEntityEnclosingRequest http-req http-body)))
         (let [http-resp (.execute http-client http-req)
               http-entity (.getEntity http-resp)
               resp {:status (.getStatusCode (.getStatusLine http-resp))

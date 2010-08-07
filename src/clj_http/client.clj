@@ -5,11 +5,15 @@
   (:require [clj-http.core :as core])
   (:require [clj-http.util :as util])
   (:refer-clojure :exclude (get))
+  (:import (java.io ByteArrayInputStream))
   (:import (java.util.zip InflaterInputStream GZIPInputStream))
-  (:import (org.apache.commons.io IOUtils))))
+  (:import (org.apache.commons.io IOUtils)))
 
 (defn update [m k f & args]
-  (assoc m k (apply f (get m k) args)))
+  (assoc m k (apply f (m k) args)))
+
+(defn if-pos [v]
+  (if (and v (pos? v)) v))
 
 (defn parse-url [url]
   (let [url-parsed (URL. url)]
@@ -31,7 +35,7 @@
         (throw (Exception. (str status)))))))
 
 
-(defn follow-redirects [req resp]
+(defn follow-redirect [client req resp]
   (let [url (get-in resp :headers "location")]
     (client (merge req (parse-url url)))))
 
@@ -153,14 +157,12 @@
       (client req))))
 
 
-(defn if-pos [v]
-  (if (and v (pos? v)) v))
-
 (defn wrap-url [client]
   (fn [req]
     (if-let [url (:url req)]
       (client (-> req (dissoc :url) (merge (parse-url url))))
       (client req))))
+
 
 (def #^{:doc
   "Executes the HTTP request corresponding to the given map and returns the
