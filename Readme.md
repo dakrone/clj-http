@@ -51,7 +51,7 @@ The client will throw exceptions on, well, exceptional status codes:
     (client/get "http://site.com/broken")
     => Exception: 500
 
-The client will also follow redirects on the appropriate 30* status codes.
+The client will also follow redirects on the appropriate `30*` status codes.
 
 ## Installation
 
