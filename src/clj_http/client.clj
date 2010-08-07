@@ -69,7 +69,7 @@
         (or (nil? body) (= :bytes as))
           resp
         (nil? as)
-          (assoc resp :body (String. body "UTF-8"))))))
+          (assoc resp :body (String. #^"[B" body "UTF-8"))))))
 
 
 (defn wrap-input-coercion [client]

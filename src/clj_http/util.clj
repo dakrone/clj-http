@@ -10,7 +10,7 @@
 (defn utf8-bytes [#^String s]
   (.getBytes s "UTF-8"))
 
-(defn utf8-string [b]
+(defn utf8-string [#^"[B" b]
   (String. b "UTF-8"))
 
 (defn url-encode
