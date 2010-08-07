@@ -102,6 +102,16 @@
     {:uri "/foo"}))
 
 
+(deftest apply-on-basic-auth
+  (is-applied client/wrap-basic-auth
+    {:basic-auth ["Aladdin" "open sesame"]}
+    {:headers {"Authorization" "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="}}))
+
+(deftest pass-on-no-basic-auth
+  (is-passed client/wrap-basic-auth
+    {:uri "/foo"}))
+
+
 (deftest apply-on-method
   (let [m-client (client/wrap-method identity)
         echo (m-client {:key :val :method :post})]

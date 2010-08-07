@@ -130,8 +130,8 @@
 
 
 (defn basic-auth-value [user password]
-  (util/base64-encode (-> (str "Basic " user ":" password)
-                        (.getBytes "UTF-8"))))
+  (str "Basic "
+       (util/base64-encode (.getBytes (str user ":" password) "UTF-8"))))
 
 (defn wrap-basic-auth [client]
   (fn [req]
