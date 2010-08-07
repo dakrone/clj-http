@@ -17,17 +17,17 @@
         (throw (Exception. (str status)))))))
 
 
-(defn wrap-body-as [client]
-  (fn [{:keys [body-as] :as req}]
+(defn wrap-expect-string-output-body [client]
+  (fn [{:keys [as] :as req}]
     (let [{:keys [body] :as resp} (client req)]
       (cond
-        (or (nil? body) (nil? body-as))
+        (or (nil? body) (= :bytes as))
           resp
-        (= :string body-as)
+        (nil? as)
           (assoc resp :body (String. body "UTF-8"))))))
 
 
-(defn wrap-body-coerce [client]
+(defn wrap-coerce-input-body [client]
   (fn [{:keys [body] :as req}]
     (if (string? body)
       (client (-> req (assoc :body (.toString body "UTF-8")
@@ -132,7 +132,7 @@
    * :content-type
    * :accept
    * :accept-encoding
-   * :body-as
+   * :as
 
   Note that where Ring uses InputStreams for the request and response bodies,
   the clj-http uses ByteArrays for the bodies.
@@ -143,8 +143,8 @@
   request
   (-> #'core/request
     (wrap-exceptions)
-    (wrap-body-as)
-    (wrap-body-coerce)
+    (wrap-coerce-input-body)
+    (wrap-expect-string-output-body)
     (wrap-query-params)
     (wrap-basic-auth)
     (wrap-accept)

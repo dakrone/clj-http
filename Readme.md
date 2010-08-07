@@ -20,9 +20,9 @@ The client supports simple `get`, `head`, `put`, `post`, and `delete` requests. 
 
 Other simple query options:
 
-    (client/get "http://site.com/resources/id" {:body-as :string})
+    (client/get "http://site.com/resources/id")
 
-    (client/get "http://site.com/resources/3" {:body-as :string :accept :json})
+    (client/get "http://site.com/resources/3" {:accept :json})
 
     (client/post "http://site.com/resources" {:body byte-array})
 
