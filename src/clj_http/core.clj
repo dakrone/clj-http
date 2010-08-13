@@ -4,6 +4,7 @@
   (:import (org.apache.http.util EntityUtils))
   (:import (org.apache.http.entity ByteArrayEntity))
   (:import (org.apache.http.client.methods HttpGet HttpHead HttpPut HttpPost HttpDelete))
+  (:import (org.apache.http.client.params CookiePolicy ClientPNames))
   (:import (org.apache.http.impl.client DefaultHttpClient)))
 
 (defn parse-headers [#^HttpResponse http-resp]
@@ -20,6 +21,10 @@
            headers content-type character-encoding body]}]
   (let [http-client (DefaultHttpClient.)]
     (try
+      (-> http-client
+        (.getParams)
+        (.setParameter ClientPNames/COOKIE_POLICY
+                      CookiePolicy/BROWSER_COMPATIBILITY))
       (let [http-url (str scheme "://" server-name
                           (if server-port (str ":" server-port))
                           uri
