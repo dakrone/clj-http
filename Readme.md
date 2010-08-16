@@ -39,7 +39,6 @@ More example requests:
        :body "{\"json\": \"input\"}"
        :headers {"X-Api-Version" "2"}
        :content-type :json
-       :character-encoding "UTF-8"
        :accept :json})
 
 A more general `response` function is also available, which is useful as a primitive for building higher-level interfaces:
