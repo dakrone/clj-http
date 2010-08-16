@@ -127,7 +127,7 @@
     (is (nil? (:body resp))))
   (let [client (fn [req] {:body :thebytes})
         o-client (client/wrap-output-coercion client)
-        resp (o-client {:uri "/foo" :as :bytes})]
+        resp (o-client {:uri "/foo" :as :byte-array})]
     (is (= :thebytes (:body resp)))))
 
 

@@ -66,7 +66,7 @@
   (fn [{:keys [as] :as req}]
     (let [{:keys [body] :as resp} (client req)]
       (cond
-        (or (nil? body) (= :bytes as))
+        (or (nil? body) (= :byte-array as))
           resp
         (nil? as)
           (assoc resp :body (String. #^"[B" body "UTF-8"))))))

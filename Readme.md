@@ -24,13 +24,15 @@ More example requests:
 
     (client/get "http://site.com/resources/3" {:accept :json})
 
-    (client/post "http://site.com/resources" {:body byte-array :as :bytes})
+    (client/post "http://site.com/resources" {:body byte-array})
 
     (client/post "http://site.com/resources" {:body "string"})
 
     (client/get "http://site.com/protected" {:basic-auth ["user" "pass"]})
 
     (client/get "http://site.com/search" {:query-params {"q" "foo, bar"}})
+
+    (client/get "http://site.com/favicon.ico" {:as :byte-array})
 
     (client/post "http://site.com/api"
       {:basic-auth ["user" "pass"]
