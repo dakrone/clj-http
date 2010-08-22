@@ -61,7 +61,7 @@ The client transparently accepts and decompresses the `gzip` and `deflate` conte
 `clj-http` is available as a Maven artifact from [Clojars](http://clojars.org/clj-http):
 
     :dependencies
-      [[clj-http "0.1.0"] ...]
+      [[clj-http "0.1.1"] ...]
 
 ## Design
 
