@@ -205,12 +205,12 @@
 (defn post
   "Like #'request, but sets the :method and :url as appropriate."
   [url & [req]]
-  (request (merge req {:method :put :url url})))
+  (request (merge req {:method :post :url url})))
 
 (defn put
   "Like #'request, but sets the :method and :url as appropriate."
   [url & [req]]
-  (request (merge req {:method :post :url url})))
+  (request (merge req {:method :put :url url})))
 
 (defn delete
   "Like #'request, but sets the :method and :url as appropriate."
