@@ -73,6 +73,12 @@
         resp (e-client {})]
     (is (= 200 (:status resp)))))
 
+(deftest pass-on-exceptional-when-surpressed
+  (let [client (fn [req] {:status 500})
+        e-client (client/wrap-exceptions client)
+        resp (e-client {:throw-exceptions false})]
+    (is (= 500 (:status resp)))))
+
 
 (deftest apply-on-compressed
   (let [client (fn [req] {:body (util/gzip (util/utf8-bytes "foofoofoo"))
