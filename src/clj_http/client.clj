@@ -18,6 +18,7 @@
      :server-name (.getHost url-parsed)
      :server-port (if-pos (.getPort url-parsed))
      :uri (.getPath url-parsed)
+     :user-info (.getUserInfo url-parsed)
      :query-string (.getQuery url-parsed)}))
 
 
@@ -142,6 +143,15 @@
                         (basic-auth-value user password))))
       (client req))))
 
+(defn parse-user-info [user-info]
+  (when user-info
+    (str/split #":" user-info)))
+
+(defn wrap-user-info [client]
+  (fn [req]
+    (if-let [[user password] (parse-user-info (:user-info req))]
+      (client (assoc req :basic-auth [user password]))
+      (client req))))
 
 (defn wrap-method [client]
   (fn [req]
@@ -149,7 +159,6 @@
       (client (-> req (dissoc :method)
                       (assoc :request-method m)))
       (client req))))
-
 
 (defn wrap-url [client]
   (fn [req]
@@ -169,6 +178,7 @@
     wrap-output-coercion
     wrap-query-params
     wrap-basic-auth
+    wrap-user-info
     wrap-accept
     wrap-accept-encoding
     wrap-content-type
