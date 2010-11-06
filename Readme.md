@@ -71,10 +71,10 @@ The client in `clj-http.core` makes HTTP requests according to a given Ring requ
 
 ## Development
 
-Running the tests:
+To run the tests:
 
     $ lein deps
-    $ clj test/server.clj
+    $ lein run -m clj-http.server
     $ lein test
 
 ## License
