@@ -157,6 +157,23 @@
       (client (-> req (dissoc :url) (merge (parse-url url))))
       (client req))))
 
+(defn wrap-request
+  "Returns a battaries-included HTTP request function coresponding to the given
+   core client. See client/client."
+  [request]
+  (-> request
+    wrap-redirects
+    wrap-exceptions
+    wrap-decompression
+    wrap-input-coercion
+    wrap-output-coercion
+    wrap-query-params
+    wrap-basic-auth
+    wrap-accept
+    wrap-accept-encoding
+    wrap-content-type
+    wrap-method
+    wrap-url))
 
 (def #^{:doc
   "Executes the HTTP request corresponding to the given map and returns the
@@ -179,19 +196,7 @@
    * Input and output bodies are coerced as required and indicated by the :as
      option."}
   request
-  (-> #'core/request
-    wrap-redirects
-    wrap-exceptions
-    wrap-decompression
-    wrap-input-coercion
-    wrap-output-coercion
-    wrap-query-params
-    wrap-basic-auth
-    wrap-accept
-    wrap-accept-encoding
-    wrap-content-type
-    wrap-method
-    wrap-url))
+  (wrap-request #'core/request))
 
 (defn get
   "Like #'request, but sets the :method and :url as appropriate."
