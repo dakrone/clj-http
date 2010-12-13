@@ -36,7 +36,7 @@
 (deftest makes-get-request
   (let [resp (request {:request-method :get :uri "/get"})]
     (is (= 200 (:status resp)))
-    (is (= "get\n" (slurp-body resp)))))
+    (is (= "get" (slurp-body resp)))))
 
 (deftest makes-head-request
   (let [resp (request {:request-method :head :uri "/head"})]
@@ -46,23 +46,23 @@
 (deftest sets-content-type-with-charset
   (let [resp (request {:request-method :get :uri "/content-type"
                        :content-type "text/plain" :character-encoding "UTF-8"})]
-    (is (= "text/plain; charset=UTF-8\n" (slurp-body resp)))))
+    (is (= "text/plain; charset=UTF-8" (slurp-body resp)))))
 
 (deftest sets-content-type-without-charset
   (let [resp (request {:request-method :get :uri "/content-type"
                        :content-type "text/plain"})]
-    (is (= "text/plain\n" (slurp-body resp)))))
+    (is (= "text/plain" (slurp-body resp)))))
 
 (deftest sets-arbitrary-headers
   (let [resp (request {:request-method :get :uri "/header"
                        :headers {"X-My-Header" "header-val"}})]
-    (is (= "header-val\n" (slurp-body resp)))))
+    (is (= "header-val" (slurp-body resp)))))
 
 (deftest sends-and-returns-byte-array-body
   (let [resp (request {:request-method :post :uri "/post"
                        :body (util/utf8-bytes "contents")})]
     (is (= 200 (:status resp)))
-    (is (= "contents\n" (slurp-body resp)))))
+    (is (= "contents" (slurp-body resp)))))
 
 (deftest returns-arbitrary-headers
   (let [resp (request {:request-method :get :uri "/get"})]

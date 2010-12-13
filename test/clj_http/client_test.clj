@@ -13,7 +13,7 @@
   (let [resp (client/request (merge base-req {:uri "/get" :method :get}))]
     (is (= 200 (:status resp)))
     (is (= "close" (get-in resp [:headers "connection"])))
-    (is (= "get\n" (:body resp)))))
+    (is (= "get" (:body resp)))))
 
 
 (defn is-passed [middleware req]
