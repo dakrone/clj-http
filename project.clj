@@ -1,4 +1,4 @@
-(defproject clj-http "0.1.1"
+(defproject clj-http "0.1.2"
   :description
     "A Clojure HTTP library wrapping the Apache HttpComponents client."
   :dependencies
