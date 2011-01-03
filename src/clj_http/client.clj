@@ -1,7 +1,7 @@
 (ns clj-http.client
   "Batteries-included HTTP client."
   (:import (java.net URL))
-  (:require [clojure.contrib.string :as str])
+  (:require [clojure.string :as str])
   (:require [clj-http.core :as core])
   (:require [clj-http.util :as util])
   (:refer-clojure :exclude (get)))
@@ -145,7 +145,7 @@
 
 (defn parse-user-info [user-info]
   (when user-info
-    (str/split #":" user-info)))
+    (str/split user-info #":")))
 
 (defn wrap-user-info [client]
   (fn [req]

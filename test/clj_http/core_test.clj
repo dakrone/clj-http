@@ -1,7 +1,6 @@
 (ns clj-http.core-test
   (:use clojure.test)
-  (:require [clojure.contrib.pprint :as pp])
-  (:require [clojure.contrib.io :as io])
+  (:require [clojure.pprint :as pp])
   (:require [clj-http.core :as core])
   (:require [clj-http.util :as util]))
 
@@ -18,7 +17,7 @@
     [:get "/header"]
       {:status 200 :body (get-in req [:headers "x-my-header"])}
     [:post "/post"]
-      {:status 200 :body (io/slurp* (:body req))}
+      {:status 200 :body (slurp (:body req))}
     [:get "/error"]
       {:status 500 :body "o noes"}))
 
@@ -31,7 +30,7 @@
   (core/request (merge base-req req)))
 
 (defn slurp-body [req]
-  (io/slurp* (:body req)))
+  (slurp (:body req)))
 
 (deftest makes-get-request
   (let [resp (request {:request-method :get :uri "/get"})]
