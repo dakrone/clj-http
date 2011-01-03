@@ -1,4 +1,4 @@
-(ns clj-http.run-server
+(ns clj-http.test-server
   (:use ring.adapter.jetty)
   (:use ring.middleware.reload)
   (:use clj-http.core-test))

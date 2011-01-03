@@ -74,7 +74,7 @@ The client in `clj-http.core` makes HTTP requests according to a given Ring requ
 To run the tests:
 
     $ lein deps
-    $ lein run -m clj-http.run-server
+    $ lein run -m clj-http.test-server
     $ lein test
 
 ## License
