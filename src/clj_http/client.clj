@@ -16,7 +16,8 @@
   (let [url-parsed (URL. url)]
     {:scheme (.getProtocol url-parsed)
      :server-name (.getHost url-parsed)
-     :server-port (if-pos (.getPort url-parsed))
+     :server-port (or (if-pos (.getPort url-parsed))
+		      (if (= "https" (.getProtocol url-parsed))	443 80))
      :uri (.getPath url-parsed)
      :user-info (.getUserInfo url-parsed)
      :query-string (.getQuery url-parsed)}))
