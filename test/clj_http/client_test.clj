@@ -1,5 +1,6 @@
 (ns clj-http.client-test
   (:use clojure.test)
+  (:use [clj-http.core-test :only [run-server]] )
   (:require [clj-http.client :as client])
   (:require [clj-http.util :as util])
   (:import (java.util Arrays)))
@@ -7,9 +8,10 @@
 (def base-req
   {:scheme "http"
    :server-name "localhost"
-   :server-port 8080})
+   :server-port 18080})
 
-(deftest rountrip
+(deftest ^{:integration true} roundtrip
+  (run-server)
   (let [resp (client/request (merge base-req {:uri "/get" :method :get}))]
     (is (= 200 (:status resp)))
     (is (= "close" (get-in resp [:headers "connection"])))
