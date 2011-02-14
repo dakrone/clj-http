@@ -9,12 +9,6 @@
    :server-name "localhost"
    :server-port 8080})
 
-(deftest parse-server-port
-  (is (= 80   (-> "http://example.com/" client/parse-url :server-port)))
-  (is (= 8080 (-> "http://example.com:8080/" client/parse-url :server-port)))
-  (is (= 443  (-> "https://example.com/" client/parse-url :server-port)))
-  (is (= 8443 (-> "https://example.com:8443/" client/parse-url :server-port))))
-
 (deftest rountrip
   (let [resp (client/request (merge base-req {:uri "/get" :method :get}))]
     (is (= 200 (:status resp)))
@@ -211,3 +205,9 @@
   (let [u-client (client/wrap-url identity)
         resp (u-client {:uri "/foo"})]
     (is (= "/foo" (:uri resp)))))
+
+(deftest provide-default-port
+  (is (= 80   (-> "http://example.com/" client/parse-url :server-port)))
+  (is (= 8080 (-> "http://example.com:8080/" client/parse-url :server-port)))
+  (is (= 443  (-> "https://example.com/" client/parse-url :server-port)))
+  (is (= 8443 (-> "https://example.com:8443/" client/parse-url :server-port))))
