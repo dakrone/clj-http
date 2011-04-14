@@ -1,11 +1,12 @@
 (ns clj-http.core
   "Core HTTP request/response implementation."
-  (:import (org.apache.http HttpRequest HttpEntityEnclosingRequest HttpResponse Header))
+  (:import (org.apache.http HttpRequest HttpEntityEnclosingRequest HttpResponse Header HttpHost))
   (:import (org.apache.http.util EntityUtils))
   (:import (org.apache.http.entity ByteArrayEntity))
   (:import (org.apache.http.client.methods HttpGet HttpHead HttpPut HttpPost HttpDelete))
   (:import (org.apache.http.client.params CookiePolicy ClientPNames))
-  (:import (org.apache.http.impl.client DefaultHttpClient)))
+  (:import (org.apache.http.impl.client DefaultHttpClient))
+  (:import (org.apache.http.conn.params ConnRoutePNames)))
 
 (defn- parse-headers [#^HttpResponse http-resp]
   (into {} (map (fn [#^Header h] [(.toLowerCase (.getName h)) (.getValue h)])
@@ -24,6 +25,12 @@
       (-> http-client
         (.getParams)
         (.setParameter ClientPNames/COOKIE_POLICY CookiePolicy/BROWSER_COMPATIBILITY))
+      (if (nil? (#{"localhost" "127.0.0.1"} server-name))
+        (if-let [proxy-host (System/getProperty (str scheme ".proxyHost"))]
+          (let [proxy-port (Integer/parseInt (System/getProperty (str scheme ".proxyPort")))]
+            (-> http-client
+              (.getParams)
+              (.setParameter ConnRoutePNames/DEFAULT_PROXY (HttpHost. proxy-host proxy-port))))))
       (let [http-url (str scheme "://" server-name
                           (if server-port (str ":" server-port))
                           uri
