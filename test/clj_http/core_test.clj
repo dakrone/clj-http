@@ -84,3 +84,18 @@
   (run-server)
   (let [resp (request {:request-method :get :uri "/error"})]
     (is (= 500 (:status resp)))))
+
+(deftest ^{:integration true} sets-socket-timeout
+  (run-server)
+  (try
+    (request {:request-method :get :uri "/get" :socket-timeout 1})
+    (catch Exception e
+      (is (= java.net.SocketTimeoutException (class e))))))
+
+(deftest ^{:integration true} sets-connection-timeout
+  (run-server)
+  (try
+    (request {:request-method :get :uri "/get" :conn-timeout 1})
+    (catch Exception e
+      (is (= java.net.SocketTimeoutException (class e))))))
+
