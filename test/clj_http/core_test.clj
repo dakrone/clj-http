@@ -20,7 +20,11 @@
     [:post "/post"]
       {:status 200 :body (slurp (:body req))}
     [:get "/error"]
-      {:status 500 :body "o noes"}))
+      {:status 500 :body "o noes"}
+    [:get "/timeout"]
+      (do
+        (Thread/sleep 10)
+        {:status 200 :body "timeout"})))
 
 (defn run-server
   []
@@ -88,14 +92,8 @@
 (deftest ^{:integration true} sets-socket-timeout
   (run-server)
   (try
-    (request {:request-method :get :uri "/get" :socket-timeout 1})
-    (catch Exception e
-      (is (= java.net.SocketTimeoutException (class e))))))
-
-(deftest ^{:integration true} sets-connection-timeout
-  (run-server)
-  (try
-    (request {:request-method :get :uri "/get" :conn-timeout 1})
+    (request {:request-method :get :uri "/timeout" :socket-timeout 1})
+    (throw (Exception. "Shouldn't get here."))
     (catch Exception e
       (is (= java.net.SocketTimeoutException (class e))))))
 
