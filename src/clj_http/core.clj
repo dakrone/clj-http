@@ -1,10 +1,12 @@
 (ns clj-http.core
   "Core HTTP request/response implementation."
+  (:import (java.net URI))
   (:import (org.apache.http HttpRequest HttpEntityEnclosingRequest HttpResponse Header))
   (:import (org.apache.http.util EntityUtils))
   (:import (org.apache.http.entity ByteArrayEntity))
   (:import (org.apache.http.client HttpClient))
-  (:import (org.apache.http.client.methods HttpGet HttpHead HttpPut HttpPost HttpDelete))
+  (:import (org.apache.http.client.methods HttpGet HttpHead HttpPut HttpPost HttpDelete
+                                           HttpEntityEnclosingRequestBase))
   (:import (org.apache.http.client.params CookiePolicy ClientPNames))
   (:import (org.apache.http.impl.client DefaultHttpClient)))
 
@@ -17,6 +19,12 @@
     (-> client
         (.getParams)
         (.setParameter key val))))
+
+(defn- proxy-delete-with-body [url]
+  (let [res (proxy [HttpEntityEnclosingRequestBase] []
+              (getMethod [] "DELETE"))]
+    (.setURI res (URI. url))
+    res))
 
 (defn request
   "Executes the HTTP request corresponding to the given Ring request map and
@@ -42,7 +50,7 @@
                            :head   (HttpHead. http-url)
                            :put    (HttpPut. http-url)
                            :post   (HttpPost. http-url)
-                           :delete (HttpDelete. http-url))]
+                           :delete (proxy-delete-with-body http-url))]
         (if (and content-type character-encoding)
           (.addHeader http-req "Content-Type"
                       (str content-type "; charset=" character-encoding)))

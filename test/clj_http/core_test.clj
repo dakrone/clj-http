@@ -24,7 +24,9 @@
     [:get "/timeout"]
       (do
         (Thread/sleep 10)
-        {:status 200 :body "timeout"})))
+        {:status 200 :body "timeout"})
+    [:delete "/delete-with-body"]
+       {:status 200 :body "delete-with-body"}))
 
 (defn run-server
   []
@@ -96,4 +98,10 @@
     (throw (Exception. "Shouldn't get here."))
     (catch Exception e
       (is (= java.net.SocketTimeoutException (class e))))))
+
+(deftest ^{:integration true} delete-with-body
+  (run-server)
+  (let [resp (request {:request-method :delete :uri "/delete-with-body" :body (.getBytes "foo bar")})]
+    (is (= 200 (:status resp)))))
+
 
