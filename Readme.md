@@ -2,7 +2,7 @@
 
 A Clojure HTTP library wrapping the [Apache HttpComponents](http://hc.apache.org/) client.
 
-This library is just like mmcgrana/clj-http, except I vow to support this repo, merge pull requests and put a note here if it is abandoned.
+## This library is just like mmcgrana/clj-http, except I vow to support this repo, merge pull requests, add contributors and put a note here if it is abandoned.
 
 ## Usage
 
