@@ -10,23 +10,23 @@
   (println) (println)
   (condp = [(:request-method req) (:uri req)]
     [:get "/get"]
-      {:status 200 :body "get"}
+    {:status 200 :body "get"}
     [:head "/head"]
-      {:status 200}
+    {:status 200}
     [:get "/content-type"]
-      {:status 200 :body (:content-type req)}
+    {:status 200 :body (:content-type req)}
     [:get "/header"]
-      {:status 200 :body (get-in req [:headers "x-my-header"])}
+    {:status 200 :body (get-in req [:headers "x-my-header"])}
     [:post "/post"]
-      {:status 200 :body (slurp (:body req))}
+    {:status 200 :body (slurp (:body req))}
     [:get "/error"]
-      {:status 500 :body "o noes"}
+    {:status 500 :body "o noes"}
     [:get "/timeout"]
-      (do
-        (Thread/sleep 10)
-        {:status 200 :body "timeout"})
+    (do
+      (Thread/sleep 10)
+      {:status 200 :body "timeout"})
     [:delete "/delete-with-body"]
-       {:status 200 :body "delete-with-body"}))
+    {:status 200 :body "delete-with-body"}))
 
 (defn run-server
   []

@@ -46,11 +46,11 @@
                           (if query-string (str "?" query-string)))
             #^HttpRequest
             http-req (case request-method
-                           :get    (HttpGet. http-url)
-                           :head   (HttpHead. http-url)
-                           :put    (HttpPut. http-url)
-                           :post   (HttpPost. http-url)
-                           :delete (proxy-delete-with-body http-url))]
+                       :get    (HttpGet. http-url)
+                       :head   (HttpHead. http-url)
+                       :put    (HttpPut. http-url)
+                       :post   (HttpPost. http-url)
+                       :delete (proxy-delete-with-body http-url))]
         (if (and content-type character-encoding)
           (.addHeader http-req "Content-Type"
                       (str content-type "; charset=" character-encoding)))
