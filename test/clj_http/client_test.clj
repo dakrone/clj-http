@@ -1,8 +1,8 @@
 (ns clj-http.client-test
-  (:use clojure.test)
-  (:use [clj-http.core-test :only [run-server]] )
-  (:require [clj-http.client :as client])
-  (:require [clj-http.util :as util])
+  (:use [clojure.test]
+        [clj-http.core-test :only [run-server]])
+  (:require [clj-http.client :as client]
+            [clj-http.util :as util])
   (:import (java.util Arrays)))
 
 (def base-req
@@ -67,7 +67,7 @@
   (let [client (fn [req] {:status 500})
         e-client (client/wrap-exceptions client)]
     (is (thrown-with-msg? Exception #"500"
-      (e-client {})))))
+          (e-client {})))))
 
 (deftest pass-on-non-exceptional
   (let [client (fn [req] {:status 200})
@@ -104,22 +104,22 @@
 
 (deftest apply-on-accept
   (is-applied client/wrap-accept
-    {:accept :json}
-    {:headers {"Accept" "application/json"}}))
+              {:accept :json}
+              {:headers {"Accept" "application/json"}}))
 
 (deftest pass-on-no-accept
   (is-passed client/wrap-accept
-    {:uri "/foo"}))
+             {:uri "/foo"}))
 
 
 (deftest apply-on-accept-encoding
   (is-applied client/wrap-accept-encoding
-    {:accept-encoding [:identity :gzip]}
-    {:headers {"Accept-Encoding" "identity, gzip"}}))
+              {:accept-encoding [:identity :gzip]}
+              {:headers {"Accept-Encoding" "identity, gzip"}}))
 
 (deftest pass-on-no-accept-encoding
   (is-passed client/wrap-accept-encoding
-    {:uri "/foo"}))
+             {:uri "/foo"}))
 
 
 (deftest apply-on-output-coercion
@@ -147,37 +147,38 @@
 
 (deftest pass-on-no-input-coercion
   (is-passed client/wrap-input-coercion
-    {:body (util/utf8-bytes "foo")}))
+             {:body (util/utf8-bytes "foo")}))
 
 
 (deftest apply-on-content-type
   (is-applied client/wrap-content-type
-    {:content-type :json}
-    {:content-type "application/json"}))
+              {:content-type :json}
+              {:content-type "application/json"}))
 
 (deftest pass-on-no-content-type
   (is-passed client/wrap-content-type
-    {:uri "/foo"}))
+             {:uri "/foo"}))
 
 
 (deftest apply-on-query-params
   (is-applied client/wrap-query-params
-    {:query-params {"foo" "bar" "dir" "<<"}}
-    {:query-string "foo=bar&dir=%3C%3C"}))
+              {:query-params {"foo" "bar" "dir" "<<"}}
+              {:query-string "foo=bar&dir=%3C%3C"}))
 
 (deftest pass-on-no-query-params
   (is-passed client/wrap-query-params
-    {:uri "/foo"}))
+             {:uri "/foo"}))
 
 
 (deftest apply-on-basic-auth
   (is-applied client/wrap-basic-auth
-    {:basic-auth ["Aladdin" "open sesame"]}
-    {:headers {"Authorization" "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="}}))
+              {:basic-auth ["Aladdin" "open sesame"]}
+              {:headers {"Authorization"
+                         "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="}}))
 
 (deftest pass-on-no-basic-auth
   (is-passed client/wrap-basic-auth
-    {:uri "/foo"}))
+             {:uri "/foo"}))
 
 
 (deftest apply-on-method

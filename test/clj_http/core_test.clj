@@ -1,9 +1,9 @@
 (ns clj-http.core-test
-  (:use clojure.test)
-  (:require [clojure.pprint :as pp])
-  (:require [clj-http.core :as core])
-  (:require [clj-http.util :as util])
-  (:require [ring.adapter.jetty :as ring]))
+  (:use [clojure.test])
+  (:require [clojure.pprint :as pp]
+            [clj-http.core :as core]
+            [clj-http.util :as util]
+            [ring.adapter.jetty :as ring]))
 
 (defn handler [req]
   (pp/pprint req)
@@ -101,7 +101,8 @@
 
 (deftest ^{:integration true} delete-with-body
   (run-server)
-  (let [resp (request {:request-method :delete :uri "/delete-with-body" :body (.getBytes "foo bar")})]
+  (let [resp (request {:request-method :delete :uri "/delete-with-body"
+                       :body (.getBytes "foo bar")})]
     (is (= 200 (:status resp)))))
 
 

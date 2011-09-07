@@ -1,15 +1,17 @@
 (ns clj-http.core
   "Core HTTP request/response implementation."
-  (:import (java.net URI))
-  (:import (org.apache.http HttpRequest HttpEntityEnclosingRequest HttpResponse Header HttpHost))
-  (:import (org.apache.http.util EntityUtils))
-  (:import (org.apache.http.entity ByteArrayEntity))
-  (:import (org.apache.http.client HttpClient))
-  (:import (org.apache.http.client.methods HttpGet HttpHead HttpPut HttpPost HttpDelete
-                                           HttpEntityEnclosingRequestBase))
-  (:import (org.apache.http.client.params CookiePolicy ClientPNames))
-  (:import (org.apache.http.impl.client DefaultHttpClient))
-  (:import (org.apache.http.conn.params ConnRoutePNames)))
+  (:import (java.net URI)
+           (org.apache.http HttpRequest HttpEntityEnclosingRequest
+                            HttpResponse Header HttpHost)
+           (org.apache.http.util EntityUtils)
+           (org.apache.http.entity ByteArrayEntity)
+           (org.apache.http.client HttpClient)
+           (org.apache.http.client.methods HttpGet HttpHead HttpPut
+                                           HttpPost HttpDelete
+                                           HttpEntityEnclosingRequestBase)
+           (org.apache.http.client.params CookiePolicy ClientPNames)
+           (org.apache.http.impl.client DefaultHttpClient)
+           (org.apache.http.conn.params ConnRoutePNames)))
 
 (defn- parse-headers [#^HttpResponse http-resp]
   (into {} (map (fn [#^Header h] [(.toLowerCase (.getName h)) (.getValue h)])
@@ -34,17 +36,21 @@
    Note that where Ring uses InputStreams for the request and response bodies,
    the clj-http uses ByteArrays for the bodies."
   [{:keys [request-method scheme server-name server-port uri query-string
-           headers content-type character-encoding body socket-timeout conn-timeout]}]
+           headers content-type character-encoding body socket-timeout
+           conn-timeout]}]
   (let [http-client (DefaultHttpClient.)]
     (try
       (doto http-client
-        (set-client-param ClientPNames/COOKIE_POLICY CookiePolicy/BROWSER_COMPATIBILITY)
+        (set-client-param ClientPNames/COOKIE_POLICY
+                          CookiePolicy/BROWSER_COMPATIBILITY)
         (set-client-param "http.socket.timeout" socket-timeout)
         (set-client-param "http.connection.timeout" conn-timeout))
       (if (nil? (#{"localhost" "127.0.0.1"} server-name))
         (when-let [proxy-host (System/getProperty (str scheme ".proxyHost"))]
-          (let [proxy-port (Integer/parseInt (System/getProperty (str scheme ".proxyPort")))]
-            (set-client-param http-client ConnRoutePNames/DEFAULT_PROXY (HttpHost. proxy-host proxy-port)))))
+          (let [proxy-port (Integer/parseInt
+                            (System/getProperty (str scheme ".proxyPort")))]
+            (set-client-param http-client ConnRoutePNames/DEFAULT_PROXY
+                              (HttpHost. proxy-host proxy-port)))))
       (let [http-url (str scheme "://" server-name
                           (if server-port (str ":" server-port))
                           uri
@@ -71,6 +77,7 @@
               http-entity (.getEntity http-resp)
               resp {:status (.getStatusCode (.getStatusLine http-resp))
                     :headers (parse-headers http-resp)
-                    :body (if http-entity (EntityUtils/toByteArray http-entity))}]
+                    :body (when http-entity
+                            (EntityUtils/toByteArray http-entity))}]
           (.shutdown (.getConnectionManager http-client))
           resp)))))

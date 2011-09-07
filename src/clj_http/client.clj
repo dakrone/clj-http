@@ -1,9 +1,9 @@
 (ns clj-http.client
   "Batteries-included HTTP client."
+  (:require [clojure.string :as str]
+            [clj-http.core :as core]
+            [clj-http.util :as util])
   (:import (java.net URL))
-  (:require [clojure.string :as str])
-  (:require [clj-http.core :as core])
-  (:require [clj-http.util :as util])
   (:refer-clojure :exclude (get)))
 
 (defn update [m k f & args]
@@ -17,7 +17,7 @@
     {:scheme (.getProtocol url-parsed)
      :server-name (.getHost url-parsed)
      :server-port (or (if-pos (.getPort url-parsed))
-		      (if (= "https" (.getProtocol url-parsed))	443 80))
+                      (if (= "https" (.getProtocol url-parsed)) 443 80))
      :uri (.getPath url-parsed)
      :user-info (.getUserInfo url-parsed)
      :query-string (.getQuery url-parsed)}))
@@ -43,12 +43,12 @@
   (fn [{:keys [request-method] :as req}]
     (let [{:keys [status] :as resp} (client req)]
       (cond
-        (and (#{301 302 307} status) (#{:get :head} request-method))
-          (follow-redirect client req resp)
-        (and (= 303 status) (= :head request-method))
-          (follow-redirect client (assoc req :request-method :get) resp)
-        :else
-          resp))))
+       (and (#{301 302 307} status) (#{:get :head} request-method))
+       (follow-redirect client req resp)
+       (and (= 303 status) (= :head request-method))
+       (follow-redirect client (assoc req :request-method :get) resp)
+       :else
+       resp))))
 
 
 (defn wrap-decompression [client]
@@ -59,9 +59,9 @@
             resp-c (client req)]
         (case (get-in resp-c [:headers "Content-Encoding"])
           "gzip"
-            (update resp-c :body util/gunzip)
+          (update resp-c :body util/gunzip)
           "deflate"
-            (update resp-c :body util/inflate)
+          (update resp-c :body util/inflate)
           resp-c)))))
 
 
@@ -69,10 +69,10 @@
   (fn [{:keys [as] :as req}]
     (let [{:keys [body] :as resp} (client req)]
       (cond
-        (or (nil? body) (= :byte-array as))
-          resp
-        (nil? as)
-          (assoc resp :body (String. #^"[B" body "UTF-8"))))))
+       (or (nil? body) (= :byte-array as))
+       resp
+       (nil? as)
+       (assoc resp :body (String. #^"[B" body "UTF-8"))))))
 
 
 (defn wrap-input-coercion [client]
@@ -100,8 +100,8 @@
   (fn [{:keys [accept] :as req}]
     (if accept
       (client (-> req (dissoc :accept)
-                      (assoc-in [:headers "Accept"]
-                        (content-type-value accept))))
+                  (assoc-in [:headers "Accept"]
+                            (content-type-value accept))))
       (client req))))
 
 
@@ -112,23 +112,23 @@
   (fn [{:keys [accept-encoding] :as req}]
     (if accept-encoding
       (client (-> req (dissoc :accept-encoding)
-                      (assoc-in [:headers "Accept-Encoding"]
-                        (accept-encoding-value accept-encoding))))
+                  (assoc-in [:headers "Accept-Encoding"]
+                            (accept-encoding-value accept-encoding))))
       (client req))))
 
 
 (defn generate-query-string [params]
   (str/join "&"
-    (map (fn [[k v]] (str (util/url-encode (name k)) "="
-                          (util/url-encode (str v))))
-         params)))
+            (map (fn [[k v]] (str (util/url-encode (name k)) "="
+                                  (util/url-encode (str v))))
+                 params)))
 
 (defn wrap-query-params [client]
   (fn [{:keys [query-params] :as req}]
     (if query-params
       (client (-> req (dissoc :query-params)
-                      (assoc :query-string
-                             (generate-query-string query-params))))
+                  (assoc :query-string
+                    (generate-query-string query-params))))
       (client req))))
 
 
@@ -140,8 +140,8 @@
   (fn [req]
     (if-let [[user password] (:basic-auth req)]
       (client (-> req (dissoc :basic-auth)
-                      (assoc-in [:headers "Authorization"]
-                        (basic-auth-value user password))))
+                  (assoc-in [:headers "Authorization"]
+                            (basic-auth-value user password))))
       (client req))))
 
 (defn parse-user-info [user-info]
@@ -158,7 +158,7 @@
   (fn [req]
     (if-let [m (:method req)]
       (client (-> req (dissoc :method)
-                      (assoc :request-method m)))
+                  (assoc :request-method m)))
       (client req))))
 
 (defn wrap-url [client]
@@ -172,23 +172,23 @@
    core client. See client/client."
   [request]
   (-> request
-    wrap-redirects
-    wrap-exceptions
-    wrap-decompression
-    wrap-input-coercion
-    wrap-output-coercion
-    wrap-query-params
-    wrap-basic-auth
-    wrap-user-info
-    wrap-accept
-    wrap-accept-encoding
-    wrap-content-type
-    wrap-method
-    wrap-url))
+      wrap-redirects
+      wrap-exceptions
+      wrap-decompression
+      wrap-input-coercion
+      wrap-output-coercion
+      wrap-query-params
+      wrap-basic-auth
+      wrap-user-info
+      wrap-accept
+      wrap-accept-encoding
+      wrap-content-type
+      wrap-method
+      wrap-url))
 
 (def #^{:doc
-  "Executes the HTTP request corresponding to the given map and returns the
-   response map for corresponding to the resulting HTTP response.
+        "Executes the HTTP request corresponding to the given map and returns
+   the response map for corresponding to the resulting HTTP response.
 
    In addition to the standard Ring request keys, the following keys are also
    recognized:
