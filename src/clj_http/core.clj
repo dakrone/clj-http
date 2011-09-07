@@ -43,8 +43,10 @@
       (doto http-client
         (set-client-param ClientPNames/COOKIE_POLICY
                           CookiePolicy/BROWSER_COMPATIBILITY)
-        (set-client-param "http.socket.timeout" socket-timeout)
-        (set-client-param "http.connection.timeout" conn-timeout))
+        (set-client-param "http.socket.timeout" (and socket-timeout
+                                                     (Integer. socket-timeout)))
+        (set-client-param "http.connection.timeout" (and conn-timeout
+                                                         (Integer. conn-timeout))))
       (if (nil? (#{"localhost" "127.0.0.1"} server-name))
         (when-let [proxy-host (System/getProperty (str scheme ".proxyHost"))]
           (let [proxy-port (Integer/parseInt
