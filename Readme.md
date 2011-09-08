@@ -1,3 +1,8 @@
+### Note
+
+The canonical repository for this project is now [dakrone/clj-http](https://github.com/dakrone/clj-http).
+
+
 # `clj-http`
 
 A Clojure HTTP library wrapping the [Apache HttpComponents](http://hc.apache.org/) client.
