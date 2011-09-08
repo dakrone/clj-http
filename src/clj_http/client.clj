@@ -1,9 +1,9 @@
 (ns clj-http.client
   "Batteries-included HTTP client."
+  (:use [clj-http.cookies :only (wrap-cookies)])
   (:require [clojure.string :as str]
             [clj-http.core :as core]
             [clj-http.util :as util])
-  (:use [clj-http.cookies :only (wrap-cookies)])
   (:import (java.net URL))
   (:refer-clojure :exclude (get)))
 
