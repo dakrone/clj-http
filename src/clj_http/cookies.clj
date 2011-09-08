@@ -8,21 +8,6 @@
            (org.apache.http.impl.cookie BrowserCompatSpecFactory)
            (org.apache.http.message BasicHeader)))
 
-;; Copied from clojure.contrib.string in order not to depend on it.
-(defn as-str
-  "Like clojure.core/str, but if an argument is a keyword or symbol,
-  its name will be used instead of its literal representation. "
-  ([] "")
-  ([x] (if (instance? clojure.lang.Named x)
-         (name x)
-         (str x)))
-  ([x & ys]
-     ((fn [^StringBuilder sb more]
-        (if more
-          (recur (. sb  (append (as-str (first more)))) (next more))
-          (str sb)))
-      (new StringBuilder ^String (as-str x)) ys)))
-
 (defn- cookie-spec []
   (.newInstance
    (BrowserCompatSpecFactory.)
@@ -57,8 +42,8 @@
 (defn- to-basic-client-cookie
   "Converts a cookie seq into a BasicClientCookie2."
   [[cookie-name cookie-content]]
-  (doto (BasicClientCookie2. (as-str cookie-name)
-                             (url-encode (as-str (:value cookie-content))))
+  (doto (BasicClientCookie2. (name cookie-name)
+                             (url-encode (name (:value cookie-content))))
     (.setComment (:comment cookie-content))
     (.setCommentURL (:comment-url cookie-content))
     (.setDiscard (or (:discard cookie-content) true))
