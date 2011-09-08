@@ -98,6 +98,10 @@ To run the tests:
     Run all tests (including integration):
     $ lein test :all
 
+    Run tests against 1.2.1 and 1.3
+    $ lein multi test
+    $ lein multi test :all
+
 ## License
 
 Released under the MIT License:
