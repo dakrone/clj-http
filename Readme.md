@@ -2,15 +2,18 @@
 
 A Clojure HTTP library wrapping the [Apache HttpComponents](http://hc.apache.org/) client.
 
-## This library is just like mmcgrana/clj-http, except I vow to support this repo, merge pull requests, add contributors and put a note here if it is abandoned.
+This library has taken over from mmcgrana's clj-http. Please send a
+pull request or open an issue if you have any problems
 
 ## Usage
 
-The main HTTP client functionality is provided by the `clj-http.client` namespace:
+The main HTTP client functionality is provided by the
+`clj-http.client` namespace:
 
     (require '[clj-http.client :as client])
 
-The client supports simple `get`, `head`, `put`, `post`, and `delete` requests. Responses are returned as Ring-style response maps:
+The client supports simple `get`, `head`, `put`, `post`, and `delete`
+requests. Responses are returned as Ring-style response maps:
 
     (client/get "http://google.com")
     => {:status 200
@@ -43,7 +46,8 @@ More example requests:
        :content-type :json
        :accept :json})
 
-A more general `response` function is also available, which is useful as a primitive for building higher-level interfaces:
+A more general `response` function is also available, which is useful
+as a primitive for building higher-level interfaces:
 
     (defn api-action [method path & [opts]]
       (client/request
@@ -54,31 +58,47 @@ The client will throw exceptions on, well, exceptional status codes:
     (client/get "http://site.com/broken")
     => Exception: 500
 
-The client will also follow redirects on the appropriate `30*` status codes.
+The client will also follow redirects on the appropriate `30*` status
+codes.
 
-The client transparently accepts and decompresses the `gzip` and `deflate` content encodings.
+The client transparently accepts and decompresses the `gzip` and
+`deflate` content encodings.
 
 ## Installation
 
-`clj-http` is available as a Maven artifact from [Clojars](http://clojars.org/clj-http):
+`clj-http` is available as a Maven artifact from
+[Clojars](http://clojars.org/clj-http):
 
-    :dependencies
-      [[clj-http "0.1.3"] ...]
+    [clj-http "0.2.0"]
+
+Previous version available as
+
+    [clj-http "0.1.3"]
 
 ## Design
 
-The design of `clj-http` is inspired by the [Ring](http://github.com/mmcgrana/ring) protocol for Clojure HTTP server applications.
+The design of `clj-http` is inspired by the
+[Ring](http://github.com/mmcgrana/ring) protocol for Clojure HTTP
+server applications.
 
-The client in `clj-http.core` makes HTTP requests according to a given Ring request map and returns Ring response maps corresponding to the resulting HTTP response. The function `clj-http.client/request` uses Ring-style middleware to layer functionality over the core HTTP request/response implementation. Methods like `clj-http.client/get` are sugar over this `clj-http.client/request` function.
+The client in `clj-http.core` makes HTTP requests according to a given
+Ring request map and returns Ring response maps corresponding to the
+resulting HTTP response. The function `clj-http.client/request` uses
+Ring-style middleware to layer functionality over the core HTTP
+request/response implementation. Methods like `clj-http.client/get`
+are sugar over this `clj-http.client/request` function.
 
 ## Development
 
 To run the tests:
 
     $ lein deps
-    $ lein run -m clj-http.run-server
     $ lein test
+
+    Run all tests (including integration):
+    $ lein test :all
 
 ## License
 
-Released under the MIT License: <http://www.opensource.org/licenses/mit-license.php>
+Released under the MIT License:
+<http://www.opensource.org/licenses/mit-license.php>
