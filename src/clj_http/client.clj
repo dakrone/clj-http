@@ -3,6 +3,7 @@
   (:require [clojure.string :as str]
             [clj-http.core :as core]
             [clj-http.util :as util])
+  (:use [clj-http.cookies :only (wrap-cookies)])
   (:import (java.net URL))
   (:refer-clojure :exclude (get)))
 
@@ -184,7 +185,8 @@
       wrap-accept-encoding
       wrap-content-type
       wrap-method
-      wrap-url))
+      wrap-url
+      wrap-cookies))
 
 (def #^{:doc
         "Executes the HTTP request corresponding to the given map and returns

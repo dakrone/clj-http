@@ -3,7 +3,7 @@
   (:import (org.apache.commons.codec.binary Base64)
            (org.apache.commons.io IOUtils)
            (java.io ByteArrayInputStream ByteArrayOutputStream)
-           (java.net URLEncoder)
+           (java.net URLEncoder URLDecoder)
            (java.util.zip InflaterInputStream DeflaterInputStream
                           GZIPInputStream GZIPOutputStream)))
 
@@ -16,6 +16,12 @@
   "Returns the String corresponding to the UTF-8 decoding of the given bytes."
   [#^"[B" b]
   (String. b "UTF-8"))
+
+(defn url-decode
+  "Returns the form-url-decoded version of the given string, using either a
+  specified encoding or UTF-8 by default."
+  [encoded & [encoding]]
+  (URLDecoder/decode encoded (or encoding "UTF-8")))
 
 (defn url-encode
   "Returns an UTF-8 URL encoded version of the given string."
