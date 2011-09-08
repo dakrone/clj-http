@@ -1,22 +1,40 @@
 (ns clj-http.cookies
+  (:use [clj-http.util :only [url-decode url-encode]]
+        [clojure.string :only [blank? join lower-case]])
   (:import (org.apache.http.client.params ClientPNames CookiePolicy)
            (org.apache.http.cookie CookieOrigin)
            (org.apache.http.params BasicHttpParams)
            (org.apache.http.impl.cookie BasicClientCookie2)
            (org.apache.http.impl.cookie BrowserCompatSpecFactory)
-           (org.apache.http.message BasicHeader))
-  (:use [clojure.contrib.string :only (as-str blank? join lower-case)]
-        clj-http.util))
+           (org.apache.http.message BasicHeader)))
+
+;; Copied from clojure.contrib.string in order not to depend on it.
+(defn as-str
+  "Like clojure.core/str, but if an argument is a keyword or symbol,
+  its name will be used instead of its literal representation. "
+  ([] "")
+  ([x] (if (instance? clojure.lang.Named x)
+         (name x)
+         (str x)))
+  ([x & ys]
+     ((fn [^StringBuilder sb more]
+        (if more
+          (recur (. sb  (append (as-str (first more)))) (next more))
+          (str sb)))
+      (new StringBuilder ^String (as-str x)) ys)))
 
 (defn- cookie-spec []
   (.newInstance
    (BrowserCompatSpecFactory.)
    (doto (BasicHttpParams.)
-     (.setParameter ClientPNames/COOKIE_POLICY CookiePolicy/BROWSER_COMPATIBILITY))))
+     (.setParameter ClientPNames/COOKIE_POLICY
+                    CookiePolicy/BROWSER_COMPATIBILITY))))
 
 (defn- compact-map
   "Removes all map entries where value is nil."
-  [m] (reduce #(if (get m %2) (assoc %1 %2 (get m %2)) %1) (sorted-map) (sort (keys m))))
+  [m]
+  (reduce #(if (get m %2) (assoc %1 %2 (get m %2)) %1)
+          (sorted-map) (sort (keys m))))
 
 (defn- to-cookie
   "Converts a ClientCookie object into a tuple where the first item is
@@ -39,7 +57,8 @@
 (defn- to-basic-client-cookie
   "Converts a cookie seq into a BasicClientCookie2."
   [[cookie-name cookie-content]]
-  (doto (BasicClientCookie2. (as-str cookie-name) (url-encode (as-str (:value cookie-content))))
+  (doto (BasicClientCookie2. (as-str cookie-name)
+                             (url-encode (as-str (:value cookie-content))))
     (.setComment (:comment cookie-content))
     (.setCommentURL (:comment-url cookie-content))
     (.setDiscard (or (:discard cookie-content) true))
@@ -54,9 +73,16 @@
   "Decode the Set-Cookie string into a cookie seq."
   [set-cookie-str]
   (if-not (blank? set-cookie-str)
-    (let [domain (lower-case (str (gensym))) ; I just want to parse a cookie without providing origin. How?
+    ;; I just want to parse a cookie without providing origin. How?
+    (let [domain (lower-case (str (gensym)))
           origin (CookieOrigin. domain 80 "/" false)
-          [cookie-name cookie-content] (to-cookie (first (.parse (cookie-spec) (BasicHeader. "set-cookie" set-cookie-str) origin)))]
+          [cookie-name cookie-content] (-> (cookie-spec)
+                                           (.parse (BasicHeader.
+                                                    "set-cookie"
+                                                    set-cookie-str)
+                                                   origin)
+                                           first
+                                           to-cookie)]
       [cookie-name
        (if (= domain (:domain cookie-content))
          (dissoc cookie-content :domain) cookie-content)])))
@@ -79,7 +105,9 @@
 (defn encode-cookie
   "Encode the cookie into a string used by the Cookie header."
   [cookie]
-  (if-let [header (first (.formatCookies (cookie-spec) [(to-basic-client-cookie cookie)]))]
+  (when-let [header (-> (cookie-spec)
+                        (.formatCookies [(to-basic-client-cookie cookie)])
+                        first)]
     (.getValue header)))
 
 (defn encode-cookies
