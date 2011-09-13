@@ -4,7 +4,7 @@
                  [org.apache.httpcomponents/httpclient "4.1.2"]
                  [commons-codec "1.5"]
                  [commons-io "1.4"]]
-  :multi-deps {"1.3" [[org.clojure/clojure "1.3.0-beta3"]
+  :multi-deps {"1.3" [[org.clojure/clojure "1.3.0-RC0"]
                       [org.apache.httpcomponents/httpclient "4.1.2"]
                       [commons-codec "1.5"]
                       [commons-io "1.4"]]}
