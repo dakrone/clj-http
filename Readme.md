@@ -44,9 +44,11 @@ More example requests:
        :body "{\"json\": \"input\"}"
        :headers {"X-Api-Version" "2"}
        :content-type :json
+       :socket-timeout 1000
+       :conn-timeout 1000
        :accept :json})
 
-A more general `response` function is also available, which is useful
+A more general `request` function is also available, which is useful
 as a primitive for building higher-level interfaces:
 
     (defn api-action [method path & [opts]]
@@ -63,6 +65,10 @@ codes.
 
 The client transparently accepts and decompresses the `gzip` and
 `deflate` content encodings.
+
+A proxy can be specified by setting the Java properties:
+<scheme>.proxyHost and <scheme>.proxyPort where <scheme> is the client
+scheme used (normally 'http' or 'https').
 
 ## Installation
 
@@ -99,6 +105,7 @@ To run the tests:
     $ lein test :all
 
     Run tests against 1.2.1 and 1.3
+    $ lein multi deps
     $ lein multi test
     $ lein multi test :all
 
