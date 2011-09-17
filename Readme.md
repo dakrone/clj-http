@@ -77,7 +77,7 @@ The client transparently accepts and decompresses the `gzip` and
 `deflate` content encodings.
 
 A proxy can be specified by setting the Java properties:
-<scheme>.proxyHost and <scheme>.proxyPort where <scheme> is the client
+`<scheme>.proxyHost` and `<scheme>.proxyPort` where `<scheme>` is the client
 scheme used (normally 'http' or 'https').
 
 ## Installation
