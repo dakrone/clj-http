@@ -18,7 +18,7 @@
                 (iterator-seq (.headerIterator http-resp)))))
 
 (defn- set-client-param [#^HttpClient client key val]
-  (when val
+  (when (not (nil? val)) 
     (-> client
         (.getParams)
         (.setParameter key val))))
@@ -43,6 +43,7 @@
       (doto http-client
         (set-client-param ClientPNames/COOKIE_POLICY
                           CookiePolicy/BROWSER_COMPATIBILITY)
+        (set-client-param ClientPNames/HANDLE_REDIRECTS false)
         (set-client-param "http.socket.timeout" (and socket-timeout
                                                      (Integer. socket-timeout)))
         (set-client-param "http.connection.timeout" (and conn-timeout

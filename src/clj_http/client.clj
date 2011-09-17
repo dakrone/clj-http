@@ -38,7 +38,7 @@
 
 (defn follow-redirect [client req resp]
   (let [url (get-in resp [:headers "location"])]
-    (client (merge req (parse-url url)))))
+    (client (assoc req :url url))))
 
 (defn wrap-redirects [client]
   (fn [{:keys [request-method] :as req}]
@@ -173,6 +173,7 @@
    core client. See client/client."
   [request]
   (-> request
+      wrap-url
       wrap-redirects
       wrap-exceptions
       wrap-decompression
@@ -185,7 +186,6 @@
       wrap-accept-encoding
       wrap-content-type
       wrap-method
-      wrap-url
       wrap-cookies))
 
 (def #^{:doc
