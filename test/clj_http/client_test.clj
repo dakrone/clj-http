@@ -34,7 +34,7 @@
                     :headers {"location" "http://bar.com/bat"}}
                    {:status 200
                     :req req}))
-        r-client (client/wrap-redirects client)
+        r-client (-> client client/wrap-url client/wrap-redirects)
         resp (r-client {:server-name "foo.com" :request-method :get})]
     (is (= 200 (:status resp)))
     (is (= :get (:request-method (:req resp))))
@@ -48,7 +48,7 @@
                     :headers {"location" "http://bar.com/bat"}}
                    {:status 200
                     :req req}))
-        r-client (client/wrap-redirects client)
+        r-client (-> client client/wrap-url client/wrap-redirects)
         resp (r-client {:server-name "foo.com" :request-method :head})]
     (is (= 200 (:status resp)))
     (is (= :get (:request-method (:req resp))))
