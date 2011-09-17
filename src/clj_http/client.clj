@@ -173,15 +173,15 @@
    core client. See client/client."
   [request]
   (-> request
+      wrap-query-params
+      wrap-user-info
       wrap-url
       wrap-redirects
       wrap-exceptions
       wrap-decompression
       wrap-input-coercion
       wrap-output-coercion
-      wrap-query-params
       wrap-basic-auth
-      wrap-user-info
       wrap-accept
       wrap-accept-encoding
       wrap-content-type
