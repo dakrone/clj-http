@@ -52,6 +52,9 @@ More example requests:
    :socket-timeout 1000
    :conn-timeout 1000
    :accept :json})
+
+;; If you don't want to follow-redirects automatically:
+(client/get "http://site.come/redirects-somewhere" {:follow-redirects false})
 ```
 
 A more general `request` function is also available, which is useful

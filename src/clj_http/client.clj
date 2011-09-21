@@ -41,9 +41,11 @@
     (client (assoc req :url url))))
 
 (defn wrap-redirects [client]
-  (fn [{:keys [request-method] :as req}]
+  (fn [{:keys [request-method follow-redirects] :as req}]
     (let [{:keys [status] :as resp} (client req)]
       (cond
+       (= false follow-redirects)
+       resp
        (and (#{301 302 307} status) (#{:get :head} request-method))
        (follow-redirect client req resp)
        (and (= 303 status) (= :head request-method))
