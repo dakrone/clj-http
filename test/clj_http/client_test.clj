@@ -62,6 +62,12 @@
     (is (= 200 (:status resp)))
     (is (= "ok" (:body resp)))))
 
+(deftest pass-on-follow-redirects-false
+  (let [client (fn [req] {:status 302 :body (:body req)})
+        r-client (client/wrap-redirects client)
+        resp (r-client {:body "ok" :follow-redirects false})]
+    (is (= 302 (:status resp)))
+    (is (= "ok" (:body resp)))))
 
 (deftest throw-on-exceptional
   (let [client (fn [req] {:status 500})
