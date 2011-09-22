@@ -11,6 +11,14 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2011-09-22
+   - merged https://github.com/dakrone/clj-http/pull/5 to fix
+     decompression
+** 2011-09-21
+   - added ability to turn off redirects with {:follow-redirects
+     false} in the request
+** 2011-09-18
+   - merged https://github.com/dakrone/clj-http/pull/2 to fix redirects
 ** 2011-09-08
    - merged https://github.com/dakrone/clj-http/pull/1 for decoding
      cookies in responses
