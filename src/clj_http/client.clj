@@ -162,6 +162,15 @@
                   (assoc :request-method m)))
       (client req))))
 
+(defn wrap-form-params [client]
+  (fn [{:keys (form-params) :as req}]
+    (if form-params
+      (client (-> req
+                  (dissoc :form-params)
+                  (assoc :content-type (content-type-value :x-www-form-urlencoded)
+                          :body (generate-query-string form-params))))
+      (client req))))
+
 (defn wrap-url [client]
   (fn [req]
     (if-let [url (:url req)]
@@ -185,6 +194,7 @@
       wrap-accept
       wrap-accept-encoding
       wrap-content-type
+      wrap-form-params
       wrap-method
       wrap-cookies))
 
