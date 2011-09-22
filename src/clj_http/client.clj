@@ -60,7 +60,8 @@
       (client req)
       (let [req-c (update req :headers assoc "Accept-Encoding" "gzip, deflate")
             resp-c (client req-c)]
-        (case (get-in resp-c [:headers "Content-Encoding"])
+        (case (or (get-in resp-c [:headers "Content-Encoding"])
+                  (get-in resp-c [:headers "content-encoding"]))
           "gzip"
           (update resp-c :body util/gunzip)
           "deflate"
