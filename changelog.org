@@ -28,3 +28,6 @@
    - updated dependencies
    - merged jou4's branch to allow proxy usage
    - merged zkim's branch for specifying timeouts
+
+* TODO
+** multi-part POSTs (2 people have requested this)
