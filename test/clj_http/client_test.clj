@@ -83,15 +83,19 @@
 
 
 (deftest apply-on-compressed
-  (let [client (fn [req] {:body (util/gzip (util/utf8-bytes "foofoofoo"))
-                          :headers {"Content-Encoding" "gzip"}})
+  (let [client (fn [req]
+                 (is (= "gzip, deflate" (get-in req [:headers "Accept-Encoding"])))
+                 {:body (util/gzip (util/utf8-bytes "foofoofoo"))
+                  :headers {"Content-Encoding" "gzip"}})
         c-client (client/wrap-decompression client)
         resp (c-client {})]
     (is (= "foofoofoo" (util/utf8-string (:body resp))))))
 
 (deftest apply-on-deflated
-  (let [client (fn [req] {:body (util/deflate (util/utf8-bytes "barbarbar"))
-                          :headers {"Content-Encoding" "deflate"}})
+  (let [client (fn [req]
+                 (is (= "gzip, deflate" (get-in req [:headers "Accept-Encoding"])))
+                 {:body (util/deflate (util/utf8-bytes "barbarbar"))
+                  :headers {"Content-Encoding" "deflate"}})
         c-client (client/wrap-decompression client)
         resp (c-client {})]
     (is (= "barbarbar" (util/utf8-string (:body resp))))))
