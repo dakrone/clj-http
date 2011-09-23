@@ -227,11 +227,20 @@
 (deftest apply-on-form-params
   (testing "With form params"
     (let [param-client (client/wrap-form-params identity)
-          resp (param-client {:form-params {:param1 "value1"
+          resp (param-client {:request-method :post
+                              :form-params {:param1 "value1"
                                             :param2 "value2"}})]
       (is (= "param1=value1&param2=value2" (:body resp)))
       (is (= "application/x-www-form-urlencoded" (:content-type resp)))
       (is (not (contains? resp :form-params)))))
+  (testing "Ensure it does not affect GET requests"
+    (let [param-client (client/wrap-form-params identity)
+          resp (param-client {:request-method :get
+                              :body "untouched"
+                              :form-params {:param1 "value1"
+                                            :param2 "value2"}})]
+      (is (= "untouched" (:body resp)))
+      (is (not (contains? resp :content-type)))))
   
   (testing "with no form params"
     (let [param-client (client/wrap-form-params identity)
