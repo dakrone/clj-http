@@ -1,5 +1,14 @@
 * Changelog
   List of changes that have gone into each release
+** 0.2.1
+   - decode cookies from response into :cookies (thanks r0man)
+   - redone redirects, they can now be toggled with {:follow-redirects
+     false} in the request
+   - decompression of responses has been fixed (thanks senior)
+   - accept Content-Encoding or content-encoding from responses
+     (thanks senior)
+   - added ability to specify sending a url-encoded :body of form
+     params using {:form-params {:key value}} (thanks senior)
 ** 0.2.0
    - updated dependencies to be the latest versions
    - added ability to use system proxy for connections (thanks jou4)
@@ -11,6 +20,13 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2011-09-23
+   - merged https://github.com/dakrone/clj-http/pull/7 to accept both
+     Content-Encoding and content-encoding, since ring uses the
+     lowercase version
+   - merged https://github.com/dakrone/clj-http/pull/6 to allow for
+     sending form params with :form-params as a urlencoded body on
+     POST requests
 ** 2011-09-22
    - merged https://github.com/dakrone/clj-http/pull/5 to fix
      decompression

@@ -55,6 +55,9 @@ More example requests:
 
 ;; If you don't want to follow-redirects automatically:
 (client/get "http://site.come/redirects-somewhere" {:follow-redirects false})
+
+;; Send form params as a urlencoded body
+(client/post "http//site.com" {:form-params {:foo "bar"}})
 ```
 
 A more general `request` function is also available, which is useful
