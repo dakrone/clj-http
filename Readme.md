@@ -91,12 +91,16 @@ scheme used (normally 'http' or 'https').
 `clj-http` is available as a Maven artifact from
 [Clojars](http://clojars.org/clj-http):
 
-    [clj-http "0.2.1"]
+```clojure
+[clj-http "0.2.1"]
+```
 
 Previous versions available as
 
-    [clj-http "0.2.0"]
-    [clj-http "0.1.3"]
+```clojure
+[clj-http "0.2.0"]
+[clj-http "0.1.3"]
+```
 
 ## Design
 
