@@ -7,6 +7,7 @@
            (org.apache.http.util EntityUtils)
            (org.apache.http.entity ByteArrayEntity)
            (org.apache.http.entity.mime MultipartEntity)
+           (org.apache.http.entity.mime.content ByteArrayBody)
            (org.apache.http.client HttpClient)
            (org.apache.http.client.methods HttpGet HttpHead HttpPut
                                            HttpPost HttpDelete
@@ -96,7 +97,7 @@
         (if multipart
           (let [mp-entity (MultipartEntity.)]
             (doseq [[k v] multipart]
-              (.addPart mp-entity (name k) v))
+              (.addPart mp-entity (name k) (ByteArrayBody. v (name k))))
             (.setEntity #^HttpEntityEnclosingRequest http-req mp-entity))
           (when body
             (let [http-body (ByteArrayEntity. body)]
