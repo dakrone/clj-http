@@ -166,12 +166,12 @@
       (client req))))
 
 (defn wrap-form-params [client]
-  (fn [{:keys (form-params request-method) :as req}]
+  (fn [{:keys [form-params request-method] :as req}]
     (if (and form-params (= :post request-method))
       (client (-> req
                   (dissoc :form-params)
                   (assoc :content-type (content-type-value :x-www-form-urlencoded)
-                          :body (generate-query-string form-params))))
+                         :body (generate-query-string form-params))))
       (client req))))
 
 (defn wrap-url [client]
