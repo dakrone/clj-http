@@ -1,13 +1,17 @@
 (ns clj-http.core
   "Core HTTP request/response implementation."
   (:require [clojure.pprint])
-  (:import (java.net URI)
+  (:import (java.io File InputStream)
+           (java.net URI)
            (org.apache.http HttpRequest HttpEntityEnclosingRequest
                             HttpResponse Header HttpHost)
            (org.apache.http.util EntityUtils)
            (org.apache.http.entity ByteArrayEntity)
            (org.apache.http.entity.mime MultipartEntity)
-           (org.apache.http.entity.mime.content ByteArrayBody)
+           (org.apache.http.entity.mime.content ByteArrayBody
+                                                FileBody
+                                                InputStreamBody
+                                                StringBody)
            (org.apache.http.client HttpClient)
            (org.apache.http.client.methods HttpGet HttpHead HttpPut
                                            HttpPost HttpDelete
@@ -49,6 +53,29 @@
   (if insecure?
     (SingleClientConnManager. insecure-scheme-registry)
     (SingleClientConnManager.)))
+
+(defn- create-multipart-entity
+  "Takes a multipart map and creates a MultipartEntity with each key/val pair
+   added as a part, determining part type by the val type."
+  [multipart]
+  (let [mp-entity (MultipartEntity.)]
+    (doseq [[k v] multipart]
+      (let [klass (type v)
+            filename (name k)
+            part (cond
+                  (= klass File)
+                  (FileBody. v filename)
+
+                  (= klass InputStream)
+                  (InputStreamBody. v filename)
+
+                  (= klass (type (byte-array 0)))
+                  (ByteArrayBody. v filename)
+
+                  (= klass String)
+                  (StringBody. v))]
+        (.addPart mp-entity filename part)))
+    mp-entity))
 
 (defn request
   "Executes the HTTP request corresponding to the given Ring request map and
@@ -98,7 +125,8 @@
           (let [mp-entity (MultipartEntity.)]
             (doseq [[k v] multipart]
               (.addPart mp-entity (name k) (ByteArrayBody. v (name k))))
-            (.setEntity #^HttpEntityEnclosingRequest http-req mp-entity))
+            (.setEntity #^HttpEntityEnclosingRequest http-req
+                        (create-multipart-entity multipart)))
           (when body
             (let [http-body (ByteArrayEntity. body)]
               (.setEntity #^HttpEntityEnclosingRequest http-req http-body))))
