@@ -96,7 +96,7 @@
                           (and socket-timeout (Integer. socket-timeout)))
         (set-client-param "http.connection.timeout"
                           (and conn-timeout (Integer. conn-timeout))))
-      (when (nil? (#{"localhost" "127.0.0.1"} server-name))
+      (when-not (#{"localhost" "127.0.0.1"} server-name)
         (when-let [proxy-host (System/getProperty (str scheme ".proxyHost"))]
           (let [proxy-port (Integer/parseInt
                             (System/getProperty (str scheme ".proxyPort")))]
