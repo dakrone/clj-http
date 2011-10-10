@@ -7,6 +7,10 @@
   :multi-deps {"1.2.1" [[org.clojure/clojure "1.2.1"]
                       [org.apache.httpcomponents/httpclient "4.1.2"]
                       [commons-codec "1.5"]
+                      [commons-io "1.4"]]
+               "1.4.0" [[org.clojure/clojure "1.4.0-alpha1"]
+                      [org.apache.httpcomponents/httpclient "4.1.2"]
+                      [commons-codec "1.5"]
                       [commons-io "1.4"]]}
   :dev-dependencies [[swank-clojure "1.3.2"]
                      [ring/ring-jetty-adapter "0.3.11"]
