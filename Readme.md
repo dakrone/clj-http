@@ -69,12 +69,28 @@ as a primitive for building higher-level interfaces:
     (merge {:method method :url (str "http://site.com/" path)} opts)))
 ```
 
-The client will throw exceptions on, well, exceptional status codes:
+The client will throw exceptions on, well, exceptional status
+codes. clj-http will throw a
+[Slingshot](http://github.com/scgilardi/slingshot) Stone that can be
+caught by a regular `(catch Exception e ...)` or in Slingshot's `try+`
+block:
 
 ```clojure
 (client/get "http://site.com/broken")
-=> Exception: 500
+=> Stone Object thrown by throw+: {:status 404, :headers {"server" "nginx/1.0.4",
+                                                          "x-runtime" "12ms",
+                                                          "content-encoding" "gzip",
+                                                          "content-type" "text/html; charset=utf-8",
+                                                          "date" "Mon, 17 Oct 2011 23:15 :36 GMT",
+                                                          "cache-control" "no-cache",
+                                                          "status" "404 Not Found",
+                                                          "transfer-encoding" "chunked",
+                                                          "connection" "close"},
+                                   :body "...body here..."}
+   clj-http.client/wrap-exceptions/fn--227 (client.clj:37)
 ````
+(spacing added by me to be human readable)
+
 
 The client will also follow redirects on the appropriate `30*` status
 codes.
@@ -125,7 +141,7 @@ To run the tests:
     Run all tests (including integration):
     $ lein test :all
 
-    Run tests against 1.2.1 and 1.3
+    Run tests against 1.2.1, 1.3 and 1.4
     $ lein multi deps
     $ lein multi test
     $ lein multi test :all
