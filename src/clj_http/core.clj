@@ -37,7 +37,7 @@
    the clj-http uses ByteArrays for the bodies."
   [{:keys [request-method scheme server-name server-port uri query-string
            headers content-type character-encoding body socket-timeout
-           conn-timeout]}]
+           conn-timeout debug] :as req}]
   (let [http-client (DefaultHttpClient.)]
     (try
       (doto http-client
@@ -76,6 +76,11 @@
         (when body
           (let [http-body (ByteArrayEntity. body)]
             (.setEntity #^HttpEntityEnclosingRequest http-req http-body)))
+        (when debug
+          (println "Request:")
+          (clojure.pprint/pprint req)
+          (println "HttpRequest:")
+          (clojure.pprint/pprint (bean http-req)))
         (let [http-resp (.execute http-client http-req)
               http-entity (.getEntity http-resp)
               resp {:status (.getStatusCode (.getStatusLine http-resp))
