@@ -171,7 +171,8 @@
     (if (and form-params (= :post request-method))
       (client (-> req
                   (dissoc :form-params)
-                  (assoc :content-type (content-type-value :x-www-form-urlencoded)
+                  (assoc :content-type (content-type-value
+                                        :x-www-form-urlencoded)
                          :body (generate-query-string form-params))))
       (client req))))
 
@@ -190,10 +191,10 @@
       wrap-user-info
       wrap-url
       wrap-redirects
-      wrap-exceptions
       wrap-decompression
       wrap-input-coercion
       wrap-output-coercion
+      wrap-exceptions
       wrap-basic-auth
       wrap-accept
       wrap-accept-encoding
