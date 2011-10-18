@@ -1,6 +1,7 @@
 (ns clj-http.client
   "Batteries-included HTTP client."
-  (:use [clj-http.cookies :only (wrap-cookies)])
+  (:use [clj-http.cookies :only (wrap-cookies)]
+        [slingshot.core :only [throw+]])
   (:require [clojure.string :as str]
             [clj-http.core :as core]
             [clj-http.util :as util])
@@ -33,7 +34,7 @@
       (if (or (not (clojure.core/get req :throw-exceptions true))
               (unexceptional-status? status))
         resp
-        (throw (Exception. (str status)))))))
+        (throw+ resp)))))
 
 
 (defn follow-redirect [client req resp]
@@ -170,7 +171,8 @@
     (if (and form-params (= :post request-method))
       (client (-> req
                   (dissoc :form-params)
-                  (assoc :content-type (content-type-value :x-www-form-urlencoded)
+                  (assoc :content-type (content-type-value
+                                        :x-www-form-urlencoded)
                          :body (generate-query-string form-params))))
       (client req))))
 
@@ -189,10 +191,10 @@
       wrap-user-info
       wrap-url
       wrap-redirects
-      wrap-exceptions
       wrap-decompression
       wrap-input-coercion
       wrap-output-coercion
+      wrap-exceptions
       wrap-basic-auth
       wrap-accept
       wrap-accept-encoding
