@@ -36,23 +36,27 @@
 (defn gunzip
   "Returns a gunzip'd version of the given byte array."
   [b]
-  (IOUtils/toByteArray (GZIPInputStream. (ByteArrayInputStream. b))))
+  (when b
+    (IOUtils/toByteArray (GZIPInputStream. (ByteArrayInputStream. b)))))
 
 (defn gzip
   "Returns a gzip'd version of the given byte array."
   [b]
-  (let [baos (ByteArrayOutputStream.)
-        gos  (GZIPOutputStream. baos)]
-    (IOUtils/copy (ByteArrayInputStream. b) gos)
-    (.close gos)
-    (.toByteArray baos)))
+  (when b
+    (let [baos (ByteArrayOutputStream.)
+          gos  (GZIPOutputStream. baos)]
+      (IOUtils/copy (ByteArrayInputStream. b) gos)
+      (.close gos)
+      (.toByteArray baos))))
 
 (defn inflate
   "Returns a zlib inflate'd version of the given byte array."
   [b]
-  (IOUtils/toByteArray (InflaterInputStream. (ByteArrayInputStream. b))))
+  (when b
+    (IOUtils/toByteArray (InflaterInputStream. (ByteArrayInputStream. b)))))
 
 (defn deflate
   "Returns a deflate'd version of the given byte array."
   [b]
-  (IOUtils/toByteArray (DeflaterInputStream. (ByteArrayInputStream. b))))
+  (when b
+    (IOUtils/toByteArray (DeflaterInputStream. (ByteArrayInputStream. b)))))
