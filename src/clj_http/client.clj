@@ -1,6 +1,7 @@
 (ns clj-http.client
   "Batteries-included HTTP client."
-  (:use [clj-http.cookies :only (wrap-cookies)])
+  (:use [clj-http.cookies :only (wrap-cookies)]
+        [slingshot.core :only [throw+]])
   (:require [clojure.string :as str]
             [clj-http.core :as core]
             [clj-http.util :as util])
@@ -33,7 +34,7 @@
       (if (or (not (clojure.core/get req :throw-exceptions true))
               (unexceptional-status? status))
         resp
-        (throw (Exception. (str status)))))))
+        (throw+ resp)))))
 
 
 (defn follow-redirect [client req resp]
