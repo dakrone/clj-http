@@ -1,5 +1,12 @@
 * Changelog
   List of changes that have gone into each release
+** 0.2.2
+   - wrap-exceptions now uses Slingshot to throw a much more useful
+     exception when there was a problem with the request
+   - fixed an issue when malformed server responses could NPE the
+     decompression middleware
+   - added a :debug flag to pretty-print the request map and object
+     to stdout before performing the request to aid in debugging
 ** 0.2.1
    - decode cookies from response into :cookies (thanks r0man)
    - redone redirects, they can now be toggled with {:follow-redirects
@@ -20,6 +27,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Release 0.2.2
+** 2011-10-18
+   - added the :debug option to requests
 ** 2011-10-17
    - restarted an exception branch that uses Slingshot to throw a much
      more useful exception
