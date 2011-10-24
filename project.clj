@@ -13,5 +13,4 @@
      [robert/hooke "1.1.0"]]
   :test-selectors {:default  #(not (:integration %))
                    :integration :integration
-                   :all (constantly true)}
-  :main clj-http.core)
+                   :all (constantly true)})
