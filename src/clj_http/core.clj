@@ -1,5 +1,6 @@
 (ns clj-http.core
   "Core HTTP request/response implementation."
+  (:require [clojure.pprint])
   (:import (java.net URI)
            (org.apache.http HttpRequest HttpEntityEnclosingRequest
                             HttpResponse Header HttpHost)
