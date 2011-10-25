@@ -27,6 +27,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2011-10-25
+   - merged https://github.com/dakrone/clj-http/pull/13 to add a
+     require for pprint in core
 ** Release 0.2.2
 ** 2011-10-18
    - added the :debug option to requests
