@@ -1,0 +1,68 @@
+* Changelog
+  List of changes that have gone into each release
+** 0.2.2
+   - wrap-exceptions now uses Slingshot to throw a much more useful
+     exception when there was a problem with the request
+   - fixed an issue when malformed server responses could NPE the
+     decompression middleware
+   - added a :debug flag to pretty-print the request map and object
+     to stdout before performing the request to aid in debugging
+** 0.2.1
+   - decode cookies from response into :cookies (thanks r0man)
+   - redone redirects, they can now be toggled with {:follow-redirects
+     false} in the request
+   - decompression of responses has been fixed (thanks senior)
+   - accept Content-Encoding or content-encoding from responses
+     (thanks senior)
+   - added ability to specify sending a url-encoded :body of form
+     params using {:form-params {:key value}} (thanks senior)
+** 0.2.0
+   - updated dependencies to be the latest versions
+   - added ability to use system proxy for connections (thanks jou4)
+   - added ability to specify socket and connection timeouts in
+     request (thanks zkim)
+** 0.1.3
+   - see: https://github.com/mmcgrana/clj-http
+
+* Work log
+  Log of merges/issues/work that's gone in so I know what to put in
+  the changelog for the next release
+** 2011-10-25
+   - merged https://github.com/dakrone/clj-http/pull/13 to add a
+     require for pprint in core
+** Release 0.2.2
+** 2011-10-18
+   - added the :debug option to requests
+** 2011-10-17
+   - restarted an exception branch that uses Slingshot to throw a much
+     more useful exception
+   - fixed an issue when malformed server responses could NPE the
+     decompression middleware
+** Release 0.2.1
+** 2011-09-23
+   - merged https://github.com/dakrone/clj-http/pull/7 to accept both
+     Content-Encoding and content-encoding, since ring uses the
+     lowercase version
+   - merged https://github.com/dakrone/clj-http/pull/6 to allow for
+     sending form params with :form-params as a urlencoded body on
+     POST requests
+** 2011-09-22
+   - merged https://github.com/dakrone/clj-http/pull/5 to fix
+     decompression
+** 2011-09-21
+   - added ability to turn off redirects with {:follow-redirects
+     false} in the request
+** 2011-09-18
+   - merged https://github.com/dakrone/clj-http/pull/2 to fix redirects
+** 2011-09-08
+   - merged https://github.com/dakrone/clj-http/pull/1 for decoding
+     cookies in responses
+** Release 0.2.0
+** 2011-09-07
+   - took over maintenance from Mark
+   - updated dependencies
+   - merged jou4's branch to allow proxy usage
+   - merged zkim's branch for specifying timeouts
+
+* TODO
+** multi-part POSTs (2 people have requested this)

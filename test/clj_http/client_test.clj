@@ -1,8 +1,8 @@
 (ns clj-http.client-test
-  (:use clojure.test)
-  (:use [clj-http.core-test :only [run-server]] )
-  (:require [clj-http.client :as client])
-  (:require [clj-http.util :as util])
+  (:use [clojure.test]
+        [clj-http.core-test :only [run-server]])
+  (:require [clj-http.client :as client]
+            [clj-http.util :as util])
   (:import (java.util Arrays)))
 
 (def base-req
@@ -34,7 +34,7 @@
                     :headers {"location" "http://bar.com/bat"}}
                    {:status 200
                     :req req}))
-        r-client (client/wrap-redirects client)
+        r-client (-> client client/wrap-url client/wrap-redirects)
         resp (r-client {:server-name "foo.com" :request-method :get})]
     (is (= 200 (:status resp)))
     (is (= :get (:request-method (:req resp))))
@@ -48,7 +48,7 @@
                     :headers {"location" "http://bar.com/bat"}}
                    {:status 200
                     :req req}))
-        r-client (client/wrap-redirects client)
+        r-client (-> client client/wrap-url client/wrap-redirects)
         resp (r-client {:server-name "foo.com" :request-method :head})]
     (is (= 200 (:status resp)))
     (is (= :get (:request-method (:req resp))))
@@ -62,12 +62,18 @@
     (is (= 200 (:status resp)))
     (is (= "ok" (:body resp)))))
 
+(deftest pass-on-follow-redirects-false
+  (let [client (fn [req] {:status 302 :body (:body req)})
+        r-client (client/wrap-redirects client)
+        resp (r-client {:body "ok" :follow-redirects false})]
+    (is (= 302 (:status resp)))
+    (is (= "ok" (:body resp)))))
 
 (deftest throw-on-exceptional
   (let [client (fn [req] {:status 500})
         e-client (client/wrap-exceptions client)]
     (is (thrown-with-msg? Exception #"500"
-      (e-client {})))))
+          (e-client {})))))
 
 (deftest pass-on-non-exceptional
   (let [client (fn [req] {:status 200})
@@ -83,15 +89,19 @@
 
 
 (deftest apply-on-compressed
-  (let [client (fn [req] {:body (util/gzip (util/utf8-bytes "foofoofoo"))
-                          :headers {"Content-Encoding" "gzip"}})
+  (let [client (fn [req]
+                 (is (= "gzip, deflate" (get-in req [:headers "Accept-Encoding"])))
+                 {:body (util/gzip (util/utf8-bytes "foofoofoo"))
+                  :headers {"Content-Encoding" "gzip"}})
         c-client (client/wrap-decompression client)
         resp (c-client {})]
     (is (= "foofoofoo" (util/utf8-string (:body resp))))))
 
 (deftest apply-on-deflated
-  (let [client (fn [req] {:body (util/deflate (util/utf8-bytes "barbarbar"))
-                          :headers {"Content-Encoding" "deflate"}})
+  (let [client (fn [req]
+                 (is (= "gzip, deflate" (get-in req [:headers "Accept-Encoding"])))
+                 {:body (util/deflate (util/utf8-bytes "barbarbar"))
+                  :headers {"Content-Encoding" "deflate"}})
         c-client (client/wrap-decompression client)
         resp (c-client {})]
     (is (= "barbarbar" (util/utf8-string (:body resp))))))
@@ -104,22 +114,22 @@
 
 (deftest apply-on-accept
   (is-applied client/wrap-accept
-    {:accept :json}
-    {:headers {"Accept" "application/json"}}))
+              {:accept :json}
+              {:headers {"Accept" "application/json"}}))
 
 (deftest pass-on-no-accept
   (is-passed client/wrap-accept
-    {:uri "/foo"}))
+             {:uri "/foo"}))
 
 
 (deftest apply-on-accept-encoding
   (is-applied client/wrap-accept-encoding
-    {:accept-encoding [:identity :gzip]}
-    {:headers {"Accept-Encoding" "identity, gzip"}}))
+              {:accept-encoding [:identity :gzip]}
+              {:headers {"Accept-Encoding" "identity, gzip"}}))
 
 (deftest pass-on-no-accept-encoding
   (is-passed client/wrap-accept-encoding
-    {:uri "/foo"}))
+             {:uri "/foo"}))
 
 
 (deftest apply-on-output-coercion
@@ -147,37 +157,38 @@
 
 (deftest pass-on-no-input-coercion
   (is-passed client/wrap-input-coercion
-    {:body (util/utf8-bytes "foo")}))
+             {:body (util/utf8-bytes "foo")}))
 
 
 (deftest apply-on-content-type
   (is-applied client/wrap-content-type
-    {:content-type :json}
-    {:content-type "application/json"}))
+              {:content-type :json}
+              {:content-type "application/json"}))
 
 (deftest pass-on-no-content-type
   (is-passed client/wrap-content-type
-    {:uri "/foo"}))
+             {:uri "/foo"}))
 
 
 (deftest apply-on-query-params
   (is-applied client/wrap-query-params
-    {:query-params {"foo" "bar" "dir" "<<"}}
-    {:query-string "foo=bar&dir=%3C%3C"}))
+              {:query-params {"foo" "bar" "dir" "<<"}}
+              {:query-string "foo=bar&dir=%3C%3C"}))
 
 (deftest pass-on-no-query-params
   (is-passed client/wrap-query-params
-    {:uri "/foo"}))
+             {:uri "/foo"}))
 
 
 (deftest apply-on-basic-auth
   (is-applied client/wrap-basic-auth
-    {:basic-auth ["Aladdin" "open sesame"]}
-    {:headers {"Authorization" "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="}}))
+              {:basic-auth ["Aladdin" "open sesame"]}
+              {:headers {"Authorization"
+                         "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="}}))
 
 (deftest pass-on-no-basic-auth
   (is-passed client/wrap-basic-auth
-    {:uri "/foo"}))
+             {:uri "/foo"}))
 
 
 (deftest apply-on-method
@@ -192,7 +203,6 @@
         echo (m-client {:key :val})]
     (is (= :val (:key echo)))
     (is (not (:request-method echo)))))
-
 
 (deftest apply-on-url
   (let [u-client (client/wrap-url identity)
@@ -213,3 +223,27 @@
   (is (= 8080 (-> "http://example.com:8080/" client/parse-url :server-port)))
   (is (= 443  (-> "https://example.com/" client/parse-url :server-port)))
   (is (= 8443 (-> "https://example.com:8443/" client/parse-url :server-port))))
+
+(deftest apply-on-form-params
+  (testing "With form params"
+    (let [param-client (client/wrap-form-params identity)
+          resp (param-client {:request-method :post
+                              :form-params {:param1 "value1"
+                                            :param2 "value2"}})]
+      (is (= "param1=value1&param2=value2" (:body resp)))
+      (is (= "application/x-www-form-urlencoded" (:content-type resp)))
+      (is (not (contains? resp :form-params)))))
+  (testing "Ensure it does not affect GET requests"
+    (let [param-client (client/wrap-form-params identity)
+          resp (param-client {:request-method :get
+                              :body "untouched"
+                              :form-params {:param1 "value1"
+                                            :param2 "value2"}})]
+      (is (= "untouched" (:body resp)))
+      (is (not (contains? resp :content-type)))))
+  
+  (testing "with no form params"
+    (let [param-client (client/wrap-form-params identity)
+          resp (param-client {:body "untouched"})]
+      (is (= "untouched" (:body resp)))
+      (is (not (contains? resp :content-type))))))

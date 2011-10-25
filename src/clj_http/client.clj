@@ -1,9 +1,11 @@
 (ns clj-http.client
   "Batteries-included HTTP client."
+  (:use [clj-http.cookies :only (wrap-cookies)]
+        [slingshot.core :only [throw+]])
+  (:require [clojure.string :as str]
+            [clj-http.core :as core]
+            [clj-http.util :as util])
   (:import (java.net URL))
-  (:require [clojure.string :as str])
-  (:require [clj-http.core :as core])
-  (:require [clj-http.util :as util])
   (:refer-clojure :exclude (get)))
 
 (defn update [m k f & args]
@@ -17,7 +19,7 @@
     {:scheme (.getProtocol url-parsed)
      :server-name (.getHost url-parsed)
      :server-port (or (if-pos (.getPort url-parsed))
-		      (if (= "https" (.getProtocol url-parsed))	443 80))
+                      (if (= "https" (.getProtocol url-parsed)) 443 80))
      :uri (.getPath url-parsed)
      :user-info (.getUserInfo url-parsed)
      :query-string (.getQuery url-parsed)}))
@@ -32,23 +34,25 @@
       (if (or (not (clojure.core/get req :throw-exceptions true))
               (unexceptional-status? status))
         resp
-        (throw (Exception. (str status)))))))
+        (throw+ resp)))))
 
 
 (defn follow-redirect [client req resp]
   (let [url (get-in resp [:headers "location"])]
-    (client (merge req (parse-url url)))))
+    (client (assoc req :url url))))
 
 (defn wrap-redirects [client]
-  (fn [{:keys [request-method] :as req}]
+  (fn [{:keys [request-method follow-redirects] :as req}]
     (let [{:keys [status] :as resp} (client req)]
       (cond
-        (and (#{301 302 307} status) (#{:get :head} request-method))
-          (follow-redirect client req resp)
-        (and (= 303 status) (= :head request-method))
-          (follow-redirect client (assoc req :request-method :get) resp)
-        :else
-          resp))))
+       (= false follow-redirects)
+       resp
+       (and (#{301 302 307} status) (#{:get :head} request-method))
+       (follow-redirect client req resp)
+       (and (= 303 status) (= :head request-method))
+       (follow-redirect client (assoc req :request-method :get) resp)
+       :else
+       resp))))
 
 
 (defn wrap-decompression [client]
@@ -56,12 +60,13 @@
     (if (get-in req [:headers "Accept-Encoding"])
       (client req)
       (let [req-c (update req :headers assoc "Accept-Encoding" "gzip, deflate")
-            resp-c (client req)]
-        (case (get-in resp-c [:headers "Content-Encoding"])
+            resp-c (client req-c)]
+        (case (or (get-in resp-c [:headers "Content-Encoding"])
+                  (get-in resp-c [:headers "content-encoding"]))
           "gzip"
-            (update resp-c :body util/gunzip)
+          (update resp-c :body util/gunzip)
           "deflate"
-            (update resp-c :body util/inflate)
+          (update resp-c :body util/inflate)
           resp-c)))))
 
 
@@ -69,10 +74,10 @@
   (fn [{:keys [as] :as req}]
     (let [{:keys [body] :as resp} (client req)]
       (cond
-        (or (nil? body) (= :byte-array as))
-          resp
-        (nil? as)
-          (assoc resp :body (String. #^"[B" body "UTF-8"))))))
+       (or (nil? body) (= :byte-array as))
+       resp
+       (nil? as)
+       (assoc resp :body (String. #^"[B" body "UTF-8"))))))
 
 
 (defn wrap-input-coercion [client]
@@ -100,8 +105,8 @@
   (fn [{:keys [accept] :as req}]
     (if accept
       (client (-> req (dissoc :accept)
-                      (assoc-in [:headers "Accept"]
-                        (content-type-value accept))))
+                  (assoc-in [:headers "Accept"]
+                            (content-type-value accept))))
       (client req))))
 
 
@@ -112,23 +117,23 @@
   (fn [{:keys [accept-encoding] :as req}]
     (if accept-encoding
       (client (-> req (dissoc :accept-encoding)
-                      (assoc-in [:headers "Accept-Encoding"]
-                        (accept-encoding-value accept-encoding))))
+                  (assoc-in [:headers "Accept-Encoding"]
+                            (accept-encoding-value accept-encoding))))
       (client req))))
 
 
 (defn generate-query-string [params]
   (str/join "&"
-    (map (fn [[k v]] (str (util/url-encode (name k)) "="
-                          (util/url-encode (str v))))
-         params)))
+            (map (fn [[k v]] (str (util/url-encode (name k)) "="
+                                  (util/url-encode (str v))))
+                 params)))
 
 (defn wrap-query-params [client]
   (fn [{:keys [query-params] :as req}]
     (if query-params
       (client (-> req (dissoc :query-params)
-                      (assoc :query-string
-                             (generate-query-string query-params))))
+                  (assoc :query-string
+                    (generate-query-string query-params))))
       (client req))))
 
 
@@ -140,8 +145,8 @@
   (fn [req]
     (if-let [[user password] (:basic-auth req)]
       (client (-> req (dissoc :basic-auth)
-                      (assoc-in [:headers "Authorization"]
-                        (basic-auth-value user password))))
+                  (assoc-in [:headers "Authorization"]
+                            (basic-auth-value user password))))
       (client req))))
 
 (defn parse-user-info [user-info]
@@ -158,7 +163,17 @@
   (fn [req]
     (if-let [m (:method req)]
       (client (-> req (dissoc :method)
-                      (assoc :request-method m)))
+                  (assoc :request-method m)))
+      (client req))))
+
+(defn wrap-form-params [client]
+  (fn [{:keys [form-params request-method] :as req}]
+    (if (and form-params (= :post request-method))
+      (client (-> req
+                  (dissoc :form-params)
+                  (assoc :content-type (content-type-value
+                                        :x-www-form-urlencoded)
+                         :body (generate-query-string form-params))))
       (client req))))
 
 (defn wrap-url [client]
@@ -172,23 +187,25 @@
    core client. See client/client."
   [request]
   (-> request
-    wrap-redirects
-    wrap-exceptions
-    wrap-decompression
-    wrap-input-coercion
-    wrap-output-coercion
-    wrap-query-params
-    wrap-basic-auth
-    wrap-user-info
-    wrap-accept
-    wrap-accept-encoding
-    wrap-content-type
-    wrap-method
-    wrap-url))
+      wrap-query-params
+      wrap-user-info
+      wrap-url
+      wrap-redirects
+      wrap-decompression
+      wrap-input-coercion
+      wrap-output-coercion
+      wrap-exceptions
+      wrap-basic-auth
+      wrap-accept
+      wrap-accept-encoding
+      wrap-content-type
+      wrap-form-params
+      wrap-method
+      wrap-cookies))
 
 (def #^{:doc
-  "Executes the HTTP request corresponding to the given map and returns the
-   response map for corresponding to the resulting HTTP response.
+        "Executes the HTTP request corresponding to the given map and returns
+   the response map for corresponding to the resulting HTTP response.
 
    In addition to the standard Ring request keys, the following keys are also
    recognized:

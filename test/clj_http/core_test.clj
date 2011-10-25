@@ -1,26 +1,32 @@
 (ns clj-http.core-test
-  (:use clojure.test)
-  (:require [clojure.pprint :as pp])
-  (:require [clj-http.core :as core])
-  (:require [clj-http.util :as util])
-  (:require [ring.adapter.jetty :as ring]))
+  (:use [clojure.test])
+  (:require [clojure.pprint :as pp]
+            [clj-http.core :as core]
+            [clj-http.util :as util]
+            [ring.adapter.jetty :as ring]))
 
 (defn handler [req]
   (pp/pprint req)
   (println) (println)
   (condp = [(:request-method req) (:uri req)]
     [:get "/get"]
-      {:status 200 :body "get"}
+    {:status 200 :body "get"}
     [:head "/head"]
-      {:status 200}
+    {:status 200}
     [:get "/content-type"]
-      {:status 200 :body (:content-type req)}
+    {:status 200 :body (:content-type req)}
     [:get "/header"]
-      {:status 200 :body (get-in req [:headers "x-my-header"])}
+    {:status 200 :body (get-in req [:headers "x-my-header"])}
     [:post "/post"]
-      {:status 200 :body (slurp (:body req))}
+    {:status 200 :body (slurp (:body req))}
     [:get "/error"]
-      {:status 500 :body "o noes"}))
+    {:status 500 :body "o noes"}
+    [:get "/timeout"]
+    (do
+      (Thread/sleep 10)
+      {:status 200 :body "timeout"})
+    [:delete "/delete-with-body"]
+    {:status 200 :body "delete-with-body"}))
 
 (defn run-server
   []
@@ -84,3 +90,17 @@
   (run-server)
   (let [resp (request {:request-method :get :uri "/error"})]
     (is (= 500 (:status resp)))))
+
+(deftest ^{:integration true} sets-socket-timeout
+  (run-server)
+  (try
+    (request {:request-method :get :uri "/timeout" :socket-timeout 1})
+    (throw (Exception. "Shouldn't get here."))
+    (catch Exception e
+      (is (= java.net.SocketTimeoutException (class e))))))
+
+(deftest ^{:integration true} delete-with-body
+  (run-server)
+  (let [resp (request {:request-method :delete :uri "/delete-with-body"
+                       :body (.getBytes "foo bar")})]
+    (is (= 200 (:status resp)))))
