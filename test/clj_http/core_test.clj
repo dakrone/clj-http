@@ -104,5 +104,3 @@
   (let [resp (request {:request-method :delete :uri "/delete-with-body"
                        :body (.getBytes "foo bar")})]
     (is (= 200 (:status resp)))))
-
-

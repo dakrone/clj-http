@@ -19,6 +19,7 @@
                      [ring/ring-jetty-adapter "0.3.11"]
                      [ring/ring-devel "0.3.11"]
                      [lein-multi "1.0.0"]]
+  :main clj-http.core
   :test-selectors {:default  #(not (:integration %))
                    :integration :integration
                    :all (constantly true)})
