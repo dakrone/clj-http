@@ -10,6 +10,9 @@
                                            HttpPost HttpDelete
                                            HttpEntityEnclosingRequestBase)
            (org.apache.http.client.params CookiePolicy ClientPNames)
+           (org.apache.http.conn.scheme SchemeRegistry Scheme)
+           (org.apache.http.impl.conn.tsccm ThreadSafeClientConnManager)
+           (org.apache.http.conn.ssl SSLSocketFactory TrustStrategy)
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.conn.params ConnRoutePNames)))
 
@@ -29,6 +32,17 @@
     (.setURI res (URI. url))
     res))
 
+(def insecure-socket-factory
+  (SSLSocketFactory. (reify TrustStrategy
+                       (isTrusted [_ _ _] true))))
+
+(def insecure-connection-manager
+  (ThreadSafeClientConnManager.
+   (doto (SchemeRegistry.)
+     (.register (Scheme. "https" insecure-socket-factory 443)))))
+
+(def connection-manager (ThreadSafeClientConnManager.))
+
 (defn request
   "Executes the HTTP request corresponding to the given Ring request map and
    returns the Ring response map corresponding to the resulting HTTP response.
@@ -37,8 +51,10 @@
    the clj-http uses ByteArrays for the bodies."
   [{:keys [request-method scheme server-name server-port uri query-string
            headers content-type character-encoding body socket-timeout
-           conn-timeout debug] :as req}]
-  (let [http-client (DefaultHttpClient.)]
+           conn-timeout debug insecure?] :as req}]
+  (let [http-client (if insecure?
+                      (DefaultHttpClient. insecure-connection-manager)
+                      (DefaultHttpClient.))]
     (try
       (doto http-client
         (set-client-param ClientPNames/COOKIE_POLICY

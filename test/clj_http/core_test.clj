@@ -105,4 +105,13 @@
                        :body (.getBytes "foo bar")})]
     (is (= 200 (:status resp)))))
 
-
+(deftest ^{:integration true} self-signed-ssl-get
+  (let [t (doto (Thread. #(ring/run-jetty handler
+                                          {:port 18081 :ssl? true})) .start)]
+    (try
+      (let [resp (request {:request-method :get :uri "/get"
+                           :scheme "https" :insecure? true})]
+        (is (= 200 (:status resp)))
+        (is (= "get" (slurp-body resp))))
+      (finally
+       (.stop t)))))
