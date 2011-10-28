@@ -11,7 +11,7 @@
                                            HttpEntityEnclosingRequestBase)
            (org.apache.http.client.params CookiePolicy ClientPNames)
            (org.apache.http.conn.scheme SchemeRegistry Scheme)
-           (org.apache.http.impl.conn.tsccm ThreadSafeClientConnManager)
+           (org.apache.http.impl.conn SingleClientConnManager)
            (org.apache.http.conn.ssl SSLSocketFactory TrustStrategy)
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.conn.params ConnRoutePNames)))
@@ -32,18 +32,20 @@
     (.setURI res (URI. url))
     res))
 
-(def insecure-socket-factory
+(def ^{:private true} insecure-socket-factory
   (doto (SSLSocketFactory. (reify TrustStrategy
                              (isTrusted [_ _ _] true)))
-    ;; TODO: should this be controlled by a separate flag?
     (.setHostnameVerifier SSLSocketFactory/ALLOW_ALL_HOSTNAME_VERIFIER)))
 
-(def insecure-connection-manager
-  (ThreadSafeClientConnManager.
-   (doto (SchemeRegistry.)
-     (.register (Scheme. "https" insecure-socket-factory 443)))))
+(def ^{:private true} insecure-scheme-registry
+  (doto (SchemeRegistry.)
+    (.register (Scheme. "https" insecure-socket-factory 443))))
 
-(def connection-manager (ThreadSafeClientConnManager.))
+;; TODO: allow re-use of ThreadSafeClientConnManager
+(defn- connection-manager [& [insecure?]]
+  (if insecure?
+    (SingleClientConnManager. insecure-scheme-registry)
+    (SingleClientConnManager.)))
 
 (defn request
   "Executes the HTTP request corresponding to the given Ring request map and
@@ -54,9 +56,7 @@
   [{:keys [request-method scheme server-name server-port uri query-string
            headers content-type character-encoding body socket-timeout
            conn-timeout debug insecure?] :as req}]
-  (let [http-client (if insecure?
-                      (DefaultHttpClient. insecure-connection-manager)
-                      (DefaultHttpClient.))]
+  (let [http-client (DefaultHttpClient. (connection-manager insecure?))]
     (try
       (doto http-client
         (set-client-param ClientPNames/COOKIE_POLICY
