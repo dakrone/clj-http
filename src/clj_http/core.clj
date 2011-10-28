@@ -33,8 +33,10 @@
     res))
 
 (def insecure-socket-factory
-  (SSLSocketFactory. (reify TrustStrategy
-                       (isTrusted [_ _ _] true))))
+  (doto (SSLSocketFactory. (reify TrustStrategy
+                             (isTrusted [_ _ _] true)))
+    ;; TODO: should this be controlled by a separate flag?
+    (.setHostnameVerifier SSLSocketFactory/ALLOW_ALL_HOSTNAME_VERIFIER)))
 
 (def insecure-connection-manager
   (ThreadSafeClientConnManager.
