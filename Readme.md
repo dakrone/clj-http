@@ -53,6 +53,9 @@ More example requests:
    :conn-timeout 1000
    :accept :json})
 
+;; Need to contact a server with an untrusted SSL cert?
+(client/get "https://alioth.debian.org" {:insecure? true})
+
 ;; If you don't want to follow-redirects automatically:
 (client/get "http://site.come/redirects-somewhere" {:follow-redirects false})
 
