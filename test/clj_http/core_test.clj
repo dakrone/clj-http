@@ -107,9 +107,14 @@
 
 (deftest ^{:integration true} self-signed-ssl-get
   (let [t (doto (Thread. #(ring/run-jetty handler
-                                          {:port 18081 :ssl? true})) .start)]
+                                          {:port 8081 :ssl-port 18082 :ssl? true
+                                           :keystore "test-resources/keystore"
+                                           :key-password "keykey"})) .start)]
     (try
-      (let [resp (request {:request-method :get :uri "/get"
+      (is (thrown? javax.net.ssl.SSLPeerUnverifiedException
+                   (request {:request-method :get :uri "/get"
+                             :server-port 18082 :scheme "https"})))
+      (let [resp (request {:request-method :get :uri "/get" :server-port 18082
                            :scheme "https" :insecure? true})]
         (is (= 200 (:status resp)))
         (is (= "get" (slurp-body resp))))
