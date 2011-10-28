@@ -91,6 +91,9 @@ block:
                                                           "connection" "close"},
                                    :body "...body here..."}
    clj-http.client/wrap-exceptions/fn--227 (client.clj:37)
+
+;; You can also ignore exceptions and handle them yourself:
+(client/get "http://site.com/broken" {:throw-exceptions false})
 ````
 (spacing added by me to be human readable)
 
