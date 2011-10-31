@@ -2,7 +2,7 @@
   (:use [clj-http.util :only [url-decode url-encode]]
         [clojure.string :only [blank? join lower-case]])
   (:import (org.apache.http.client.params ClientPNames CookiePolicy)
-           (org.apache.http.cookie CookieOrigin)
+           (org.apache.http.cookie ClientCookie CookieOrigin)
            (org.apache.http.params BasicHttpParams)
            (org.apache.http.impl.cookie BasicClientCookie2)
            (org.apache.http.impl.cookie BrowserCompatSpecFactory)
@@ -25,7 +25,7 @@
   "Converts a ClientCookie object into a tuple where the first item is
   the name of the cookie and the second item the content of the
   cookie."
-  [cookie]
+  [#^ClientCookie cookie]
   [(.getName cookie)
    (compact-map
     {:comment (.getComment cookie)
