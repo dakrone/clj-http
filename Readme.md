@@ -1,6 +1,7 @@
 # `clj-http`
 
-A Clojure HTTP library wrapping the [Apache HttpComponents](http://hc.apache.org/) client.
+A Clojure HTTP library wrapping the [Apache
+HttpComponents](http://hc.apache.org/) client.
 
 This library has taken over from mmcgrana's clj-http. Please send a
 pull request or open an issue if you have any problems
@@ -107,6 +108,12 @@ The client transparently accepts and decompresses the `gzip` and
 A proxy can be specified by setting the Java properties:
 `<scheme>.proxyHost` and `<scheme>.proxyPort` where `<scheme>` is the client
 scheme used (normally 'http' or 'https').
+
+## Faking clj-http responses
+
+If you need to fake clj-http responses (for things like testing and
+such), check out the
+[clj-http-fake](https://github.com/myfreeweb/clj-http-fake) library.
 
 ## Installation
 
