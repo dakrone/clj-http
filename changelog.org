@@ -1,5 +1,9 @@
 * Changelog
   List of changes that have gone into each release
+** 0.2.3
+   - added :insecure? flag
+   - fix AOT by requiring clojure.pprint
+   - wrap-redirects now handles recursive redirects
 ** 0.2.2
    - wrap-exceptions now uses Slingshot to throw a much more useful
      exception when there was a problem with the request
@@ -27,6 +31,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Release 0.2.3
 ** 2011-10-31
    - changed wrap-redirects to recursively handle redirects instead of
      only redirecting one-level down
