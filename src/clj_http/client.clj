@@ -36,10 +36,11 @@
         resp
         (throw+ resp)))))
 
+(declare wrap-redirects)
 
 (defn follow-redirect [client req resp]
   (let [url (get-in resp [:headers "location"])]
-    (client (assoc req :url url))))
+    ((wrap-redirects client) (assoc req :url url))))
 
 (defn wrap-redirects [client]
   (fn [{:keys [request-method follow-redirects] :as req}]

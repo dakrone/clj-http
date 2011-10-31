@@ -27,6 +27,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2011-10-31
+   - changed wrap-redirects to recursively handle redirects instead of
+     only redirecting one-level down
 ** 2011-10-27
    - merged https://github.com/dakrone/clj-http/pull/16 to add
      an :insecure? flag to ignore SSL errors
