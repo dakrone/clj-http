@@ -1,7 +1,7 @@
 (ns clj-http.client
   "Batteries-included HTTP client."
   (:use [clj-http.cookies :only (wrap-cookies)]
-        [slingshot.core :only [throw+]])
+        [slingshot.slingshot :only [throw+]])
   (:require [clojure.string :as str]
             [clj-http.core :as core]
             [clj-http.util :as util])
