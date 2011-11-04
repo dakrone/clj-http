@@ -138,16 +138,18 @@
       (client req))))
 
 
-(defn basic-auth-value [user password]
-  (str "Basic "
-       (util/base64-encode (util/utf8-bytes (str user ":" password)))))
+(defn basic-auth-value [basic-auth]
+  (let [basic-auth (if (string? basic-auth)
+                     basic-auth
+                     (str (first basic-auth) ":" (second basic-auth)))]
+    (str "Basic " (util/base64-encode (util/utf8-bytes basic-auth)))))
 
 (defn wrap-basic-auth [client]
   (fn [req]
-    (if-let [[user password] (:basic-auth req)]
+    (if-let [basic-auth (:basic-auth req)]
       (client (-> req (dissoc :basic-auth)
                   (assoc-in [:headers "Authorization"]
-                            (basic-auth-value user password))))
+                            (basic-auth-value basic-auth))))
       (client req))))
 
 (defn parse-user-info [user-info]
