@@ -40,6 +40,7 @@ More example requests:
 (client/post "http://site.com/resources" {:body "string"})
 
 (client/get "http://site.com/protected" {:basic-auth ["user" "pass"]})
+(client/get "http://site.com/protected" {:basic-auth "user:pass"})
 
 (client/get "http://site.com/search" {:query-params {"q" "foo, bar"}})
 
