@@ -21,4 +21,5 @@
                      [lein-multi "1.0.0"]]
   :test-selectors {:default  #(not (:integration %))
                    :integration :integration
-                   :all (constantly true)})
+                   :all (constantly true)}
+  :checksum-deps true)
