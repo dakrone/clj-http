@@ -31,6 +31,12 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2011-11-07
+   - merged https://github.com/dakrone/clj-http/pull/21 to upgrade
+     slingshot to 0.8.0
+** 2011-11-04
+   - merged https://github.com/dakrone/clj-http/pull/20 to
+     allow :basic-auth as a string
 ** Release 0.2.3
 ** 2011-10-31
    - changed wrap-redirects to recursively handle redirects instead of
@@ -78,3 +84,5 @@
 
 * TODO
 ** multi-part POSTs (2 people have requested this)
+** Persistent connections
+** Allow header names as keywords
