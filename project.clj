@@ -4,7 +4,7 @@
                  [org.apache.httpcomponents/httpclient "4.1.2"]
                  [commons-codec "1.5"]
                  [commons-io "1.4"]
-                 [slingshot "0.5.0"]]
+                 [slingshot "0.8.0"]]
   :multi-deps {"1.2.1" [[org.clojure/clojure "1.2.1"]
                       [org.apache.httpcomponents/httpclient "4.1.2"]
                       [commons-codec "1.5"]
@@ -21,4 +21,5 @@
                      [lein-multi "1.0.0"]]
   :test-selectors {:default  #(not (:integration %))
                    :integration :integration
-                   :all (constantly true)})
+                   :all (constantly true)}
+  :checksum-deps true)
