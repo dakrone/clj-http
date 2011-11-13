@@ -31,6 +31,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2011-11-12
+   - Got a functioning reusable connection method,
+     (with-connection-pool ...)
 ** 2011-11-07
    - merged https://github.com/dakrone/clj-http/pull/21 to upgrade
      slingshot to 0.8.0

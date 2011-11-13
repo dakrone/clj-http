@@ -110,6 +110,25 @@ A proxy can be specified by setting the Java properties:
 `<scheme>.proxyHost` and `<scheme>.proxyPort` where `<scheme>` is the client
 scheme used (normally 'http' or 'https').
 
+## Using persistent connections
+clj-http can use persistent connections to speed up connections if
+multiple connections are being used:
+
+```clojure
+(with-connection-pool {:timeout 5 :threads 4 :insecure? false}
+  (get "http://aoeu.com/1")
+  (post "http://aoeu.com/2")
+  (get "http://aoeu.com/3")
+  ...
+  (get "http://aoeu.com/999"))
+```
+
+This is MUCH faster than sequentially performing all requests, because
+a persistent connection can be used instead creating a new connection
+for each request.
+
+This feature is fairly new, please let me know if you have any feedback!
+
 ## Faking clj-http responses
 
 If you need to fake clj-http responses (for things like testing and
