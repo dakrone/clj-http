@@ -241,7 +241,7 @@
                                             :param2 "value2"}})]
       (is (= "untouched" (:body resp)))
       (is (not (contains? resp :content-type)))))
-  
+
   (testing "with no form params"
     (let [param-client (client/wrap-form-params identity)
           resp (param-client {:body "untouched"})]

@@ -10,7 +10,8 @@
                                            HttpEntityEnclosingRequestBase)
            (org.apache.http.client.params CookiePolicy ClientPNames)
            (org.apache.http.conn.params ConnRoutePNames)
-           (org.apache.http.conn.scheme SchemeRegistry Scheme PlainSocketFactory)
+           (org.apache.http.conn.scheme PlainSocketFactory
+                                        SchemeRegistry Scheme)
            (org.apache.http.conn.ssl SSLSocketFactory TrustStrategy)
            (org.apache.http.entity ByteArrayEntity)
            (org.apache.http.impl.conn SingleClientConnManager)
@@ -115,7 +116,8 @@
           (.setEntity #^HttpEntityEnclosingRequest http-req http-body)))
       (when debug
         (println "Request:")
-        (clojure.pprint/pprint req)
+        (clojure.pprint/pprint (assoc req :body (format "... %s bytes ..."
+                                                        (count (:body req)))))
         (println "HttpRequest:")
         (clojure.pprint/pprint (bean http-req)))
       (let [http-resp (.execute http-client http-req)
