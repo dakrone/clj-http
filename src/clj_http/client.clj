@@ -253,3 +253,19 @@
   "Like #'request, but sets the :method and :url as appropriate."
   [url & [req]]
   (request (merge req {:method :delete :url url})))
+
+(defmacro with-connection-pool
+  "Macro to execute the body using a connection manager."
+  [opts & body]
+  `(let [timeout# (or (:timeout ~opts) 5)
+         thread-max# (or (:thread-max ~opts) 4)
+         insecure?# (:insecure? ~opts)
+         timeunits# java.util.concurrent.TimeUnit/SECONDS]
+     (binding [core/*connection-manager*
+               (doto (core/get-reusable-connection-manager
+                      insecure?# timeout# timeunits#)
+                 (.setMaxTotal thread-max#))]
+       (try
+         ~@body
+         (finally
+          (.shutdown core/*connection-manager*))))))
