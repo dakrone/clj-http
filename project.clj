@@ -1,4 +1,4 @@
-(defproject clj-http "0.2.4"
+(defproject clj-http "0.2.5-SNAPSHOT"
   :description "A Clojure HTTP library wrapping the Apache HttpComponents client."
   :repositories {"sona" "http://oss.sonatype.org/content/repositories/snapshots"}
   :dependencies [[org.clojure/clojure "1.3.0"]
