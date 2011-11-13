@@ -141,16 +141,15 @@ such), check out the
 [Clojars](http://clojars.org/clj-http):
 
 ```clojure
-[clj-http "0.2.3"]
+[clj-http "0.2.4"]
 ```
 
 Previous versions available as
 
 ```clojure
+[clj-http "0.2.3"]
 [clj-http "0.2.2"]
 [clj-http "0.2.1"]
-[clj-http "0.2.0"]
-[clj-http "0.1.3"]
 ```
 
 ## Design
