@@ -46,8 +46,8 @@
 
 (def ^{:private true} regular-scheme-registry
   (doto (SchemeRegistry.)
-    (.register (Scheme. "http" (PlainSocketFactory/getSocketFactory) 80))
-    (.register (Scheme. "https" (SSLSocketFactory/getSocketFactory) 443))))
+    (.register (Scheme. "http" 80 (PlainSocketFactory/getSocketFactory)))
+    (.register (Scheme. "https" 443 (SSLSocketFactory/getSocketFactory)))))
 
 (defn- connection-manager [& [insecure?]]
   (if insecure?
