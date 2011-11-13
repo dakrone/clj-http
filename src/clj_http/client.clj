@@ -279,7 +279,7 @@
      ;; future I'm toying with the idea of managing the connection
      ;; manager yourself and passing it into the request
      (binding [core/*connection-manager*
-               (doto (core/get-reusable-conn-manager timeout# insecure?#)
+               (doto (core/make-reusable-conn-manager timeout# insecure?#)
                  (.setMaxTotal threads#))]
        (try
          ~@body

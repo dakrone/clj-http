@@ -50,12 +50,12 @@
     (.register (Scheme. "http" 80 (PlainSocketFactory/getSocketFactory)))
     (.register (Scheme. "https" 443 (SSLSocketFactory/getSocketFactory)))))
 
-(defn- connection-manager [& [insecure?]]
+(defn- make-regular-conn-manager [& [insecure?]]
   (if insecure?
     (SingleClientConnManager. insecure-scheme-registry)
     (SingleClientConnManager.)))
 
-(defn get-reusable-conn-manager
+(defn make-reusable-conn-manager
   "Given an timeout and optional insecure? flag, create a
   ThreadSafeClientConnManager with <timeout> seconds set as the timeout value."
   [timeout & [insecure?]]
@@ -74,7 +74,8 @@
   [{:keys [request-method scheme server-name server-port uri query-string
            headers content-type character-encoding body socket-timeout
            conn-timeout debug insecure?] :as req}]
-  (let [conn-mgr (or *connection-manager* (connection-manager insecure?))
+  (let [conn-mgr (or *connection-manager*
+                     (make-regular-conn-manager insecure?))
         http-client (DefaultHttpClient. conn-mgr)]
     (doto http-client
       (set-client-param ClientPNames/COOKIE_POLICY
