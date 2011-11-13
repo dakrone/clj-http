@@ -53,10 +53,15 @@
     (SingleClientConnManager. insecure-scheme-registry)
     (SingleClientConnManager.)))
 
-(defn get-reusable-connection-manager [insecure? timeout timeunits]
+(defn get-reusable-conn-manager
+  "Given an timeout and optional insecure? flag, create a
+  ThreadSafeClientConnManager with <timeout> seconds set as the timeout value."
+  [timeout & [insecure?]]
   (if insecure?
-    (ThreadSafeClientConnManager. insecure-scheme-registry timeout timeunits)
-    (ThreadSafeClientConnManager. regular-scheme-registry timeout timeunits)))
+    (ThreadSafeClientConnManager.
+     insecure-scheme-registry timeout java.util.concurrent.TimeUnit/SECONDS)
+    (ThreadSafeClientConnManager.
+     regular-scheme-registry timeout java.util.concurrent.TimeUnit/SECONDS)))
 
 (def ^{:dynamic true} *connection-manager* nil)
 

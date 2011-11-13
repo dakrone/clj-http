@@ -259,11 +259,9 @@
   [opts & body]
   `(let [timeout# (or (:timeout ~opts) 5)
          thread-max# (or (:thread-max ~opts) 4)
-         insecure?# (:insecure? ~opts)
-         timeunits# java.util.concurrent.TimeUnit/SECONDS]
+         insecure?# (:insecure? ~opts)]
      (binding [core/*connection-manager*
-               (doto (core/get-reusable-connection-manager
-                      insecure?# timeout# timeunits#)
+               (doto (core/get-reusable-conn-manager timeout# insecure?#)
                  (.setMaxTotal thread-max#))]
        (try
          ~@body
