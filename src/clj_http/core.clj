@@ -42,7 +42,8 @@
 
 (def ^{:private true} insecure-scheme-registry
   (doto (SchemeRegistry.)
-    (.register (Scheme. "https" insecure-socket-factory 443))))
+    (.register (Scheme. "http" 80 (PlainSocketFactory/getSocketFactory)))
+    (.register (Scheme. "https" 443 insecure-socket-factory))))
 
 (def ^{:private true} regular-scheme-registry
   (doto (SchemeRegistry.)
