@@ -253,3 +253,35 @@
   "Like #'request, but sets the :method and :url as appropriate."
   [url & [req]]
   (request (merge req {:method :delete :url url})))
+
+(defmacro with-connection-pool
+  "Macro to execute the body using a connection manager. Creates a
+  ThreadSafeClientConnectionManager to use for all requests within the body of
+  the expression. An option map is allowed to set options for the connection
+  manager.
+
+  The following options are supported:
+
+  :timeout - Time that connections are left open before automatically closing
+    default: 5
+  :threads - Maximum number of threads that will be used for connecting
+    default: 4
+  :insecure? - Boolean flag to specify allowing insecure HTTPS connections
+    default: false
+
+  If the value 'nil' is specified or the value is not set, the default value
+  will be used."
+  [opts & body]
+  `(let [timeout# (or (:timeout ~opts) 5)
+         threads# (or (:threads ~opts) 4)
+         insecure?# (:insecure? ~opts)]
+     ;; I'm leaving the connection bindable for now because in the
+     ;; future I'm toying with the idea of managing the connection
+     ;; manager yourself and passing it into the request
+     (binding [core/*connection-manager*
+               (doto (core/make-reusable-conn-manager timeout# insecure?#)
+                 (.setMaxTotal threads#))]
+       (try
+         ~@body
+         (finally
+          (.shutdown core/*connection-manager*))))))

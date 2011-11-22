@@ -1,5 +1,12 @@
 * Changelog
   List of changes that have gone into each release
+** 0.2.4
+   - Got a functioning reusable connection method,
+     (with-connection-pool ...)
+   - upgrade slingshot to 0.8.0
+   - upgrade commons-io to 2.1
+   - merged https://github.com/dakrone/clj-http/pull/20 to
+     allow :basic-auth as a string
 ** 0.2.3
    - added :insecure? flag
    - fix AOT by requiring clojure.pprint
@@ -31,6 +38,10 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Release 0.2.4
+** 2011-11-12
+   - Got a functioning reusable connection method,
+     (with-connection-pool ...)
 ** 2011-11-07
    - merged https://github.com/dakrone/clj-http/pull/21 to upgrade
      slingshot to 0.8.0
