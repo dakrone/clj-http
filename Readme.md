@@ -63,6 +63,15 @@ More example requests:
 
 ;; Send form params as a urlencoded body
 (client/post "http//site.com" {:form-params {:foo "bar"}})
+
+;; Multipart form uploads/posts
+;; a map or vector works as the multipart object. Use a vector of
+;; vectors if you need to preserve order, a map otherwise.
+(client/post "http//example.org" {:multipart [["title" "My Awesome Picture"]
+                                              ["Content/type" "image/jpeg"]
+                                              ["file" (clojure.java.io/file "pic.jpg")]]})
+;; Multipart values can be one of the following:
+;; String, InputStream, File, or a byte-array
 ```
 
 A more general `request` function is also available, which is useful
