@@ -130,10 +130,14 @@
   (let [bytes (util/utf8-bytes "byte-test")
         stream (ByteArrayInputStream. bytes)
         resp (request {:request-method :post :uri "/multipart"
-                       :multipart [["a" "testFINDMEtest"
-                                    "b" bytes
-                                    "c" (file "test-resources/keystore")
-                                    "d" stream]]})
-        resp-body (apply str (map char (:body resp)))]
+                       :multipart [["a" "testFINDMEtest"]
+                                   ["b" bytes]
+                                   ["c" stream]
+                                   ["d" (file "test-resources/keystore")]]})
+        resp-body (apply str (map #(try (char %) (catch Exception _ ""))
+                                  (:body resp)))]
     (is (= 200 (:status resp)))
-    (is (re-find #"testFINDMEtest" resp-body))))
+    (is (re-find #"testFINDMEtest" resp-body))
+    (is (re-find #"byte-test" resp-body))
+    (is (re-find #"name=\"c\"" resp-body))
+    (is (re-find #"name=\"d\"" resp-body))))

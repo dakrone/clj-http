@@ -82,10 +82,10 @@
       (let [klass (type v)
             keytext (name k)
             part (cond
-                  (= klass File)
+                  (isa? klass File)
                   (FileBody. v keytext)
 
-                  (= klass InputStream)
+                  (isa? klass InputStream)
                   (InputStreamBody. v keytext)
 
                   (= klass (type (byte-array 0)))
