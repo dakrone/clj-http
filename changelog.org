@@ -1,5 +1,8 @@
 * Changelog
   List of changes that have gone into each release
+** 0.2.5
+   - multipart form uploads
+   - bump slingshot to 0.9.0
 ** 0.2.4
    - Got a functioning reusable connection method,
      (with-connection-pool ...)
