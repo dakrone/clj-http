@@ -143,11 +143,8 @@
       (doseq [[header-n header-v] headers]
         (.addHeader http-req header-n header-v))
       (if multipart
-        (let [mp-entity (MultipartEntity.)]
-          (doseq [[k v] multipart]
-            (.addPart mp-entity (name k) (ByteArrayBody. v (name k))))
-          (.setEntity #^HttpEntityEnclosingRequest http-req
-                      (create-multipart-entity multipart)))
+        (.setEntity #^HttpEntityEnclosingRequest http-req
+                    (create-multipart-entity multipart))
         (when body
           (let [http-body (ByteArrayEntity. body)]
             (.setEntity #^HttpEntityEnclosingRequest http-req http-body))))
