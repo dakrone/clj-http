@@ -80,20 +80,20 @@
   (let [mp-entity (MultipartEntity.)]
     (doseq [[k v] multipart]
       (let [klass (type v)
-            filename (name k)
+            keytext (name k)
             part (cond
                   (= klass File)
-                  (FileBody. v filename)
+                  (FileBody. v keytext)
 
                   (= klass InputStream)
-                  (InputStreamBody. v filename)
+                  (InputStreamBody. v keytext)
 
                   (= klass (type (byte-array 0)))
-                  (ByteArrayBody. v filename)
+                  (ByteArrayBody. v keytext)
 
                   (= klass String)
                   (StringBody. v))]
-        (.addPart mp-entity filename part)))
+        (.addPart mp-entity keytext part)))
     mp-entity))
 
 (defn request
