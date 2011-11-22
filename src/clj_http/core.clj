@@ -1,9 +1,17 @@
 (ns clj-http.core
   "Core HTTP request/response implementation."
   (:require [clojure.pprint])
-  (:import (java.net URI)
+  (:import (java.io File InputStream)
+           (java.net URI)
            (org.apache.http HttpRequest HttpEntityEnclosingRequest
                             HttpResponse Header HttpHost)
+           (org.apache.http.util EntityUtils)
+           (org.apache.http.entity ByteArrayEntity)
+           (org.apache.http.entity.mime MultipartEntity)
+           (org.apache.http.entity.mime.content ByteArrayBody
+                                                FileBody
+                                                InputStreamBody
+                                                StringBody)
            (org.apache.http.client HttpClient)
            (org.apache.http.client.methods HttpGet HttpHead HttpPut
                                            HttpPost HttpDelete
@@ -19,38 +27,38 @@
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.util EntityUtils)))
 
-(defn- parse-headers [#^HttpResponse http-resp]
+(defn parse-headers [#^HttpResponse http-resp]
   (into {} (map (fn [#^Header h] [(.toLowerCase (.getName h)) (.getValue h)])
                 (iterator-seq (.headerIterator http-resp)))))
 
-(defn- set-client-param [#^HttpClient client key val]
+(defn set-client-param [#^HttpClient client key val]
   (when (not (nil? val))
     (-> client
         (.getParams)
         (.setParameter key val))))
 
-(defn- proxy-delete-with-body [url]
+(defn proxy-delete-with-body [url]
   (let [res (proxy [HttpEntityEnclosingRequestBase] []
               (getMethod [] "DELETE"))]
     (.setURI res (URI. url))
     res))
 
-(def ^{:private true} insecure-socket-factory
+(def insecure-socket-factory
   (doto (SSLSocketFactory. (reify TrustStrategy
                              (isTrusted [_ _ _] true)))
     (.setHostnameVerifier SSLSocketFactory/ALLOW_ALL_HOSTNAME_VERIFIER)))
 
-(def ^{:private true} insecure-scheme-registry
+(def insecure-scheme-registry
   (doto (SchemeRegistry.)
     (.register (Scheme. "http" 80 (PlainSocketFactory/getSocketFactory)))
     (.register (Scheme. "https" 443 insecure-socket-factory))))
 
-(def ^{:private true} regular-scheme-registry
+(def regular-scheme-registry
   (doto (SchemeRegistry.)
     (.register (Scheme. "http" 80 (PlainSocketFactory/getSocketFactory)))
     (.register (Scheme. "https" 443 (SSLSocketFactory/getSocketFactory)))))
 
-(defn- make-regular-conn-manager [& [insecure?]]
+(defn make-regular-conn-manager [& [insecure?]]
   (if insecure?
     (SingleClientConnManager. insecure-scheme-registry)
     (SingleClientConnManager.)))
@@ -65,6 +73,29 @@
 
 (def ^{:dynamic true} *connection-manager* nil)
 
+(defn create-multipart-entity
+  "Takes a multipart map and creates a MultipartEntity with each key/val pair
+   added as a part, determining part type by the val type."
+  [multipart]
+  (let [mp-entity (MultipartEntity.)]
+    (doseq [[k v] multipart]
+      (let [klass (type v)
+            keytext (name k)
+            part (cond
+                  (isa? klass File)
+                  (FileBody. v keytext)
+
+                  (isa? klass InputStream)
+                  (InputStreamBody. v keytext)
+
+                  (= klass (type (byte-array 0)))
+                  (ByteArrayBody. v keytext)
+
+                  (= klass String)
+                  (StringBody. v))]
+        (.addPart mp-entity keytext part)))
+    mp-entity))
+
 (defn request
   "Executes the HTTP request corresponding to the given Ring request map and
    returns the Ring response map corresponding to the resulting HTTP response.
@@ -73,7 +104,7 @@
    the clj-http uses ByteArrays for the bodies."
   [{:keys [request-method scheme server-name server-port uri query-string
            headers content-type character-encoding body socket-timeout
-           conn-timeout debug insecure?] :as req}]
+           conn-timeout multipart debug insecure?] :as req}]
   (let [conn-mgr (or *connection-manager*
                      (make-regular-conn-manager insecure?))
         http-client (DefaultHttpClient. conn-mgr)]
@@ -111,9 +142,12 @@
         (.addHeader http-req "Connection" "close"))
       (doseq [[header-n header-v] headers]
         (.addHeader http-req header-n header-v))
-      (when body
-        (let [http-body (ByteArrayEntity. body)]
-          (.setEntity #^HttpEntityEnclosingRequest http-req http-body)))
+      (if multipart
+        (.setEntity #^HttpEntityEnclosingRequest http-req
+                    (create-multipart-entity multipart))
+        (when body
+          (let [http-body (ByteArrayEntity. body)]
+            (.setEntity #^HttpEntityEnclosingRequest http-req http-body))))
       (when debug
         (println "Request:")
         (clojure.pprint/pprint (assoc req :body (format "... %s bytes ..."

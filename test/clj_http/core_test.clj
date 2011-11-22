@@ -1,13 +1,15 @@
 (ns clj-http.core-test
-  (:use [clojure.test])
+  (:use [clojure.test]
+        [clojure.java.io :only [file]])
   (:require [clojure.pprint :as pp]
             [clj-http.core :as core]
             [clj-http.util :as util]
-            [ring.adapter.jetty :as ring]))
+            [ring.adapter.jetty :as ring])
+  (:import (java.io ByteArrayInputStream)))
 
 (defn handler [req]
-  (pp/pprint req)
-  (println) (println)
+  ;;(pp/pprint req)
+  ;;(println) (println)
   (condp = [(:request-method req) (:uri req)]
     [:get "/get"]
     {:status 200 :body "get"}
@@ -26,7 +28,9 @@
       (Thread/sleep 10)
       {:status 200 :body "timeout"})
     [:delete "/delete-with-body"]
-    {:status 200 :body "delete-with-body"}))
+    {:status 200 :body "delete-with-body"}
+    [:post "/multipart"]
+    {:status 200 :body (:body req)}))
 
 (defn run-server
   []
@@ -120,3 +124,20 @@
         (is (= "get" (slurp-body resp))))
       (finally
        (.stop t)))))
+
+(deftest ^{:integration true} multipart-form-uploads
+  (run-server)
+  (let [bytes (util/utf8-bytes "byte-test")
+        stream (ByteArrayInputStream. bytes)
+        resp (request {:request-method :post :uri "/multipart"
+                       :multipart [["a" "testFINDMEtest"]
+                                   ["b" bytes]
+                                   ["c" stream]
+                                   ["d" (file "test-resources/keystore")]]})
+        resp-body (apply str (map #(try (char %) (catch Exception _ ""))
+                                  (:body resp)))]
+    (is (= 200 (:status resp)))
+    (is (re-find #"testFINDMEtest" resp-body))
+    (is (re-find #"byte-test" resp-body))
+    (is (re-find #"name=\"c\"" resp-body))
+    (is (re-find #"name=\"d\"" resp-body))))

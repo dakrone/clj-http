@@ -38,6 +38,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2011-11-22
+   - finish up the multipart work, thanks to some testing cases from Raynes
+   - document multipart posts in readme
 ** Release 0.2.4
 ** 2011-11-12
    - Got a functioning reusable connection method,
@@ -94,6 +97,6 @@
    - merged zkim's branch for specifying timeouts
 
 * TODO
-** multi-part POSTs (2 people have requested this)
-** Persistent connections
+** DONE multi-part POSTs (2 people have requested this)
+** DONE Persistent connections
 ** Allow header names as keywords
