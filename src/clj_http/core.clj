@@ -27,38 +27,38 @@
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.util EntityUtils)))
 
-(defn- parse-headers [#^HttpResponse http-resp]
+(defn parse-headers [#^HttpResponse http-resp]
   (into {} (map (fn [#^Header h] [(.toLowerCase (.getName h)) (.getValue h)])
                 (iterator-seq (.headerIterator http-resp)))))
 
-(defn- set-client-param [#^HttpClient client key val]
+(defn set-client-param [#^HttpClient client key val]
   (when (not (nil? val))
     (-> client
         (.getParams)
         (.setParameter key val))))
 
-(defn- proxy-delete-with-body [url]
+(defn proxy-delete-with-body [url]
   (let [res (proxy [HttpEntityEnclosingRequestBase] []
               (getMethod [] "DELETE"))]
     (.setURI res (URI. url))
     res))
 
-(def ^{:private true} insecure-socket-factory
+(def insecure-socket-factory
   (doto (SSLSocketFactory. (reify TrustStrategy
                              (isTrusted [_ _ _] true)))
     (.setHostnameVerifier SSLSocketFactory/ALLOW_ALL_HOSTNAME_VERIFIER)))
 
-(def ^{:private true} insecure-scheme-registry
+(def insecure-scheme-registry
   (doto (SchemeRegistry.)
     (.register (Scheme. "http" 80 (PlainSocketFactory/getSocketFactory)))
     (.register (Scheme. "https" 443 insecure-socket-factory))))
 
-(def ^{:private true} regular-scheme-registry
+(def regular-scheme-registry
   (doto (SchemeRegistry.)
     (.register (Scheme. "http" 80 (PlainSocketFactory/getSocketFactory)))
     (.register (Scheme. "https" 443 (SSLSocketFactory/getSocketFactory)))))
 
-(defn- make-regular-conn-manager [& [insecure?]]
+(defn make-regular-conn-manager [& [insecure?]]
   (if insecure?
     (SingleClientConnManager. insecure-scheme-registry)
     (SingleClientConnManager.)))
@@ -73,7 +73,7 @@
 
 (def ^{:dynamic true} *connection-manager* nil)
 
-(defn- create-multipart-entity
+(defn create-multipart-entity
   "Takes a multipart map and creates a MultipartEntity with each key/val pair
    added as a part, determining part type by the val type."
   [multipart]
