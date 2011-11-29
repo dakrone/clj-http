@@ -41,6 +41,10 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2011-11-29
+   - merged https://github.com/dakrone/clj-http/pull/24 for a smaller
+     error message
+** Release 0.2.5
 ** 2011-11-22
    - finish up the multipart work, thanks to some testing cases from Raynes
    - document multipart posts in readme
