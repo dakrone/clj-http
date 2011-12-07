@@ -5,7 +5,8 @@
             [clj-http.core :as core]
             [clj-http.util :as util]
             [ring.adapter.jetty :as ring])
-  (:import (java.io ByteArrayInputStream)))
+  (:import (java.io ByteArrayInputStream)
+           (org.apache.http.message BasicHeader BasicHeaderIterator)))
 
 (defn handler [req]
   ;;(pp/pprint req)
@@ -159,10 +160,12 @@
 
 (deftest parse-headers
   (are [headers expected]
-       (let [iterator (BasicHeaderIterator. (into-array BasicHeader
-                                                        (map (fn [[name value]] (BasicHeader. name value))
-                                                             headers))
-                                            nil)]
+       (let [iterator (BasicHeaderIterator.
+                       (into-array BasicHeader
+                                   (map (fn [[name value]]
+                                          (BasicHeader. name value))
+                                        headers))
+                       nil)]
          (is (= (core/parse-headers iterator)
                 expected)))
 

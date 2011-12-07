@@ -47,6 +47,8 @@
      requested this
    - refactor some of the param setting out of the request method in
      an effort to make it slightly smaller
+   - merged in a pull request fixing headers when multiple headers are
+     received: https://github.com/dakrone/clj-http/pull/25
 ** 2011-11-29
    - merged https://github.com/dakrone/clj-http/pull/24 for a smaller
      error message

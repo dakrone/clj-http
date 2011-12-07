@@ -3,7 +3,8 @@
   (:require [clojure.pprint])
   (:import (java.io File InputStream)
            (java.net URI)
-           (org.apache.http HttpRequest HttpEntityEnclosingRequest
+           (org.apache.http HeaderIterator HttpRequest
+                            HttpEntityEnclosingRequest
                             HttpResponse Header HttpHost)
            (org.apache.http.util EntityUtils)
            (org.apache.http.entity ByteArrayEntity)
@@ -35,12 +36,12 @@
    in the headers."
   [#^HeaderIterator headers]
   (->> (iterator-seq headers)
-       (map      (fn [#^Header h] [(.toLowerCase (.getName h)) (.getValue h)]))
+       (map (fn [#^Header h] [(.toLowerCase (.getName h)) (.getValue h)]))
        (group-by first)
-       (map      (fn [[name headers]]
-                   (let [values (map second headers)]
-                     [name (let [[value & tail] values]
-                             (if tail values value))])))
+       (map (fn [[name headers]]
+              (let [values (map second headers)]
+                [name (let [[value & tail] values]
+                        (if tail values value))])))
        (into {})))
 
 (defn set-client-param [#^HttpClient client key val]
