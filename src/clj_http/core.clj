@@ -27,9 +27,21 @@
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.util EntityUtils)))
 
-(defn parse-headers [#^HttpResponse http-resp]
-  (into {} (map (fn [#^Header h] [(.toLowerCase (.getName h)) (.getValue h)])
-                (iterator-seq (.headerIterator http-resp)))))
+(defn parse-headers
+  "Takes a HeaderIterator and returns a map of names to values.
+
+   If a name appears more than once (like `set-cookie`) then the value
+   will be a vector containing the values in the order they appeared
+   in the headers."
+  [#^HeaderIterator headers]
+  (->> (iterator-seq headers)
+       (map      (fn [#^Header h] [(.toLowerCase (.getName h)) (.getValue h)]))
+       (group-by first)
+       (map      (fn [[name headers]]
+                   (let [values (map second headers)]
+                     [name (let [[value & tail] values]
+                             (if tail values value))])))
+       (into {})))
 
 (defn set-client-param [#^HttpClient client key val]
   (when (not (nil? val))
@@ -163,7 +175,7 @@
       (let [http-resp (.execute http-client http-req)
             http-entity (.getEntity http-resp)
             resp {:status (.getStatusCode (.getStatusLine http-resp))
-                  :headers (parse-headers http-resp)
+                  :headers (parse-headers (.headerIterator http-resp))
                   :body (when http-entity
                           (EntityUtils/toByteArray http-entity))}]
         (when (instance? SingleClientConnManager conn-mgr)
