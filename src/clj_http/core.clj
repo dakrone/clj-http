@@ -96,6 +96,24 @@
         (.addPart mp-entity keytext part)))
     mp-entity))
 
+(defn add-client-params!
+  "Add various client params to the http-client object, if needed."
+  [http-client scheme socket-timeout conn-timeout server-name]
+  (doto http-client
+    (set-client-param ClientPNames/COOKIE_POLICY
+                      CookiePolicy/BROWSER_COMPATIBILITY)
+    (set-client-param ClientPNames/HANDLE_REDIRECTS false)
+    (set-client-param "http.socket.timeout"
+                      (and socket-timeout (Integer. socket-timeout)))
+    (set-client-param "http.connection.timeout"
+                      (and conn-timeout (Integer. conn-timeout))))
+  (when (nil? (#{"localhost" "127.0.0.1"} server-name))
+    (when-let [proxy-host (System/getProperty (str scheme ".proxyHost"))]
+      (let [proxy-port (Integer/parseInt
+                        (System/getProperty (str scheme ".proxyPort")))]
+        (set-client-param http-client ConnRoutePNames/DEFAULT_PROXY
+                          (HttpHost. proxy-host proxy-port))))))
+
 (defn request
   "Executes the HTTP request corresponding to the given Ring request map and
    returns the Ring response map corresponding to the resulting HTTP response.
@@ -104,28 +122,16 @@
    the clj-http uses ByteArrays for the bodies."
   [{:keys [request-method scheme server-name server-port uri query-string
            headers content-type character-encoding body socket-timeout
-           conn-timeout multipart debug insecure?] :as req}]
-  (let [conn-mgr (or *connection-manager*
-                     (make-regular-conn-manager insecure?))
+           conn-timeout multipart debug insecure? save-request?] :as req}]
+  (let [conn-mgr (or *connection-manager* (make-regular-conn-manager insecure?))
         http-client (DefaultHttpClient. conn-mgr)]
-    (doto http-client
-      (set-client-param ClientPNames/COOKIE_POLICY
-                        CookiePolicy/BROWSER_COMPATIBILITY)
-      (set-client-param ClientPNames/HANDLE_REDIRECTS false)
-      (set-client-param "http.socket.timeout"
-                        (and socket-timeout (Integer. socket-timeout)))
-      (set-client-param "http.connection.timeout"
-                        (and conn-timeout (Integer. conn-timeout))))
-    (when (nil? (#{"localhost" "127.0.0.1"} server-name))
-      (when-let [proxy-host (System/getProperty (str scheme ".proxyHost"))]
-        (let [proxy-port (Integer/parseInt
-                          (System/getProperty (str scheme ".proxyPort")))]
-          (set-client-param http-client ConnRoutePNames/DEFAULT_PROXY
-                            (HttpHost. proxy-host proxy-port)))))
+    (add-client-params! http-client scheme socket-timeout
+                        conn-timeout server-name)
     (let [http-url (str scheme "://" server-name
                         (when server-port (str ":" server-port))
                         uri
                         (when query-string (str "?" query-string)))
+          req (assoc req :http-url http-url)
           #^HttpRequest
           http-req (case request-method
                      :get    (HttpGet. http-url)
@@ -162,4 +168,6 @@
                           (EntityUtils/toByteArray http-entity))}]
         (when (instance? SingleClientConnManager conn-mgr)
           (.shutdown (.getConnectionManager http-client)))
-        resp))))
+        (if save-request?
+          (assoc resp :request req)
+          resp)))))

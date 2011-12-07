@@ -41,6 +41,12 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2011-12-06
+   - added the 'safe-request?' flag option to save the entire request
+     in the :request key in the response object, several people have
+     requested this
+   - refactor some of the param setting out of the request method in
+     an effort to make it slightly smaller
 ** 2011-11-29
    - merged https://github.com/dakrone/clj-http/pull/24 for a smaller
      error message
@@ -104,6 +110,4 @@
    - merged zkim's branch for specifying timeouts
 
 * TODO
-** DONE multi-part POSTs (2 people have requested this)
-** DONE Persistent connections
 ** Allow header names as keywords

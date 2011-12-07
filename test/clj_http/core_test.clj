@@ -141,3 +141,18 @@
     (is (re-find #"byte-test" resp-body))
     (is (re-find #"name=\"c\"" resp-body))
     (is (re-find #"name=\"d\"" resp-body))))
+
+(deftest ^{:integration true} t-save-request-obj
+  (run-server)
+  (let [resp (request {:request-method :post :uri "/post"
+                       :body (.getBytes "foo bar")
+                       :save-request? true})]
+    (is (= 200 (:status resp)))
+    (is (= {:scheme "http"
+            :http-url "http://localhost:18080/post"
+            :request-method :post
+            :save-request? true
+            :uri "/post"
+            :server-name "localhost"
+            :server-port 18080}
+           (dissoc (:request resp) :body)))))
