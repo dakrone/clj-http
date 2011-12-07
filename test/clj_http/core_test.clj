@@ -156,3 +156,28 @@
             :server-name "localhost"
             :server-port 18080}
            (dissoc (:request resp) :body)))))
+
+(deftest parse-headers
+  (are [headers expected]
+       (let [iterator (BasicHeaderIterator. (into-array BasicHeader
+                                                        (map (fn [[name value]] (BasicHeader. name value))
+                                                             headers))
+                                            nil)]
+         (is (= (core/parse-headers iterator)
+                expected)))
+
+       []
+       {}
+
+       [["Set-Cookie" "one"]]
+       {"set-cookie" "one"}
+
+       [["Set-Cookie" "one"]
+        ["set-COOKIE" "two"]]
+       {"set-cookie" ["one" "two"]}
+
+       [["Set-Cookie" "one"]
+        ["serVer"     "some-server"]
+        ["set-cookie" "two"]]
+       {"set-cookie" ["one" "two"]
+        "server"     "some-server"}))
