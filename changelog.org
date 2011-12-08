@@ -41,6 +41,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2011-12-08
+   - remove :save-request? from the saved request map (if it's being
+     saved, you probably already know you wanted to save it...)
 ** 2011-12-06
    - added the 'safe-request?' flag option to save the entire request
      in the :request key in the response object, several people have

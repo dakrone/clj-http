@@ -182,5 +182,7 @@
         (when (instance? SingleClientConnManager conn-mgr)
           (.shutdown (.getConnectionManager http-client)))
         (if save-request?
-          (assoc resp :request req)
+          (-> resp
+              (assoc :request req)
+              (dissoc :save-request?))
           resp)))))
