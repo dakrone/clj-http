@@ -1,5 +1,13 @@
 * Changelog
   List of changes that have gone into each release
+** 0.2.6
+   - don't use :server-port unless required (fixes problem with some
+     web servers)
+   - smaller error message on exceptions (thrown object is still the same)
+   - added the :save-request? option to return the request object in
+     a :request key in the response map
+   - multiple headers with the same name are now preserved when they
+     have differing cases
 ** 0.2.5
    - multipart form uploads
    - bump slingshot to 0.9.0
@@ -41,6 +49,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Release 0.2.6
 ** 2011-12-13
    - merged https://github.com/dakrone/clj-http/pull/27 to only
      use :server-port for non-standard ports. This was causing
