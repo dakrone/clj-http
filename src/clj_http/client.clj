@@ -11,15 +11,14 @@
 (defn update [m k f & args]
   (assoc m k (apply f (m k) args)))
 
-(defn if-pos [v]
-  (if (and v (pos? v)) v))
+(defn when-pos [v]
+  (when (and v (pos? v)) v))
 
 (defn parse-url [url]
   (let [url-parsed (URL. url)]
     {:scheme (.getProtocol url-parsed)
      :server-name (.getHost url-parsed)
-     :server-port (or (if-pos (.getPort url-parsed))
-                      (if (= "https" (.getProtocol url-parsed)) 443 80))
+     :server-port (when-pos (.getPort url-parsed))
      :uri (.getPath url-parsed)
      :user-info (.getUserInfo url-parsed)
      :query-string (.getQuery url-parsed)}))
