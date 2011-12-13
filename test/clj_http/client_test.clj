@@ -219,9 +219,9 @@
     (is (= "/foo" (:uri resp)))))
 
 (deftest provide-default-port
-  (is (= 80   (-> "http://example.com/" client/parse-url :server-port)))
+  (is (= nil  (-> "http://example.com/" client/parse-url :server-port)))
   (is (= 8080 (-> "http://example.com:8080/" client/parse-url :server-port)))
-  (is (= 443  (-> "https://example.com/" client/parse-url :server-port)))
+  (is (= nil  (-> "https://example.com/" client/parse-url :server-port)))
   (is (= 8443 (-> "https://example.com:8443/" client/parse-url :server-port))))
 
 (deftest apply-on-form-params
