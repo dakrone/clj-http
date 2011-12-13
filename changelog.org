@@ -41,6 +41,10 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2011-12-13
+   - merged https://github.com/dakrone/clj-http/pull/27 to only
+     use :server-port for non-standard ports. This was causing
+     problems for some web servers
 ** 2011-12-08
    - remove :save-request? from the saved request map (if it's being
      saved, you probably already know you wanted to save it...)
