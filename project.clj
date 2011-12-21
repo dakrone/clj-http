@@ -19,8 +19,7 @@
                         [commons-codec "1.5"]
                         [commons-io "2.1"]
                         [slingshot "0.9.0"]]}
-  :dev-dependencies [[swank-clojure "1.3.3"]
-                     [ring/ring-jetty-adapter "0.3.11"]
+  :dev-dependencies [[ring/ring-jetty-adapter "0.3.11"]
                      [ring/ring-devel "0.3.11"]
                      [lein-multi "1.0.0"]]
   :test-selectors {:default  #(not (:integration %))
