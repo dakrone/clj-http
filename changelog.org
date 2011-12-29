@@ -49,6 +49,11 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2011-12-29
+   - merged https://github.com/dakrone/clj-http/pull/30 to remove more
+     reflection warnings
+   - removed swank from dev deps
+   - bump 1.4 to alpha3 in multi deps
 ** Release 0.2.6
 ** 2011-12-13
    - merged https://github.com/dakrone/clj-http/pull/27 to only
