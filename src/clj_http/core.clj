@@ -56,7 +56,7 @@
     (.setURI res (URI. url))
     res))
 
-(def insecure-socket-factory
+(def ^SSLSocketFactory insecure-socket-factory
   (doto (SSLSocketFactory. (reify TrustStrategy
                              (isTrusted [_ _ _] true)))
     (.setHostnameVerifier SSLSocketFactory/ALLOW_ALL_HOSTNAME_VERIFIER)))
@@ -117,9 +117,9 @@
                       CookiePolicy/BROWSER_COMPATIBILITY)
     (set-client-param ClientPNames/HANDLE_REDIRECTS false)
     (set-client-param "http.socket.timeout"
-                      (and socket-timeout (Integer. socket-timeout)))
+                      (and socket-timeout (Integer. ^Long socket-timeout)))
     (set-client-param "http.connection.timeout"
-                      (and conn-timeout (Integer. conn-timeout))))
+                      (and conn-timeout (Integer. ^Long conn-timeout))))
   (when (nil? (#{"localhost" "127.0.0.1"} server-name))
     (when-let [proxy-host (System/getProperty (str scheme ".proxyHost"))]
       (let [proxy-port (Integer/parseInt
@@ -137,7 +137,7 @@
            headers content-type character-encoding body socket-timeout
            conn-timeout multipart debug insecure? save-request?] :as req}]
   (let [conn-mgr (or *connection-manager* (make-regular-conn-manager insecure?))
-        http-client (DefaultHttpClient. conn-mgr)]
+        http-client (DefaultHttpClient. ^org.apache.http.conn.ClientConnectionManager conn-mgr)]
     (add-client-params! http-client scheme socket-timeout
                         conn-timeout server-name)
     (let [http-url (str scheme "://" server-name
