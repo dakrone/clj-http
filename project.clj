@@ -13,7 +13,7 @@
                         [commons-codec "1.5"]
                         [commons-io "2.1"]
                         [slingshot "0.9.0"]]
-               "1.4.0" [[org.clojure/clojure "1.4.0-master-SNAPSHOT"]
+               "1.4.0" [[org.clojure/clojure "1.4.0-alpha3"]
                         [org.apache.httpcomponents/httpclient "4.1.2"]
                         [org.apache.httpcomponents/httpmime "4.1.2"]
                         [commons-codec "1.5"]
