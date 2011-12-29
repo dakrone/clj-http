@@ -8,7 +8,7 @@
            (org.apache.http.impl.cookie BrowserCompatSpecFactory)
            (org.apache.http.message BasicHeader)))
 
-(defn- cookie-spec []
+(defn- cookie-spec ^org.apache.http.cookie.CookieSpec []
   (.newInstance
    (BrowserCompatSpecFactory.)
    (doto (BasicHttpParams.)
@@ -93,7 +93,7 @@
   (when-let [header (-> (cookie-spec)
                         (.formatCookies [(to-basic-client-cookie cookie)])
                         first)]
-    (.getValue header)))
+    (.getValue ^org.apache.http.Header header)))
 
 (defn encode-cookies
   "Encode the cookie map into a string."
