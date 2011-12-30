@@ -79,9 +79,10 @@
 (defn make-reusable-conn-manager
   "Given an timeout and optional insecure? flag, create a
   ThreadSafeClientConnManager with <timeout> seconds set as the timeout value."
-  ;; need the fully qualified class name because this fn is later used in a macro
-  ;; from a different ns
-  ^org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager [timeout & [insecure?]]
+  ;; need the fully qualified class name because this fn is later used in a
+  ;; macro from a different ns
+  ^org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager
+  [timeout & [insecure?]]
   (let [sr (if insecure? insecure-scheme-registry regular-scheme-registry)]
     (ThreadSafeClientConnManager.
      sr timeout java.util.concurrent.TimeUnit/SECONDS)))
@@ -139,7 +140,8 @@
            headers content-type character-encoding body socket-timeout
            conn-timeout multipart debug insecure? save-request?] :as req}]
   (let [conn-mgr (or *connection-manager* (make-regular-conn-manager insecure?))
-        http-client (DefaultHttpClient. ^org.apache.http.conn.ClientConnectionManager conn-mgr)]
+        http-client (DefaultHttpClient.
+                      ^org.apache.http.conn.ClientConnectionManager conn-mgr)]
     (add-client-params! http-client scheme socket-timeout
                         conn-timeout server-name)
     (let [http-url (str scheme "://" server-name

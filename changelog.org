@@ -49,6 +49,10 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2011-12-30
+   - merged https://github.com/dakrone/clj-http/pull/31 to remove more
+     reflection warnings
+   - some whitespace changes
 ** 2011-12-29
    - merged https://github.com/dakrone/clj-http/pull/30 to remove more
      reflection warnings
