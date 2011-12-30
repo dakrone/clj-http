@@ -283,4 +283,4 @@
        (try
          ~@body
          (finally
-          (.shutdown core/*connection-manager*))))))
+          (.shutdown ^org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager core/*connection-manager*))))))

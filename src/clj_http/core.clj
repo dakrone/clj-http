@@ -71,7 +71,7 @@
     (.register (Scheme. "http" 80 (PlainSocketFactory/getSocketFactory)))
     (.register (Scheme. "https" 443 (SSLSocketFactory/getSocketFactory)))))
 
-(defn make-regular-conn-manager [& [insecure?]]
+(defn make-regular-conn-manager ^SingleClientConnManager [& [insecure?]]
   (if insecure?
     (SingleClientConnManager. insecure-scheme-registry)
     (SingleClientConnManager.)))
@@ -79,7 +79,9 @@
 (defn make-reusable-conn-manager
   "Given an timeout and optional insecure? flag, create a
   ThreadSafeClientConnManager with <timeout> seconds set as the timeout value."
-  [timeout & [insecure?]]
+  ;; need the fully qualified class name because this fn is later used in a macro
+  ;; from a different ns
+  ^org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager [timeout & [insecure?]]
   (let [sr (if insecure? insecure-scheme-registry regular-scheme-registry)]
     (ThreadSafeClientConnManager.
      sr timeout java.util.concurrent.TimeUnit/SECONDS)))
