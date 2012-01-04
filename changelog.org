@@ -1,5 +1,13 @@
 * Changelog
   List of changes that have gone into each release
+** 0.2.7
+   - merged https://github.com/dakrone/clj-http/pull/31 to remove more
+     reflection warnings
+   - some whitespace changes
+   - merged https://github.com/dakrone/clj-http/pull/30 to remove more
+     reflection warnings
+   - removed swank from dev deps
+   - bump 1.4 to alpha3 in multi deps
 ** 0.2.6
    - don't use :server-port unless required (fixes problem with some
      web servers)
@@ -49,6 +57,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Release 0.2.7
 ** 2011-12-30
    - merged https://github.com/dakrone/clj-http/pull/31 to remove more
      reflection warnings
