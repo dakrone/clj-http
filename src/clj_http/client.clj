@@ -76,7 +76,9 @@
       (cond
        (or (nil? body) (= :byte-array as))
        resp
-       (nil? as)
+       (string? as)
+       (assoc resp :body (String. #^"[B" body as))
+       :else
        (assoc resp :body (String. #^"[B" body "UTF-8"))))))
 
 

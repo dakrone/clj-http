@@ -45,6 +45,8 @@ More example requests:
 (client/get "http://site.com/search" {:query-params {"q" "foo, bar"}})
 
 (client/get "http://site.com/favicon.ico" {:as :byte-array})
+;; Coerce as something other than UTF-8 string
+(client/get "http://site.com/string.txt" {:as "UTF-16"})
 
 (client/post "http://site.com/api"
   {:basic-auth ["user" "pass"]
