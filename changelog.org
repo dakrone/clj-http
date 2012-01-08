@@ -68,6 +68,9 @@
 ** 2011-01-16
    - merged https://github.com/dakrone/clj-http/pull/34 to fix
      decoding cookies that don't follow RFC spec
+** 2012-01-07
+   - Add better coercion, adding {:as :json}, {:as :json-string-keys}
+     and {:as :auto}
 ** Release 0.2.7
 ** 2011-12-30
    - merged https://github.com/dakrone/clj-http/pull/31 to remove more
