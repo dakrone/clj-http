@@ -3,6 +3,7 @@
   (:use [clj-http.cookies :only (wrap-cookies)]
         [slingshot.slingshot :only [throw+]])
   (:require [clojure.string :as str]
+            [cheshire.core :as json]
             [clj-http.core :as core]
             [clj-http.util :as util])
   (:import (java.io InputStream File)
@@ -77,10 +78,21 @@
   (fn [{:keys [as] :as req}]
     (let [{:keys [body] :as resp} (client req)]
       (cond
-       (or (nil? body) (= :byte-array as))
-       resp
+       (keyword? as)
+       (condp = as
+         :byte-array resp
+
+         :json
+         (assoc resp :body (json/decode (String. #^"[B" body "UTF-8") true))
+
+         :json-string-keys
+         (assoc resp :body (json/decode (String. #^"[B" body "UTF-8")))
+
+         (assoc resp :body (String. #^"[B" body "UTF-8")))
+
        (string? as)
        (assoc resp :body (String. #^"[B" body as))
+
        :else
        (assoc resp :body (String. #^"[B" body "UTF-8"))))))
 
