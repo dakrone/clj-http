@@ -57,6 +57,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2011-01-16
+   - merged https://github.com/dakrone/clj-http/pull/34 to fix
+     decoding cookies that don't follow RFC spec
 ** Release 0.2.7
 ** 2011-12-30
    - merged https://github.com/dakrone/clj-http/pull/31 to remove more
