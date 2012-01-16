@@ -36,7 +36,9 @@
      :path (.getPath cookie)
      :ports (if (.getPorts cookie) (seq (.getPorts cookie)))
      :secure (.isSecure cookie)
-     :value (url-decode (.getValue cookie))
+     :value (try
+              (url-decode (.getValue cookie))
+              (catch Exception _ (.getValue cookie))) 
      :version (.getVersion cookie)})])
 
 (defn- to-basic-client-cookie
