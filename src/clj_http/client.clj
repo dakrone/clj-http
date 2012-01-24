@@ -126,9 +126,17 @@
 
 (defn generate-query-string [params]
   (str/join "&"
-            (map (fn [[k v]] (str (util/url-encode (name k)) "="
-                                  (util/url-encode (str v))))
-                 params)))
+            (mapcat (fn [[k v]]
+                      (if (sequential? v)
+                        (map #(str (util/url-encode (name %1))
+                                   "="
+                                   (util/url-encode (str %2)))
+                             (repeat k) v)
+                        [(str (util/url-encode (name k))
+                              "="
+                              (util/url-encode (str v)))]))
+                    params)))
+
 
 (defn wrap-query-params [client]
   (fn [{:keys [query-params] :as req}]
