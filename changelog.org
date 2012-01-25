@@ -57,6 +57,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2011-01-24
+   - merged https://github.com/dakrone/clj-http/pull/36 to fix
+     url-encoding of multiple query params using the same key
 ** 2011-01-16
    - merged https://github.com/dakrone/clj-http/pull/34 to fix
      decoding cookies that don't follow RFC spec
