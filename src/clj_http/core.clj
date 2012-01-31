@@ -3,11 +3,11 @@
   (:require [clojure.pprint])
   (:import (java.io File InputStream)
            (java.net URI)
-           (org.apache.http HeaderIterator HttpRequest
+           (org.apache.http HeaderIterator HttpRequest HttpEntity
                             HttpEntityEnclosingRequest
                             HttpResponse Header HttpHost)
            (org.apache.http.util EntityUtils)
-           (org.apache.http.entity ByteArrayEntity)
+           (org.apache.http.entity ByteArrayEntity StringEntity)
            (org.apache.http.entity.mime MultipartEntity)
            (org.apache.http.entity.mime.content ByteArrayBody
                                                 FileBody
@@ -22,7 +22,6 @@
            (org.apache.http.conn.scheme PlainSocketFactory
                                         SchemeRegistry Scheme)
            (org.apache.http.conn.ssl SSLSocketFactory TrustStrategy)
-           (org.apache.http.entity ByteArrayEntity)
            (org.apache.http.impl.conn SingleClientConnManager)
            (org.apache.http.impl.conn.tsccm ThreadSafeClientConnManager)
            (org.apache.http.impl.client DefaultHttpClient)
@@ -169,8 +168,12 @@
         (.setEntity #^HttpEntityEnclosingRequest http-req
                     (create-multipart-entity multipart))
         (when body
-          (let [http-body (ByteArrayEntity. body)]
-            (.setEntity #^HttpEntityEnclosingRequest http-req http-body))))
+          (if (instance? HttpEntity body)
+            (.setEntity #^HttpEntityEnclosingRequest http-req body)
+            (.setEntity #^HttpEntityEnclosingRequest http-req
+                        (if (string? body)
+                          (StringEntity. body "UTF-8")
+                          (ByteArrayEntity. body))))))
       (when debug
         (println "Request:")
         (clojure.pprint/pprint (assoc req :body (format "... %s bytes ..."

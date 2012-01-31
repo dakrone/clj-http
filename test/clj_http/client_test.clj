@@ -13,6 +13,7 @@
 
 (deftest ^{:integration true} roundtrip
   (run-server)
+  (Thread/sleep 1000)
   (let [resp (client/request (merge base-req {:uri "/get" :method :get}))]
     (is (= 200 (:status resp)))
     (is (= "close" (get-in resp [:headers "connection"])))
@@ -152,13 +153,18 @@
 
 (deftest apply-on-input-coercion
   (let [i-client (client/wrap-input-coercion identity)
-        resp (i-client {:body "foo"})]
+        resp (i-client {:body "foo"})
+        resp2 (i-client {:body "foo2" :body-encoding "ASCII"})
+        data (slurp (.getContent (:body resp)))
+        data2 (slurp (.getContent (:body resp2)))]
     (is (= "UTF-8" (:character-encoding resp)))
-    (is (Arrays/equals (util/utf8-bytes "foo") (:body resp)))))
+    (is (= "foo" data))
+    (is (= "ASCII" (:character-encoding resp2)))
+    (is (= "foo2" data2))))
 
 (deftest pass-on-no-input-coercion
   (is-passed client/wrap-input-coercion
-             {:body (util/utf8-bytes "foo")}))
+             {:body nil}))
 
 
 (deftest apply-on-content-type

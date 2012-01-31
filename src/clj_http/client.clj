@@ -5,7 +5,10 @@
   (:require [clojure.string :as str]
             [clj-http.core :as core]
             [clj-http.util :as util])
-  (:import (java.net URL UnknownHostException))
+  (:import (java.io InputStream File)
+           (java.net URL UnknownHostException)
+           (org.apache.http.entity ByteArrayEntity InputStreamEntity
+                                   FileEntity StringEntity))
   (:refer-clojure :exclude (get)))
 
 (defn update [m k f & args]
@@ -83,10 +86,29 @@
 
 
 (defn wrap-input-coercion [client]
-  (fn [{:keys [body] :as req}]
-    (if (string? body)
-      (client (-> req (assoc :body (util/utf8-bytes body)
-                             :character-encoding "UTF-8")))
+  (fn [{:keys [body body-encoding length] :as req}]
+    (if body
+      (cond
+       (string? body)
+       (client (-> req (assoc :body (StringEntity. body (or body-encoding
+                                                            "UTF-8"))
+                              :character-encoding (or body-encoding
+                                                      "UTF-8"))))
+       (instance? File body)
+       (client (-> req (assoc :body (FileEntity. body (or body-encoding
+                                                          "UTF-8")))))
+       (instance? InputStream body)
+       (do
+         (when-not (and length (pos? length))
+           (throw
+            (Exception. ":length key is required for InputStream bodies")))
+         (client (-> req (assoc :body (InputStreamEntity. body length)))))
+
+       (instance? (Class/forName "[B") body)
+       (client (-> req (assoc :body (ByteArrayEntity. body))))
+
+       :else
+       (client req))
       (client req))))
 
 
