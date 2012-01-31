@@ -42,7 +42,7 @@ More example requests:
 (client/post "http://site.com/resources" {:body "string"})
 ;; :body-encoding is optional and defaults to "UTF-8"
 (client/post "http://site.com/resources"
-             {:body "string" :body-encoding "UTF-8})
+             {:body "string" :body-encoding "UTF-8"})
 (client/post "http://site.com/resources"
              {:body (clojure.java.io/file "/tmp/foo") :body-encoding
              "UTF-8"})
