@@ -35,18 +35,37 @@ More example requests:
 
 (client/get "http://site.com/resources/3" {:accept :json})
 
-(client/post "http://site.com/resources" {:body byte-array})
-
+;; Input coercion
+(client/post "http://site.com/resources" {:body my-byte-array})
 (client/post "http://site.com/resources" {:body "string"})
+;; :body-encoding is optional and defaults to "UTF-8"
+(client/post "http://site.com/resources"
+             {:body "string" :body-encoding "UTF-8})
+(client/post "http://site.com/resources"
+             {:body (clojure.java.io/file "/tmp/foo") :body-encoding
+             "UTF-8"})
+;; :length is NOT optional for passing an InputStream in
+(client/post "http://site.com/resources"
+             {:body (clojure.java.io/input-stream "/tmp/foo")
+              :length 1000})
 
+;; Basic authentication
 (client/get "http://site.com/protected" {:basic-auth ["user" "pass"]})
 (client/get "http://site.com/protected" {:basic-auth "user:pass"})
 
+;; Query parameters
 (client/get "http://site.com/search" {:query-params {"q" "foo, bar"}})
 
+;; Output coercion
 (client/get "http://site.com/favicon.ico" {:as :byte-array})
 ;; Coerce as something other than UTF-8 string
 (client/get "http://site.com/string.txt" {:as "UTF-16"})
+;; Coerce as json
+(client/get "http://site.com/foo.json" {:as :json})
+(client/get "http://site.com/foo.json" {:as :json-string-keys})
+;; Try to automatically coerce the output based on the content-type
+;; header (this is currently a BETA feature!)
+(client/get "http://site.com/foo.json" {:as :auto})
 
 (client/post "http://site.com/api"
   {:basic-auth ["user" "pass"]
