@@ -3,6 +3,7 @@
   (:use [clj-http.cookies :only (wrap-cookies)]
         [slingshot.slingshot :only [throw+]])
   (:require [clojure.string :as str]
+            [cheshire.core :as json]
             [clj-http.core :as core]
             [clj-http.util :as util])
   (:import (java.io InputStream File)
@@ -76,13 +77,48 @@
 (defn wrap-output-coercion [client]
   (fn [{:keys [as] :as req}]
     (let [{:keys [body] :as resp} (client req)]
-      (cond
-       (or (nil? body) (= :byte-array as))
-       resp
-       (string? as)
-       (assoc resp :body (String. #^"[B" body as))
-       :else
-       (assoc resp :body (String. #^"[B" body "UTF-8"))))))
+      (if body
+        (cond
+         (keyword? as)
+         (condp = as
+           ;; Don't do anything when it's a byte-array
+           :byte-array resp
+           ;; Convert to json from UTF-8 string
+           :json
+           (assoc resp :body (json/decode (String. #^"[B" body "UTF-8") true))
+           ;; Convert to json with strings as keys
+           :json-string-keys
+           (assoc resp :body (json/decode (String. #^"[B" body "UTF-8")))
+           ;; Attempt to automatically coerce the body, returning a
+           ;; string if no coercions are found
+           :auto
+           (assoc resp
+             :body
+             (let [typestring (get-in resp [:headers "content-type"])]
+               (cond
+                (.startsWith (str typestring) "text/")
+                (if-let [charset (second (re-find #"charset=(.*)"
+                                                  (str typestring)))]
+                  (String. #^"[B" body charset)
+                  (String. #^"[B" body "UTF-8"))
+
+                (.startsWith (str typestring) "application/json")
+                (if-let [charset (second (re-find #"charset=(.*)"
+                                                  (str typestring)))]
+                  (json/decode (String. #^"[B" body charset) true)
+                  (json/decode (String. #^"[B" body "UTF-8") true))
+
+                :else
+                (String. #^"[B" body "UTF-8"))))
+           ;; No :as matches found
+           (assoc resp :body (String. #^"[B" body "UTF-8")))
+         ;; Try the charset given if a string is specified
+         (string? as)
+         (assoc resp :body (String. #^"[B" body as))
+         ;; Return a regular UTF-8 string body
+         :else
+         (assoc resp :body (String. #^"[B" body "UTF-8")))
+        resp))))
 
 
 (defn wrap-input-coercion [client]
