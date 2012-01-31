@@ -1,4 +1,4 @@
-(ns clj-http.core-test
+(ns clj-http.test.core
   (:use [clojure.test]
         [clojure.java.io :only [file]])
   (:require [clojure.pprint :as pp]
