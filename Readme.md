@@ -107,6 +107,9 @@ block:
 
 ;; You can also ignore exceptions and handle them yourself:
 (client/get "http://site.com/broken" {:throw-exceptions false})
+;; Or ignore an unknown host (methods return 'nil' if this is set to
+;; true and the host does not exist:
+(client/get "http://aoeuntahuf89o.com" {:ignore-unknown-host? true})
 ````
 (spacing added by me to be human readable)
 

@@ -5,7 +5,7 @@
   (:require [clojure.string :as str]
             [clj-http.core :as core]
             [clj-http.util :as util])
-  (:import (java.net URL))
+  (:import (java.net URL UnknownHostException))
   (:refer-clojure :exclude (get)))
 
 (defn update [m k f & args]
@@ -194,6 +194,15 @@
       (client (-> req (dissoc :url) (merge (parse-url url))))
       (client req))))
 
+(defn wrap-unknown-host [client]
+  (fn [{:keys [ignore-unknown-host?] :as req}]
+    (try
+      (client req)
+      (catch UnknownHostException e
+        (if ignore-unknown-host?
+          nil
+          (throw e))))))
+
 (defn wrap-request
   "Returns a battaries-included HTTP request function coresponding to the given
    core client. See client/client."
@@ -213,7 +222,8 @@
       wrap-content-type
       wrap-form-params
       wrap-method
-      wrap-cookies))
+      wrap-cookies
+      wrap-unknown-host))
 
 (def #^{:doc
         "Executes the HTTP request corresponding to the given map and returns

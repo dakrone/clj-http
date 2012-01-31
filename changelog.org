@@ -57,6 +57,8 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2011-01-31
+   - add ability to ignore unknown host if desired ({:ignore-unknown-host? true})
 ** 2011-01-24
    - merged https://github.com/dakrone/clj-http/pull/36 to fix
      url-encoding of multiple query params using the same key
