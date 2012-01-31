@@ -3,7 +3,8 @@
         [clj-http.core-test :only [run-server]])
   (:require [clj-http.client :as client]
             [clj-http.util :as util])
-  (:import (java.util Arrays)))
+  (:import (java.net UnknownHostException)
+           (java.util Arrays)))
 
 (def base-req
   {:scheme "http"
@@ -247,3 +248,8 @@
           resp (param-client {:body "untouched"})]
       (is (= "untouched" (:body resp)))
       (is (not (contains? resp :content-type))))))
+
+(deftest t-ignore-unknown-host
+  (is (thrown? UnknownHostException (client/get "http://aorecuf892983a.com")))
+  (is (nil? (client/get "http://aorecuf892983a.com"
+                        {:ignore-unknown-host? true}))))
