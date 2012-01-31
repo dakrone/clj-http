@@ -6,6 +6,8 @@ HttpComponents](http://hc.apache.org/) client.
 This library has taken over from mmcgrana's clj-http. Please send a
 pull request or open an issue if you have any problems
 
+[![Continuous Integration status](https://secure.travis-ci.org/dakrone/clj-http.png)](http://travis-ci.org/dakrone/clj-http)
+
 ## Usage
 
 The main HTTP client functionality is provided by the
