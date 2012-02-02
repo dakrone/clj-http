@@ -111,9 +111,17 @@
         (.addPart mp-entity keytext part)))
     mp-entity))
 
+(defn- default-proxy-host-for
+  [scheme]
+  (System/getProperty (str scheme ".proxyHost")))
+
+(defn- default-proxy-port-for
+  [scheme]
+  (Integer/parseInt (System/getProperty (str scheme ".proxyPort"))))
+
 (defn add-client-params!
   "Add various client params to the http-client object, if needed."
-  [http-client scheme socket-timeout conn-timeout server-name]
+  [http-client scheme socket-timeout conn-timeout server-name proxy-host proxy-port]
   (doto http-client
     (set-client-param ClientPNames/COOKIE_POLICY
                       CookiePolicy/BROWSER_COMPATIBILITY)
@@ -123,11 +131,10 @@
     (set-client-param "http.connection.timeout"
                       (and conn-timeout (Integer. ^Long conn-timeout))))
   (when (nil? (#{"localhost" "127.0.0.1"} server-name))
-    (when-let [proxy-host (System/getProperty (str scheme ".proxyHost"))]
-      (let [proxy-port (Integer/parseInt
-                        (System/getProperty (str scheme ".proxyPort")))]
+    (when-let [effective-proxy-host (or proxy-host (default-proxy-host-for scheme))]
+      (let [effective-proxy-port (or proxy-port (default-proxy-port-for scheme))]
         (set-client-param http-client ConnRoutePNames/DEFAULT_PROXY
-                          (HttpHost. proxy-host proxy-port))))))
+                          (HttpHost. effective-proxy-host effective-proxy-port))))))
 
 (defn request
   "Executes the HTTP request corresponding to the given Ring request map and
@@ -137,12 +144,12 @@
    the clj-http uses ByteArrays for the bodies."
   [{:keys [request-method scheme server-name server-port uri query-string
            headers content-type character-encoding body socket-timeout
-           conn-timeout multipart debug insecure? save-request?] :as req}]
+           conn-timeout multipart debug insecure? save-request? proxy-host proxy-port] :as req}]
   (let [conn-mgr (or *connection-manager* (make-regular-conn-manager insecure?))
         http-client (DefaultHttpClient.
                       ^org.apache.http.conn.ClientConnectionManager conn-mgr)]
     (add-client-params! http-client scheme socket-timeout
-                        conn-timeout server-name)
+                        conn-timeout server-name proxy-host proxy-port)
     (let [http-url (str scheme "://" server-name
                         (when server-port (str ":" server-port))
                         uri
