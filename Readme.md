@@ -143,7 +143,13 @@ The client transparently accepts and decompresses the `gzip` and
 
 A proxy can be specified by setting the Java properties:
 `<scheme>.proxyHost` and `<scheme>.proxyPort` where `<scheme>` is the client
-scheme used (normally 'http' or 'https').
+scheme used (normally 'http' or 'https'). Additionally, per-request
+proxies can be specified with the `proxy-host` and `proxy-port`
+options:
+
+```clojure
+(client/get "http://foo.com" {:proxy-host "127.0.0.1" :proxy-port 8118})
+```
 
 ## Using persistent connections
 clj-http can use persistent connections to speed up connections if

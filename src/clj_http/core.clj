@@ -121,7 +121,8 @@
 
 (defn add-client-params!
   "Add various client params to the http-client object, if needed."
-  [http-client scheme socket-timeout conn-timeout server-name proxy-host proxy-port]
+  [http-client scheme socket-timeout conn-timeout server-name
+   proxy-host proxy-port]
   (doto http-client
     (set-client-param ClientPNames/COOKIE_POLICY
                       CookiePolicy/BROWSER_COMPATIBILITY)
@@ -131,10 +132,13 @@
     (set-client-param "http.connection.timeout"
                       (and conn-timeout (Integer. ^Long conn-timeout))))
   (when (nil? (#{"localhost" "127.0.0.1"} server-name))
-    (when-let [effective-proxy-host (or proxy-host (default-proxy-host-for scheme))]
-      (let [effective-proxy-port (or proxy-port (default-proxy-port-for scheme))]
+    (when-let [effective-proxy-host (or proxy-host
+                                        (default-proxy-host-for scheme))]
+      (let [effective-proxy-port (or proxy-port
+                                     (default-proxy-port-for scheme))]
         (set-client-param http-client ConnRoutePNames/DEFAULT_PROXY
-                          (HttpHost. effective-proxy-host effective-proxy-port))))))
+                          (HttpHost. effective-proxy-host
+                                     effective-proxy-port))))))
 
 (defn request
   "Executes the HTTP request corresponding to the given Ring request map and
@@ -144,7 +148,8 @@
    the clj-http uses ByteArrays for the bodies."
   [{:keys [request-method scheme server-name server-port uri query-string
            headers content-type character-encoding body socket-timeout
-           conn-timeout multipart debug insecure? save-request? proxy-host proxy-port] :as req}]
+           conn-timeout multipart debug insecure? save-request? proxy-host
+           proxy-port] :as req}]
   (let [conn-mgr (or *connection-manager* (make-regular-conn-manager insecure?))
         http-client (DefaultHttpClient.
                       ^org.apache.http.conn.ClientConnectionManager conn-mgr)]

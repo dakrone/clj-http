@@ -68,16 +68,19 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-02-03
+   - merged https://github.com/dakrone/clj-http/pull/40 to allow
+     per-request proxy settings
 ** Release 0.3.0
-** 2011-01-31
+** 2012-01-31
    - add ability to ignore unknown host if desired ({:ignore-unknown-host? true})
    - use much better Enitity's for the body, depending on type
    - bump all dependencies
    - test re-org to make better sense (and allow C-c t in emacs)
-** 2011-01-24
+** 2012-01-24
    - merged https://github.com/dakrone/clj-http/pull/36 to fix
      url-encoding of multiple query params using the same key
-** 2011-01-16
+** 2012-01-16
    - merged https://github.com/dakrone/clj-http/pull/34 to fix
      decoding cookies that don't follow RFC spec
 ** 2012-01-07
