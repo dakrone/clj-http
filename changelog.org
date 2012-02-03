@@ -71,6 +71,7 @@
 ** 2012-02-03
    - merged https://github.com/dakrone/clj-http/pull/40 to allow
      per-request proxy settings
+   - remove a few more reflections
 ** Release 0.3.0
 ** 2012-01-31
    - add ability to ignore unknown host if desired ({:ignore-unknown-host? true})

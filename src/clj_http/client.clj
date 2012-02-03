@@ -99,13 +99,13 @@
                 (.startsWith (str typestring) "text/")
                 (if-let [charset (second (re-find #"charset=(.*)"
                                                   (str typestring)))]
-                  (String. #^"[B" body charset)
+                  (String. #^"[B" body ^String charset)
                   (String. #^"[B" body "UTF-8"))
 
                 (.startsWith (str typestring) "application/json")
                 (if-let [charset (second (re-find #"charset=(.*)"
                                                   (str typestring)))]
-                  (json/decode (String. #^"[B" body charset) true)
+                  (json/decode (String. #^"[B" body ^String charset) true)
                   (json/decode (String. #^"[B" body "UTF-8") true))
 
                 :else
@@ -114,7 +114,7 @@
            (assoc resp :body (String. #^"[B" body "UTF-8")))
          ;; Try the charset given if a string is specified
          (string? as)
-         (assoc resp :body (String. #^"[B" body as))
+         (assoc resp :body (String. #^"[B" body ^String as))
          ;; Return a regular UTF-8 string body
          :else
          (assoc resp :body (String. #^"[B" body "UTF-8")))
