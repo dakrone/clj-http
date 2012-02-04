@@ -19,7 +19,6 @@
     (is (= "close" (get-in resp [:headers "connection"])))
     (is (= "get" (:body resp)))))
 
-
 (defn is-passed [middleware req]
   (let [client (middleware identity)]
     (is (= req (client req)))))
@@ -27,7 +26,6 @@
 (defn is-applied [middleware req-in req-out]
   (let [client (middleware identity)]
     (is (= req-out (client req-in)))))
-
 
 (deftest redirect-on-get
   (let [client (fn [req]
@@ -89,10 +87,10 @@
         resp (e-client {:throw-exceptions false})]
     (is (= 500 (:status resp)))))
 
-
 (deftest apply-on-compressed
   (let [client (fn [req]
-                 (is (= "gzip, deflate" (get-in req [:headers "Accept-Encoding"])))
+                 (is (= "gzip, deflate"
+                        (get-in req [:headers "Accept-Encoding"])))
                  {:body (util/gzip (util/utf8-bytes "foofoofoo"))
                   :headers {"Content-Encoding" "gzip"}})
         c-client (client/wrap-decompression client)
@@ -101,7 +99,8 @@
 
 (deftest apply-on-deflated
   (let [client (fn [req]
-                 (is (= "gzip, deflate" (get-in req [:headers "Accept-Encoding"])))
+                 (is (= "gzip, deflate"
+                        (get-in req [:headers "Accept-Encoding"])))
                  {:body (util/deflate (util/utf8-bytes "barbarbar"))
                   :headers {"Content-Encoding" "deflate"}})
         c-client (client/wrap-decompression client)
@@ -113,7 +112,6 @@
         resp (c-client {:uri "/foo"})]
     (is (= "foo" (:body resp)))))
 
-
 (deftest apply-on-accept
   (is-applied client/wrap-accept
               {:accept :json}
@@ -123,7 +121,6 @@
   (is-passed client/wrap-accept
              {:uri "/foo"}))
 
-
 (deftest apply-on-accept-encoding
   (is-applied client/wrap-accept-encoding
               {:accept-encoding [:identity :gzip]}
@@ -132,7 +129,6 @@
 (deftest pass-on-no-accept-encoding
   (is-passed client/wrap-accept-encoding
              {:uri "/foo"}))
-
 
 (deftest apply-on-output-coercion
   (let [client (fn [req] {:body (util/utf8-bytes "foo")})
@@ -150,7 +146,6 @@
         resp (o-client {:uri "/foo" :as :byte-array})]
     (is (= :thebytes (:body resp)))))
 
-
 (deftest apply-on-input-coercion
   (let [i-client (client/wrap-input-coercion identity)
         resp (i-client {:body "foo"})
@@ -166,7 +161,6 @@
   (is-passed client/wrap-input-coercion
              {:body nil}))
 
-
 (deftest apply-on-content-type
   (is-applied client/wrap-content-type
               {:content-type :json}
@@ -175,7 +169,6 @@
 (deftest pass-on-no-content-type
   (is-passed client/wrap-content-type
              {:uri "/foo"}))
-
 
 (deftest apply-on-query-params
   (is-applied client/wrap-query-params
@@ -186,7 +179,6 @@
   (is-passed client/wrap-query-params
              {:uri "/foo"}))
 
-
 (deftest apply-on-basic-auth
   (is-applied client/wrap-basic-auth
               {:basic-auth ["Aladdin" "open sesame"]}
@@ -196,7 +188,6 @@
 (deftest pass-on-no-basic-auth
   (is-passed client/wrap-basic-auth
              {:uri "/foo"}))
-
 
 (deftest apply-on-method
   (let [m-client (client/wrap-method identity)

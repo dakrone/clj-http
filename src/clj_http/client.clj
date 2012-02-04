@@ -27,7 +27,6 @@
      :user-info (.getUserInfo url-parsed)
      :query-string (.getQuery url-parsed)}))
 
-
 (def unexceptional-status?
   #{200 201 202 203 204 205 206 207 300 301 302 303 307})
 
@@ -58,7 +57,6 @@
        :else
        resp))))
 
-
 (defn wrap-decompression [client]
   (fn [req]
     (if (get-in req [:headers "Accept-Encoding"])
@@ -67,12 +65,9 @@
             resp-c (client req-c)]
         (case (or (get-in resp-c [:headers "Content-Encoding"])
                   (get-in resp-c [:headers "content-encoding"]))
-          "gzip"
-          (update resp-c :body util/gunzip)
-          "deflate"
-          (update resp-c :body util/inflate)
+          "gzip" (update resp-c :body util/gunzip)
+          "deflate" (update resp-c :body util/inflate)
           resp-c)))))
-
 
 (defn wrap-output-coercion [client]
   (fn [{:keys [as] :as req}]
@@ -120,7 +115,6 @@
          (assoc resp :body (String. #^"[B" body "UTF-8")))
         resp))))
 
-
 (defn wrap-input-coercion [client]
   (fn [{:keys [body body-encoding length] :as req}]
     (if body
@@ -147,7 +141,6 @@
        (client req))
       (client req))))
 
-
 (defn content-type-value [type]
   (if (keyword? type)
     (str "application/" (name type))
@@ -160,7 +153,6 @@
                         (content-type-value content-type))))
       (client req))))
 
-
 (defn wrap-accept [client]
   (fn [{:keys [accept] :as req}]
     (if accept
@@ -168,7 +160,6 @@
                   (assoc-in [:headers "Accept"]
                             (content-type-value accept))))
       (client req))))
-
 
 (defn accept-encoding-value [accept-encoding]
   (str/join ", " (map name accept-encoding)))
@@ -180,7 +171,6 @@
                   (assoc-in [:headers "Accept-Encoding"]
                             (accept-encoding-value accept-encoding))))
       (client req))))
-
 
 (defn generate-query-string [params]
   (str/join "&"
@@ -195,7 +185,6 @@
                               (util/url-encode (str v)))]))
                     params)))
 
-
 (defn wrap-query-params [client]
   (fn [{:keys [query-params] :as req}]
     (if query-params
@@ -203,7 +192,6 @@
                   (assoc :query-string
                     (generate-query-string query-params))))
       (client req))))
-
 
 (defn basic-auth-value [basic-auth]
   (let [basic-auth (if (string? basic-auth)

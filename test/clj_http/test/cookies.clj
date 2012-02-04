@@ -209,4 +209,3 @@
               {"set-cookie"
                "example-cookie=example-value;Domain=.example.com;Path=/"}}))
           {:cookies {:a {:value "1"} :b {:value "2"}}}))))
-

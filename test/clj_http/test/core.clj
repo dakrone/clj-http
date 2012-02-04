@@ -164,31 +164,21 @@
                        (into-array BasicHeader
                                    (map (fn [[name value]]
                                           (BasicHeader. name value))
-                                        headers))
-                       nil)]
-         (is (= (core/parse-headers iterator)
-                expected)))
+                                        headers)) nil)]
+         (is (= (core/parse-headers iterator) expected)))
 
-       []
-       {}
+       [] {}
 
-       [["Set-Cookie" "one"]]
-       {"set-cookie" "one"}
+       [["Set-Cookie" "one"]] {"set-cookie" "one"}
 
-       [["Set-Cookie" "one"]
-        ["set-COOKIE" "two"]]
+       [["Set-Cookie" "one"] ["set-COOKIE" "two"]]
        {"set-cookie" ["one" "two"]}
 
-       [["Set-Cookie" "one"]
-        ["serVer"     "some-server"]
-        ["set-cookie" "two"]]
-       {"set-cookie" ["one" "two"]
-        "server"     "some-server"}))
+       [["Set-Cookie" "one"] ["serVer" "some-server"] ["set-cookie" "two"]]
+       {"set-cookie" ["one" "two"] "server" "some-server"}))
 
 (deftest ^{:integration true} t-streaming-response
   (run-server)
-  (let [stream (:body (request {:request-method :get
-                                :uri "/get"
-                                :as :stream}))
+  (let [stream (:body (request {:request-method :get :uri "/get" :as :stream}))
         body (slurp stream)]
     (is (= "get" body))))

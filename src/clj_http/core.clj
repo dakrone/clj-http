@@ -204,8 +204,8 @@
                           (ByteArrayEntity. body))))))
       (when debug
         (println "Request:")
-        (clojure.pprint/pprint (assoc req :body (format "... %s bytes ..."
-                                                        (count (:body req)))))
+        (clojure.pprint/pprint
+         (assoc req :body (format "... %s bytes ..." (count (:body req)))))
         (println "HttpRequest:")
         (clojure.pprint/pprint (bean http-req)))
       (let [http-resp (.execute http-client http-req)
