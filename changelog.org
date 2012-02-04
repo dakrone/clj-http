@@ -1,5 +1,11 @@
 * Changelog
   List of changes that have gone into each release
+** 0.3.1
+   - merged https://github.com/dakrone/clj-http/pull/40 to allow
+     per-request proxy settings
+   - remove a few more reflections
+   - added ablity to return the body as a stream with {:as :stream}
+   - general code cleanup
 ** 0.3.0
    - add ability to ignore unknown host if desired ({:ignore-unknown-host? true})
    - use much better Enitity's for the body, depending on type
@@ -68,6 +74,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Release 0.3.1
 ** 2012-02-03
    - merged https://github.com/dakrone/clj-http/pull/40 to allow
      per-request proxy settings
