@@ -60,15 +60,25 @@ More example requests:
 
 ;; Output coercion
 (client/get "http://site.com/favicon.ico" {:as :byte-array})
+
 ;; Coerce as something other than UTF-8 string
 (client/get "http://site.com/string.txt" {:as "UTF-16"})
+
 ;; Coerce as json
 (client/get "http://site.com/foo.json" {:as :json})
 (client/get "http://site.com/foo.json" {:as :json-string-keys})
+
 ;; Try to automatically coerce the output based on the content-type
 ;; header (this is currently a BETA feature!)
 (client/get "http://site.com/foo.json" {:as :auto})
 
+;; Return the body as a stream
+(client/get "http://site.com/bigrequest.html" {:as :stream})
+;; Note that the connection to the server will NOT be closed until the
+;; stream has been read
+
+
+;; Various options:
 (client/post "http://site.com/api"
   {:basic-auth ["user" "pass"]
    :body "{\"json\": \"input\"}"
@@ -141,6 +151,7 @@ codes.
 The client transparently accepts and decompresses the `gzip` and
 `deflate` content encodings.
 
+### Proxies
 A proxy can be specified by setting the Java properties:
 `<scheme>.proxyHost` and `<scheme>.proxyPort` where `<scheme>` is the client
 scheme used (normally 'http' or 'https'). Additionally, per-request
