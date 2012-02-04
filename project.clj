@@ -17,7 +17,7 @@
                         [commons-io "2.1"]
                         [slingshot "0.10.1"]
                         [cheshire "2.1.0"]]
-               "1.4.0" [[org.clojure/clojure "1.4.0-alpha4"]
+               "1.4.0" [[org.clojure/clojure "1.4.0-beta1"]
                         [org.apache.httpcomponents/httpclient "4.1.2"]
                         [org.apache.httpcomponents/httpmime "4.1.2"]
                         [commons-codec "1.5"]
