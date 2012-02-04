@@ -8,6 +8,23 @@ pull request or open an issue if you have any problems
 
 [![Continuous Integration status](https://secure.travis-ci.org/dakrone/clj-http.png)](http://travis-ci.org/dakrone/clj-http)
 
+## Installation
+
+`clj-http` is available as a Maven artifact from
+[Clojars](http://clojars.org/clj-http):
+
+```clojure
+[clj-http "0.3.0"]
+```
+
+Previous versions available as
+
+```clojure
+[clj-http "0.2.7"]
+[clj-http "0.2.6"]
+[clj-http "0.2.5"]
+```
+
 ## Usage
 
 The main HTTP client functionality is provided by the
@@ -37,47 +54,6 @@ More example requests:
 
 (client/get "http://site.com/resources/3" {:accept :json})
 
-;; Input coercion
-(client/post "http://site.com/resources" {:body my-byte-array})
-(client/post "http://site.com/resources" {:body "string"})
-;; :body-encoding is optional and defaults to "UTF-8"
-(client/post "http://site.com/resources"
-             {:body "string" :body-encoding "UTF-8"})
-(client/post "http://site.com/resources"
-             {:body (clojure.java.io/file "/tmp/foo") :body-encoding
-             "UTF-8"})
-;; :length is NOT optional for passing an InputStream in
-(client/post "http://site.com/resources"
-             {:body (clojure.java.io/input-stream "/tmp/foo")
-              :length 1000})
-
-;; Basic authentication
-(client/get "http://site.com/protected" {:basic-auth ["user" "pass"]})
-(client/get "http://site.com/protected" {:basic-auth "user:pass"})
-
-;; Query parameters
-(client/get "http://site.com/search" {:query-params {"q" "foo, bar"}})
-
-;; Output coercion
-(client/get "http://site.com/favicon.ico" {:as :byte-array})
-
-;; Coerce as something other than UTF-8 string
-(client/get "http://site.com/string.txt" {:as "UTF-16"})
-
-;; Coerce as json
-(client/get "http://site.com/foo.json" {:as :json})
-(client/get "http://site.com/foo.json" {:as :json-string-keys})
-
-;; Try to automatically coerce the output based on the content-type
-;; header (this is currently a BETA feature!)
-(client/get "http://site.com/foo.json" {:as :auto})
-
-;; Return the body as a stream
-(client/get "http://site.com/bigrequest.html" {:as :stream})
-;; Note that the connection to the server will NOT be closed until the
-;; stream has been read
-
-
 ;; Various options:
 (client/post "http://site.com/api"
   {:basic-auth ["user" "pass"]
@@ -105,6 +81,69 @@ More example requests:
                                               ["file" (clojure.java.io/file "pic.jpg")]]})
 ;; Multipart values can be one of the following:
 ;; String, InputStream, File, or a byte-array
+
+;; Basic authentication
+(client/get "http://site.com/protected" {:basic-auth ["user" "pass"]})
+(client/get "http://site.com/protected" {:basic-auth "user:pass"})
+
+;; Query parameters
+(client/get "http://site.com/search" {:query-params {"q" "foo, bar"}})
+```
+
+The client will also follow redirects on the appropriate `30*` status
+codes.
+
+The client transparently accepts and decompresses the `gzip` and
+`deflate` content encodings.
+
+### Input coercion
+
+```clojure
+;; body as a byte-array
+(client/post "http://site.com/resources" {:body my-byte-array})
+
+;; body as a string
+(client/post "http://site.com/resources" {:body "string"})
+
+;; :body-encoding is optional and defaults to "UTF-8"
+(client/post "http://site.com/resources"
+             {:body "string" :body-encoding "UTF-8"})
+
+;; body as a file
+(client/post "http://site.com/resources"
+             {:body (clojure.java.io/file "/tmp/foo") :body-encoding
+             "UTF-8"})
+
+;; :length is NOT optional for passing an InputStream in
+(client/post "http://site.com/resources"
+             {:body (clojure.java.io/input-stream "/tmp/foo")
+              :length 1000})
+```
+
+### Output coercion
+
+```clojure
+;; The default output is a string body
+(client/get "http://site.com/foo.txt")
+
+;; Coerce as a byte-array
+(client/get "http://site.com/favicon.ico" {:as :byte-array})
+
+;; Coerce as something other than UTF-8 string
+(client/get "http://site.com/string.txt" {:as "UTF-16"})
+
+;; Coerce as json
+(client/get "http://site.com/foo.json" {:as :json})
+(client/get "http://site.com/foo.json" {:as :json-string-keys})
+
+;; Try to automatically coerce the output based on the content-type
+;; header (this is currently a BETA feature!)
+(client/get "http://site.com/foo.json" {:as :auto})
+
+;; Return the body as a stream
+(client/get "http://site.com/bigrequest.html" {:as :stream})
+;; Note that the connection to the server will NOT be closed until the
+;; stream has been read
 ```
 
 A more general `request` function is also available, which is useful
@@ -115,6 +154,8 @@ as a primitive for building higher-level interfaces:
   (client/request
     (merge {:method method :url (str "http://site.com/" path)} opts)))
 ```
+
+### Exceptions
 
 The client will throw exceptions on, well, exceptional status
 codes. clj-http will throw a
@@ -144,14 +185,8 @@ block:
 ````
 (spacing added by me to be human readable)
 
-
-The client will also follow redirects on the appropriate `30*` status
-codes.
-
-The client transparently accepts and decompresses the `gzip` and
-`deflate` content encodings.
-
 ### Proxies
+
 A proxy can be specified by setting the Java properties:
 `<scheme>.proxyHost` and `<scheme>.proxyPort` where `<scheme>` is the client
 scheme used (normally 'http' or 'https'). Additionally, per-request
@@ -162,7 +197,7 @@ options:
 (client/get "http://foo.com" {:proxy-host "127.0.0.1" :proxy-port 8118})
 ```
 
-## Using persistent connections
+### Using persistent connections
 clj-http can use persistent connections to speed up connections if
 multiple connections are being used:
 
@@ -186,23 +221,6 @@ This feature is fairly new, please let me know if you have any feedback!
 If you need to fake clj-http responses (for things like testing and
 such), check out the
 [clj-http-fake](https://github.com/myfreeweb/clj-http-fake) library.
-
-## Installation
-
-`clj-http` is available as a Maven artifact from
-[Clojars](http://clojars.org/clj-http):
-
-```clojure
-[clj-http "0.3.0"]
-```
-
-Previous versions available as
-
-```clojure
-[clj-http "0.2.7"]
-[clj-http "0.2.6"]
-[clj-http "0.2.5"]
-```
 
 ## Design
 
