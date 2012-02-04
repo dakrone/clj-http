@@ -184,3 +184,11 @@
         ["set-cookie" "two"]]
        {"set-cookie" ["one" "two"]
         "server"     "some-server"}))
+
+(deftest ^{:integration true} t-streaming-response
+  (run-server)
+  (let [stream (:body (request {:request-method :get
+                                :uri "/get"
+                                :as :stream}))
+        body (slurp stream)]
+    (is (= "get" body))))

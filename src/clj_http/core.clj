@@ -140,6 +140,22 @@
                           (HttpHost. effective-proxy-host
                                      effective-proxy-port))))))
 
+(defn- coerce-body-entity
+  "Coerce the http-entity from an HttpResponse to either a byte-array, or a
+  stream that closes itself and the connection manager when closed."
+  [{:keys [as]} http-entity conn-mgr]
+  (when http-entity
+    (if (= :stream as)
+      (proxy [java.io.FilterInputStream]
+          [(.getContent http-entity)]
+        (close []
+          (try
+            (proxy-super close)
+            (finally
+             (when (instance? SingleClientConnManager conn-mgr)
+               (.shutdown conn-mgr))))))
+      (EntityUtils/toByteArray http-entity))))
+
 (defn request
   "Executes the HTTP request corresponding to the given Ring request map and
    returns the Ring response map corresponding to the resulting HTTP response.
@@ -149,7 +165,7 @@
   [{:keys [request-method scheme server-name server-port uri query-string
            headers content-type character-encoding body socket-timeout
            conn-timeout multipart debug insecure? save-request? proxy-host
-           proxy-port] :as req}]
+           proxy-port as] :as req}]
   (let [conn-mgr (or *connection-manager* (make-regular-conn-manager insecure?))
         http-client (DefaultHttpClient.
                       ^org.apache.http.conn.ClientConnectionManager conn-mgr)]
@@ -196,10 +212,10 @@
             http-entity (.getEntity http-resp)
             resp {:status (.getStatusCode (.getStatusLine http-resp))
                   :headers (parse-headers (.headerIterator http-resp))
-                  :body (when http-entity
-                          (EntityUtils/toByteArray http-entity))}]
-        (when (instance? SingleClientConnManager conn-mgr)
-          (.shutdown (.getConnectionManager http-client)))
+                  :body (coerce-body-entity req http-entity conn-mgr)}]
+        (when (and (instance? SingleClientConnManager conn-mgr)
+                   (not= :stream as))
+          (.shutdown conn-mgr))
         (if save-request?
           (-> resp
               (assoc :request req)
