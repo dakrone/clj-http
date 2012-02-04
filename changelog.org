@@ -73,6 +73,7 @@
      per-request proxy settings
    - remove a few more reflections
    - added ablity to return the body as a stream with {:as :stream}
+   - general code cleanup
 ** Release 0.3.0
 ** 2012-01-31
    - add ability to ignore unknown host if desired ({:ignore-unknown-host? true})

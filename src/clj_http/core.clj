@@ -1,7 +1,7 @@
 (ns clj-http.core
   "Core HTTP request/response implementation."
   (:require [clojure.pprint])
-  (:import (java.io File InputStream)
+  (:import (java.io File FilterInputStream InputStream)
            (java.net URI)
            (org.apache.http HeaderIterator HttpRequest HttpEntity
                             HttpEntityEnclosingRequest
@@ -18,6 +18,7 @@
                                            HttpPost HttpDelete
                                            HttpEntityEnclosingRequestBase)
            (org.apache.http.client.params CookiePolicy ClientPNames)
+           (org.apache.http.conn ClientConnectionManager)
            (org.apache.http.conn.params ConnRoutePNames)
            (org.apache.http.conn.scheme PlainSocketFactory
                                         SchemeRegistry Scheme)
@@ -143,10 +144,10 @@
 (defn- coerce-body-entity
   "Coerce the http-entity from an HttpResponse to either a byte-array, or a
   stream that closes itself and the connection manager when closed."
-  [{:keys [as]} http-entity conn-mgr]
+  [{:keys [as]} ^HttpEntity http-entity ^ClientConnectionManager conn-mgr]
   (when http-entity
     (if (= :stream as)
-      (proxy [java.io.FilterInputStream]
+      (proxy [FilterInputStream]
           [(.getContent http-entity)]
         (close []
           (try
@@ -215,7 +216,7 @@
                   :body (coerce-body-entity req http-entity conn-mgr)}]
         (when (and (instance? SingleClientConnManager conn-mgr)
                    (not= :stream as))
-          (.shutdown conn-mgr))
+          (.shutdown ^ClientConnectionManager conn-mgr))
         (if save-request?
           (-> resp
               (assoc :request req)
