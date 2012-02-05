@@ -39,7 +39,7 @@
     (future (ring/run-jetty handler {:port 18080}))))
 
 (def base-req
-  {:scheme "http"
+  {:scheme :http
    :server-name "localhost"
    :server-port 18080})
 
@@ -118,9 +118,9 @@
     (try
       (is (thrown? javax.net.ssl.SSLPeerUnverifiedException
                    (request {:request-method :get :uri "/get"
-                             :server-port 18082 :scheme "https"})))
+                             :server-port 18082 :scheme :https})))
       (let [resp (request {:request-method :get :uri "/get" :server-port 18082
-                           :scheme "https" :insecure? true})]
+                           :scheme :https :insecure? true})]
         (is (= 200 (:status resp)))
         (is (= "get" (slurp-body resp))))
       (finally
@@ -149,7 +149,7 @@
                        :body (.getBytes "foo bar")
                        :save-request? true})]
     (is (= 200 (:status resp)))
-    (is (= {:scheme "http"
+    (is (= {:scheme :http
             :http-url "http://localhost:18080/post"
             :request-method :post
             :save-request? true
