@@ -20,7 +20,7 @@
 
 (defn parse-url [url]
   (let [url-parsed (URL. url)]
-    {:scheme (.getProtocol url-parsed)
+    {:scheme (keyword (.getProtocol url-parsed))
      :server-name (.getHost url-parsed)
      :server-port (when-pos (.getPort url-parsed))
      :uri (.getPath url-parsed)

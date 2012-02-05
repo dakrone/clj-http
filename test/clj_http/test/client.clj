@@ -7,7 +7,7 @@
            (java.util Arrays)))
 
 (def base-req
-  {:scheme "http"
+  {:scheme :http
    :server-name "localhost"
    :server-port 18080})
 
@@ -38,7 +38,7 @@
         resp (r-client {:server-name "foo.com" :request-method :get})]
     (is (= 200 (:status resp)))
     (is (= :get (:request-method (:req resp))))
-    (is (= "http" (:scheme (:req resp))))
+    (is (= :http (:scheme (:req resp))))
     (is (= "/bat" (:uri (:req resp))))))
 
 (deftest redirect-to-get-on-head
@@ -52,7 +52,7 @@
         resp (r-client {:server-name "foo.com" :request-method :head})]
     (is (= 200 (:status resp)))
     (is (= :get (:request-method (:req resp))))
-    (is (= "http" (:scheme (:req resp))))
+    (is (= :http (:scheme (:req resp))))
     (is (= "/bat" (:uri (:req resp))))))
 
 (deftest pass-on-non-redirect
@@ -205,7 +205,7 @@
 (deftest apply-on-url
   (let [u-client (client/wrap-url identity)
         resp (u-client {:url "http://google.com:8080/foo?bar=bat"})]
-    (is (= "http" (:scheme resp)))
+    (is (= :http (:scheme resp)))
     (is (= "google.com" (:server-name resp)))
     (is (= 8080 (:server-port resp)))
     (is (= "/foo" (:uri resp)))
