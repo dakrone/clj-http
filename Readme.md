@@ -70,6 +70,12 @@ More example requests:
 ;; If you don't want to follow-redirects automatically:
 (client/get "http://site.come/redirects-somewhere" {:follow-redirects false})
 
+;; Only follow a certain number of redirects:
+(client/get "http://site.come/redirects-somewhere" {:max-redirects 5})
+
+;; Throw an exception if redirected too many times:
+(client/get "http://site.come/redirects-somewhere" {:max-redirects 5 :throw-exceptions true})
+
 ;; Send form params as a urlencoded body
 (client/post "http//site.com" {:form-params {:foo "bar"}})
 

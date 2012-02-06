@@ -2,6 +2,7 @@
   (:use [clojure.test]
         [clojure.java.io :only [file]])
   (:require [clojure.pprint :as pp]
+            [clj-http.client :as client]
             [clj-http.core :as core]
             [clj-http.util :as util]
             [ring.adapter.jetty :as ring])
@@ -14,6 +15,9 @@
   (condp = [(:request-method req) (:uri req)]
     [:get "/get"]
     {:status 200 :body "get"}
+    [:get "/redirect"]
+    {:status 302 :headers
+     {"location" "http://localhost:18080/redirect"}}
     [:head "/head"]
     {:status 200}
     [:get "/content-type"]
@@ -182,3 +186,12 @@
   (let [stream (:body (request {:request-method :get :uri "/get" :as :stream}))
         body (slurp stream)]
     (is (= "get" body))))
+
+(deftest throw-on-too-many-redirects
+  (run-server)
+  (let [resp (client/get "http://localhost:18080/redirect"
+               {:max-redirects 2 :throw-exceptions false})]
+    (is (= 302 (:status resp))))
+  (is (thrown-with-msg? Exception #"Too many redirects: 3"
+        (client/get "http://localhost:18080/redirect"
+                    {:max-redirects 2 :throw-exceptions true}))))

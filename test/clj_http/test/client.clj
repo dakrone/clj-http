@@ -57,7 +57,8 @@
                    {:status 200
                     :req req}))
         r-client (-> client client/wrap-url client/wrap-redirects)
-        resp (r-client {:server-name "foo.com" :request-method :get :max-redirects 0})]
+        resp (r-client {:server-name "foo.com" :request-method
+                        :get :max-redirects 0})]
     (is (= 302 (:status resp)))
     (is (= "http://bar.com/bat" (get (:headers resp) "location")))))
 
