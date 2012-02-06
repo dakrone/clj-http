@@ -45,15 +45,22 @@
     ((wrap-redirects client) (assoc req :url url))))
 
 (defn wrap-redirects [client]
-  (fn [{:keys [request-method follow-redirects] :as req}]
+  (fn [{:keys [request-method follow-redirects max-redirects
+              redirects-count] :or {redirects-count 1} :as req}]
     (let [{:keys [status] :as resp} (client req)]
       (cond
        (= false follow-redirects)
        resp
+       (and max-redirects (> redirects-count max-redirects))
+       (if (:throw-exceptions req)
+         (throw+ resp "Too many redirects: %s" redirects-count)
+         resp)
        (and (#{301 302 307} status) (#{:get :head} request-method))
-       (follow-redirect client req resp)
+       (follow-redirect client (assoc req :redirects-count (inc redirects-count)) resp)
        (and (= 303 status) (= :head request-method))
-       (follow-redirect client (assoc req :request-method :get) resp)
+       (follow-redirect client (assoc req :request-method :get
+                                      :redirects-count (inc redirects-count))
+                        resp)
        :else
        resp))))
 
