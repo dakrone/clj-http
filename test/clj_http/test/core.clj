@@ -187,7 +187,7 @@
         body (slurp stream)]
     (is (= "get" body))))
 
-(deftest throw-on-too-many-redirects
+(deftest ^{:integration true} throw-on-too-many-redirects
   (run-server)
   (let [resp (client/get "http://localhost:18080/redirect"
                {:max-redirects 2 :throw-exceptions false})]
