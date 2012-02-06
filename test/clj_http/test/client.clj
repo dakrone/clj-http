@@ -14,7 +14,14 @@
 (deftest ^{:integration true} roundtrip
   (run-server)
   (Thread/sleep 1000)
+  ;; roundtrip with scheme as a keyword
   (let [resp (client/request (merge base-req {:uri "/get" :method :get}))]
+    (is (= 200 (:status resp)))
+    (is (= "close" (get-in resp [:headers "connection"])))
+    (is (= "get" (:body resp))))
+  ;; roundtrip with scheme as a string
+  (let [resp (client/request (merge base-req {:uri "/get" :method :get
+                                              :scheme "http"}))]
     (is (= 200 (:status resp)))
     (is (= "close" (get-in resp [:headers "connection"])))
     (is (= "get" (:body resp)))))
@@ -39,6 +46,7 @@
     (is (= 200 (:status resp)))
     (is (= :get (:request-method (:req resp))))
     (is (= :http (:scheme (:req resp))))
+
     (is (= "/bat" (:uri (:req resp))))))
 
 (deftest redirect-to-get-on-head

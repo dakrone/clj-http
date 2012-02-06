@@ -114,11 +114,11 @@
 
 (defn- default-proxy-host-for
   [scheme]
-  (System/getProperty (str (name scheme) ".proxyHost")))
+  (System/getProperty (str scheme ".proxyHost")))
 
 (defn- default-proxy-port-for
   [scheme]
-  (Integer/parseInt (System/getProperty (str (name scheme) ".proxyPort"))))
+  (Integer/parseInt (System/getProperty (str scheme ".proxyPort"))))
 
 (defn add-client-params!
   "Add various client params to the http-client object, if needed."
@@ -169,10 +169,11 @@
            proxy-port as] :as req}]
   (let [conn-mgr (or *connection-manager* (make-regular-conn-manager insecure?))
         http-client (DefaultHttpClient.
-                      ^org.apache.http.conn.ClientConnectionManager conn-mgr)]
+                      ^org.apache.http.conn.ClientConnectionManager conn-mgr)
+        scheme (name scheme)]
     (add-client-params! http-client scheme socket-timeout
                         conn-timeout server-name proxy-host proxy-port)
-    (let [http-url (str (name scheme) "://" server-name
+    (let [http-url (str scheme "://" server-name
                         (when server-port (str ":" server-port))
                         uri
                         (when query-string (str "?" query-string)))
