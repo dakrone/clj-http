@@ -241,6 +241,13 @@ Ring-style middleware to layer functionality over the core HTTP
 request/response implementation. Methods like `clj-http.client/get`
 are sugar over this `clj-http.client/request` function.
 
+### clj-http-lite
+
+Like clj-http but need something more lightweight without as many
+external dependencies? Check out
+[clj-http-lite](https://github.com/hiredman/clj-http-lite) for a
+project that can be used as a drop-in replacement for clj-http.
+
 ## Development
 
 To run the tests:
