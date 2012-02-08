@@ -35,7 +35,9 @@
     [:delete "/delete-with-body"]
     {:status 200 :body "delete-with-body"}
     [:post "/multipart"]
-    {:status 200 :body (:body req)}))
+    {:status 200 :body (:body req)}
+    [:get "/get-with-body"]
+    {:status 200 :body "get-with-body"}))
 
 (defn run-server
   []
@@ -195,3 +197,9 @@
   (is (thrown-with-msg? Exception #"Too many redirects: 3"
         (client/get "http://localhost:18080/redirect"
                     {:max-redirects 2 :throw-exceptions true}))))
+
+(deftest ^{:integration true} get-with-body
+  (run-server)
+  (let [resp (request {:request-method :get :uri "/get-with-body"
+                       :body (.getBytes "foo bar")})]
+    (is (= 200 (:status resp)))))

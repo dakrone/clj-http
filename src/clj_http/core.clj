@@ -50,11 +50,15 @@
         (.getParams)
         (.setParameter key val))))
 
-(defn proxy-delete-with-body [url]
-  (let [res (proxy [HttpEntityEnclosingRequestBase] []
-              (getMethod [] "DELETE"))]
-    (.setURI res (URI. url))
-    res))
+(defn make-proxy-method-with-body
+  [method]
+  (fn [url]
+    (doto (proxy [HttpEntityEnclosingRequestBase] []
+            (getMethod [] (.toUpperCase (name method))))
+      (.setURI (URI. url)))))
+
+(def proxy-delete-with-body (make-proxy-method-with-body :delete))
+(def proxy-get-with-body (make-proxy-method-with-body :get))
 
 (def ^SSLSocketFactory insecure-socket-factory
   (doto (SSLSocketFactory. (reify TrustStrategy
@@ -180,7 +184,7 @@
           req (assoc req :http-url http-url)
           #^HttpRequest
           http-req (case request-method
-                     :get    (HttpGet. http-url)
+                     :get    (proxy-get-with-body http-url)
                      :head   (HttpHead. http-url)
                      :put    (HttpPut. http-url)
                      :post   (HttpPost. http-url)
