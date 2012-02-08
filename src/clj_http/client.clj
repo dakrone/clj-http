@@ -40,30 +40,34 @@
 
 (declare wrap-redirects)
 
-(defn follow-redirect [client req resp]
+(defn follow-redirect
+  [client req {:keys [trace-redirects] :as resp}]
   (let [url (get-in resp [:headers "location"])]
-    ((wrap-redirects client) (assoc req :url url))))
+    ((wrap-redirects client) (assoc req :url url :trace-redirects trace-redirects))))
 
 (defn wrap-redirects [client]
   (fn [{:keys [request-method follow-redirects max-redirects
-               redirects-count] :or {redirects-count 1} :as req}]
-    (let [{:keys [status] :as resp} (client req)]
+              redirects-count trace-redirects url]
+       :or {redirects-count 1 trace-redirects []}
+       :as req}]
+    (let [{:keys [status] :as resp} (client req)
+          resp-r (assoc resp :trace-redirects (conj trace-redirects url))]
       (cond
        (= false follow-redirects)
        resp
        (and max-redirects (> redirects-count max-redirects))
        (if (:throw-exceptions req)
-         (throw+ resp "Too many redirects: %s" redirects-count)
-         resp)
+         (throw+ resp-r "Too many redirects: %s" redirects-count)
+         resp-r)
        (and (#{301 302 307} status) (#{:get :head} request-method))
        (follow-redirect client (assoc req :redirects-count
-                                      (inc redirects-count)) resp)
+                                      (inc redirects-count)) resp-r)
        (and (= 303 status) (= :head request-method))
        (follow-redirect client (assoc req :request-method :get
                                       :redirects-count (inc redirects-count))
-                        resp)
+                        resp-r)
        :else
-       resp))))
+       resp-r))))
 
 (defn wrap-decompression [client]
   (fn [req]
