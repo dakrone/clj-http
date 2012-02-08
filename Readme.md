@@ -44,8 +44,10 @@ requests. Responses are returned as Ring-style response maps:
               "cache-control" "private, max-age=0"
               "content-type" "text/html; charset=ISO-8859-1"
               ...}
-    :body "<!doctype html>..."}
+    :body "<!doctype html>..."
+    :trace-redirects ["http://google.com" "http://www.google.com/" "http://www.google.fr/"]}
 ```
+:trace-redirects will contain the chain of the redirections followed.
 
 More example requests:
 
