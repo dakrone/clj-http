@@ -74,6 +74,10 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-02-09
+   - merged https://github.com/dakrone/clj-http/pull/46 to
+     add :trace-redirects to the response map
+   - whitespace changes
 ** 2012-02-06
    - merged https://github.com/dakrone/clj-http/pull/44 to add ability
      to specify maximum number of redirects

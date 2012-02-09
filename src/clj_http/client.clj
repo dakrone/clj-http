@@ -43,13 +43,15 @@
 (defn follow-redirect
   [client req {:keys [trace-redirects] :as resp}]
   (let [url (get-in resp [:headers "location"])]
-    ((wrap-redirects client) (assoc req :url url :trace-redirects trace-redirects))))
+    ((wrap-redirects client) (assoc req
+                               :url url
+                               :trace-redirects trace-redirects))))
 
 (defn wrap-redirects [client]
   (fn [{:keys [request-method follow-redirects max-redirects
-              redirects-count trace-redirects url]
-       :or {redirects-count 1 trace-redirects []}
-       :as req}]
+               redirects-count trace-redirects url]
+        :or {redirects-count 1 trace-redirects []}
+        :as req}]
     (let [{:keys [status] :as resp} (client req)
           resp-r (assoc resp :trace-redirects (conj trace-redirects url))]
       (cond
