@@ -42,10 +42,11 @@
                    {:status 200
                     :req req}))
         r-client (-> client client/wrap-url client/wrap-redirects)
-        resp (r-client {:server-name "foo.com" :request-method :get})]
+        resp (r-client {:server-name "foo.com" :url "http://foo.com" :request-method :get})]
     (is (= 200 (:status resp)))
     (is (= :get (:request-method (:req resp))))
     (is (= :http (:scheme (:req resp))))
+    (is (= ["http://foo.com" "http://bar.com/bat"] (:trace-redirects resp)))
 
     (is (= "/bat" (:uri (:req resp))))))
 
@@ -57,9 +58,10 @@
                    {:status 200
                     :req req}))
         r-client (-> client client/wrap-url client/wrap-redirects)
-        resp (r-client {:server-name "foo.com" :request-method
+        resp (r-client {:server-name "foo.com" :url "http://foo.com" :request-method
                         :get :max-redirects 0})]
     (is (= 302 (:status resp)))
+    (is (= ["http://foo.com"] (:trace-redirects resp)))
     (is (= "http://bar.com/bat" (get (:headers resp) "location")))))
 
 (deftest redirect-to-get-on-head
@@ -70,17 +72,19 @@
                    {:status 200
                     :req req}))
         r-client (-> client client/wrap-url client/wrap-redirects)
-        resp (r-client {:server-name "foo.com" :request-method :head})]
+        resp (r-client {:server-name "foo.com" :url "http://foo.com" :request-method :head})]
     (is (= 200 (:status resp)))
     (is (= :get (:request-method (:req resp))))
     (is (= :http (:scheme (:req resp))))
+    (is (= ["http://foo.com" "http://bar.com/bat"] (:trace-redirects resp)))
     (is (= "/bat" (:uri (:req resp))))))
 
 (deftest pass-on-non-redirect
   (let [client (fn [req] {:status 200 :body (:body req)})
         r-client (client/wrap-redirects client)
-        resp (r-client {:body "ok"})]
+        resp (r-client {:body "ok" :url "http://foo.com"})]
     (is (= 200 (:status resp)))
+    (is (= ["http://foo.com"] (:trace-redirects resp)))
     (is (= "ok" (:body resp)))))
 
 (deftest pass-on-follow-redirects-false
@@ -88,7 +92,8 @@
         r-client (client/wrap-redirects client)
         resp (r-client {:body "ok" :follow-redirects false})]
     (is (= 302 (:status resp)))
-    (is (= "ok" (:body resp)))))
+    (is (= "ok" (:body resp)))
+    (is (nil? (:trace-redirects resp)))))
 
 (deftest throw-on-exceptional
   (let [client (fn [req] {:status 500})

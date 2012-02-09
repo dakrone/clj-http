@@ -191,7 +191,8 @@
   (run-server)
   (let [resp (client/get "http://localhost:18080/redirect"
                {:max-redirects 2 :throw-exceptions false})]
-    (is (= 302 (:status resp))))
+    (is (= 302 (:status resp)))
+    (is (= (apply vector (repeat 3 "http://localhost:18080/redirect")) (:trace-redirects resp))))
   (is (thrown-with-msg? Exception #"Too many redirects: 3"
         (client/get "http://localhost:18080/redirect"
                     {:max-redirects 2 :throw-exceptions true}))))
