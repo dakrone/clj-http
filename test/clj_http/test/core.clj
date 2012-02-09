@@ -37,7 +37,7 @@
     [:post "/multipart"]
     {:status 200 :body (:body req)}
     [:get "/get-with-body"]
-    {:status 200 :body "get-with-body"}))
+    {:status 200 :body (:body req)}))
 
 (defn run-server
   []
@@ -194,7 +194,8 @@
   (let [resp (client/get "http://localhost:18080/redirect"
                {:max-redirects 2 :throw-exceptions false})]
     (is (= 302 (:status resp)))
-    (is (= (apply vector (repeat 3 "http://localhost:18080/redirect")) (:trace-redirects resp))))
+    (is (= (apply vector (repeat 3 "http://localhost:18080/redirect"))
+           (:trace-redirects resp))))
   (is (thrown-with-msg? Exception #"Too many redirects: 3"
         (client/get "http://localhost:18080/redirect"
                     {:max-redirects 2 :throw-exceptions true}))))
@@ -203,4 +204,5 @@
   (run-server)
   (let [resp (request {:request-method :get :uri "/get-with-body"
                        :body (.getBytes "foo bar")})]
-    (is (= 200 (:status resp)))))
+    (is (= 200 (:status resp)))
+    (is (= "foo bar" (String. (:body resp))))))
