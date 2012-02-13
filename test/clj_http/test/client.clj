@@ -26,6 +26,17 @@
     (is (= "close" (get-in resp [:headers "connection"])))
     (is (= "get" (:body resp)))))
 
+(deftest ^{:integration true} nil-input
+  (is (thrown? AssertionError
+               (client/get nil)))
+  (is (thrown? AssertionError
+               (client/post nil)))
+  (is (thrown? AssertionError
+               (client/put nil)))
+  (is (thrown? AssertionError
+               (client/delete nil))))
+
+
 (defn is-passed [middleware req]
   (let [client (middleware identity)]
     (is (= req (client req)))))
