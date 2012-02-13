@@ -316,38 +316,38 @@
   request
   (wrap-request #'core/request))
 
-(defmacro ^{ :private true } not-nil?
-  [x]
-  `(not (nil? ~x)))
+(definline check-url! [url]
+  `(when (nil? ~url)
+     (throw (Exception. "Host URL cannot be nil"))))
 
 (defn get
   "Like #'request, but sets the :method and :url as appropriate."
   [url & [req]]
-  { :pre [(not-nil? url)] }
+  (check-url! url)
   (request (merge req {:method :get :url url})))
 
 (defn head
   "Like #'request, but sets the :method and :url as appropriate."
   [url & [req]]
-  { :pre [(not-nil? url)] }
+  (check-url! url)
   (request (merge req {:method :head :url url})))
 
 (defn post
   "Like #'request, but sets the :method and :url as appropriate."
   [url & [req]]
-  { :pre [(not-nil? url)] }
+  (check-url! url)
   (request (merge req {:method :post :url url})))
 
 (defn put
   "Like #'request, but sets the :method and :url as appropriate."
   [url & [req]]
-  { :pre [(not-nil? url)] }
+  (check-url! url)
   (request (merge req {:method :put :url url})))
 
 (defn delete
   "Like #'request, but sets the :method and :url as appropriate."
   [url & [req]]
-  { :pre [(not-nil? url)] }
+  (check-url! url)
   (request (merge req {:method :delete :url url})))
 
 (defmacro with-connection-pool

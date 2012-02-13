@@ -27,13 +27,13 @@
     (is (= "get" (:body resp)))))
 
 (deftest ^{:integration true} nil-input
-  (is (thrown? AssertionError
+  (is (thrown-with-msg? Exception #"Host URL cannot be nil"
                (client/get nil)))
-  (is (thrown? AssertionError
+  (is (thrown-with-msg? Exception #"Host URL cannot be nil"
                (client/post nil)))
-  (is (thrown? AssertionError
+  (is (thrown-with-msg? Exception #"Host URL cannot be nil"
                (client/put nil)))
-  (is (thrown? AssertionError
+  (is (thrown-with-msg? Exception #"Host URL cannot be nil"
                (client/delete nil))))
 
 
