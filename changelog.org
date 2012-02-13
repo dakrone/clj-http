@@ -1,5 +1,21 @@
 * Changelog
   List of changes that have gone into each release
+** 0.3.2
+   - merged https://github.com/dakrone/clj-http/pull/48 to fix :stream
+     bodies (to make sure they are not coerced on output)
+   - merged https://github.com/dakrone/clj-http/pull/49 to check for
+     nil URLs when using client functions
+   - switch from assertions to exceptions for nil URLs
+   - merged https://github.com/dakrone/clj-http/pull/46 to
+     add :trace-redirects to the response map
+   - merged https://github.com/dakrone/clj-http/pull/47 to allow GET
+     requests with a :body set
+   - merged https://github.com/dakrone/clj-http/pull/44 to add ability
+     to specify maximum number of redirects
+   - add tests for max-redirects
+   - merged https://github.com/dakrone/clj-http/pull/42 to allow
+     strings or keywords for :scheme in requests
+   - added test for different :schemes
 ** 0.3.1
    - merged https://github.com/dakrone/clj-http/pull/40 to allow
      per-request proxy settings
@@ -74,6 +90,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Release 0.3.2
 ** 2012-02-13
    - merged https://github.com/dakrone/clj-http/pull/48 to fix :stream
      bodies (to make sure they are not coerced on output)
