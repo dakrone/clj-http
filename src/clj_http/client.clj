@@ -92,12 +92,18 @@
          (condp = as
            ;; Don't do anything when it's a byte-array
            :byte-array resp
+
+           ;; Don't do anything when it's a stream
+           :stream resp
+
            ;; Convert to json from UTF-8 string
            :json
            (assoc resp :body (json/decode (String. #^"[B" body "UTF-8") true))
+
            ;; Convert to json with strings as keys
            :json-string-keys
            (assoc resp :body (json/decode (String. #^"[B" body "UTF-8")))
+
            ;; Attempt to automatically coerce the body, returning a
            ;; string if no coercions are found
            :auto
@@ -119,8 +125,10 @@
 
                 :else
                 (String. #^"[B" body "UTF-8"))))
+
            ;; No :as matches found
            (assoc resp :body (String. #^"[B" body "UTF-8")))
+
          ;; Try the charset given if a string is specified
          (string? as)
          (assoc resp :body (String. #^"[B" body ^String as))
