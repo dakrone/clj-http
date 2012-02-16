@@ -15,6 +15,7 @@
                                   [ring/ring-devel "1.0.2"]]}
              :1.2 {:dependencies [[org.clojure/clojure "1.2.1"]]}
              :1.4 {:dependencies [[org.clojure/clojure "1.4.0-beta1"]]}}
+  :aliases {"all" ["with-profile" "dev,1.2:dev:dev,1.4"]}
   :test-selectors {:default  #(not (:integration %))
                    :integration :integration
                    :all (constantly true)}

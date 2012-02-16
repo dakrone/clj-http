@@ -263,9 +263,8 @@ To run the tests:
     $ lein test :all
 
     Run tests against 1.2.1, 1.3 and 1.4
-    $ lein multi deps
-    $ lein multi test
-    $ lein multi test :all
+    $ lein all test
+    $ lein all test :all
 
 ## License
 
