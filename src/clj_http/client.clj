@@ -52,7 +52,7 @@
   (fn [{:keys [request-method follow-redirects max-redirects
                redirects-count trace-redirects url]
         :or {redirects-count 1 trace-redirects []}
-       :as req}]
+        :as req}]
     (let [{:keys [status] :as resp} (client req)
           resp-r (assoc resp :trace-redirects (conj trace-redirects url))]
       (cond
