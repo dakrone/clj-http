@@ -319,7 +319,7 @@
 
 (definline check-url! [url]
   `(when (nil? ~url)
-     (throw (Exception. "Host URL cannot be nil"))))
+     (throw (IllegalArgumentException. "Host URL cannot be nil"))))
 
 (defn get
   "Like #'request, but sets the :method and :url as appropriate."
