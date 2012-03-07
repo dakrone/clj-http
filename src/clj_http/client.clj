@@ -36,7 +36,9 @@
       (if (or (not (clojure.core/get req :throw-exceptions true))
               (unexceptional-status? status))
         resp
-        (throw+ resp "clj-http: status %s" (:status %))))))
+        (if (:throw-entire-message? req)
+          (throw+ resp "clj-http: status %d %s" (:status %) resp)
+          (throw+ resp "clj-http: status %s" (:status %)))))))
 
 (declare wrap-redirects)
 

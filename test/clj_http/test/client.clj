@@ -126,7 +126,11 @@
   (let [client (fn [req] {:status 500})
         e-client (client/wrap-exceptions client)]
     (is (thrown-with-msg? Exception #"500"
-          (e-client {})))))
+          (e-client {}))))
+  (let [client (fn [req] {:status 500 :body "foo"})
+        e-client (client/wrap-exceptions client)]
+    (is (thrown-with-msg? Exception #":body"
+          (e-client {:throw-entire-message? true})))))
 
 (deftest pass-on-non-exceptional
   (let [client (fn [req] {:status 200})

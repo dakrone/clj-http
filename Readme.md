@@ -119,13 +119,11 @@ The client transparently accepts and decompresses the `gzip` and
 
 ;; body as a file
 (client/post "http://site.com/resources"
-             {:body (clojure.java.io/file "/tmp/foo") :body-encoding
-             "UTF-8"})
+             {:body (clojure.java.io/file "/tmp/foo") :body-encoding "UTF-8"})
 
 ;; :length is NOT optional for passing an InputStream in
 (client/post "http://site.com/resources"
-             {:body (clojure.java.io/input-stream "/tmp/foo")
-              :length 1000})
+             {:body (clojure.java.io/input-stream "/tmp/foo") :length 1000})
 ```
 
 ### Output coercion
@@ -173,17 +171,21 @@ block:
 
 ```clojure
 (client/get "http://site.com/broken")
-=> Stone Object thrown by throw+: {:status 404, :headers {"server" "nginx/1.0.4",
-                                                          "x-runtime" "12ms",
-                                                          "content-encoding" "gzip",
-                                                          "content-type" "text/html; charset=utf-8",
-                                                          "date" "Mon, 17 Oct 2011 23:15 :36 GMT",
-                                                          "cache-control" "no-cache",
-                                                          "status" "404 Not Found",
-                                                          "transfer-encoding" "chunked",
-                                                          "connection" "close"},
-                                   :body "...body here..."}
-   clj-http.client/wrap-exceptions/fn--227 (client.clj:37)
+=> ExceptionInfo clj-http: status 404  clj-http.client/wrap-exceptions/fn--583 (client.clj:41)
+;; Or, if you would like the Exception message to contain the entire response:
+(client/get "http://site.com/broken" {:throw-entire-message? true})
+=> ExceptionInfo clj-http: status 404 {:status 404,
+                                       :headers {"server" "nginx/1.0.4",
+                                                 "x-runtime" "12ms",
+                                                 "content-encoding" "gzip",
+                                                 "content-type" "text/html; charset=utf-8",
+                                                 "date" "Mon, 17 Oct 2011 23:15 :36 GMT",
+                                                 "cache-control" "no-cache",
+                                                 "status" "404 Not Found",
+                                                 "transfer-encoding" "chunked",
+                                                 "connection" "close"},
+                                       :body "...body here..."}
+   clj-http.client/wrap-exceptions/fn--584 (client.clj:42
 
 ;; You can also ignore exceptions and handle them yourself:
 (client/get "http://site.com/broken" {:throw-exceptions false})
