@@ -94,6 +94,9 @@
    - bump Cheshire and slingshot deps
    - add the :throw-entire-message? option to include resp in
      Exception message
+** 2012-02-26
+   - throw an IllegalArgumentException instead of a regulor Exception
+     on nil urls
 ** 2012-02-21
    - add ability to redirect to relative paths (ngrunwald)
 ** Release 0.3.2
