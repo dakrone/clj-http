@@ -1,5 +1,14 @@
 * Changelog
   List of changes that have gone into each release
+** 0.3.3
+   - merged https://github.com/dakrone/clj-http/pull/51 to
+     allow :form-params on PUT requests
+   - bump Cheshire and slingshot deps
+   - add the :throw-entire-message? option to include resp in
+     Exception message
+   - throw an IllegalArgumentException instead of a regulor Exception
+     on nil urls
+   - add ability to redirect to relative paths (ngrunwald)
 ** 0.3.2
    - merged https://github.com/dakrone/clj-http/pull/48 to fix :stream
      bodies (to make sure they are not coerced on output)
@@ -90,6 +99,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Release 0.3.3
 ** 2012-03-09
    - merged https://github.com/dakrone/clj-http/pull/51 to
      allow :form-params on PUT requests
