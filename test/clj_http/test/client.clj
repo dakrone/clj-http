@@ -291,6 +291,13 @@
                                             :param2 "value2"}})]
       (is (= "param1=value1&param2=value2" (:body resp)))
       (is (= "application/x-www-form-urlencoded" (:content-type resp)))
+      (is (not (contains? resp :form-params))))
+    (let [param-client (client/wrap-form-params identity)
+          resp (param-client {:request-method :put
+                              :form-params {:param1 "value1"
+                                            :param2 "value2"}})]
+      (is (= "param1=value1&param2=value2" (:body resp)))
+      (is (= "application/x-www-form-urlencoded" (:content-type resp)))
       (is (not (contains? resp :form-params)))))
   (testing "Ensure it does not affect GET requests"
     (let [param-client (client/wrap-form-params identity)
