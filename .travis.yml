@@ -1,4 +1,5 @@
 language: clojure
+lein: lein2
 branches:
   only:
     - master
