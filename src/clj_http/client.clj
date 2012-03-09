@@ -251,7 +251,7 @@
 
 (defn wrap-form-params [client]
   (fn [{:keys [form-params request-method] :as req}]
-    (if (and form-params (= :post request-method))
+    (if (and form-params (#{:post :put} request-method))
       (client (-> req
                   (dissoc :form-params)
                   (assoc :content-type (content-type-value
