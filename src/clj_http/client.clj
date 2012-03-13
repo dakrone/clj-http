@@ -250,13 +250,17 @@
       (client req))))
 
 (defn wrap-form-params [client]
-  (fn [{:keys [form-params request-method] :as req}]
+  (fn [{:keys [form-params content-type request-method]
+        :or {content-type :x-www-form-urlencoded}
+        :as req}]
     (if (and form-params (#{:post :put} request-method))
       (client (-> req
                   (dissoc :form-params)
-                  (assoc :content-type (content-type-value
-                                        :x-www-form-urlencoded)
-                         :body (generate-query-string form-params))))
+                  (assoc :content-type (content-type-value content-type)
+                         :body (({:json json/generate-string
+                                  :x-www-form-urlencoded generate-query-string}
+                                 content-type)
+                                   form-params))))
       (client req))))
 
 (defn wrap-url [client]
