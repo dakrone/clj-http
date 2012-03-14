@@ -2,7 +2,8 @@
   (:use [clojure.test]
         [clj-http.test.core :only [run-server]])
   (:require [clj-http.client :as client]
-            [clj-http.util :as util])
+            [clj-http.util :as util]
+            [cheshire.core :as json])
   (:import (java.net UnknownHostException)
            (java.util Arrays)))
 
@@ -298,6 +299,23 @@
                                             :param2 "value2"}})]
       (is (= "param1=value1&param2=value2" (:body resp)))
       (is (= "application/x-www-form-urlencoded" (:content-type resp)))
+      (is (not (contains? resp :form-params)))))
+  (testing "With json form params"
+    (let [param-client (client/wrap-form-params identity)
+          params {:param1 "value1" :param2 "value2"}
+          resp (param-client {:request-method :post
+                              :content-type :json
+                              :form-params params})]
+      (is (= (json/encode params) (:body resp)))
+      (is (= "application/json" (:content-type resp)))
+      (is (not (contains? resp :form-params))))
+    (let [param-client (client/wrap-form-params identity)
+          params {:param1 "value1" :param2 "value2"}
+          resp (param-client {:request-method :put
+                              :content-type :json
+                              :form-params params})]
+      (is (= (json/encode params) (:body resp)))
+      (is (= "application/json" (:content-type resp)))
       (is (not (contains? resp :form-params)))))
   (testing "Ensure it does not affect GET requests"
     (let [param-client (client/wrap-form-params identity)

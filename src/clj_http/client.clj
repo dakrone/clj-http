@@ -257,10 +257,9 @@
       (client (-> req
                   (dissoc :form-params)
                   (assoc :content-type (content-type-value content-type)
-                         :body (({:json json/generate-string
-                                  :x-www-form-urlencoded generate-query-string}
-                                 content-type)
-                                   form-params))))
+                         :body (if (= content-type :json)
+                                 (json/encode form-params)
+                                 (generate-query-string form-params)))))
       (client req))))
 
 (defn wrap-url [client]

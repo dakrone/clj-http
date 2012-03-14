@@ -78,8 +78,10 @@ More example requests:
 ;; Throw an exception if redirected too many times:
 (client/get "http://site.come/redirects-somewhere" {:max-redirects 5 :throw-exceptions true})
 
-;; Send form params as a urlencoded body
+;; Send form params as a urlencoded body (POST or PUT)
 (client/post "http//site.com" {:form-params {:foo "bar"}})
+;; Send form params as a json encoded body (POST or PUT)
+(client/post "http//site.com" {:form-params {:foo "bar"} :content-type :json})
 
 ;; Multipart form uploads/posts
 ;; a map or vector works as the multipart object. Use a vector of

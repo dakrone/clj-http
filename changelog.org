@@ -99,6 +99,10 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-03-13
+   - merged https://github.com/dakrone/clj-http/pull/52 to support
+     json-encoded form params
+   - added a test for json-encoded form params as request body
 ** Release 0.3.3
 ** 2012-03-09
    - merged https://github.com/dakrone/clj-http/pull/51 to
