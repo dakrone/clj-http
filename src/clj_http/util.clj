@@ -37,11 +37,11 @@
   "Returns a gunzip'd version of the given byte array."
   [b]
   (when b
-    (cond 
-      (instance? java.io.InputStream b)
-        (GZIPInputStream. b)
-      :else 
-        (IOUtils/toByteArray (GZIPInputStream. (ByteArrayInputStream. b))))))
+    (cond
+     (instance? java.io.InputStream b)
+     (GZIPInputStream. b)
+     :else
+     (IOUtils/toByteArray (GZIPInputStream. (ByteArrayInputStream. b))))))
 
 (defn gzip
   "Returns a gzip'd version of the given byte array."
