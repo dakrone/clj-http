@@ -144,8 +144,12 @@ The client transparently accepts and decompresses the `gzip` and
 (client/get "http://site.com/foo.json" {:as :json})
 (client/get "http://site.com/foo.json" {:as :json-string-keys})
 
+;; Coerce as a clojure datastructure
+(client/get "http://site.com/foo.clj {:as :clojure})
+
 ;; Try to automatically coerce the output based on the content-type
-;; header (this is currently a BETA feature!)
+;; header (this is currently a BETA feature!). Currently supports
+;; text, json and clojure (with automatic charset detection)
 (client/get "http://site.com/foo.json" {:as :auto})
 
 ;; Return the body as a stream

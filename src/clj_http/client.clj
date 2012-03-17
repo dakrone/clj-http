@@ -107,6 +107,9 @@
            :json-string-keys
            (assoc resp :body (json/decode (String. #^"[B" body "UTF-8")))
 
+           :clojure
+           (assoc resp :body (read-string (String. #^"[B" body "UTF-8")))
+
            ;; Attempt to automatically coerce the body, returning a
            ;; string if no coercions are found
            :auto
@@ -119,6 +122,12 @@
                                                   (str typestring)))]
                   (String. #^"[B" body ^String charset)
                   (String. #^"[B" body "UTF-8"))
+
+                (.startsWith (str typestring) "application/clojure")
+                (if-let [charset (second (re-find #"charset=(.*)"
+                                                  (str typestring)))]
+                  (read-string (String. #^"[B" body ^String charset))
+                  (read-string (String. #^"[B" body "UTF-8")))
 
                 (.startsWith (str typestring) "application/json")
                 (if-let [charset (second (re-find #"charset=(.*)"
