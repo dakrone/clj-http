@@ -1,4 +1,4 @@
-(defproject clj-http "0.3.3"
+(defproject clj-http "0.3.4-SNAPSHOT"
   :description "A Clojure HTTP library wrapping the Apache HttpComponents client."
   :url "https://github.com/dakrone/clj-http/"
   :repositories {"sona" "http://oss.sonatype.org/content/repositories/snapshots"}
@@ -14,9 +14,8 @@
   :profiles {:dev {:dependencies [[ring/ring-jetty-adapter "1.0.2"]
                                   [ring/ring-devel "1.0.2"]]}
              :1.2 {:dependencies [[org.clojure/clojure "1.2.1"]]}
-             :1.4 {:dependencies [[org.clojure/clojure "1.4.0-beta3"]]}}
+             :1.4 {:dependencies [[org.clojure/clojure "1.4.0-beta5"]]}}
   :aliases {"all" ["with-profile" "dev,1.2:dev:dev,1.4"]}
   :test-selectors {:default  #(not (:integration %))
                    :integration :integration
-                   :all (constantly true)}
-  :checksum-deps true)
+                   :all (constantly true)})
