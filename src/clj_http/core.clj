@@ -45,7 +45,7 @@
        (into {})))
 
 (defn set-client-param [#^HttpClient client key val]
-  (when (not (nil? val))
+  (when-not (nil? val)
     (-> client
         (.getParams)
         (.setParameter key val))))

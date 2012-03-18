@@ -282,8 +282,7 @@
     (try
       (client req)
       (catch UnknownHostException e
-        (if ignore-unknown-host?
-          nil
+        (when-not ignore-unknown-host?
           (throw e))))))
 
 (defn wrap-request
