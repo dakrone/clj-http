@@ -30,6 +30,31 @@
 (def unexceptional-status?
   #{200 201 202 203 204 205 206 207 300 301 302 303 307})
 
+(defn success?
+  [{ :keys [status] }]
+  (<= 200 status 299))
+
+(defn missing?
+  [{ :keys [status] }]
+  (= status 404))
+
+(defn conflict?
+  [{ :keys [status] }]
+  (= status 409))
+
+
+(defn redirect?
+  [{ :keys [status] }]
+  (<= 300 status 399))
+
+(defn client-error?
+  [{ :keys [status] }]
+  (<= 400 status 499))
+
+(defn server-error?
+  [{ :keys [status] }]
+  (<= 500 status 599))
+
 (defn wrap-exceptions [client]
   (fn [req]
     (let [{:keys [status] :as resp} (client req)]
