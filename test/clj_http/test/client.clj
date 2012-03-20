@@ -29,13 +29,13 @@
 
 (deftest ^{:integration true} nil-input
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
-               (client/get nil)))
+        (client/get nil)))
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
-               (client/post nil)))
+        (client/post nil)))
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
-               (client/put nil)))
+        (client/put nil)))
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
-               (client/delete nil))))
+        (client/delete nil))))
 
 
 (defn is-passed [middleware req]
@@ -336,3 +336,34 @@
   (is (thrown? UnknownHostException (client/get "http://aorecuf892983a.com")))
   (is (nil? (client/get "http://aorecuf892983a.com"
                         {:ignore-unknown-host? true}))))
+
+
+(deftest test-status-predicates
+  (testing "2xx statuses"
+    (doseq [s (range 200 299)]
+      (is (client/success? { :status s }))
+      (is (not (client/redirect? { :status s })))
+      (is (not (client/client-error? { :status s })))
+      (is (not (client/server-error? { :status s })))))
+  (testing "3xx statuses"
+    (doseq [s (range 300 399)]
+      (is (not (client/success? { :status s })))
+      (is (client/redirect? { :status s }))
+      (is (not (client/client-error? { :status s })))
+      (is (not (client/server-error? { :status s })))))
+  (testing "4xx statuses"
+    (doseq [s (range 400 499)]
+      (is (not (client/success? { :status s })))
+      (is (not (client/redirect? { :status s })))
+      (is (client/client-error? { :status s }))
+      (is (not (client/server-error? { :status s })))))
+  (testing "5xx statuses"
+    (doseq [s (range 500 599)]
+      (is (not (client/success? { :status s })))
+      (is (not (client/redirect? { :status s })))
+      (is (not (client/client-error? { :status s })))
+      (is (client/server-error? { :status s }))))
+  (testing "409 Conflict"
+    (is (client/conflict? { :status 409 }))
+    (is (not (client/conflict? { :status 201 })))
+    (is (not (client/conflict? { :status 404 })))))
