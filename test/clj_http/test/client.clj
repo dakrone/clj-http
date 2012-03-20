@@ -341,29 +341,29 @@
 (deftest test-status-predicates
   (testing "2xx statuses"
     (doseq [s (range 200 299)]
-      (is (client/success? { :status s }))
-      (is (not (client/redirect? { :status s })))
-      (is (not (client/client-error? { :status s })))
-      (is (not (client/server-error? { :status s })))))
+      (is (client/success? {:status s}))
+      (is (not (client/redirect? {:status s})))
+      (is (not (client/client-error? {:status s})))
+      (is (not (client/server-error? {:status s})))))
   (testing "3xx statuses"
     (doseq [s (range 300 399)]
-      (is (not (client/success? { :status s })))
-      (is (client/redirect? { :status s }))
-      (is (not (client/client-error? { :status s })))
-      (is (not (client/server-error? { :status s })))))
+      (is (not (client/success? {:status s})))
+      (is (client/redirect? {:status s}))
+      (is (not (client/client-error? {:status s})))
+      (is (not (client/server-error? {:status s})))))
   (testing "4xx statuses"
     (doseq [s (range 400 499)]
-      (is (not (client/success? { :status s })))
-      (is (not (client/redirect? { :status s })))
-      (is (client/client-error? { :status s }))
-      (is (not (client/server-error? { :status s })))))
+      (is (not (client/success? {:status s})))
+      (is (not (client/redirect? {:status s})))
+      (is (client/client-error? {:status s}))
+      (is (not (client/server-error? {:status s})))))
   (testing "5xx statuses"
     (doseq [s (range 500 599)]
-      (is (not (client/success? { :status s })))
-      (is (not (client/redirect? { :status s })))
-      (is (not (client/client-error? { :status s })))
-      (is (client/server-error? { :status s }))))
+      (is (not (client/success? {:status s})))
+      (is (not (client/redirect? {:status s})))
+      (is (not (client/client-error? {:status s})))
+      (is (client/server-error? {:status s}))))
   (testing "409 Conflict"
-    (is (client/conflict? { :status 409 }))
-    (is (not (client/conflict? { :status 201 })))
-    (is (not (client/conflict? { :status 404 })))))
+    (is (client/conflict? {:status 409}))
+    (is (not (client/conflict? {:status 201})))
+    (is (not (client/conflict? {:status 404})))))
