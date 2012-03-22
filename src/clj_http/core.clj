@@ -211,7 +211,10 @@
       (when debug
         (println "Request:")
         (clojure.pprint/pprint
-         (assoc req :body (format "... %s bytes ..." (count (:body req)))))
+         (assoc req :body (if (isa? (:body req) String)
+                            (format "... %s bytes ..."
+                                    (count (:body req)))
+                            (bean (:body req)))))
         (println "HttpRequest:")
         (clojure.pprint/pprint (bean http-req)))
       (let [http-resp (.execute http-client http-req)
