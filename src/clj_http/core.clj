@@ -201,7 +201,7 @@
       (if multipart
         (.setEntity #^HttpEntityEnclosingRequest http-req
                     (create-multipart-entity multipart))
-        (when body
+        (when (and body (not (instance? HttpHead http-req)))
           (if (instance? HttpEntity body)
             (.setEntity #^HttpEntityEnclosingRequest http-req body)
             (.setEntity #^HttpEntityEnclosingRequest http-req
