@@ -201,7 +201,7 @@
       (if multipart
         (.setEntity #^HttpEntityEnclosingRequest http-req
                     (create-multipart-entity multipart))
-        (when body
+        (when (and body (not (instance? HttpHead http-req)))
           (if (instance? HttpEntity body)
             (.setEntity #^HttpEntityEnclosingRequest http-req body)
             (.setEntity #^HttpEntityEnclosingRequest http-req
@@ -211,7 +211,7 @@
       (when debug
         (println "Request:")
         (clojure.pprint/pprint
-         (assoc req :body (if (isa? (:body req) String)
+         (assoc req :body (if (isa? (type (:body req)) String)
                             (format "... %s bytes ..."
                                     (count (:body req)))
                             (bean (:body req)))))

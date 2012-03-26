@@ -210,6 +210,11 @@
     (is (= 200 (:status resp)))
     (is (= "foo bar" (String. (:body resp))))))
 
+(deftest ^{:integration true} head-with-body
+  (run-server)
+  (let [resp (request {:request-method :head :uri "/head" :body "foo"})]
+    (is (= 200 (:status resp)))))
+
 (deftest ^{:integration true} t-clojure-output-coercion
   (run-server)
   (let [resp (client/get "http://localhost:18080/clojure" {:as :clojure})]
