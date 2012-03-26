@@ -211,7 +211,7 @@
       (when debug
         (println "Request:")
         (clojure.pprint/pprint
-         (assoc req :body (if (isa? (:body req) String)
+         (assoc req :body (if (isa? (type (:body req)) String)
                             (format "... %s bytes ..."
                                     (count (:body req)))
                             (bean (:body req)))))
