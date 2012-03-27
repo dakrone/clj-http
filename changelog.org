@@ -1,5 +1,19 @@
 * Changelog
   List of changes that have gone into each release
+** 0.3.4
+   - improved commit from pull/55 to make the predicate more generalized to
+     any kind of entity request
+   - make Cheshire an optional dependency, only for {:as :json} and
+     json form-params
+   - merged https://github.com/dakrone/clj-http/pull/55 to fix HEAD
+     requests with body contents
+   - merged https://github.com/dakrone/clj-http/pull/53 to add status
+     functions into the clj-http.client namespace
+   - added the ability to specify {:as :clojure} to get back a clojure
+     datastructure, or {:as :auto} with content-type=application/clojure
+   - merged https://github.com/dakrone/clj-http/pull/52 to support
+     json-encoded form params
+   - added a test for json-encoded form params as request body
 ** 0.3.3
    - merged https://github.com/dakrone/clj-http/pull/51 to
      allow :form-params on PUT requests
@@ -99,6 +113,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Release 0.3.4
 ** 2012-03-27
    - improved commit from pull/55 to make the predicate more generalized to
      any kind of entity request

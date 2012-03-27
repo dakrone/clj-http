@@ -14,15 +14,15 @@ pull request or open an issue if you have any problems
 [Clojars](http://clojars.org/clj-http):
 
 ```clojure
-[clj-http "0.3.3"]
+[clj-http "0.3.4"]
 ```
 
 Previous versions available as
 
 ```clojure
+[clj-http "0.3.3"]
 [clj-http "0.3.2"]
 [clj-http "0.3.1"]
-[clj-http "0.3.0"]
 ```
 
 ## Usage
@@ -264,7 +264,7 @@ your project like this:
 ```clojure
 (defproject foo "0.1.0-SNAPSHOT"
   :dependencies [[org.clojure/clojure "1.3.0"]
-                 [clj-http "0.4.0" :exclusions [cheshire]]])
+                 [clj-http "0.3.4" :exclusions [cheshire]]])
 ```
 
 Note that if you exclude cheshire, json decoding of response bodies
