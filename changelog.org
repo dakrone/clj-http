@@ -99,6 +99,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-03-27
+   - improved commit from pull/55 to make the predicate more generalized to
+     any kind of entity request
 ** 2012-03-26
    - merged https://github.com/dakrone/clj-http/pull/55 to fix HEAD
      requests with body contents
