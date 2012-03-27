@@ -253,7 +253,7 @@ are sugar over this `clj-http.client/request` function.
 
 ## Known issues / Issues you may run into
 
-* `VerifyError class org.codehaus.jackson.smile.SmileParser overrides final method getBinaryValue.(Lorg/codehaus/jackson/Base64Variant;)[B java.lang.ClassLoader.defineClass1 (ClassLoader.java:-2)`
+### VerifyError class org.codehaus.jackson.smile.SmileParser overrides final method getBinaryValue...
 
 This is actually caused by your project attempting to use [clj-json](https://github.com/mmcgrana/clj-json/)
 and [cheshire](https://github.com/dakrone/cheshire) in the same
