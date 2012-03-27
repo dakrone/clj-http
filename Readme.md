@@ -251,6 +251,26 @@ Ring-style middleware to layer functionality over the core HTTP
 request/response implementation. Methods like `clj-http.client/get`
 are sugar over this `clj-http.client/request` function.
 
+## Known issues / Issues you may run into
+
+* `VerifyError class org.codehaus.jackson.smile.SmileParser overrides final method getBinaryValue.(Lorg/codehaus/jackson/Base64Variant;)[B java.lang.ClassLoader.defineClass1 (ClassLoader.java:-2)`
+
+This is actually caused by your project attempting to use [clj-json](https://github.com/mmcgrana/clj-json/)
+and [cheshire](https://github.com/dakrone/cheshire) in the same
+classloader. You can fix the issue by either not using clj-json (and
+thus choosing cheshire), or specifying an exclusion for clj-http in
+your project like this:
+
+```clojure
+(defproject foo "0.1.0-SNAPSHOT"
+  :dependencies [[org.clojure/clojure "1.3.0"]
+                 [clj-http "0.4.0" :exclusions [cheshire]]])
+```
+
+Note that if you exclude cheshire, json decoding of response bodies
+and json encoding of form-params cannot happen, you are responsible
+for your own encoding/decoding.
+
 ### clj-http-lite
 
 Like clj-http but need something more lightweight without as many

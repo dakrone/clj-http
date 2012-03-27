@@ -102,6 +102,9 @@
 ** 2012-03-27
    - improved commit from pull/55 to make the predicate more generalized to
      any kind of entity request
+   - make Cheshire an optional dependency, only for {:as :json} and
+     json form-params
+   - document clj-json/cheshire incompatibility problems
 ** 2012-03-26
    - merged https://github.com/dakrone/clj-http/pull/55 to fix HEAD
      requests with body contents

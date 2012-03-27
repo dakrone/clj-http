@@ -3,7 +3,6 @@
   (:use [clj-http.cookies :only (wrap-cookies)]
         [slingshot.slingshot :only [throw+]])
   (:require [clojure.string :as str]
-            [cheshire.core :as json]
             [clj-http.core :as core]
             [clj-http.util :as util])
   (:import (java.io InputStream File)
@@ -11,6 +10,25 @@
            (org.apache.http.entity ByteArrayEntity InputStreamEntity
                                    FileEntity StringEntity))
   (:refer-clojure :exclude (get)))
+
+(def json-enabled?
+  (try
+    (require 'cheshire.core)
+    true
+    (catch Throwable _
+      false)))
+
+(defn json-encode
+  "Resolve and apply cheshire's json encoding dynamically."
+  [& args]
+  {:pre [json-enabled?]}
+  (apply (ns-resolve (symbol "cheshire.core") (symbol "encode")) args))
+
+(defn json-decode
+  "Resolve and apply cheshire's json decoding dynamically."
+  [& args]
+  {:pre [json-enabled?]}
+  (apply (ns-resolve (symbol "cheshire.core") (symbol "decode")) args))
 
 (defn update [m k f & args]
   (assoc m k (apply f (m k) args)))
@@ -126,11 +144,15 @@
 
            ;; Convert to json from UTF-8 string
            :json
-           (assoc resp :body (json/decode (String. #^"[B" body "UTF-8") true))
+           (if json-enabled?
+             (assoc resp :body (json-decode (String. #^"[B" body "UTF-8") true))
+             (assoc resp :body (String. #^"[B" body "UTF-8")))
 
            ;; Convert to json with strings as keys
            :json-string-keys
-           (assoc resp :body (json/decode (String. #^"[B" body "UTF-8")))
+           (if json-enabled?
+             (assoc resp :body (json-decode (String. #^"[B" body "UTF-8")))
+             (assoc resp :body (String. #^"[B" body "UTF-8")))
 
            :clojure
            (assoc resp :body (read-string (String. #^"[B" body "UTF-8")))
@@ -154,11 +176,12 @@
                   (read-string (String. #^"[B" body ^String charset))
                   (read-string (String. #^"[B" body "UTF-8")))
 
-                (.startsWith (str typestring) "application/json")
+                (and (.startsWith (str typestring) "application/json")
+                     json-enabled?)
                 (if-let [charset (second (re-find #"charset=(.*)"
                                                   (str typestring)))]
-                  (json/decode (String. #^"[B" body ^String charset) true)
-                  (json/decode (String. #^"[B" body "UTF-8") true))
+                  (json-decode (String. #^"[B" body ^String charset) true)
+                  (json-decode (String. #^"[B" body "UTF-8") true))
 
                 :else
                 (String. #^"[B" body "UTF-8"))))
@@ -291,8 +314,8 @@
       (client (-> req
                   (dissoc :form-params)
                   (assoc :content-type (content-type-value content-type)
-                         :body (if (= content-type :json)
-                                 (json/encode form-params)
+                         :body (if (and (= content-type :json) json-enabled?)
+                                 (json-encode form-params)
                                  (generate-query-string form-params)))))
       (client req))))
 
