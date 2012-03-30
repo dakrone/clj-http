@@ -1,4 +1,4 @@
-(defproject clj-http "0.3.5-SNAPSHOT"
+(defproject clj-http "0.3.5"
   :description "A Clojure HTTP library wrapping the Apache HttpComponents client."
   :url "https://github.com/dakrone/clj-http/"
   :repositories {"sona" "http://oss.sonatype.org/content/repositories/snapshots"}
@@ -10,7 +10,7 @@
                  [commons-codec "1.5"]
                  [commons-io "2.1"]
                  [slingshot "0.10.2"]
-                 [cheshire "3.0.0"]]
+                 [cheshire "3.1.0"]]
   :profiles {:dev {:dependencies [[ring/ring-jetty-adapter "1.0.2"]
                                   [ring/ring-devel "1.0.2"]]}
              :1.2 {:dependencies [[org.clojure/clojure "1.2.1"]]}

@@ -14,15 +14,15 @@ pull request or open an issue if you have any problems
 [Clojars](http://clojars.org/clj-http):
 
 ```clojure
-[clj-http "0.3.4"]
+[clj-http "0.3.5"]
 ```
 
 Previous versions available as
 
 ```clojure
+[clj-http "0.3.4"]
 [clj-http "0.3.3"]
 [clj-http "0.3.2"]
-[clj-http "0.3.1"]
 ```
 
 ## Usage
@@ -270,6 +270,9 @@ your project like this:
 Note that if you exclude cheshire, json decoding of response bodies
 and json encoding of form-params cannot happen, you are responsible
 for your own encoding/decoding.
+
+As of clj-http 0.3.5, you should no longer see this, as Cheshire 3.1.0
+and clj-json can now live together without causing problems.
 
 ### clj-http-lite
 
