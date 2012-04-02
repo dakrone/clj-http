@@ -256,7 +256,7 @@ from a cookie store:
 ```clojure
 (def cs (clj-http.cookies/cookie-store))
 
-(get "http://google.com" {:cookie-store cs})
+(client/get "http://google.com" {:cookie-store cs})
 
 (clojure.pprint/pprint (clj-http.cookies/get-cookies cs))
 {"NID"
@@ -264,14 +264,14 @@ from a cookie store:
   :expires #<Date Tue Oct 02 10:12:06 MDT 2012>,
   :path "/",
   :value
-  "58=c387PvAOtQcQn74smXNOTy9VwMGvs4pKjKiSGYqya9pqFHO-2b_1vSn981JNLTptEoM5OHxyDPUuMPkKeAOMWz1sh7yTcHGkTjvl42MPPMJGinUODnQXbQ-BhJx2aurQ",
+  "58=c387....",
   :version 0},
  "PREF"
  {:domain ".google.com",
   :expires #<Date Wed Apr 02 10:12:06 MDT 2014>,
   :path "/",
   :value
-  "ID=3baf5587837a1bfc:FF=0:TM=1333383126:LM=1333383126:S=_iRMoRNd8Bdkz9dP",
+  "ID=3ba...:FF=0:TM=133...:LM=133...:S=_iRM...",
   :version 0}}
 ```
 
