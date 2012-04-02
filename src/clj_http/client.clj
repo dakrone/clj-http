@@ -96,7 +96,9 @@
 (defn wrap-redirects [client]
   (fn [{:keys [request-method follow-redirects max-redirects
                redirects-count trace-redirects url]
-        :or {redirects-count 1 trace-redirects []}
+        :or {redirects-count 1 trace-redirects []
+             ;; max-redirects default taken from Firefox
+             max-redirects 20}
         :as req}]
     (let [{:keys [status] :as resp} (client req)
           resp-r (assoc resp :trace-redirects (conj trace-redirects url))]
