@@ -21,7 +21,7 @@
   (reduce #(if (get m %2) (assoc %1 %2 (get m %2)) %1)
           (sorted-map) (sort (keys m))))
 
-(defn- to-cookie
+(defn to-cookie
   "Converts a ClientCookie object into a tuple where the first item is
   the name of the cookie and the second item the content of the
   cookie."
@@ -32,16 +32,16 @@
      :comment-url (.getCommentURL cookie)
      :discard (not (.isPersistent cookie))
      :domain (.getDomain cookie)
-     :expires (if (.getExpiryDate cookie) (.getExpiryDate cookie))
+     :expires (when (.getExpiryDate cookie) (.getExpiryDate cookie))
      :path (.getPath cookie)
-     :ports (if (.getPorts cookie) (seq (.getPorts cookie)))
+     :ports (when (.getPorts cookie) (seq (.getPorts cookie)))
      :secure (.isSecure cookie)
      :value (try
               (url-decode (.getValue cookie))
-              (catch Exception _ (.getValue cookie))) 
+              (catch Exception _ (.getValue cookie)))
      :version (.getVersion cookie)})])
 
-(defn- to-basic-client-cookie
+(defn to-basic-client-cookie
   "Converts a cookie seq into a BasicClientCookie2."
   [[cookie-name cookie-content]]
   (doto (BasicClientCookie2. (name cookie-name)
@@ -121,3 +121,9 @@
    org.apache.http.client.CookieStore interface."
   []
   (org.apache.http.impl.client.BasicCookieStore.))
+
+(defn get-cookies
+  "Given a cookie-store, return a map of cookie name to a map of cookie values."
+  [cookie-store]
+  (when cookie-store
+    (into {} (map to-cookie (.getCookies cookie-store)))))

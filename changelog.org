@@ -113,6 +113,11 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-04-02
+   - merged https://github.com/dakrone/clj-http/pull/58 to add support
+     for cookie stores
+   - added utility methods to retrieve cookies as a map from the
+     cookie store
 ** 2012-04-01
    - merged https://github.com/dakrone/clj-http/pull/56 to set the
      default maximum number of redirects to 20

@@ -250,6 +250,31 @@ that will supercede any cookie store that has been dynamically bound to
   ...))
 ```
 
+You can also us the `get-cookies` function to retrieve the cookies
+from a cookie store:
+
+```clojure
+(def cs (clj-http.cookies/cookie-store))
+
+(get "http://google.com" {:cookie-store cs})
+
+(clojure.pprint/pprint (clj-http.cookies/get-cookies cs))
+{"NID"
+ {:domain ".google.com",
+  :expires #<Date Tue Oct 02 10:12:06 MDT 2012>,
+  :path "/",
+  :value
+  "58=c387PvAOtQcQn74smXNOTy9VwMGvs4pKjKiSGYqya9pqFHO-2b_1vSn981JNLTptEoM5OHxyDPUuMPkKeAOMWz1sh7yTcHGkTjvl42MPPMJGinUODnQXbQ-BhJx2aurQ",
+  :version 0},
+ "PREF"
+ {:domain ".google.com",
+  :expires #<Date Wed Apr 02 10:12:06 MDT 2014>,
+  :path "/",
+  :value
+  "ID=3baf5587837a1bfc:FF=0:TM=1333383126:LM=1333383126:S=_iRMoRNd8Bdkz9dP",
+  :version 0}}
+```
+
 ### Using persistent connections
 clj-http can use persistent connections to speed up connections if
 multiple connections are being used:
