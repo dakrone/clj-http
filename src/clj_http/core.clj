@@ -92,6 +92,7 @@
      sr timeout java.util.concurrent.TimeUnit/SECONDS)))
 
 (def ^{:dynamic true} *connection-manager* nil)
+(def ^{:dynamic true} *cookie-store* nil)
 
 (defn create-multipart-entity
   "Takes a multipart map and creates a MultipartEntity with each key/val pair
@@ -170,11 +171,13 @@
   [{:keys [request-method scheme server-name server-port uri query-string
            headers content-type character-encoding body socket-timeout
            conn-timeout multipart debug insecure? save-request? proxy-host
-           proxy-port as] :as req}]
+           proxy-port as cookie-store] :as req}]
   (let [conn-mgr (or *connection-manager* (make-regular-conn-manager insecure?))
         http-client (DefaultHttpClient.
                       ^org.apache.http.conn.ClientConnectionManager conn-mgr)
         scheme (name scheme)]
+    (when-let [cookie-store (or cookie-store *cookie-store*)]
+      (.setCookieStore http-client cookie-store))
     (add-client-params! http-client scheme socket-timeout
                         conn-timeout server-name proxy-host proxy-port)
     (let [http-url (str scheme "://" server-name

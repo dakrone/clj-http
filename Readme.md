@@ -45,6 +45,7 @@ requests. Responses are returned as Ring-style response maps:
               "content-type" "text/html; charset=ISO-8859-1"
               ...}
     :body "<!doctype html>..."
+    :cookies {"PREF" {:domain ".google.com", :expires #<Date Wed Apr 02 09:10:22 EDT 2014>, :path "/", :value "...", :version 0}}
     :trace-redirects ["http://google.com" "http://www.google.com/" "http://www.google.fr/"]}
 ```
 :trace-redirects will contain the chain of the redirections followed.
@@ -98,6 +99,11 @@ More example requests:
 
 ;; Query parameters
 (client/get "http://site.com/search" {:query-params {"q" "foo, bar"}})
+
+;; Provide cookies — uses same schema as :cookies returned in responses
+;; (see the cookie store option for easy cross-request maintenance of cookies)
+(client/get "http://site.com"
+  {:cookies {"ring-session" {:discard true, :path "/", :value "", :version 0}}})
 ```
 
 The client will also follow redirects on the appropriate `30*` status
@@ -211,6 +217,37 @@ options:
 
 ```clojure
 (client/get "http://foo.com" {:proxy-host "127.0.0.1" :proxy-port 8118})
+```
+
+### Cookie stores
+
+clj-http can simplify the maintenance of cookies across requests if it
+is provided with a _cookie store_.
+
+```clojure
+(binding [clj-http.core/*cookie-store* (clj-http.cookies/cookie-store)]
+  (client/post "http://site.com/login" {:form-params {:username "..."
+                                                      :password "..."}})
+  (client/get "http://site.com/secured-page")
+  ...)
+```
+
+(The `clj-http.cookies/cookie-store` function returns a new empty
+instance of a default implementation of
+`org.apache.http.client.CookieStore`.)
+
+Alternatively, you can provide a cookie store on a per-request basis
+that will supercede any cookie store that has been dynamically bound to
+`clj-http.core/*cookie-store*`:
+
+```clojure
+(binding [clj-http.core/*cookie-store* (clj-http.cookies/cookie-store)]
+  (client/post "http://site.com/login" {:form-params {:username "..."
+                                                      :password "..."}})
+  (let [data (:body (client/get "http://site.com/secured-page" {:as :json}))]
+    (client/post "http://othersite.com/update" {:form-params data
+                                                :cookie-store othersite-cookie-store})
+  ...))
 ```
 
 ### Using persistent connections

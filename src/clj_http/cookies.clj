@@ -115,3 +115,9 @@
   (fn [request]
     (let [response (client (encode-cookie-header request))]
       (decode-cookie-header response))))
+
+(defn cookie-store
+  "Returns a new, empty instance of the default implementation of the
+   org.apache.http.client.CookieStore interface."
+  []
+  (org.apache.http.impl.client.BasicCookieStore.))
