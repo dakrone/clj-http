@@ -201,7 +201,10 @@
            (:trace-redirects resp))))
   (is (thrown-with-msg? Exception #"Too many redirects: 3"
         (client/get "http://localhost:18080/redirect"
-                    {:max-redirects 2 :throw-exceptions true}))))
+                    {:max-redirects 2 :throw-exceptions true})))
+  (is (thrown-with-msg? Exception #"Too many redirects: 21"
+        (client/get "http://localhost:18080/redirect"
+                    {:throw-exceptions true}))))
 
 (deftest ^{:integration true} get-with-body
   (run-server)
