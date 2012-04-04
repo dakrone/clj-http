@@ -1,5 +1,15 @@
 * Changelog
   List of changes that have gone into each release
+** 0.3.6
+   - fixed an issue where urls like http://user:pass@foo.com didn't
+     work correctly for basic-auth
+   - added support for cookie stores
+   - added utility methods to retrieve cookies as a map from the
+     cookie store
+   - set the default maximum number of redirects to 20
+** 0.3.5
+   - same as 0.3.4, but with a newer cheshire that doesn't interfere
+     with clj-json
 ** 0.3.4
    - improved commit from pull/55 to make the predicate more generalized to
      any kind of entity request
@@ -113,6 +123,10 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Release 0.3.6
+** 2012-04-04
+   - fixed an issue where urls like http://user:pass@foo.com didn't
+     work correctly for basic-auth
 ** 2012-04-02
    - merged https://github.com/dakrone/clj-http/pull/58 to add support
      for cookie stores
@@ -121,6 +135,7 @@
 ** 2012-04-01
    - merged https://github.com/dakrone/clj-http/pull/56 to set the
      default maximum number of redirects to 20
+** Release 0.3.5
 ** Release 0.3.4
 ** 2012-03-27
    - improved commit from pull/55 to make the predicate more generalized to
