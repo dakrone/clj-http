@@ -49,28 +49,28 @@
   #{200 201 202 203 204 205 206 207 300 301 302 303 307})
 
 (defn success?
-  [{ :keys [status] }]
+  [{:keys [status]}]
   (<= 200 status 299))
 
 (defn missing?
-  [{ :keys [status] }]
+  [{:keys [status]}]
   (= status 404))
 
 (defn conflict?
-  [{ :keys [status] }]
+  [{:keys [status]}]
   (= status 409))
 
 
 (defn redirect?
-  [{ :keys [status] }]
+  [{:keys [status]}]
   (<= 300 status 399))
 
 (defn client-error?
-  [{ :keys [status] }]
+  [{:keys [status]}]
   (<= 400 status 499))
 
 (defn server-error?
-  [{ :keys [status] }]
+  [{:keys [status]}]
   (<= 500 status 599))
 
 (defn wrap-exceptions [client]
@@ -341,6 +341,7 @@
   [request]
   (-> request
       wrap-query-params
+      wrap-basic-auth
       wrap-user-info
       wrap-url
       wrap-redirects
@@ -348,7 +349,6 @@
       wrap-input-coercion
       wrap-output-coercion
       wrap-exceptions
-      wrap-basic-auth
       wrap-accept
       wrap-accept-encoding
       wrap-content-type
