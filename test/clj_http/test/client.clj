@@ -59,7 +59,6 @@
     (is (= :get (:request-method (:req resp))))
     (is (= :http (:scheme (:req resp))))
     (is (= ["http://foo.com" "http://bar.com/bat"] (:trace-redirects resp)))
-
     (is (= "/bat" (:uri (:req resp))))))
 
 (deftest relative-redirect-on-get
@@ -75,7 +74,6 @@
     (is (= :get (:request-method (:req resp))))
     (is (= :http (:scheme (:req resp))))
     (is (= ["http://foo.com" "http://foo.com/bat"] (:trace-redirects resp)))
-
     (is (= "/bat" (:uri (:req resp))))))
 
 (deftest max-redirects
