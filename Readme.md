@@ -100,6 +100,10 @@ More example requests:
 ;; Query parameters
 (client/get "http://site.com/search" {:query-params {"q" "foo, bar"}})
 
+;; "Nested" query parameters
+;; (this yields a query string of `a[e][f]=6&a[b][c]=5`)
+(client/get "http://site.com/search" {:query-params {:a {:b {:c 5} :e {:f 6})
+
 ;; Provide cookies — uses same schema as :cookies returned in responses
 ;; (see the cookie store option for easy cross-request maintenance of cookies)
 (client/get "http://site.com"

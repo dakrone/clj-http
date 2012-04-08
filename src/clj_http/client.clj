@@ -1,7 +1,8 @@
 (ns clj-http.client
   "Batteries-included HTTP client."
   (:use [clj-http.cookies :only (wrap-cookies)]
-        [slingshot.slingshot :only [throw+]])
+        [slingshot.slingshot :only [throw+]]
+        [clojure.walk :only (prewalk)])
   (:require [clojure.string :as str]
             [clj-http.core :as core]
             [clj-http.util :as util])
@@ -321,6 +322,29 @@
                                  (generate-query-string form-params)))))
       (client req))))
 
+(defn- nest-params
+  [request param-key]
+  (if-let [params (request param-key)]
+    (assoc request param-key (prewalk
+                               #(if (and (vector? %) (map? (second %)))
+                                  (let [[fk m] %]
+                                    (reduce
+                                      (fn [m [sk v]]
+                                        (assoc m (str (name fk) \[ (name sk) \]) v))
+                                      {}
+                                      m))
+                                  %)
+                               params))
+    request))
+
+(defn wrap-nested-params
+  [client]
+  (fn [{:keys [query-params form-params] :as req}]
+    (client (reduce
+              nest-params
+              req
+              [:query-params :form-params]))))
+
 (defn wrap-url [client]
   (fn [req]
     (if-let [url (:url req)]
@@ -353,6 +377,7 @@
       wrap-accept-encoding
       wrap-content-type
       wrap-form-params
+      wrap-nested-params
       wrap-method
       wrap-cookies
       wrap-unknown-host))
