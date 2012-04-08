@@ -332,6 +332,19 @@
       (is (= "untouched" (:body resp)))
       (is (not (contains? resp :content-type))))))
 
+(deftest apply-on-nested-params
+  (testing "nested parameter maps"
+    (are [in out] (is-applied client/wrap-nested-params
+                              {:query-params in :form-params in}
+                              {:query-params out :form-params out})
+      {"foo" "bar"} {"foo" "bar"}
+      {"x" {"y" "z"}} {"x[y]" "z"}
+      {"a" {"b" {"c" "d"}}} {"a[b][c]" "d"}
+      {"a" "b", "c" "d"} {"a" "b", "c" "d"}))
+  
+  (testing "not creating empty param maps"
+    (is-applied client/wrap-query-params {} {})))
+
 (deftest t-ignore-unknown-host
   (is (thrown? UnknownHostException (client/get "http://aorecuf892983a.com")))
   (is (nil? (client/get "http://aorecuf892983a.com"
