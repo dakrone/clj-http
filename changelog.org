@@ -123,6 +123,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-04-09
+   - merged https://github.com/dakrone/clj-http/pull/61 to add support
+     for nested param maps
 ** Release 0.3.6
 ** 2012-04-04
    - fixed an issue where urls like http://user:pass@foo.com didn't
