@@ -96,7 +96,8 @@
 
 (defn wrap-redirects [client]
   (fn [{:keys [request-method follow-redirects max-redirects
-               redirects-count trace-redirects url]
+              redirects-count trace-redirects url force-redirects
+              throw-exceptions]
         :or {redirects-count 1 trace-redirects []
              ;; max-redirects default taken from Firefox
              max-redirects 20}
@@ -106,17 +107,29 @@
       (cond
        (= false follow-redirects)
        resp
+       (not (redirect? resp-r))
+       resp-r
        (and max-redirects (> redirects-count max-redirects))
-       (if (:throw-exceptions req)
+       (if throw-exceptions
          (throw+ resp-r "Too many redirects: %s" redirects-count)
          resp-r)
-       (and (#{301 302 307} status) (#{:get :head} request-method))
-       (follow-redirect client (assoc req :redirects-count
-                                      (inc redirects-count)) resp-r)
-       (and (= 303 status) (= :head request-method))
+       (= 303 status)
        (follow-redirect client (assoc req :request-method :get
                                       :redirects-count (inc redirects-count))
                         resp-r)
+       (#{301 302 307} status)
+       (cond
+        (#{:get :head} request-method)
+        (follow-redirect client (assoc req :redirects-count
+                                       (inc redirects-count)) resp-r)
+        force-redirects
+        (follow-redirect client (assoc req
+                                  :request-method :get
+                                  :redirects-count (inc redirects-count))
+                         resp-r)
+        :else
+        resp-r
+        )
        :else
        resp-r))))
 

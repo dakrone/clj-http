@@ -90,20 +90,21 @@
     (is (= ["http://foo.com"] (:trace-redirects resp)))
     (is (= "http://bar.com/bat" (get (:headers resp) "location")))))
 
-(deftest redirect-to-get-on-head
-  (let [client (fn [req]
-                 (if (= "foo.com" (:server-name req))
-                   {:status 303
-                    :headers {"location" "http://bar.com/bat"}}
-                   {:status 200
-                    :req req}))
-        r-client (-> client client/wrap-url client/wrap-redirects)
-        resp (r-client {:server-name "foo.com" :url "http://foo.com" :request-method :head})]
-    (is (= 200 (:status resp)))
-    (is (= :get (:request-method (:req resp))))
-    (is (= :http (:scheme (:req resp))))
-    (is (= ["http://foo.com" "http://bar.com/bat"] (:trace-redirects resp)))
-    (is (= "/bat" (:uri (:req resp))))))
+(deftest redirect-303-to-get-on-any-method
+  (doseq [method [:get :head :post :delete :put :option]]
+    (let [client (fn [req]
+                   (if (= "foo.com" (:server-name req))
+                     {:status 303
+                      :headers {"location" "http://bar.com/bat"}}
+                     {:status 200
+                      :req req}))
+          r-client (-> client client/wrap-url client/wrap-redirects)
+          resp (r-client {:server-name "foo.com" :url "http://foo.com" :request-method method})]
+      (is (= 200 (:status resp)))
+      (is (= :get (:request-method (:req resp))))
+      (is (= :http (:scheme (:req resp))))
+      (is (= ["http://foo.com" "http://bar.com/bat"] (:trace-redirects resp)))
+      (is (= "/bat" (:uri (:req resp)))))))
 
 (deftest pass-on-non-redirect
   (let [client (fn [req] {:status 200 :body (:body req)})
@@ -112,6 +113,35 @@
     (is (= 200 (:status resp)))
     (is (= ["http://foo.com"] (:trace-redirects resp)))
     (is (= "ok" (:body resp)))))
+
+(deftest pass-on-non-redirectable-methods
+  (doseq [method [:put :post :delete]
+          status [301 302 307]]
+    (let [client (fn [req] {:status status :body (:body req)
+                           :headers {"location" "http://foo.com/bat"}})
+          r-client (client/wrap-redirects client)
+          resp (r-client {:body "ok" :url "http://foo.com"
+                          :request-method method})]
+      (is (= status (:status resp)))
+      (is (= ["http://foo.com"] (:trace-redirects resp)))
+      (is (= {"location" "http://foo.com/bat"} (:headers resp)))
+      (is (= "ok" (:body resp))))))
+
+(deftest force-redirects-on-non-redirectable-methods
+  (doseq [method [:put :post :delete]
+          status [301 302 307]]
+    (let [client (fn [{:keys [trace-redirects body] :as req}]
+                   (if trace-redirects
+                     {:status 200 :body body :trace-redirects trace-redirects}
+                     {:status status :body body
+                      :headers {"location" "http://foo.com/bat"}}))
+          r-client (client/wrap-redirects client)
+          resp (r-client {:body "ok" :url "http://foo.com"
+                          :request-method method
+                          :force-redirects true})]
+      (is (= 200 (:status resp)))
+      (is (= ["http://foo.com" "http://foo.com/bat"] (:trace-redirects resp)))
+      (is (= "ok" (:body resp))))))
 
 (deftest pass-on-follow-redirects-false
   (let [client (fn [req] {:status 302 :body (:body req)})
@@ -339,7 +369,7 @@
       {"x" {"y" "z"}} {"x[y]" "z"}
       {"a" {"b" {"c" "d"}}} {"a[b][c]" "d"}
       {"a" "b", "c" "d"} {"a" "b", "c" "d"}))
-  
+
   (testing "not creating empty param maps"
     (is-applied client/wrap-query-params {} {})))
 

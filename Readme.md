@@ -298,6 +298,9 @@ for each request.
 
 This feature is fairly new, please let me know if you have any feedback!
 
+### Redirects handling
+clj-http conforms its behaviour regarding automatic redirects to the [RFC](https://tools.ietf.org/html/rfc2616#section-10.3). It means that redirects on status `301`, `302` and `307` are not redirected on methods other than `GET` and `POST`. If you want a behaviour closer to what most browser have, you can set `:force-redirects` to `true` in your request to have automatic redirection work on all methods by transforming the method of the request to `GET`.
+
 ## Faking clj-http responses
 
 If you need to fake clj-http responses (for things like testing and
