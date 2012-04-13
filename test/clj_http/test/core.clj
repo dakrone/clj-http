@@ -226,3 +226,9 @@
   (let [resp (client/get "http://localhost:18080/clojure" {:as :auto})]
     (is (= 200 (:status resp)))
     (is (= {:foo "bar" :baz 7M :eggplant {:quux #{1 2 3}}} (:body resp)))))
+
+(deftest ^{:integration true} t-ipv6
+  (run-server)
+  (let [resp (client/get "http://[::1]:18080/get")]
+    (is (= 200 (:status resp)))
+    (is (= "get" (:body resp)))))
