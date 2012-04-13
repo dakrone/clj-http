@@ -302,7 +302,13 @@ for each request.
 This feature is fairly new, please let me know if you have any feedback!
 
 ### Redirects handling
-clj-http conforms its behaviour regarding automatic redirects to the [RFC](https://tools.ietf.org/html/rfc2616#section-10.3). It means that redirects on status `301`, `302` and `307` are not redirected on methods other than `GET` and `POST`. If you want a behaviour closer to what most browser have, you can set `:force-redirects` to `true` in your request to have automatic redirection work on all methods by transforming the method of the request to `GET`.
+clj-http conforms its behaviour regarding automatic redirects to the
+[RFC](https://tools.ietf.org/html/rfc2616#section-10.3). It means that
+redirects on status `301`, `302` and `307` are not redirected on
+methods other than `GET` and `POST`. If you want a behaviour closer to
+what most browser have, you can set `:force-redirects` to `true` in
+your request to have automatic redirection work on all methods by
+transforming the method of the request to `GET`.
 
 ## Faking clj-http responses
 
@@ -327,7 +333,8 @@ are sugar over this `clj-http.client/request` function.
 
 ### VerifyError class org.codehaus.jackson.smile.SmileParser overrides final method getBinaryValue...
 
-This is actually caused by your project attempting to use [clj-json](https://github.com/mmcgrana/clj-json/)
+This is actually caused by your project attempting to use
+[clj-json](https://github.com/mmcgrana/clj-json/)
 and [cheshire](https://github.com/dakrone/cheshire) in the same
 classloader. You can fix the issue by either not using clj-json (and
 thus choosing cheshire), or specifying an exclusion for clj-http in
