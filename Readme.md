@@ -108,6 +108,9 @@ More example requests:
 ;; (see the cookie store option for easy cross-request maintenance of cookies)
 (client/get "http://site.com"
   {:cookies {"ring-session" {:discard true, :path "/", :value "", :version 0}}})
+
+;; Support for IPv6!
+(client/get "http://[2001:62f5:9006:e472:cabd:c8ff:fee3:8ddf]")
 ```
 
 The client will also follow redirects on the appropriate `30*` status

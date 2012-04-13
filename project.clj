@@ -10,7 +10,7 @@
                  [commons-codec "1.5"]
                  [commons-io "2.1"]
                  [slingshot "0.10.2"]
-                 [cheshire "3.1.0"]]
+                 [cheshire "4.0.0"]]
   :profiles {:dev {:dependencies [[ring/ring-jetty-adapter "1.0.2"]
                                   [ring/ring-devel "1.0.2"]]}
              :1.2 {:dependencies [[org.clojure/clojure "1.2.1"]]}
