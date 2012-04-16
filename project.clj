@@ -4,7 +4,7 @@
   :repositories {"sona" "http://oss.sonatype.org/content/repositories/snapshots"}
   :warn-on-reflection false
   :min-lein-version "2.0.0"
-  :dependencies [[org.clojure/clojure "1.3.0"]
+  :dependencies [[org.clojure/clojure "1.4.0"]
                  [org.apache.httpcomponents/httpclient "4.1.2"]
                  [org.apache.httpcomponents/httpmime "4.1.2"]
                  [commons-codec "1.5"]
@@ -14,8 +14,8 @@
   :profiles {:dev {:dependencies [[ring/ring-jetty-adapter "1.0.2"]
                                   [ring/ring-devel "1.0.2"]]}
              :1.2 {:dependencies [[org.clojure/clojure "1.2.1"]]}
-             :1.4 {:dependencies [[org.clojure/clojure "1.4.0-beta5"]]}}
-  :aliases {"all" ["with-profile" "dev,1.2:dev:dev,1.4"]}
+             :1.3 {:dependencies [[org.clojure/clojure "1.3.0"]]}}
+  :aliases {"all" ["with-profile" "dev,1.2:dev,1.3:dev"]}
   :test-selectors {:default  #(not (:integration %))
                    :integration :integration
                    :all (constantly true)})
