@@ -195,7 +195,7 @@
 (deftest ^{:integration true} throw-on-too-many-redirects
   (run-server)
   (let [resp (client/get "http://localhost:18080/redirect"
-               {:max-redirects 2 :throw-exceptions false})]
+                         {:max-redirects 2 :throw-exceptions false})]
     (is (= 302 (:status resp)))
     (is (= (apply vector (repeat 3 "http://localhost:18080/redirect"))
            (:trace-redirects resp))))
@@ -232,3 +232,15 @@
   (let [resp (client/get "http://[::1]:18080/get")]
     (is (= 200 (:status resp)))
     (is (= "get" (:body resp)))))
+
+(deftest t-custom-retry-handler
+  (let [called? (atom false)]
+    (is (thrown? Exception
+                 (client/post "http://localhost"
+                              {:multipart [["title" "Foo"]
+                                           ["Content/type" "text/plain"]
+                                           ["file" (file "/tmp/missing-file")]]
+                               :retry-handler (fn [ex try-count http-context]
+                                                (reset! called? true)
+                                                false)})))
+    (is @called?)))
