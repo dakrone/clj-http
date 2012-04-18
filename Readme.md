@@ -93,6 +93,16 @@ More example requests:
 ;; Multipart values can be one of the following:
 ;; String, InputStream, File, or a byte-array
 
+;; Apache's http client automatically retries on IOExceptions, if you
+;; would like to handle these retries yourself, you can specify a
+;; :retry-handler. Return true to retry, false to stop trying:
+(client/post "http://example.org" {:multipart [["title" "Foo"]
+                                               ["Content/type" "text/plain"]
+                                               ["file" (clojure.java.io/file "/tmp/missing-file")]]
+                                   :retry-handler (fn [ex try-count http-context]
+                                                    (println "Got:" ex)
+                                                    (if (> try-count 4) false true))})
+
 ;; Basic authentication
 (client/get "http://site.com/protected" {:basic-auth ["user" "pass"]})
 (client/get "http://site.com/protected" {:basic-auth "user:pass"})

@@ -123,6 +123,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-04-18
+   - added ability to specify your own retry-handler for IOExceptions
+     if desired
 ** 2012-04-16
    - bump to released version of clojure (1.4)
 ** 2012-04-13

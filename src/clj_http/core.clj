@@ -13,7 +13,7 @@
                                                 FileBody
                                                 InputStreamBody
                                                 StringBody)
-           (org.apache.http.client HttpClient)
+           (org.apache.http.client HttpClient HttpRequestRetryHandler)
            (org.apache.http.client.methods HttpGet HttpHead HttpPut
                                            HttpPost HttpDelete
                                            HttpEntityEnclosingRequestBase)
@@ -171,13 +171,19 @@
   [{:keys [request-method scheme server-name server-port uri query-string
            headers content-type character-encoding body socket-timeout
            conn-timeout multipart debug insecure? save-request? proxy-host
-           proxy-port as cookie-store] :as req}]
+           proxy-port as cookie-store retry-handler] :as req}]
   (let [conn-mgr (or *connection-manager* (make-regular-conn-manager insecure?))
         http-client (DefaultHttpClient.
                       ^org.apache.http.conn.ClientConnectionManager conn-mgr)
         scheme (name scheme)]
     (when-let [cookie-store (or cookie-store *cookie-store*)]
       (.setCookieStore http-client cookie-store))
+    (when retry-handler
+      (.setHttpRequestRetryHandler
+       http-client
+       (proxy [HttpRequestRetryHandler] []
+         (retryRequest [e cnt context]
+           (retry-handler e cnt context)))))
     (add-client-params! http-client scheme socket-timeout
                         conn-timeout server-name proxy-host proxy-port)
     (let [http-url (str scheme "://" server-name
