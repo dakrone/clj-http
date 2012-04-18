@@ -5,8 +5,8 @@
   :warn-on-reflection false
   :min-lein-version "2.0.0"
   :dependencies [[org.clojure/clojure "1.4.0"]
-                 [org.apache.httpcomponents/httpclient "4.1.2"]
-                 [org.apache.httpcomponents/httpmime "4.1.2"]
+                 [org.apache.httpcomponents/httpclient "4.1.3"]
+                 [org.apache.httpcomponents/httpmime "4.1.3"]
                  [commons-codec "1.5"]
                  [commons-io "2.1"]
                  [slingshot "0.10.2"]

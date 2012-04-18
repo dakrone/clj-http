@@ -126,6 +126,7 @@
 ** 2012-04-18
    - added ability to specify your own retry-handler for IOExceptions
      if desired
+   - bumped httpclient and httpmime to 4.1.3
 ** 2012-04-16
    - bump to released version of clojure (1.4)
 ** 2012-04-13
