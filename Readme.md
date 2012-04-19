@@ -28,10 +28,19 @@ Previous versions available as
 ## Usage
 
 The main HTTP client functionality is provided by the
-`clj-http.client` namespace:
+`clj-http.client` namespace.
+
+Require it in the REPL:
 
 ```clojure
 (require '[clj-http.client :as client])
+```
+
+Require it in your application:
+
+```clojure
+(ns my-app.core
+  (:require [clj-http.client :as client]))
 ```
 
 The client supports simple `get`, `head`, `put`, `post`, and `delete`
