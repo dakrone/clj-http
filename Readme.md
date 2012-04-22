@@ -301,6 +301,17 @@ from a cookie store:
   :version 0}}
 ```
 
+### Link headers
+clj-http parses any [link headers](http://tools.ietf.org/html/rfc5988)
+returned in the response, and adds them to the `:links` key on the
+response map. This is particularly useful for paging RESTful APIs:
+
+```clojure
+(:links (http/get "https://api.github.com/gists"))
+=> {:next {:href "https://api.github.com/gists?page=2"}
+    :last {:href "https://api.github.com/gists?page=22884"}}
+```
+
 ### Using persistent connections
 clj-http can use persistent connections to speed up connections if
 multiple connections are being used:
