@@ -1,6 +1,7 @@
 (ns clj-http.client
   "Batteries-included HTTP client."
   (:use [clj-http.cookies :only (wrap-cookies)]
+        [clj-http.links :only (wrap-links)]
         [slingshot.slingshot :only [throw+]]
         [clojure.walk :only (prewalk)])
   (:require [clojure.string :as str]
@@ -393,6 +394,7 @@
       wrap-nested-params
       wrap-method
       wrap-cookies
+      wrap-links
       wrap-unknown-host))
 
 (def #^{:doc
