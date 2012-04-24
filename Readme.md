@@ -307,7 +307,7 @@ returned in the response, and adds them to the `:links` key on the
 response map. This is particularly useful for paging RESTful APIs:
 
 ```clojure
-(:links (http/get "https://api.github.com/gists"))
+(:links (client/get "https://api.github.com/gists"))
 => {:next {:href "https://api.github.com/gists?page=2"}
     :last {:href "https://api.github.com/gists?page=22884"}}
 ```
@@ -339,6 +339,18 @@ methods other than `GET` and `HEAD`. If you want a behaviour closer to
 what most browser have, you can set `:force-redirects` to `true` in
 your request to have automatic redirection work on all methods by
 transforming the method of the request to `GET`.
+
+## Debugging
+
+There are two debugging methods you can use:
+
+```clojure
+;; print request info to *out*:
+(client/get "http://example.org" {:debug true})
+
+;; save the request that was sent in a :request key in the response:
+(client/get "http://example.org" {:save-request? true})
+```
 
 ## Faking clj-http responses
 
