@@ -40,7 +40,13 @@
     [:post "/multipart"]
     {:status 200 :body (:body req)}
     [:get "/get-with-body"]
-    {:status 200 :body (:body req)}))
+    {:status 200 :body (:body req)}
+    [:options "/options"]
+    {:status 200 :body req}
+    [:options "/copy"]
+    {:status 200 :body req}
+    [:options "/move"]
+    {:status 200 :body req}))
 
 (defn run-server
   []
@@ -248,3 +254,14 @@
                                                 (reset! called? true)
                                                 false)})))
     (is @called?)))
+
+;; super-basic test for methods that aren't used that often
+(deftest ^{:integration true} t-copy-options-move
+  (run-server)
+  (let [resp1 (client/get "http://localhost:18080/options")
+        resp2 (client/get "http://localhost:18080/move")
+        resp3 (client/get "http://localhost:18080/copy")]
+    (is (= #{200} (set (map :status [resp1 resp2 resp3]))))
+    (is (= :options (:method resp1)))
+    (is (= :move (:method resp2)))
+    (is (= :copy (:method resp3)))))

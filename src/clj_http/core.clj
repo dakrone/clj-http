@@ -15,8 +15,7 @@
                                                 StringBody)
            (org.apache.http.client HttpClient HttpRequestRetryHandler)
            (org.apache.http.client.methods HttpGet HttpHead HttpPut
-                                           HttpPost HttpDelete
-                                           HttpOptions
+                                           HttpPost HttpDelete HttpOptions
                                            HttpEntityEnclosingRequestBase)
            (org.apache.http.client.params CookiePolicy ClientPNames)
            (org.apache.http.conn ClientConnectionManager)

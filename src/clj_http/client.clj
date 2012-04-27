@@ -454,6 +454,24 @@
   (check-url! url)
   (request (merge req {:method :delete :url url})))
 
+(defn options
+  "Like #'request, but sets the :method and :url as appropriate."
+  [url & [req]]
+  (check-url! url)
+  (request (merge req {:method :options :url url})))
+
+(defn copy
+  "Like #'request, but sets the :method and :url as appropriate."
+  [url & [req]]
+  (check-url! url)
+  (request (merge req {:method :copy :url url})))
+
+(defn move
+  "Like #'request, but sets the :method and :url as appropriate."
+  [url & [req]]
+  (check-url! url)
+  (request (merge req {:method :move :url url})))
+
 (defmacro with-connection-pool
   "Macro to execute the body using a connection manager. Creates a
   ThreadSafeClientConnectionManager to use for all requests within the body of
