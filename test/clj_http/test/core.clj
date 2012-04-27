@@ -42,11 +42,13 @@
     [:get "/get-with-body"]
     {:status 200 :body (:body req)}
     [:options "/options"]
-    {:status 200 :body req}
-    [:options "/copy"]
-    {:status 200 :body req}
-    [:options "/move"]
-    {:status 200 :body req}))
+    {:status 200 :body "options"}
+    [:copy "/copy"]
+    {:status 200 :body "copy"}
+    [:move "/move"]
+    {:status 200 :body "move"}
+    [:patch "/patch"]
+    {:status 200 :body "patch"}))
 
 (defn run-server
   []
@@ -258,10 +260,12 @@
 ;; super-basic test for methods that aren't used that often
 (deftest ^{:integration true} t-copy-options-move
   (run-server)
-  (let [resp1 (client/get "http://localhost:18080/options")
-        resp2 (client/get "http://localhost:18080/move")
-        resp3 (client/get "http://localhost:18080/copy")]
-    (is (= #{200} (set (map :status [resp1 resp2 resp3]))))
-    (is (= :options (:method resp1)))
-    (is (= :move (:method resp2)))
-    (is (= :copy (:method resp3)))))
+  (let [resp1 (client/options "http://localhost:18080/options")
+        resp2 (client/move "http://localhost:18080/move")
+        resp3 (client/copy "http://localhost:18080/copy")
+        resp4 (client/patch "http://localhost:18080/patch")]
+    (is (= #{200} (set (map :status [resp1 resp2 resp3 resp4]))))
+    (is (= "options" (:body resp1)))
+    (is (= "move" (:body resp2)))
+    (is (= "copy" (:body resp3)))
+    (is (= "patch" (:body resp4)))))

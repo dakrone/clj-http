@@ -139,6 +139,7 @@
 ** 2012-04-27
    - merged https://github.com/dakrone/clj-http/pull/68 to support
      additional options/delete/copy/move HTTP methods
+   - add support for the :patch method type
 ** Release 0.4.0
 ** 2012-04-22
    - merged https://github.com/dakrone/clj-http/pull/66 to add support

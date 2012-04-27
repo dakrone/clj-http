@@ -472,6 +472,12 @@
   (check-url! url)
   (request (merge req {:method :move :url url})))
 
+(defn patch
+  "Like #'request, but sets the :method and :url as appropriate."
+  [url & [req]]
+  (check-url! url)
+  (request (merge req {:method :patch :url url})))
+
 (defmacro with-connection-pool
   "Macro to execute the body using a connection manager. Creates a
   ThreadSafeClientConnectionManager to use for all requests within the body of

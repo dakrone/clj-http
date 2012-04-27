@@ -61,6 +61,7 @@
 (def proxy-get-with-body (make-proxy-method-with-body :get))
 (def proxy-copy-with-body (make-proxy-method-with-body :copy))
 (def proxy-move-with-body (make-proxy-method-with-body :move))
+(def proxy-patch-with-body (make-proxy-method-with-body :patch))
 
 (def ^SSLSocketFactory insecure-socket-factory
   (doto (SSLSocketFactory. (reify TrustStrategy
@@ -203,6 +204,7 @@
                      :delete  (proxy-delete-with-body http-url)
                      :copy    (proxy-copy-with-body http-url)
                      :move    (proxy-move-with-body http-url)
+                     :patch   (proxy-patch-with-body http-url)
                      (throw (IllegalArgumentException.
                               (str "Invalid request method " request-method))))]
       (when (and content-type character-encoding)

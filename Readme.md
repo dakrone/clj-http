@@ -44,8 +44,8 @@ Require it in your application:
 ```
 
 The client supports simple `get`, `head`, `put`, `post`, `delete`,
-`copy`, `move`, and `options` requests. Responses are returned as
-Ring-style response maps:
+`copy`, `move`, `patch` and `options` requests. Responses are returned
+as Ring-style response maps:
 
 ```clojure
 (client/get "http://google.com")
