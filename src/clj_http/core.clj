@@ -16,6 +16,7 @@
            (org.apache.http.client HttpClient HttpRequestRetryHandler)
            (org.apache.http.client.methods HttpGet HttpHead HttpPut
                                            HttpPost HttpDelete
+                                           HttpOptions
                                            HttpEntityEnclosingRequestBase)
            (org.apache.http.client.params CookiePolicy ClientPNames)
            (org.apache.http.conn ClientConnectionManager)
@@ -59,6 +60,8 @@
 
 (def proxy-delete-with-body (make-proxy-method-with-body :delete))
 (def proxy-get-with-body (make-proxy-method-with-body :get))
+(def proxy-copy-with-body (make-proxy-method-with-body :copy))
+(def proxy-move-with-body (make-proxy-method-with-body :move))
 
 (def ^SSLSocketFactory insecure-socket-factory
   (doto (SSLSocketFactory. (reify TrustStrategy
@@ -193,11 +196,16 @@
           req (assoc req :http-url http-url)
           #^HttpRequest
           http-req (case request-method
-                     :get    (proxy-get-with-body http-url)
-                     :head   (HttpHead. http-url)
-                     :put    (HttpPut. http-url)
-                     :post   (HttpPost. http-url)
-                     :delete (proxy-delete-with-body http-url))]
+                     :get     (proxy-get-with-body http-url)
+                     :head    (HttpHead. http-url)
+                     :put     (HttpPut. http-url)
+                     :post    (HttpPost. http-url)
+                     :options (HttpOptions. http-url)
+                     :delete  (proxy-delete-with-body http-url)
+                     :copy    (proxy-copy-with-body http-url)
+                     :move    (proxy-move-with-body http-url)
+                     (throw (IllegalArgumentException.
+                              (str "Invalid request method " request-method))))]
       (when (and content-type character-encoding)
         (.addHeader http-req "Content-Type"
                     (str content-type "; charset=" character-encoding)))

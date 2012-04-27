@@ -192,6 +192,10 @@
         body (slurp stream)]
     (is (= "get" body))))
 
+(deftest throw-on-invalid-body
+  (is (thrown-with-msg? IllegalArgumentException #"Invalid request method :bad"
+        (client/request {:method :bad :url "http://example.org"}))))
+
 (deftest ^{:integration true} throw-on-too-many-redirects
   (run-server)
   (let [resp (client/get "http://localhost:18080/redirect"

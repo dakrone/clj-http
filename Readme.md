@@ -43,8 +43,9 @@ Require it in your application:
   (:require [clj-http.client :as client]))
 ```
 
-The client supports simple `get`, `head`, `put`, `post`, and `delete`
-requests. Responses are returned as Ring-style response maps:
+The client supports simple `get`, `head`, `put`, `post`, `delete`,
+`copy`, `move`, and `options` requests. Responses are returned as
+Ring-style response maps:
 
 ```clojure
 (client/get "http://google.com")
