@@ -136,6 +136,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-04-27
+   - merged https://github.com/dakrone/clj-http/pull/68 to support
+     additional options/delete/copy/move HTTP methods
 ** Release 0.4.0
 ** 2012-04-22
    - merged https://github.com/dakrone/clj-http/pull/66 to add support
