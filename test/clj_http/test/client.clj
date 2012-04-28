@@ -279,6 +279,17 @@
   (is-passed client/wrap-basic-auth
              {:uri "/foo"}))
 
+(deftest apply-on-oauth
+  (is-applied client/wrap-oauth
+              {:oauth-token "my-token"}
+              {:headers {"Authorization"
+                         "Bearer my-token"}}))
+
+(deftest pass-on-no-oauth
+  (is-passed client/wrap-oauth
+             {:uri "/foo"}))
+
+
 (deftest apply-on-method
   (let [m-client (client/wrap-method identity)
         echo (m-client {:key :val :method :post})]
