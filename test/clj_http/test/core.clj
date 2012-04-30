@@ -7,7 +7,8 @@
             [clj-http.util :as util]
             [ring.adapter.jetty :as ring])
   (:import (java.io ByteArrayInputStream)
-           (org.apache.http.message BasicHeader BasicHeaderIterator)))
+           (org.apache.http.message BasicHeader BasicHeaderIterator)
+           org.apache.http.client.methods.HttpPost))
 
 (defn handler [req]
   ;;(pp/pprint req)
@@ -173,7 +174,8 @@
             :uri "/post"
             :server-name "localhost"
             :server-port 18080}
-           (dissoc (:request resp) :body)))))
+           (dissoc (:request resp) :body :http-req)))
+    (is (instance? HttpPost (-> resp :request :http-req)))))
 
 (deftest parse-headers
   (are [headers expected]
