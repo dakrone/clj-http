@@ -306,6 +306,15 @@
                             (basic-auth-value basic-auth))))
       (client req))))
 
+(defn wrap-oauth [client]
+  (fn [req]
+    (if-let [oauth-token (:oauth-token req)]
+      (client (-> req (dissoc :oauth-token)
+                  (assoc-in [:headers "Authorization"]
+                            (str "Bearer " oauth-token))))
+      (client req))))
+
+
 (defn parse-user-info [user-info]
   (when user-info
     (str/split user-info #":")))
@@ -380,6 +389,7 @@
   (-> request
       wrap-query-params
       wrap-basic-auth
+      wrap-oauth
       wrap-user-info
       wrap-url
       wrap-redirects
