@@ -118,7 +118,7 @@
   (doseq [method [:put :post :delete]
           status [301 302 307]]
     (let [client (fn [req] {:status status :body (:body req)
-                           :headers {"location" "http://foo.com/bat"}})
+                            :headers {"location" "http://foo.com/bat"}})
           r-client (client/wrap-redirects client)
           resp (r-client {:body "ok" :url "http://foo.com"
                           :request-method method})]
@@ -376,10 +376,10 @@
     (are [in out] (is-applied client/wrap-nested-params
                               {:query-params in :form-params in}
                               {:query-params out :form-params out})
-      {"foo" "bar"} {"foo" "bar"}
-      {"x" {"y" "z"}} {"x[y]" "z"}
-      {"a" {"b" {"c" "d"}}} {"a[b][c]" "d"}
-      {"a" "b", "c" "d"} {"a" "b", "c" "d"}))
+         {"foo" "bar"} {"foo" "bar"}
+         {"x" {"y" "z"}} {"x[y]" "z"}
+         {"a" {"b" {"c" "d"}}} {"a[b][c]" "d"}
+         {"a" "b", "c" "d"} {"a" "b", "c" "d"}))
 
   (testing "not creating empty param maps"
     (is-applied client/wrap-query-params {} {})))

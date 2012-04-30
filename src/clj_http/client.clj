@@ -97,8 +97,8 @@
 
 (defn wrap-redirects [client]
   (fn [{:keys [request-method follow-redirects max-redirects
-              redirects-count trace-redirects url force-redirects
-              throw-exceptions]
+               redirects-count trace-redirects url force-redirects
+               throw-exceptions]
         :or {redirects-count 1 trace-redirects []
              ;; max-redirects default taken from Firefox
              max-redirects 20}
@@ -349,24 +349,24 @@
   [request param-key]
   (if-let [params (request param-key)]
     (assoc request param-key (prewalk
-                               #(if (and (vector? %) (map? (second %)))
-                                  (let [[fk m] %]
-                                    (reduce
-                                      (fn [m [sk v]]
-                                        (assoc m (str (name fk) \[ (name sk) \]) v))
-                                      {}
-                                      m))
-                                  %)
-                               params))
+                              #(if (and (vector? %) (map? (second %)))
+                                 (let [[fk m] %]
+                                   (reduce
+                                    (fn [m [sk v]]
+                                      (assoc m (str (name fk) \[ (name sk) \]) v))
+                                    {}
+                                    m))
+                                 %)
+                              params))
     request))
 
 (defn wrap-nested-params
   [client]
   (fn [{:keys [query-params form-params] :as req}]
     (client (reduce
-              nest-params
-              req
-              [:query-params :form-params]))))
+             nest-params
+             req
+             [:query-params :form-params]))))
 
 (defn wrap-url [client]
   (fn [req]
