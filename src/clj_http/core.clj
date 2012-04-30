@@ -246,5 +246,6 @@
         (if save-request?
           (-> resp
               (assoc :request req)
+              (assoc-in [:request :http-req] http-req)
               (dissoc :save-request?))
           resp)))))
