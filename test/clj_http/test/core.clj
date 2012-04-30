@@ -8,7 +8,7 @@
             [ring.adapter.jetty :as ring])
   (:import (java.io ByteArrayInputStream)
            (org.apache.http.message BasicHeader BasicHeaderIterator)
-           org.apache.http.client.methods.HttpPost))
+           (org.apache.http.client.methods HttpPost)))
 
 (defn handler [req]
   ;;(pp/pprint req)

@@ -139,6 +139,8 @@
 ** 2012-04-30
    - merged https://github.com/dakrone/clj-http/pull/69 to add support
      for :oauth-token authentication
+   - merged https://github.com/dakrone/clj-http/pull/70 to save the
+     apache Http object when :save-request? is true
 ** 2012-04-27
    - merged https://github.com/dakrone/clj-http/pull/68 to support
      additional options/delete/copy/move HTTP methods
