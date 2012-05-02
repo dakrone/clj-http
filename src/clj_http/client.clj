@@ -148,7 +148,7 @@
 
 (defn wrap-output-coercion [client]
   (fn [{:keys [as] :as req}]
-    (let [{:keys [body] :as resp} (client req)]
+    (let [{:keys [body status] :as resp} (client req)]
       (if body
         (cond
          (keyword? as)
@@ -161,13 +161,13 @@
 
            ;; Convert to json from UTF-8 string
            :json
-           (if json-enabled?
+           (if (and json-enabled? (unexceptional-status? status))
              (assoc resp :body (json-decode (String. #^"[B" body "UTF-8") true))
              (assoc resp :body (String. #^"[B" body "UTF-8")))
 
            ;; Convert to json with strings as keys
            :json-string-keys
-           (if json-enabled?
+           (if (and json-enabled? (unexceptional-status? status))
              (assoc resp :body (json-decode (String. #^"[B" body "UTF-8")))
              (assoc resp :body (String. #^"[B" body "UTF-8")))
 
@@ -194,7 +194,8 @@
                   (read-string (String. #^"[B" body "UTF-8")))
 
                 (and (.startsWith (str typestring) "application/json")
-                     json-enabled?)
+                     json-enabled?
+                     (unexceptional-status? status))
                 (if-let [charset (second (re-find #"charset=(.*)"
                                                   (str typestring)))]
                   (json-decode (String. #^"[B" body ^String charset) true)

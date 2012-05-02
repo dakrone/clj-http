@@ -19,6 +19,10 @@
     [:get "/clojure"]
     {:status 200 :body "{:foo \"bar\" :baz 7M :eggplant {:quux #{1 2 3}}}"
      :headers {"content-type" "application/clojure"}}
+    [:get "/json"]
+    {:status 200 :body "{\"foo\":\"bar\"}"}
+    [:get "/json-bad"]
+    {:status 400 :body "{\"foo\":\"bar\"}"}
     [:get "/redirect"]
     {:status 302 :headers
      {"location" "http://localhost:18080/redirect"}}
@@ -240,6 +244,17 @@
   (let [resp (client/get "http://localhost:18080/clojure" {:as :auto})]
     (is (= 200 (:status resp)))
     (is (= {:foo "bar" :baz 7M :eggplant {:quux #{1 2 3}}} (:body resp)))))
+
+(deftest ^{:integration true} t-json-output-coercion
+  (run-server)
+  (let [resp (client/get "http://localhost:18080/json" {:as :json})
+        bad-resp (client/get "http://localhost:18080/json-bad"
+                             {:throw-exceptions false :as :json})]
+    (is (= 200 (:status resp)))
+    (is (= {:foo "bar"} (:body resp)))
+    (is (= 400 (:status bad-resp)))
+    (is (= "{\"foo\":\"bar\"}" (:body bad-resp))
+        "don't coerce on bad response status")))
 
 (deftest ^{:integration true} t-ipv6
   (run-server)
