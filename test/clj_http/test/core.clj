@@ -293,7 +293,7 @@
 
 (deftest ^{:integration true} t-json-encoded-form-params
   (run-server)
-  (let [params {:param1 "value1" :param2 "value2"}
+  (let [params {:param1 "value1" :param2 {:foo "bar"}}
         resp (client/post (localhost "/post") {:content-type :json
                                                :form-params params})]
     (is (= 200 (:status resp)))

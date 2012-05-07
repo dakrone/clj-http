@@ -354,7 +354,8 @@
                                  (let [[fk m] %]
                                    (reduce
                                     (fn [m [sk v]]
-                                      (assoc m (str (name fk) \[ (name sk) \]) v))
+                                      (assoc m (str (name fk)
+                                                    \[ (name sk) \]) v))
                                     {}
                                     m))
                                  %)
@@ -363,11 +364,13 @@
 
 (defn wrap-nested-params
   [client]
-  (fn [{:keys [query-params form-params] :as req}]
-    (client (reduce
-             nest-params
-             req
-             [:query-params :form-params]))))
+  (fn [{:keys [query-params form-params content-type] :as req}]
+    (if (= :json content-type)
+      (client req)
+      (client (reduce
+               nest-params
+               req
+               [:query-params :form-params])))))
 
 (defn wrap-url [client]
   (fn [req]
