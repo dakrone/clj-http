@@ -5,6 +5,7 @@
             [clj-http.client :as client]
             [clj-http.core :as core]
             [clj-http.util :as util]
+            [cheshire.core :as json]
             [ring.adapter.jetty :as ring])
   (:import (java.io ByteArrayInputStream)
            (org.apache.http.message BasicHeader BasicHeaderIterator)
@@ -286,3 +287,11 @@
     (is (= "move" (:body resp2)))
     (is (= "copy" (:body resp3)))
     (is (= "patch" (:body resp4)))))
+
+(deftest ^{:integration true} t-json-encoded-form-params
+  (run-server)
+  (let [params {:param1 "value1" :param2 "value2"}
+        resp (client/post "http://localhost:18080/post" {:content-type :json
+                                                         :form-params params})]
+    (is (= 200 (:status resp)))
+    (is (= (json/encode params) (:body resp)))))
