@@ -61,6 +61,9 @@
   (defonce server
     (future (ring/run-jetty handler {:port 18080}))))
 
+(defn localhost [path]
+  (str "http://localhost:18080" path))
+
 (def base-req
   {:scheme :http
    :server-name "localhost"
@@ -173,7 +176,7 @@
                        :save-request? true})]
     (is (= 200 (:status resp)))
     (is (= {:scheme :http
-            :http-url "http://localhost:18080/post"
+            :http-url (localhost "/post")
             :request-method :post
             :save-request? true
             :uri "/post"
@@ -213,16 +216,16 @@
 
 (deftest ^{:integration true} throw-on-too-many-redirects
   (run-server)
-  (let [resp (client/get "http://localhost:18080/redirect"
+  (let [resp (client/get (localhost "/redirect")
                          {:max-redirects 2 :throw-exceptions false})]
     (is (= 302 (:status resp)))
     (is (= (apply vector (repeat 3 "http://localhost:18080/redirect"))
            (:trace-redirects resp))))
   (is (thrown-with-msg? Exception #"Too many redirects: 3"
-        (client/get "http://localhost:18080/redirect"
+        (client/get (localhost "/redirect")
                     {:max-redirects 2 :throw-exceptions true})))
   (is (thrown-with-msg? Exception #"Too many redirects: 21"
-        (client/get "http://localhost:18080/redirect"
+        (client/get (localhost "/redirect")
                     {:throw-exceptions true}))))
 
 (deftest ^{:integration true} get-with-body
@@ -239,17 +242,17 @@
 
 (deftest ^{:integration true} t-clojure-output-coercion
   (run-server)
-  (let [resp (client/get "http://localhost:18080/clojure" {:as :clojure})]
+  (let [resp (client/get (localhost "/clojure") {:as :clojure})]
     (is (= 200 (:status resp)))
     (is (= {:foo "bar" :baz 7M :eggplant {:quux #{1 2 3}}} (:body resp))))
-  (let [resp (client/get "http://localhost:18080/clojure" {:as :auto})]
+  (let [resp (client/get (localhost "/clojure") {:as :auto})]
     (is (= 200 (:status resp)))
     (is (= {:foo "bar" :baz 7M :eggplant {:quux #{1 2 3}}} (:body resp)))))
 
 (deftest ^{:integration true} t-json-output-coercion
   (run-server)
-  (let [resp (client/get "http://localhost:18080/json" {:as :json})
-        bad-resp (client/get "http://localhost:18080/json-bad"
+  (let [resp (client/get (localhost "/json") {:as :json})
+        bad-resp (client/get (localhost "/json-bad")
                              {:throw-exceptions false :as :json})]
     (is (= 200 (:status resp)))
     (is (= {:foo "bar"} (:body resp)))
@@ -278,10 +281,10 @@
 ;; super-basic test for methods that aren't used that often
 (deftest ^{:integration true} t-copy-options-move
   (run-server)
-  (let [resp1 (client/options "http://localhost:18080/options")
-        resp2 (client/move "http://localhost:18080/move")
-        resp3 (client/copy "http://localhost:18080/copy")
-        resp4 (client/patch "http://localhost:18080/patch")]
+  (let [resp1 (client/options (localhost "/options"))
+        resp2 (client/move (localhost "/move"))
+        resp3 (client/copy (localhost "/copy"))
+        resp4 (client/patch (localhost "/patch"))]
     (is (= #{200} (set (map :status [resp1 resp2 resp3 resp4]))))
     (is (= "options" (:body resp1)))
     (is (= "move" (:body resp2)))
@@ -291,7 +294,7 @@
 (deftest ^{:integration true} t-json-encoded-form-params
   (run-server)
   (let [params {:param1 "value1" :param2 "value2"}
-        resp (client/post "http://localhost:18080/post" {:content-type :json
-                                                         :form-params params})]
+        resp (client/post (localhost "/post") {:content-type :json
+                                               :form-params params})]
     (is (= 200 (:status resp)))
     (is (= (json/encode params) (:body resp)))))
