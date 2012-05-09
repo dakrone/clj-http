@@ -1,5 +1,17 @@
 * Changelog
   List of changes that have gone into each release
+** 0.4.1
+   - added :debug-body that adds plaintext body information to
+     the :debug output
+   - fix json encoded form params with nested maps
+   - fix attempted json coercion when a bad status is received
+   - merged https://github.com/dakrone/clj-http/pull/69 to add support
+     for :oauth-token authentication
+   - merged https://github.com/dakrone/clj-http/pull/70 to save the
+     apache Http object when :save-request? is true
+   - merged https://github.com/dakrone/clj-http/pull/68 to support
+     additional options/delete/copy/move HTTP methods
+   - add support for the :patch method type
 ** 0.4.0
    - merged https://github.com/dakrone/clj-http/pull/66 to add support
      for 'Link' header
@@ -136,6 +148,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Release 0.4.1
 ** 2012-05-08
    - added :debug-body that adds plaintext body information to
      the :debug output
