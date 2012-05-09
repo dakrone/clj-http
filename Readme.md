@@ -346,11 +346,14 @@ transforming the method of the request to `GET`.
 
 ## Debugging
 
-There are two debugging methods you can use:
+There are three debugging methods you can use:
 
 ```clojure
 ;; print request info to *out*:
 (client/get "http://example.org" {:debug true})
+
+;; print request info to *out*, including request body:
+(client/post "http://example.org" {:debug true :debug-body true :body "..."})
 
 ;; save the request that was sent in a :request key in the response:
 (client/get "http://example.org" {:save-request? true})

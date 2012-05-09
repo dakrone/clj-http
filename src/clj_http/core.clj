@@ -1,7 +1,7 @@
 (ns clj-http.core
   "Core HTTP request/response implementation."
   (:require [clojure.pprint])
-  (:import (java.io File FilterInputStream InputStream)
+  (:import (java.io ByteArrayOutputStream File FilterInputStream InputStream)
            (java.net URI)
            (org.apache.http HeaderIterator HttpRequest HttpEntity
                             HttpEntityEnclosingRequest
@@ -165,6 +165,31 @@
                (.shutdown conn-mgr))))))
       (EntityUtils/toByteArray http-entity))))
 
+(defn- print-debug!
+  "Print out debugging information to *out* for a given request."
+  [{:keys [debug-body body] :as req} http-req]
+  (println "Request:" (type body))
+  (clojure.pprint/pprint
+   (assoc req
+     :body (if debug-body
+             (cond
+              (isa? (type body) String)
+              body
+
+              (isa? (type body) HttpEntity)
+              (let [baos (ByteArrayOutputStream.)]
+                (.writeTo body baos)
+                (.toString baos "UTF-8"))
+
+              :else nil)
+             (if (isa? (type body) String)
+               (format "... %s bytes ..."
+                       (count body))
+               (and body (bean body))))
+     :body-type (type body)))
+  (println "HttpRequest:")
+  (clojure.pprint/pprint (bean http-req)))
+
 (defn request
   "Executes the HTTP request corresponding to the given Ring request map and
    returns the Ring response map corresponding to the resulting HTTP response.
@@ -206,7 +231,7 @@
                      :move    (proxy-move-with-body http-url)
                      :patch   (proxy-patch-with-body http-url)
                      (throw (IllegalArgumentException.
-                              (str "Invalid request method " request-method))))]
+                             (str "Invalid request method " request-method))))]
       (when (and content-type character-encoding)
         (.addHeader http-req "Content-Type"
                     (str content-type "; charset=" character-encoding)))
@@ -226,15 +251,7 @@
                         (if (string? body)
                           (StringEntity. body "UTF-8")
                           (ByteArrayEntity. body))))))
-      (when debug
-        (println "Request:")
-        (clojure.pprint/pprint
-         (assoc req :body (if (isa? (type (:body req)) String)
-                            (format "... %s bytes ..."
-                                    (count (:body req)))
-                            (bean (:body req)))))
-        (println "HttpRequest:")
-        (clojure.pprint/pprint (bean http-req)))
+      (when debug (print-debug! req http-req))
       (let [http-resp (.execute http-client http-req)
             http-entity (.getEntity http-resp)
             resp {:status (.getStatusCode (.getStatusLine http-resp))
@@ -246,6 +263,7 @@
         (if save-request?
           (-> resp
               (assoc :request req)
+              (assoc-in [:request :body-type] (type body))
               (assoc-in [:request :http-req] http-req)
               (dissoc :save-request?))
           resp)))))
