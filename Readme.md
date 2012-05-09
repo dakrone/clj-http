@@ -346,7 +346,7 @@ transforming the method of the request to `GET`.
 
 ## Debugging
 
-There are three debugging methods you can use:
+There are four debugging methods you can use:
 
 ```clojure
 ;; print request info to *out*:
@@ -357,6 +357,10 @@ There are three debugging methods you can use:
 
 ;; save the request that was sent in a :request key in the response:
 (client/get "http://example.org" {:save-request? true})
+
+;; save the request that was sent in a :request key in the response,
+;; including the body content:
+(client/get "http://example.org" {:save-request? true :debug-body true})
 ```
 
 ## Faking clj-http responses

@@ -198,8 +198,8 @@
    the clj-http uses ByteArrays for the bodies."
   [{:keys [request-method scheme server-name server-port uri query-string
            headers content-type character-encoding body socket-timeout
-           conn-timeout multipart debug insecure? save-request? proxy-host
-           proxy-port as cookie-store retry-handler] :as req}]
+           conn-timeout multipart debug debug-body insecure? save-request?
+           proxy-host proxy-port as cookie-store retry-handler] :as req}]
   (let [conn-mgr (or *connection-manager* (make-regular-conn-manager insecure?))
         http-client (DefaultHttpClient.
                       ^org.apache.http.conn.ClientConnectionManager conn-mgr)
@@ -264,6 +264,19 @@
           (-> resp
               (assoc :request req)
               (assoc-in [:request :body-type] (type body))
+              (update-in [:request]
+                         #(if debug-body
+                            (assoc % :body-content
+                                   (cond
+                                    (isa? (type (:body %)) String)
+                                    (:body %)
+
+                                    (isa? (type (:body %)) HttpEntity)
+                                    (let [baos (ByteArrayOutputStream.)]
+                                      (.writeTo (:body %) baos)
+                                      (.toString baos "UTF-8"))
+
+                                    :else nil))))
               (assoc-in [:request :http-req] http-req)
               (dissoc :save-request?))
           resp)))))
