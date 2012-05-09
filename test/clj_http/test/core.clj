@@ -182,7 +182,7 @@
             :uri "/post"
             :server-name "localhost"
             :server-port 18080}
-           (dissoc (:request resp) :body :http-req)))
+           (dissoc (:request resp) :body :http-req :body-type)))
     (is (instance? HttpPost (-> resp :request :http-req)))))
 
 (deftest parse-headers
