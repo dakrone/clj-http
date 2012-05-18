@@ -190,6 +190,22 @@
   (println "HttpRequest:")
   (clojure.pprint/pprint (bean http-req)))
 
+(defn http-request-for
+  "Provides the HttpRequest object for a particular request-method and url"
+  [request-method http-url]
+  (case request-method
+    :get     (proxy-get-with-body http-url)
+    :head    (HttpHead. http-url)
+    :put     (HttpPut. http-url)
+    :post    (HttpPost. http-url)
+    :options (HttpOptions. http-url)
+    :delete  (proxy-delete-with-body http-url)
+    :copy    (proxy-copy-with-body http-url)
+    :move    (proxy-move-with-body http-url)
+    :patch   (proxy-patch-with-body http-url)
+    (throw (IllegalArgumentException.
+            (str "Invalid request method " request-method)))))
+
 (defn request
   "Executes the HTTP request corresponding to the given Ring request map and
    returns the Ring response map corresponding to the resulting HTTP response.
@@ -219,19 +235,7 @@
                         uri
                         (when query-string (str "?" query-string)))
           req (assoc req :http-url http-url)
-          #^HttpRequest
-          http-req (case request-method
-                     :get     (proxy-get-with-body http-url)
-                     :head    (HttpHead. http-url)
-                     :put     (HttpPut. http-url)
-                     :post    (HttpPost. http-url)
-                     :options (HttpOptions. http-url)
-                     :delete  (proxy-delete-with-body http-url)
-                     :copy    (proxy-copy-with-body http-url)
-                     :move    (proxy-move-with-body http-url)
-                     :patch   (proxy-patch-with-body http-url)
-                     (throw (IllegalArgumentException.
-                             (str "Invalid request method " request-method))))]
+          #^HttpRequest http-req (http-request-for request-method http-url)]
       (when (and content-type character-encoding)
         (.addHeader http-req "Content-Type"
                     (str content-type "; charset=" character-encoding)))
@@ -276,7 +280,8 @@
                                       (.writeTo (:body %) baos)
                                       (.toString baos "UTF-8"))
 
-                                    :else nil))))
+                                    :else nil))
+                            %))
               (assoc-in [:request :http-req] http-req)
               (dissoc :save-request?))
           resp)))))
