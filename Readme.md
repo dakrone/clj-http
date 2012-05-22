@@ -346,7 +346,7 @@ transforming the method of the request to `GET`.
 
 ## Debugging
 
-There are four debugging methods you can use:
+There are five debugging methods you can use:
 
 ```clojure
 ;; print request info to *out*:
@@ -361,6 +361,17 @@ There are four debugging methods you can use:
 ;; save the request that was sent in a :request key in the response,
 ;; including the body content:
 (client/get "http://example.org" {:save-request? true :debug-body true})
+
+;; save the http connection info for every redirects. The :context
+;; key contains a vector of maps. (useful for getting remote server IP address
+;; and port)
+(:context (client/get "http://example.org" {:save-context? true}))
+=> [{:remote-address #<Inet4Address example.org/192.0.43.10>,
+:remote-port 80, :local-address #<Inet4Address /10.0.0.24>, :local-port 36200,
+:http-conn #<ConnAdapter org.apache.http.impl.conn.SingleClientConnManager$ConnAdapter@b08f1ce>}
+{:remote-address #<Inet4Address www.iana.org/192.0.32.8>,
+:remote-port 80, :local-address #<Inet4Address /10.0.0.24>, :local-port 37644,
+:http-conn #<ConnAdapter org.apache.http.impl.conn.SingleClientConnManager$ConnAdapter@783b110a>}]
 ```
 
 ## Faking clj-http responses

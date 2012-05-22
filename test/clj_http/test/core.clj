@@ -9,7 +9,8 @@
             [ring.adapter.jetty :as ring])
   (:import (java.io ByteArrayInputStream)
            (org.apache.http.message BasicHeader BasicHeaderIterator)
-           (org.apache.http.client.methods HttpPost)))
+           (org.apache.http.client.methods HttpPost)
+           (org.apache.http.impl.conn AbstractClientConnAdapter)))
 
 (defn handler [req]
   ;;(pp/pprint req)
@@ -27,6 +28,9 @@
     [:get "/redirect"]
     {:status 302 :headers
      {"location" "http://localhost:18080/redirect"}}
+    [:get "/redirect-to-get"]
+    {:status 302 :headers
+     {"location" "http://localhost:18080/get"}}
     [:head "/head"]
     {:status 200}
     [:get "/content-type"]
@@ -188,6 +192,16 @@
             :body-type String}
            (dissoc (:request resp) :body :http-req)))
     (is (instance? HttpPost (-> resp :request :http-req)))))
+
+(deftest ^{:integration true} t-save-context
+  (run-server)
+  (let [{:keys [context status trace-redirects] :as resp}
+        (client/get (localhost "/redirect-to-get") {:save-context? true})]
+    (is (= 200 status))
+    (is (= 2 (count context)))
+    (is (count trace-redirects) (count context))
+    (is (every? #(= 18080 (:remote-port %)) context))
+    (is (every? #(instance? AbstractClientConnAdapter (:http-conn %)) context))))
 
 (deftest parse-headers
   (are [headers expected]
