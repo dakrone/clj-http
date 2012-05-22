@@ -88,12 +88,14 @@
 (declare wrap-redirects)
 
 (defn follow-redirect
-  [client {:keys [url] :as req} {:keys [trace-redirects] :as resp}]
+  [client {:keys [url] :as req} {:keys [trace-redirects context] :as resp}]
   (let [raw-redirect (get-in resp [:headers "location"])
-        redirect (str (URL. (URL. url) raw-redirect))]
-    ((wrap-redirects client) (assoc req
-                               :url redirect
-                               :trace-redirects trace-redirects))))
+        redirect (str (URL. (URL. url) raw-redirect))
+        req (assoc req
+              :url redirect
+              :trace-redirects trace-redirects)
+        req (if context (assoc req :context context) req)]
+    ((wrap-redirects client) req)))
 
 (defn wrap-redirects [client]
   (fn [{:keys [request-method follow-redirects max-redirects

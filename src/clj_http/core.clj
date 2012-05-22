@@ -5,7 +5,7 @@
            (java.net URI)
            (org.apache.http HeaderIterator HttpRequest HttpEntity
                             HttpEntityEnclosingRequest
-                            HttpResponse Header HttpHost)
+                            HttpResponse Header HttpHost HttpResponseInterceptor)
            (org.apache.http.util EntityUtils)
            (org.apache.http.entity ByteArrayEntity StringEntity)
            (org.apache.http.entity.mime MultipartEntity)
@@ -23,10 +23,12 @@
            (org.apache.http.conn.scheme PlainSocketFactory
                                         SchemeRegistry Scheme)
            (org.apache.http.conn.ssl SSLSocketFactory TrustStrategy)
-           (org.apache.http.impl.conn SingleClientConnManager)
+           (org.apache.http.impl.conn SingleClientConnManager AbstractClientConnAdapter)
+           (org.apache.http.impl SocketHttpServerConnection)
            (org.apache.http.impl.conn.tsccm ThreadSafeClientConnManager)
            (org.apache.http.impl.client DefaultHttpClient)
-           (org.apache.http.util EntityUtils)))
+           (org.apache.http.util EntityUtils)
+           (org.apache.http.protocol ExecutionContext BasicHttpContext)))
 
 (defn parse-headers
   "Takes a HeaderIterator and returns a map of names to values.
@@ -215,7 +217,8 @@
   [{:keys [request-method scheme server-name server-port uri query-string
            headers content-type character-encoding body socket-timeout
            conn-timeout multipart debug debug-body insecure? save-request?
-           proxy-host proxy-port as cookie-store retry-handler] :as req}]
+           proxy-host proxy-port as cookie-store retry-handler
+           save-context?] :as req}]
   (let [conn-mgr (or *connection-manager* (make-regular-conn-manager insecure?))
         http-client (DefaultHttpClient.
                       ^org.apache.http.conn.ClientConnectionManager conn-mgr)
@@ -235,7 +238,21 @@
                         uri
                         (when query-string (str "?" query-string)))
           req (assoc req :http-url http-url)
-          #^HttpRequest http-req (http-request-for request-method http-url)]
+          #^HttpRequest http-req (http-request-for request-method http-url)
+          context (if save-context? (atom {}))]
+      (when save-context?
+        (.addResponseInterceptor
+         http-client
+         (proxy [HttpResponseInterceptor] []
+           (process [_ ctx]
+             (let [#^AbstractClientConnAdapter http-conn
+                   (.getAttribute ctx ExecutionContext/HTTP_CONNECTION)]
+               (reset! context
+                       {:remote-address (.getRemoteAddress http-conn)
+                        :remote-port (.getRemotePort http-conn)
+                        :local-address (.getLocalAddress http-conn)
+                        :local-port (.getLocalPort http-conn)
+                        :http-conn http-conn}))))))
       (when (and content-type character-encoding)
         (.addHeader http-req "Content-Type"
                     (str content-type "; charset=" character-encoding)))
@@ -264,24 +281,31 @@
         (when (and (instance? SingleClientConnManager conn-mgr)
                    (not= :stream as))
           (.shutdown ^ClientConnectionManager conn-mgr))
-        (if save-request?
-          (-> resp
-              (assoc :request req)
-              (assoc-in [:request :body-type] (type body))
-              (update-in [:request]
-                         #(if debug-body
-                            (assoc % :body-content
-                                   (cond
-                                    (isa? (type (:body %)) String)
-                                    (:body %)
+        (let [resp (if save-request?
+                     (-> resp
+                         (assoc :request req)
+                         (assoc-in [:request :body-type] (type body))
+                         (update-in [:request]
+                                    #(if debug-body
+                                       (assoc % :body-content
+                                              (cond
+                                               (isa? (type (:body %)) String)
+                                               (:body %)
 
-                                    (isa? (type (:body %)) HttpEntity)
-                                    (let [baos (ByteArrayOutputStream.)]
-                                      (.writeTo (:body %) baos)
-                                      (.toString baos "UTF-8"))
+                                               (isa? (type (:body %)) HttpEntity)
+                                               (let [baos (ByteArrayOutputStream.)]
+                                                 (.writeTo (:body %) baos)
+                                                 (.toString baos "UTF-8"))
 
-                                    :else nil))
-                            %))
-              (assoc-in [:request :http-req] http-req)
-              (dissoc :save-request?))
+                                               :else nil))
+                                       %))
+                         (assoc-in [:request :http-req] http-req)
+                         (dissoc :save-request?))
+                     resp)
+              resp (if save-context?
+                     (assoc resp :context (conj (get req :context []) @context))
+                     resp)]
           resp)))))
+
+
+
