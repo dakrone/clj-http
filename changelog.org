@@ -148,6 +148,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-05-30
+   - fixed an issue where multiple link headers would cause an
+     exception to be thrown
 ** Release 0.4.1
 ** 2012-05-08
    - added :debug-body that adds plaintext body information to
