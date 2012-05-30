@@ -20,8 +20,8 @@
 
 (defn read-link-params [params]
   (into {}
-    (for [[_ name quot tok] (re-seq link-param params)]
-      [(keyword name) (or quot tok)])))
+        (for [[_ name quot tok] (re-seq link-param params)]
+          [(keyword name) (or quot tok)])))
 
 (defn read-link-value [value]
   (let [[_ uri params] (re-matches link-value value)

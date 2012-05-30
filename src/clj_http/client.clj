@@ -129,8 +129,7 @@
                                   :redirects-count (inc redirects-count))
                          resp-r)
         :else
-        resp-r
-        )
+        resp-r)
        :else
        resp-r))))
 
