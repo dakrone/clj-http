@@ -4,3 +4,7 @@ script: lein2 all test
 branches:
   only:
     - master
+jdk:
+  - openjdk6
+  - openjdk7
+  - oraclejdk7
