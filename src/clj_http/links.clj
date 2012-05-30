@@ -49,5 +49,11 @@
   (fn [request]
     (let [response (client request)]
       (if-let [link-headers (get-in response [:headers "link"])]
-        (assoc response :links (read-link-headers link-headers))
+        (let [link-headers (if (coll? link-headers)
+                             link-headers
+                             [link-headers])]
+          (assoc response
+            :links
+            (apply merge (for [link-header link-headers]
+                           (read-link-headers link-header)))))
         response))))
