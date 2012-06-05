@@ -93,8 +93,7 @@
     (doto (SchemeRegistryFactory/createDefault)
       (.register (Scheme. "https" 443 factory)))))
 
-(defn make-regular-conn-manager ^SingleClientConnManager [{:keys [insecure? trust-store trust-store-pass
-                                                                  keystore keystore-pass] 
+(defn make-regular-conn-manager ^SingleClientConnManager [{:keys [insecure? keystore trust-store] 
                                                            :as req}]
   (if (or (not (nil? trust-store)) (not (nil? keystore)))
     (SingleClientConnManager. (get-keystore-scheme-registry req))
