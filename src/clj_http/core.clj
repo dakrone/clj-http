@@ -1,8 +1,9 @@
 (ns clj-http.core
   "Core HTTP request/response implementation."
   (:require [clojure.pprint])
-  (:import (java.io ByteArrayOutputStream File FilterInputStream InputStream)
+  (:import (java.io ByteArrayOutputStream File FilterInputStream InputStream FileInputStream)
            (java.net URI)
+           (java.security KeyStore)
            (org.apache.http HeaderIterator HttpRequest HttpEntity
                             HttpEntityEnclosingRequest
                             HttpResponse Header HttpHost)
@@ -23,7 +24,7 @@
            (org.apache.http.conn.scheme PlainSocketFactory
                                         SchemeRegistry Scheme)
            (org.apache.http.conn.ssl SSLSocketFactory TrustStrategy)
-           (org.apache.http.impl.conn SingleClientConnManager)
+           (org.apache.http.impl.conn SingleClientConnManager SchemeRegistryFactory)
            (org.apache.http.impl.conn.tsccm ThreadSafeClientConnManager)
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.util EntityUtils)))
@@ -78,10 +79,27 @@
     (.register (Scheme. "http" 80 (PlainSocketFactory/getSocketFactory)))
     (.register (Scheme. "https" 443 (SSLSocketFactory/getSocketFactory)))))
 
-(defn make-regular-conn-manager ^SingleClientConnManager [& [insecure?]]
+(defn get-keystore ^KeyStore [^String keystore-file ^String keystore-pass]
+  (if (nil? keystore-file) nil
+  (let [keystore (KeyStore/getInstance (KeyStore/getDefaultType))]
+    (with-open [is (FileInputStream. keystore-file)]
+      (.load keystore is (.toCharArray keystore-pass))
+      keystore))))
+
+(defn get-keystore-scheme-registry [{:keys [keystore keystore-pass trust-store trust-store-pass]}]
+  (let [ks (get-keystore keystore keystore-pass)
+        ts (get-keystore trust-store trust-store-pass) 
+        factory (SSLSocketFactory. ks keystore-pass ts)]
+    (doto (SchemeRegistryFactory/createDefault)
+      (.register (Scheme. "https" 443 factory)))))
+
+(defn make-regular-conn-manager ^SingleClientConnManager [{:keys [insecure? keystore trust-store] 
+                                                           :as req}]
+  (if (or (not (nil? trust-store)) (not (nil? keystore)))
+    (SingleClientConnManager. (get-keystore-scheme-registry req))
   (if insecure?
     (SingleClientConnManager. insecure-scheme-registry)
-    (SingleClientConnManager.)))
+    (SingleClientConnManager.))))
 
 (defn make-reusable-conn-manager
   "Given an timeout and optional insecure? flag, create a
@@ -216,7 +234,7 @@
            headers content-type character-encoding body socket-timeout
            conn-timeout multipart debug debug-body insecure? save-request?
            proxy-host proxy-port as cookie-store retry-handler] :as req}]
-  (let [conn-mgr (or *connection-manager* (make-regular-conn-manager insecure?))
+  (let [conn-mgr (or *connection-manager* (make-regular-conn-manager req))
         http-client (DefaultHttpClient.
                       ^org.apache.http.conn.ClientConnectionManager conn-mgr)
         scheme (name scheme)]
