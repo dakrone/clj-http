@@ -1,5 +1,7 @@
 * Changelog
   List of changes that have gone into each release
+** 0.4.3
+   - support custom x509 keystore/trust-stores
 ** 0.4.2
    - fixed an issue where multiple link headers would cause an
      exception to be thrown
@@ -151,6 +153,11 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Release 0.4.3
+** 2012-06-07
+   - merged https://github.com/dakrone/clj-http/pull/77 to support
+     custom x509 keystore/trust-stores
+   - merged https://github.com/dakrone/clj-http/pull/78 for x509 tests
 ** Release 0.4.2
 ** 2012-05-30
    - fixed an issue where multiple link headers would cause an

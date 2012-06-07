@@ -14,12 +14,13 @@ pull request or open an issue if you have any problems
 [Clojars](http://clojars.org/clj-http):
 
 ```clojure
-[clj-http "0.4.2"]
+[clj-http "0.4.3"]
 ```
 
 Previous versions available as
 
 ```clojure
+[clj-http "0.4.2"]
 [clj-http "0.4.1"]
 [clj-http "0.4.0"]
 [clj-http "0.3.6"]
@@ -247,6 +248,18 @@ options:
 
 ```clojure
 (client/get "http://foo.com" {:proxy-host "127.0.0.1" :proxy-port 8118})
+```
+
+### Keystores and Trust-stores
+
+When sending a request, you can specify your own keystore/trust-store
+to be used:
+
+```clojure
+(client/get "https://example.com" {:keystore "/path/to/keystore.ks"
+                                   :keystore-pass "secretpass"
+                                   :trust-store "/path/to/trust-store.ks"
+                                   :trust-store-pass "trustpass})
 ```
 
 ### Cookie stores
