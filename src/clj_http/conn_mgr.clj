@@ -32,10 +32,12 @@
         keystore))))
 
 (defn get-keystore-scheme-registry
-  [{:keys [keystore keystore-pass trust-store trust-store-pass]}]
+  [{:keys [keystore keystore-pass trust-store trust-store-pass insecure?]}]
   (let [ks (get-keystore keystore keystore-pass)
         ts (get-keystore trust-store trust-store-pass)
         factory (SSLSocketFactory. ks keystore-pass ts)]
+    (if insecure?
+      (.setHostnameVerifier factory SSLSocketFactory/ALLOW_ALL_HOSTNAME_VERIFIER))
     (doto (SchemeRegistryFactory/createDefault)
       (.register (Scheme. "https" 443 factory)))))
 
@@ -43,10 +45,10 @@
 (defn ^SingleClientConnManager make-regular-conn-manager
   [{:keys [insecure? keystore trust-store] :as req}]
   (cond
-    insecure? (SingleClientConnManager. insecure-scheme-registry)
-
     (or keystore trust-store)
     (SingleClientConnManager. (get-keystore-scheme-registry req))
+
+    insecure? (SingleClientConnManager. insecure-scheme-registry)
 
     :else (SingleClientConnManager.)))
 
