@@ -25,24 +25,24 @@
     (is (> (.size ks) 0))))
 
 (deftest keystore-scheme-factory
-  (let [sr (conn-mgr/get-keystore-scheme-registry {:keystore client-ks
-                                                   :keystore-pass client-ks-pass
-                                                   :trust-store client-ks
-                                                   :trust-store-pass client-ks-pass})
+  (let [sr (conn-mgr/get-keystore-scheme-registry
+            {:keystore client-ks :keystore-pass client-ks-pass
+             :trust-store client-ks :trust-store-pass client-ks-pass})
         socket-factory (.getSchemeSocketFactory (.get sr "https"))]
     (is (instance? SSLSocketFactory socket-factory))))
 
 (deftest ^{:integration true} ssl-client-cert-get
   (let [t (doto (Thread. #(ring/run-jetty secure-handler
-                                          {:port 18083 :ssl-port 18084 :ssl? true
+                                          {:port 18083 :ssl-port 18084
+                                           :ssl? true
                                            :keystore "test-resources/keystore"
                                            :key-password "keykey"
                                            :client-auth :want})) .start)]
-    (try
-      (let [resp (core/request {:request-method :get :uri "/get" :server-port 18084
-                           :scheme :https :insecure? true :server-name "localhost"})]
-        (is (= 403 (:status resp))))
-      (let [resp (core/request secure-request)]
-        (is (= 200 (:status resp))))
-      (finally
-        (.stop t)))))
+    ;; wait for jetty to start up completely
+    (Thread/sleep 3000)
+    (let [resp (core/request {:request-method :get :uri "/get"
+                              :server-port 18084 :scheme :https
+                              :insecure? true :server-name "localhost"})]
+      (is (= 403 (:status resp))))
+    (let [resp (core/request secure-request)]
+      (is (= 200 (:status resp))))))
