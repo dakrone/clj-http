@@ -150,7 +150,7 @@
         (is (= 200 (:status resp)))
         (is (= "get" (slurp-body resp))))
       (finally
-       (.stop t)))))
+        (.stop t)))))
 
 (deftest ^{:integration true} multipart-form-uploads
   (run-server)

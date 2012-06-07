@@ -5,6 +5,7 @@
         [slingshot.slingshot :only [throw+]]
         [clojure.walk :only [prewalk]])
   (:require [clojure.string :as str]
+            [clj-http.conn-mgr :as conn]
             [clj-http.core :as core]
             [clj-http.util :as util])
   (:import (java.io InputStream File)
@@ -106,32 +107,32 @@
     (let [{:keys [status] :as resp} (client req)
           resp-r (assoc resp :trace-redirects (conj trace-redirects url))]
       (cond
-       (= false follow-redirects)
-       resp
-       (not (redirect? resp-r))
-       resp-r
-       (and max-redirects (> redirects-count max-redirects))
-       (if throw-exceptions
-         (throw+ resp-r "Too many redirects: %s" redirects-count)
-         resp-r)
-       (= 303 status)
-       (follow-redirect client (assoc req :request-method :get
-                                      :redirects-count (inc redirects-count))
-                        resp-r)
-       (#{301 302 307} status)
-       (cond
-        (#{:get :head} request-method)
-        (follow-redirect client (assoc req :redirects-count
-                                       (inc redirects-count)) resp-r)
-        force-redirects
-        (follow-redirect client (assoc req
-                                  :request-method :get
-                                  :redirects-count (inc redirects-count))
+        (= false follow-redirects)
+        resp
+        (not (redirect? resp-r))
+        resp-r
+        (and max-redirects (> redirects-count max-redirects))
+        (if throw-exceptions
+          (throw+ resp-r "Too many redirects: %s" redirects-count)
+          resp-r)
+        (= 303 status)
+        (follow-redirect client (assoc req :request-method :get
+                                       :redirects-count (inc redirects-count))
                          resp-r)
+        (#{301 302 307} status)
+        (cond
+          (#{:get :head} request-method)
+          (follow-redirect client (assoc req :redirects-count
+                                         (inc redirects-count)) resp-r)
+          force-redirects
+          (follow-redirect client (assoc req
+                                    :request-method :get
+                                    :redirects-count (inc redirects-count))
+                           resp-r)
+          :else
+          resp-r)
         :else
-        resp-r)
-       :else
-       resp-r))))
+        resp-r))))
 
 (defn wrap-decompression [client]
   (fn [req]
@@ -150,94 +151,94 @@
     (let [{:keys [body status] :as resp} (client req)]
       (if body
         (cond
-         (keyword? as)
-         (condp = as
-           ;; Don't do anything when it's a byte-array
-           :byte-array resp
+          (keyword? as)
+          (condp = as
+            ;; Don't do anything when it's a byte-array
+            :byte-array resp
 
-           ;; Don't do anything when it's a stream
-           :stream resp
+            ;; Don't do anything when it's a stream
+            :stream resp
 
-           ;; Convert to json from UTF-8 string
-           :json
-           (if (and json-enabled? (unexceptional-status? status))
-             (assoc resp :body (json-decode (String. #^"[B" body "UTF-8") true))
-             (assoc resp :body (String. #^"[B" body "UTF-8")))
+            ;; Convert to json from UTF-8 string
+            :json
+            (if (and json-enabled? (unexceptional-status? status))
+              (assoc resp :body (json-decode (String. #^"[B" body "UTF-8") true))
+              (assoc resp :body (String. #^"[B" body "UTF-8")))
 
-           ;; Convert to json with strings as keys
-           :json-string-keys
-           (if (and json-enabled? (unexceptional-status? status))
-             (assoc resp :body (json-decode (String. #^"[B" body "UTF-8")))
-             (assoc resp :body (String. #^"[B" body "UTF-8")))
+            ;; Convert to json with strings as keys
+            :json-string-keys
+            (if (and json-enabled? (unexceptional-status? status))
+              (assoc resp :body (json-decode (String. #^"[B" body "UTF-8")))
+              (assoc resp :body (String. #^"[B" body "UTF-8")))
 
-           :clojure
-           (assoc resp :body (read-string (String. #^"[B" body "UTF-8")))
+            :clojure
+            (assoc resp :body (read-string (String. #^"[B" body "UTF-8")))
 
-           ;; Attempt to automatically coerce the body, returning a
-           ;; string if no coercions are found
-           :auto
-           (assoc resp
-             :body
-             (let [typestring (get-in resp [:headers "content-type"])]
-               (cond
-                (.startsWith (str typestring) "text/")
-                (if-let [charset (second (re-find #"charset=(.*)"
-                                                  (str typestring)))]
-                  (String. #^"[B" body ^String charset)
-                  (String. #^"[B" body "UTF-8"))
+            ;; Attempt to automatically coerce the body, returning a
+            ;; string if no coercions are found
+            :auto
+            (assoc resp
+              :body
+              (let [typestring (get-in resp [:headers "content-type"])]
+                (cond
+                  (.startsWith (str typestring) "text/")
+                  (if-let [charset (second (re-find #"charset=(.*)"
+                                                    (str typestring)))]
+                    (String. #^"[B" body ^String charset)
+                    (String. #^"[B" body "UTF-8"))
 
-                (.startsWith (str typestring) "application/clojure")
-                (if-let [charset (second (re-find #"charset=(.*)"
-                                                  (str typestring)))]
-                  (read-string (String. #^"[B" body ^String charset))
-                  (read-string (String. #^"[B" body "UTF-8")))
+                  (.startsWith (str typestring) "application/clojure")
+                  (if-let [charset (second (re-find #"charset=(.*)"
+                                                    (str typestring)))]
+                    (read-string (String. #^"[B" body ^String charset))
+                    (read-string (String. #^"[B" body "UTF-8")))
 
-                (and (.startsWith (str typestring) "application/json")
-                     json-enabled?
-                     (unexceptional-status? status))
-                (if-let [charset (second (re-find #"charset=(.*)"
-                                                  (str typestring)))]
-                  (json-decode (String. #^"[B" body ^String charset) true)
-                  (json-decode (String. #^"[B" body "UTF-8") true))
+                  (and (.startsWith (str typestring) "application/json")
+                       json-enabled?
+                       (unexceptional-status? status))
+                  (if-let [charset (second (re-find #"charset=(.*)"
+                                                    (str typestring)))]
+                    (json-decode (String. #^"[B" body ^String charset) true)
+                    (json-decode (String. #^"[B" body "UTF-8") true))
 
-                :else
-                (String. #^"[B" body "UTF-8"))))
+                  :else
+                  (String. #^"[B" body "UTF-8"))))
 
-           ;; No :as matches found
-           (assoc resp :body (String. #^"[B" body "UTF-8")))
+            ;; No :as matches found
+            (assoc resp :body (String. #^"[B" body "UTF-8")))
 
-         ;; Try the charset given if a string is specified
-         (string? as)
-         (assoc resp :body (String. #^"[B" body ^String as))
-         ;; Return a regular UTF-8 string body
-         :else
-         (assoc resp :body (String. #^"[B" body "UTF-8")))
+          ;; Try the charset given if a string is specified
+          (string? as)
+          (assoc resp :body (String. #^"[B" body ^String as))
+          ;; Return a regular UTF-8 string body
+          :else
+          (assoc resp :body (String. #^"[B" body "UTF-8")))
         resp))))
 
 (defn wrap-input-coercion [client]
   (fn [{:keys [body body-encoding length] :as req}]
     (if body
       (cond
-       (string? body)
-       (client (-> req (assoc :body (StringEntity. body (or body-encoding
-                                                            "UTF-8"))
-                              :character-encoding (or body-encoding
-                                                      "UTF-8"))))
-       (instance? File body)
-       (client (-> req (assoc :body (FileEntity. body (or body-encoding
-                                                          "UTF-8")))))
-       (instance? InputStream body)
-       (do
-         (when-not (and length (pos? length))
-           (throw
-            (Exception. ":length key is required for InputStream bodies")))
-         (client (-> req (assoc :body (InputStreamEntity. body length)))))
+        (string? body)
+        (client (-> req (assoc :body (StringEntity. body (or body-encoding
+                                                             "UTF-8"))
+                               :character-encoding (or body-encoding
+                                                       "UTF-8"))))
+        (instance? File body)
+        (client (-> req (assoc :body (FileEntity. body (or body-encoding
+                                                           "UTF-8")))))
+        (instance? InputStream body)
+        (do
+          (when-not (and length (pos? length))
+            (throw
+             (Exception. ":length key is required for InputStream bodies")))
+          (client (-> req (assoc :body (InputStreamEntity. body length)))))
 
-       (instance? (Class/forName "[B") body)
-       (client (-> req (assoc :body (ByteArrayEntity. body))))
+        (instance? (Class/forName "[B") body)
+        (client (-> req (assoc :body (ByteArrayEntity. body))))
 
-       :else
-       (client req))
+        :else
+        (client req))
       (client req))))
 
 (defn content-type-value [type]
@@ -506,21 +507,32 @@
   :insecure? - Boolean flag to specify allowing insecure HTTPS connections
     default: false
 
+  :keystore - keystore file to be used for connection manager
+  :keystore-pass - keystore password
+  :trust-store - trust store file to be used for connection manager
+  :trust-store-pass - trust store password
+
+  Note that :insecure? and :keystore/:trust-store options are mutually exclusive
+
   If the value 'nil' is specified or the value is not set, the default value
   will be used."
   [opts & body]
   `(let [timeout# (or (:timeout ~opts) 5)
          threads# (or (:threads ~opts) 4)
-         insecure?# (:insecure? ~opts)]
+         insecure?# (:insecure? ~opts)
+         leftovers# (dissoc ~opts :timeout :threads :insecure?)]
      ;; I'm leaving the connection bindable for now because in the
      ;; future I'm toying with the idea of managing the connection
      ;; manager yourself and passing it into the request
-     (binding [core/*connection-manager*
-               (doto (core/make-reusable-conn-manager timeout# insecure?#)
+     (binding [conn/*connection-manager*
+               (doto (conn/make-reusable-conn-manager
+                      (merge {:timeout timeout#
+                              :insecure? insecure?#}
+                             leftovers#))
                  (.setMaxTotal threads#))]
        (try
          ~@body
          (finally
-          (.shutdown
-           ^org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager
-           core/*connection-manager*))))))
+           (.shutdown
+            ^org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager
+            conn/*connection-manager*))))))
