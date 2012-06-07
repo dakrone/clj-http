@@ -259,7 +259,7 @@ to be used:
 (client/get "https://example.com" {:keystore "/path/to/keystore.ks"
                                    :keystore-pass "secretpass"
                                    :trust-store "/path/to/trust-store.ks"
-                                   :trust-store-pass "trustpass})
+                                   :trust-store-pass "trustpass"})
 ```
 
 ### Cookie stores
