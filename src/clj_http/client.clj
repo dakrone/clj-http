@@ -146,74 +146,68 @@
           "deflate" (update resp-c :body util/inflate)
           resp-c)))))
 
+
+(defmulti coerce-response-output (fn [as _] as))
+
+(defmethod coerce-response-output :byte-array [_ resp] resp)
+
+(defmethod coerce-response-output :stream [_ resp] resp)
+
+(defmethod coerce-response-output :json [_ {:keys [body status] :as resp}]
+  (if (and json-enabled? (unexceptional-status? status))
+    (assoc resp :body (json-decode (String. #^"[B" body "UTF-8") true))
+    (assoc resp :body (String. #^"[B" body "UTF-8"))))
+
+(defmethod coerce-response-output
+  :json-string-keys
+  [_ {:keys [body status] :as resp}]
+  (if (and json-enabled? (unexceptional-status? status))
+    (assoc resp :body (json-decode (String. #^"[B" body "UTF-8")))
+    (assoc resp :body (String. #^"[B" body "UTF-8"))))
+
+(defmethod coerce-response-output :clojure [_ {:keys [status body] :as resp}]
+  (assoc resp :body (read-string (String. #^"[B" body "UTF-8"))))
+
+(defmethod coerce-response-output :auto [_ {:keys [status body] :as resp}]
+  (assoc resp
+         :body
+         (let [typestring (get-in resp [:headers "content-type"])]
+           (cond
+             (.startsWith (str typestring) "text/")
+             (if-let [charset (second (re-find #"charset=(.*)"
+                                               (str typestring)))]
+                     (String. #^"[B" body ^String charset)
+                     (String. #^"[B" body "UTF-8"))
+
+             (.startsWith (str typestring) "application/clojure")
+             (if-let [charset (second (re-find #"charset=(.*)"
+                                               (str typestring)))]
+                     (read-string (String. #^"[B" body ^String charset))
+                     (read-string (String. #^"[B" body "UTF-8")))
+
+             (and (.startsWith (str typestring) "application/json")
+                  json-enabled?
+                  (unexceptional-status? status))
+             (if-let [charset (second (re-find #"charset=(.*)"
+                                               (str typestring)))]
+                     (json-decode (String. #^"[B" body ^String charset) true)
+                     (json-decode (String. #^"[B" body "UTF-8") true))
+
+             :else
+             (String. #^"[B" body "UTF-8")))))
+
+(defmethod coerce-response-output :default [as {:keys [status body] :as resp}]
+  (cond
+    (keyword? as) (assoc resp :body (String. #^"[B" body "UTF-8"))
+    (string? as)  (assoc resp :body (String. #^"[B" body ^String as))
+    :else (assoc resp :body (String. #^"[B" body "UTF-8"))))
+
 (defn wrap-output-coercion [client]
   (fn [{:keys [as] :as req}]
-    (let [{:keys [body status] :as resp} (client req)]
-      (if body
-        (cond
-          (keyword? as)
-          (condp = as
-            ;; Don't do anything when it's a byte-array
-            :byte-array resp
-
-            ;; Don't do anything when it's a stream
-            :stream resp
-
-            ;; Convert to json from UTF-8 string
-            :json
-            (if (and json-enabled? (unexceptional-status? status))
-              (assoc resp :body (json-decode (String. #^"[B" body "UTF-8") true))
-              (assoc resp :body (String. #^"[B" body "UTF-8")))
-
-            ;; Convert to json with strings as keys
-            :json-string-keys
-            (if (and json-enabled? (unexceptional-status? status))
-              (assoc resp :body (json-decode (String. #^"[B" body "UTF-8")))
-              (assoc resp :body (String. #^"[B" body "UTF-8")))
-
-            :clojure
-            (assoc resp :body (read-string (String. #^"[B" body "UTF-8")))
-
-            ;; Attempt to automatically coerce the body, returning a
-            ;; string if no coercions are found
-            :auto
-            (assoc resp
-              :body
-              (let [typestring (get-in resp [:headers "content-type"])]
-                (cond
-                  (.startsWith (str typestring) "text/")
-                  (if-let [charset (second (re-find #"charset=(.*)"
-                                                    (str typestring)))]
-                    (String. #^"[B" body ^String charset)
-                    (String. #^"[B" body "UTF-8"))
-
-                  (.startsWith (str typestring) "application/clojure")
-                  (if-let [charset (second (re-find #"charset=(.*)"
-                                                    (str typestring)))]
-                    (read-string (String. #^"[B" body ^String charset))
-                    (read-string (String. #^"[B" body "UTF-8")))
-
-                  (and (.startsWith (str typestring) "application/json")
-                       json-enabled?
-                       (unexceptional-status? status))
-                  (if-let [charset (second (re-find #"charset=(.*)"
-                                                    (str typestring)))]
-                    (json-decode (String. #^"[B" body ^String charset) true)
-                    (json-decode (String. #^"[B" body "UTF-8") true))
-
-                  :else
-                  (String. #^"[B" body "UTF-8"))))
-
-            ;; No :as matches found
-            (assoc resp :body (String. #^"[B" body "UTF-8")))
-
-          ;; Try the charset given if a string is specified
-          (string? as)
-          (assoc resp :body (String. #^"[B" body ^String as))
-          ;; Return a regular UTF-8 string body
-          :else
-          (assoc resp :body (String. #^"[B" body "UTF-8")))
-        resp))))
+      (let [{:keys [body] :as resp} (client req)]
+        (if body
+          (coerce-response-output as resp)
+          resp))))
 
 (defn wrap-input-coercion [client]
   (fn [{:keys [body body-encoding length] :as req}]
