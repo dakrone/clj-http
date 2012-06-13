@@ -153,6 +153,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-06-13
+   - merged https://github.com/dakrone/clj-http/pull/79 to allow
+     pluggable output coercion (multimethod)
 ** Release 0.4.3
 ** 2012-06-07
    - merged https://github.com/dakrone/clj-http/pull/77 to support
