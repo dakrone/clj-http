@@ -147,28 +147,28 @@
           resp-c)))))
 
 
-(defmulti coerce-response-output (fn [as _] as))
+(defmulti coerce-response-body (fn [as _] as))
 
-(defmethod coerce-response-output :byte-array [_ resp] resp)
+(defmethod coerce-response-body :byte-array [_ resp] resp)
 
-(defmethod coerce-response-output :stream [_ resp] resp)
+(defmethod coerce-response-body :stream [_ resp] resp)
 
-(defmethod coerce-response-output :json [_ {:keys [body status] :as resp}]
+(defmethod coerce-response-body :json [_ {:keys [body status] :as resp}]
   (if (and json-enabled? (unexceptional-status? status))
     (assoc resp :body (json-decode (String. #^"[B" body "UTF-8") true))
     (assoc resp :body (String. #^"[B" body "UTF-8"))))
 
-(defmethod coerce-response-output
+(defmethod coerce-response-body
   :json-string-keys
   [_ {:keys [body status] :as resp}]
   (if (and json-enabled? (unexceptional-status? status))
     (assoc resp :body (json-decode (String. #^"[B" body "UTF-8")))
     (assoc resp :body (String. #^"[B" body "UTF-8"))))
 
-(defmethod coerce-response-output :clojure [_ {:keys [status body] :as resp}]
+(defmethod coerce-response-body :clojure [_ {:keys [status body] :as resp}]
   (assoc resp :body (read-string (String. #^"[B" body "UTF-8"))))
 
-(defmethod coerce-response-output :auto [_ {:keys [status body] :as resp}]
+(defmethod coerce-response-body :auto [_ {:keys [status body] :as resp}]
   (assoc resp
     :body
     (let [typestring (get-in resp [:headers "content-type"])]
@@ -196,7 +196,7 @@
        :else
        (String. #^"[B" body "UTF-8")))))
 
-(defmethod coerce-response-output :default [as {:keys [status body] :as resp}]
+(defmethod coerce-response-body :default [as {:keys [status body] :as resp}]
   (cond
    (string? as)  (assoc resp :body (String. #^"[B" body ^String as))
    :else (assoc resp :body (String. #^"[B" body "UTF-8"))))
@@ -205,7 +205,7 @@
   (fn [{:keys [as] :as req}]
     (let [{:keys [body] :as resp} (client req)]
       (if body
-        (coerce-response-output as resp)
+        (coerce-response-body as resp)
         resp))))
 
 (defn wrap-input-coercion [client]
