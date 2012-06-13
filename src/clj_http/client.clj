@@ -107,32 +107,32 @@
     (let [{:keys [status] :as resp} (client req)
           resp-r (assoc resp :trace-redirects (conj trace-redirects url))]
       (cond
-        (= false follow-redirects)
-        resp
-        (not (redirect? resp-r))
-        resp-r
-        (and max-redirects (> redirects-count max-redirects))
-        (if throw-exceptions
-          (throw+ resp-r "Too many redirects: %s" redirects-count)
-          resp-r)
-        (= 303 status)
-        (follow-redirect client (assoc req :request-method :get
-                                       :redirects-count (inc redirects-count))
+       (= false follow-redirects)
+       resp
+       (not (redirect? resp-r))
+       resp-r
+       (and max-redirects (> redirects-count max-redirects))
+       (if throw-exceptions
+         (throw+ resp-r "Too many redirects: %s" redirects-count)
+         resp-r)
+       (= 303 status)
+       (follow-redirect client (assoc req :request-method :get
+                                      :redirects-count (inc redirects-count))
+                        resp-r)
+       (#{301 302 307} status)
+       (cond
+        (#{:get :head} request-method)
+        (follow-redirect client (assoc req :redirects-count
+                                       (inc redirects-count)) resp-r)
+        force-redirects
+        (follow-redirect client (assoc req
+                                  :request-method :get
+                                  :redirects-count (inc redirects-count))
                          resp-r)
-        (#{301 302 307} status)
-        (cond
-          (#{:get :head} request-method)
-          (follow-redirect client (assoc req :redirects-count
-                                         (inc redirects-count)) resp-r)
-          force-redirects
-          (follow-redirect client (assoc req
-                                    :request-method :get
-                                    :redirects-count (inc redirects-count))
-                           resp-r)
-          :else
-          resp-r)
         :else
-        resp-r))))
+        resp-r)
+       :else
+       resp-r))))
 
 (defn wrap-decompression [client]
   (fn [req]
@@ -170,69 +170,68 @@
 
 (defmethod coerce-response-output :auto [_ {:keys [status body] :as resp}]
   (assoc resp
-         :body
-         (let [typestring (get-in resp [:headers "content-type"])]
-           (cond
-             (.startsWith (str typestring) "text/")
-             (if-let [charset (second (re-find #"charset=(.*)"
-                                               (str typestring)))]
-                     (String. #^"[B" body ^String charset)
-                     (String. #^"[B" body "UTF-8"))
+    :body
+    (let [typestring (get-in resp [:headers "content-type"])]
+      (cond
+       (.startsWith (str typestring) "text/")
+       (if-let [charset (second (re-find #"charset=(.*)"
+                                         (str typestring)))]
+         (String. #^"[B" body ^String charset)
+         (String. #^"[B" body "UTF-8"))
 
-             (.startsWith (str typestring) "application/clojure")
-             (if-let [charset (second (re-find #"charset=(.*)"
-                                               (str typestring)))]
-                     (read-string (String. #^"[B" body ^String charset))
-                     (read-string (String. #^"[B" body "UTF-8")))
+       (.startsWith (str typestring) "application/clojure")
+       (if-let [charset (second (re-find #"charset=(.*)"
+                                         (str typestring)))]
+         (read-string (String. #^"[B" body ^String charset))
+         (read-string (String. #^"[B" body "UTF-8")))
 
-             (and (.startsWith (str typestring) "application/json")
-                  json-enabled?
-                  (unexceptional-status? status))
-             (if-let [charset (second (re-find #"charset=(.*)"
-                                               (str typestring)))]
-                     (json-decode (String. #^"[B" body ^String charset) true)
-                     (json-decode (String. #^"[B" body "UTF-8") true))
+       (and (.startsWith (str typestring) "application/json")
+            json-enabled?
+            (unexceptional-status? status))
+       (if-let [charset (second (re-find #"charset=(.*)"
+                                         (str typestring)))]
+         (json-decode (String. #^"[B" body ^String charset) true)
+         (json-decode (String. #^"[B" body "UTF-8") true))
 
-             :else
-             (String. #^"[B" body "UTF-8")))))
+       :else
+       (String. #^"[B" body "UTF-8")))))
 
 (defmethod coerce-response-output :default [as {:keys [status body] :as resp}]
   (cond
-    (keyword? as) (assoc resp :body (String. #^"[B" body "UTF-8"))
-    (string? as)  (assoc resp :body (String. #^"[B" body ^String as))
-    :else (assoc resp :body (String. #^"[B" body "UTF-8"))))
+   (string? as)  (assoc resp :body (String. #^"[B" body ^String as))
+   :else (assoc resp :body (String. #^"[B" body "UTF-8"))))
 
 (defn wrap-output-coercion [client]
   (fn [{:keys [as] :as req}]
-      (let [{:keys [body] :as resp} (client req)]
-        (if body
-          (coerce-response-output as resp)
-          resp))))
+    (let [{:keys [body] :as resp} (client req)]
+      (if body
+        (coerce-response-output as resp)
+        resp))))
 
 (defn wrap-input-coercion [client]
   (fn [{:keys [body body-encoding length] :as req}]
     (if body
       (cond
-        (string? body)
-        (client (-> req (assoc :body (StringEntity. body (or body-encoding
-                                                             "UTF-8"))
-                               :character-encoding (or body-encoding
-                                                       "UTF-8"))))
-        (instance? File body)
-        (client (-> req (assoc :body (FileEntity. body (or body-encoding
-                                                           "UTF-8")))))
-        (instance? InputStream body)
-        (do
-          (when-not (and length (pos? length))
-            (throw
-             (Exception. ":length key is required for InputStream bodies")))
-          (client (-> req (assoc :body (InputStreamEntity. body length)))))
+       (string? body)
+       (client (-> req (assoc :body (StringEntity. body (or body-encoding
+                                                            "UTF-8"))
+                              :character-encoding (or body-encoding
+                                                      "UTF-8"))))
+       (instance? File body)
+       (client (-> req (assoc :body (FileEntity. body (or body-encoding
+                                                          "UTF-8")))))
+       (instance? InputStream body)
+       (do
+         (when-not (and length (pos? length))
+           (throw
+            (Exception. ":length key is required for InputStream bodies")))
+         (client (-> req (assoc :body (InputStreamEntity. body length)))))
 
-        (instance? (Class/forName "[B") body)
-        (client (-> req (assoc :body (ByteArrayEntity. body))))
+       (instance? (Class/forName "[B") body)
+       (client (-> req (assoc :body (ByteArrayEntity. body))))
 
-        :else
-        (client req))
+       :else
+       (client req))
       (client req))))
 
 (defn content-type-value [type]
