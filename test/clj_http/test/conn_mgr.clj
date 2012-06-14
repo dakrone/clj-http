@@ -20,7 +20,7 @@
     {:status 200}))
 
 (deftest load-keystore
-  (let [ks (conn-mgr/get-keystore "test-resources/keystore" "keykey")]
+  (let [ks (conn-mgr/get-keystore "test-resources/keystore" nil "keykey")]
     (is (instance? KeyStore ks))
     (is (> (.size ks) 0))))
 

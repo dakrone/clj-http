@@ -257,8 +257,10 @@ to be used:
 
 ```clojure
 (client/get "https://example.com" {:keystore "/path/to/keystore.ks"
+                                   :keystore-type "jks" ; default: jks
                                    :keystore-pass "secretpass"
                                    :trust-store "/path/to/trust-store.ks"
+                                   :trust-store-type "jks" ; default jks
                                    :trust-store-pass "trustpass"})
 ```
 
