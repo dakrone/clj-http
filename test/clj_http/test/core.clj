@@ -141,6 +141,8 @@
                                           {:port 8081 :ssl-port 18082 :ssl? true
                                            :keystore "test-resources/keystore"
                                            :key-password "keykey"})) .start)]
+    ;; wait for jetty to start up completely
+    (Thread/sleep 3000)
     (try
       (is (thrown? javax.net.ssl.SSLPeerUnverifiedException
                    (request {:request-method :get :uri "/get"
