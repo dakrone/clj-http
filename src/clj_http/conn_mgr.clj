@@ -24,17 +24,19 @@
     (.register (Scheme. "http" 80 (PlainSocketFactory/getSocketFactory)))
     (.register (Scheme. "https" 443 (SSLSocketFactory/getSocketFactory)))))
 
-(defn ^KeyStore get-keystore [keystore-file keystore-pass]
+(defn ^KeyStore get-keystore [keystore-file keystore-type keystore-pass]
   (when keystore-file
-    (let [keystore (KeyStore/getInstance (KeyStore/getDefaultType))]
+    (let [keystore (KeyStore/getInstance (or keystore-type
+                                             (KeyStore/getDefaultType)))]
       (with-open [is (io/input-stream keystore-file)]
         (.load keystore is (.toCharArray keystore-pass))
         keystore))))
 
 (defn get-keystore-scheme-registry
-  [{:keys [keystore keystore-pass trust-store trust-store-pass insecure?]}]
-  (let [ks (get-keystore keystore keystore-pass)
-        ts (get-keystore trust-store trust-store-pass)
+  [{:keys [keystore keystore-type keystore-pass
+           trust-store trust-store-type trust-store-pass insecure?]}]
+  (let [ks (get-keystore keystore keystore-type keystore-pass)
+        ts (get-keystore trust-store trust-store-type trust-store-pass)
         factory (SSLSocketFactory. ks keystore-pass ts)]
     (if insecure?
       (.setHostnameVerifier factory SSLSocketFactory/ALLOW_ALL_HOSTNAME_VERIFIER))
