@@ -1,6 +1,5 @@
 (ns clj-http.cookies
-  (:use [clj-http.util :only [url-decode url-encode]]
-        [clojure.string :only [blank? join lower-case]])
+  (:use [clojure.string :only [blank? join lower-case]])
   (:import (org.apache.http.client.params ClientPNames CookiePolicy)
            (org.apache.http.cookie ClientCookie CookieOrigin)
            (org.apache.http.params BasicHttpParams)
@@ -36,16 +35,14 @@
      :path (.getPath cookie)
      :ports (when (.getPorts cookie) (seq (.getPorts cookie)))
      :secure (.isSecure cookie)
-     :value (try
-              (url-decode (.getValue cookie))
-              (catch Exception _ (.getValue cookie)))
+     :value (.getValue cookie)
      :version (.getVersion cookie)})])
 
 (defn to-basic-client-cookie
   "Converts a cookie seq into a BasicClientCookie2."
   [[cookie-name cookie-content]]
   (doto (BasicClientCookie2. (name cookie-name)
-                             (url-encode (name (:value cookie-content))))
+                             (name (:value cookie-content)))
     (.setComment (:comment cookie-content))
     (.setCommentURL (:comment-url cookie-content))
     (.setDiscard (or (:discard cookie-content) true))

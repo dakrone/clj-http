@@ -36,7 +36,7 @@
          :value "example-value" :version 0}]))
 
 (deftest test-decode-cookies-with-seq
-  (let [cookies (decode-cookies [(str "ring-session=" (url-encode session))])]
+  (let [cookies (decode-cookies [(str "ring-session=" session)])]
     (is (map? cookies))
     (is (= 1 (count cookies)))
     (let [cookie (get cookies "ring-session")]
@@ -48,7 +48,7 @@
 
 (deftest test-decode-cookies-with-string
   (let [cookies (decode-cookies
-                 (str "ring-session=" (url-encode session) ";Path=/"))]
+                 (str "ring-session=" session ";Path=/"))]
     (is (map? cookies))
     (is (= 1 (count cookies)))
     (let [cookie (get cookies "ring-session")]
@@ -65,7 +65,7 @@
        {:cookies {"a" {:discard true :path "/"
                        :value "1" :version 0}} :headers {}}
        {:headers {"set-cookie"
-                  (str "ring-session=" (url-encode session) ";Path=/")}}
+                  (str "ring-session=" session ";Path=/")}}
        {:cookies {"ring-session"
                   {:discard true :path "/"
                    :value session :version 0}} :headers {}}))
@@ -79,7 +79,7 @@
         {:domain ".example.com" :path "/" :value "example-value"}]
        "example-cookie=example-value"
        ["ring-session" {:value session}]
-       (str "ring-session=" (url-encode session))))
+       (str "ring-session=" session)))
 
 (deftest test-encode-cookies
   (are [cookie expected]
@@ -96,7 +96,7 @@
          :discard true :version 0}}
        "example-cookie=example-value"
        {"ring-session" {:value session}}
-       (str "ring-session=" (url-encode session))))
+       (str "ring-session=" session)))
 
 (deftest test-encode-cookie-header
   (are [request expected]
@@ -115,7 +115,7 @@
                   :path "/"
                   :domain "example.com"}])]
     (is (= "ring-session" (.getName cookie)))
-    (is (= (url-encode session) (.getValue cookie)))
+    (is (= session (.getValue cookie)))
     (is (= "/" (.getPath cookie)))
     (is (= "example.com" (.getDomain cookie)))
     (is (nil? (.getComment cookie)))
@@ -140,7 +140,7 @@
                   :secure true
                   :version 0}])]
     (is (= "ring-session" (.getName cookie)))
-    (is (= (url-encode session) (.getValue cookie)))
+    (is (= session (.getValue cookie)))
     (is (= "/" (.getPath cookie)))
     (is (= "example.com" (.getDomain cookie)))
     (is (= "Example Comment" (.getComment cookie)))

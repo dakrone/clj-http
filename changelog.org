@@ -153,6 +153,8 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-07-09
+   - fix an issue where cookies were encoded and should not be
 ** 2012-06-15
    - merged https://github.com/dakrone/clj-http/pull/80 to allow
      specifying the keystore type
