@@ -1,5 +1,12 @@
 * Changelog
   List of changes that have gone into each release
+** 0.4.4
+   - bump cheshire to 4.0.1 and slingshot to 0.10.3
+   - fix an issue where cookies were encoded and should not be
+   - merged https://github.com/dakrone/clj-http/pull/80 to allow
+     specifying the keystore type
+   - merged https://github.com/dakrone/clj-http/pull/79 to allow
+     pluggable output coercion (multimethod)
 ** 0.4.3
    - support custom x509 keystore/trust-stores
 ** 0.4.2
@@ -153,6 +160,8 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-07-10
+   - bump cheshire to 4.0.1 and slingshot to 0.10.3
 ** 2012-07-09
    - fix an issue where cookies were encoded and should not be
 ** 2012-06-15
