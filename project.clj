@@ -9,8 +9,8 @@
                  [org.apache.httpcomponents/httpmime "4.1.3"]
                  [commons-codec "1.5"]
                  [commons-io "2.1"]
-                 [slingshot "0.10.2"]
-                 [cheshire "4.0.0"]]
+                 [slingshot "0.10.3"]
+                 [cheshire "4.0.1"]]
   :profiles {:dev {:dependencies [[ring/ring-jetty-adapter "1.1.0"]
                                   [ring/ring-devel "1.1.0"]]}
              :1.2 {:dependencies [[org.clojure/clojure "1.2.1"]]}
