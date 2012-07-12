@@ -1,6 +1,6 @@
 language: clojure
 lein: lein2
-script: lein2 with-profile 1.2,dev test && rm -rf target && lein2 with-profile 1.3,dev test && rm -rf target && lein2 test && rm -rf target && lein2 with-profile 1.5,dev test
+script: lein2 all do clean, test
 branches:
   only:
     - master
