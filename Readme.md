@@ -97,13 +97,14 @@ More example requests:
 (client/post "http//site.com" {:form-params {:foo "bar"} :content-type :json})
 
 ;; Multipart form uploads/posts
-;; a map or vector works as the multipart object. Use a vector of
-;; vectors if you need to preserve order, a map otherwise.
-(client/post "http//example.org" {:multipart [["title" "My Awesome Picture"]
-                                              ["Content/type" "image/jpeg"]
-                                              ["file" (clojure.java.io/file "pic.jpg")]]})
-;; Multipart values can be one of the following:
+;; takes a vector of maps, to preserve the order of entities
+(client/post "http//example.org" {:multipart [{:name "title" :content "My Awesome Picture"}
+                                              {:name "Content/type" :content "image/jpeg"}
+                                              {:name "file" :content (clojure.java.io/file "pic.jpg")}]})
+;; Multipart :content values can be one of the following:
 ;; String, InputStream, File, or a byte-array
+;; Some Multipart bodies can also support more keys (like :encoding
+;; and :mime-type), check [multipart.clj](https://github.com/dakrone/clj-http/blob/master/src/clj_http/client.clj) to see all flags
 
 ;; Apache's http client automatically retries on IOExceptions, if you
 ;; would like to handle these retries yourself, you can specify a
