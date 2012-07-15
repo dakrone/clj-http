@@ -104,7 +104,7 @@ More example requests:
 ;; Multipart :content values can be one of the following:
 ;; String, InputStream, File, or a byte-array
 ;; Some Multipart bodies can also support more keys (like :encoding
-;; and :mime-type), check [multipart.clj](https://github.com/dakrone/clj-http/blob/master/src/clj_http/client.clj) to see all flags
+;; and :mime-type), check src/clj-http/multipart.clj to see all flags
 
 ;; Apache's http client automatically retries on IOExceptions, if you
 ;; would like to handle these retries yourself, you can specify a
