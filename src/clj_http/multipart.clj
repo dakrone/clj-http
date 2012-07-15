@@ -91,6 +91,7 @@
     (doseq [m multipart]
       (let [klass (type (:content m))
             name (:name m)
+            ;; TODO: replace with multimethod? actually helpful?
             part (cond
                   (isa? klass File)
                   (make-file-body m)
