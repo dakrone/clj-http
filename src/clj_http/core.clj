@@ -1,7 +1,8 @@
 (ns clj-http.core
   "Core HTTP request/response implementation."
   (:require [clojure.pprint]
-            [clj-http.conn-mgr :as conn])
+            [clj-http.conn-mgr :as conn]
+            [clj-http.multipart :as mp])
   (:import (java.io ByteArrayOutputStream File FilterInputStream InputStream)
            (java.net URI)
            (org.apache.http HeaderIterator HttpRequest HttpEntity
@@ -9,11 +10,6 @@
                             HttpResponse Header HttpHost)
            (org.apache.http.util EntityUtils)
            (org.apache.http.entity ByteArrayEntity StringEntity)
-           (org.apache.http.entity.mime MultipartEntity)
-           (org.apache.http.entity.mime.content ByteArrayBody
-                                                FileBody
-                                                InputStreamBody
-                                                StringBody)
            (org.apache.http.client HttpClient HttpRequestRetryHandler)
            (org.apache.http.client.methods HttpGet HttpHead HttpPut
                                            HttpPost HttpDelete HttpOptions
@@ -61,29 +57,6 @@
 (def proxy-patch-with-body (make-proxy-method-with-body :patch))
 
 (def ^{:dynamic true} *cookie-store* nil)
-
-(defn create-multipart-entity
-  "Takes a multipart map and creates a MultipartEntity with each key/val pair
-   added as a part, determining part type by the val type."
-  [multipart]
-  (let [mp-entity (MultipartEntity.)]
-    (doseq [[k v] multipart]
-      (let [klass (type v)
-            keytext (name k)
-            part (cond
-                  (isa? klass File)
-                  (FileBody. v keytext)
-
-                  (isa? klass InputStream)
-                  (InputStreamBody. v keytext)
-
-                  (= klass (type (byte-array 0)))
-                  (ByteArrayBody. v keytext)
-
-                  (= klass String)
-                  (StringBody. v))]
-        (.addPart mp-entity keytext part)))
-    mp-entity))
 
 (defn- default-proxy-host-for
   [scheme]
@@ -212,7 +185,7 @@
         (.addHeader http-req header-n header-v))
       (if multipart
         (.setEntity #^HttpEntityEnclosingRequest http-req
-                    (create-multipart-entity multipart))
+                    (mp/create-multipart-entity multipart))
         (when (and body (instance? HttpEntityEnclosingRequest http-req))
           (if (instance? HttpEntity body)
             (.setEntity #^HttpEntityEnclosingRequest http-req body)

@@ -159,10 +159,11 @@
   (let [bytes (util/utf8-bytes "byte-test")
         stream (ByteArrayInputStream. bytes)
         resp (request {:request-method :post :uri "/multipart"
-                       :multipart [["a" "testFINDMEtest"]
-                                   ["b" bytes]
-                                   ["c" stream]
-                                   ["d" (file "test-resources/keystore")]]})
+                       :multipart [{:name "a" :content "testFINDMEtest"}
+                                   {:name "b" :content bytes}
+                                   {:name "d"
+                                    :content (file "test-resources/keystore")}
+                                   {:name "c" :content stream}]})
         resp-body (apply str (map #(try (char %) (catch Exception _ ""))
                                   (:body resp)))]
     (is (= 200 (:status resp)))
@@ -276,9 +277,11 @@
   (let [called? (atom false)]
     (is (thrown? Exception
                  (client/post "http://localhost"
-                              {:multipart [["title" "Foo"]
-                                           ["Content/type" "text/plain"]
-                                           ["file" (file "/tmp/missing-file")]]
+                              {:multipart [{:name "title" :content "Foo"}
+                                           {:name "Content/type"
+                                            :content "text/plain"}
+                                           {:name "file"
+                                            :content (file "/tmp/missingfile")}]
                                :retry-handler (fn [ex try-count http-context]
                                                 (reset! called? true)
                                                 false)})))
