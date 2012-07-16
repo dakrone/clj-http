@@ -9,7 +9,9 @@
             [ring.adapter.jetty :as ring])
   (:import (java.io ByteArrayInputStream)
            (org.apache.http.message BasicHeader BasicHeaderIterator)
-           (org.apache.http.client.methods HttpPost)))
+           (org.apache.http.client.methods HttpPost)
+           (org.apache.http HttpResponse HttpConnection)
+           (org.apache.http.protocol HttpContext ExecutionContext)))
 
 (defn handler [req]
   ;;(pp/pprint req)
@@ -27,6 +29,9 @@
     [:get "/redirect"]
     {:status 302 :headers
      {"location" "http://localhost:18080/redirect"}}
+    [:get "/redirect-to-get"]
+    {:status 302 :headers
+     {"location" "http://localhost:18080/get"}}
     [:head "/head"]
     {:status 200}
     [:get "/content-type"]
@@ -316,3 +321,23 @@
                                                :form-params params})]
     (is (= 200 (:status resp)))
     (is (= (json/encode params) (:body resp)))))
+
+
+(deftest ^{:integration true} t-response-interceptor
+  (run-server)
+  (let [saved-ctx (atom [])
+        {:keys [status trace-redirects] :as resp}
+        (client/get (localhost "/redirect-to-get")
+                    {:response-interceptor
+                     (fn [^HttpResponse resp ^HttpContext ctx]
+                       (let [http-conn (.getAttribute ctx ExecutionContext/HTTP_CONNECTION)]
+                         (swap! saved-ctx conj {:remote-port (.getRemotePort http-conn)
+                                                :http-conn http-conn})))})]
+    (is (= 200 status))
+    (is (= 2 (count @saved-ctx)))
+    (is (count trace-redirects) (count @saved-ctx))
+    (is (every? #(= 18080 (:remote-port %)) @saved-ctx))
+    (is (every? #(instance? HttpConnection (:http-conn %)) @saved-ctx))))
+
+
+
