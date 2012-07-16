@@ -1,5 +1,8 @@
 * Changelog
   List of changes that have gone into each release
+** 0.5.0
+   - rewrite multipart body entity creation to use different map
+     format, allowing :mime-type and :encoding keys in some cases
 ** 0.4.4
    - bump cheshire to 4.0.1 and slingshot to 0.10.3
    - fix an issue where cookies were encoded and should not be
@@ -160,6 +163,10 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-07-15
+   - rewrite multipart body entity creation to use different map
+     format, allowing :mime-type and :encoding keys in some cases
+** Release 0.4.4
 ** 2012-07-10
    - bump cheshire to 4.0.1 and slingshot to 0.10.3
 ** 2012-07-09
