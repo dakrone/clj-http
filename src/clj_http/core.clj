@@ -154,7 +154,8 @@
   [{:keys [request-method scheme server-name server-port uri query-string
            headers content-type character-encoding body socket-timeout
            conn-timeout multipart debug debug-body insecure? save-request?
-           proxy-host proxy-port as cookie-store retry-handler response-interceptor] :as req}]
+           proxy-host proxy-port as cookie-store retry-handler
+           response-interceptor] :as req}]
   (let [conn-mgr (or conn/*connection-manager*
                      (conn/make-regular-conn-manager req))
         http-client (DefaultHttpClient. ^ClientConnectionManager conn-mgr)
@@ -206,7 +207,6 @@
             resp {:status (.getStatusCode (.getStatusLine http-resp))
                   :headers (parse-headers (.headerIterator http-resp))
                   :body (coerce-body-entity req http-entity conn-mgr)}]
-
         (when (and (instance? SingleClientConnManager conn-mgr)
                    (not= :stream as))
           (.shutdown ^ClientConnectionManager conn-mgr))
