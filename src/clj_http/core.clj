@@ -7,7 +7,8 @@
            (java.net URI)
            (org.apache.http HeaderIterator HttpRequest HttpEntity
                             HttpEntityEnclosingRequest
-                            HttpResponse Header HttpHost)
+                            HttpResponse Header HttpHost
+                            HttpResponseInterceptor)
            (org.apache.http.util EntityUtils)
            (org.apache.http.entity ByteArrayEntity StringEntity)
            (org.apache.http.client HttpClient HttpRequestRetryHandler)
@@ -153,7 +154,7 @@
   [{:keys [request-method scheme server-name server-port uri query-string
            headers content-type character-encoding body socket-timeout
            conn-timeout multipart debug debug-body insecure? save-request?
-           proxy-host proxy-port as cookie-store retry-handler] :as req}]
+           proxy-host proxy-port as cookie-store retry-handler response-interceptor] :as req}]
   (let [conn-mgr (or conn/*connection-manager*
                      (conn/make-regular-conn-manager req))
         http-client (DefaultHttpClient. ^ClientConnectionManager conn-mgr)
@@ -174,6 +175,12 @@
                         (when query-string (str "?" query-string)))
           req (assoc req :http-url http-url)
           #^HttpRequest http-req (http-request-for request-method http-url)]
+      (when response-interceptor
+        (.addResponseInterceptor
+         http-client
+         (proxy [HttpResponseInterceptor] []
+           (process [resp ctx]
+             (response-interceptor resp ctx)))))
       (when (and content-type character-encoding)
         (.addHeader http-req "Content-Type"
                     (str content-type "; charset=" character-encoding)))
@@ -199,6 +206,7 @@
             resp {:status (.getStatusCode (.getStatusLine http-resp))
                   :headers (parse-headers (.headerIterator http-resp))
                   :body (coerce-body-entity req http-entity conn-mgr)}]
+
         (when (and (instance? SingleClientConnManager conn-mgr)
                    (not= :stream as))
           (.shutdown ^ClientConnectionManager conn-mgr))

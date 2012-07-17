@@ -376,7 +376,15 @@ There are four debugging methods you can use:
 ;; save the request that was sent in a :request key in the response,
 ;; including the body content:
 (client/get "http://example.org" {:save-request? true :debug-body true})
+
+;; add an HttpResponseInterceptor to the request. This callback
+;; is called for each redirects with the following args:
+;; ^HttpResponse resp, HttpContext^ ctx
+;; this allows low level debugging + access to socket.
+;; see http://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/org/apache/http/HttpResponseInterceptor.html
+(client/get "http://example.org {:response-interceptor (fn [resp ctx] (println ctx))})
 ```
+
 
 ## Faking clj-http responses
 
