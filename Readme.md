@@ -195,6 +195,34 @@ The client transparently accepts and decompresses the `gzip` and
 ;; stream has been read
 ```
 
+#### Body decompression
+By default, clj-http will add the `{"Accept-Encoding" "gzip, deflate"}`
+header to requests, and automatically decompress the resulting gzip or
+deflate stream if the `Content-Encoding` header is found on the
+response. If this is undesired, the `{:decompress-body false}` option
+can be specified:
+
+```clojure
+;; Auto-decompression used: (google requires a user-agent to send gzip data)
+(def h {"User-Agent" "Mozilla/5.0 (Windows NT 6.1;) Gecko/20100101 Firefox/13.0.1"})
+(def resp (client/get "http://google.com" {:headers h}))
+(:headers resp)
+=> {"server" "gws",
+    "content-encoding" "gzip", ;; <= google sent respones gzipped
+    "content-type" "text/html; charset=UTF-8",
+    "content-length" "26538",
+    "connection" "close"}
+
+;; and without decompression:
+(def resp2 (client/get "http://google.com" {:headers h :decompress-body false})
+(:headers resp2)
+=> {"server" "gws",
+    "content-type" "text/html; charset=UTF-8"
+    "connection" "close"}
+```
+
+### Misc
+
 A more general `request` function is also available, which is useful
 as a primitive for building higher-level interfaces:
 

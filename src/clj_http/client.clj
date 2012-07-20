@@ -134,19 +134,31 @@
        :else
        resp-r))))
 
+;; Multimethods for Content-Encoding dispatch automatically
+;; decompressing response bodies
+(defmulti decompress-body
+  (fn [resp] (or (get-in resp [:headers "Content-Encoding"])
+                 (get-in resp [:headers "content-encoding"]))))
+
+(defmethod decompress-body "gzip"
+  [resp]
+  (update resp :body util/gunzip))
+
+(defmethod decompress-body "deflate"
+  [resp]
+  (update resp :body util/inflate))
+
+(defmethod decompress-body :default [resp] resp)
+
 (defn wrap-decompression [client]
   (fn [req]
-    (if (get-in req [:headers "Accept-Encoding"])
+    (if (= false (:decompress-body req))
       (client req)
       (let [req-c (update req :headers assoc "Accept-Encoding" "gzip, deflate")
             resp-c (client req-c)]
-        (case (or (get-in resp-c [:headers "Content-Encoding"])
-                  (get-in resp-c [:headers "content-encoding"]))
-          "gzip" (update resp-c :body util/gunzip)
-          "deflate" (update resp-c :body util/inflate)
-          resp-c)))))
+        (decompress-body resp-c)))))
 
-
+;; Multimethods for coercing body type to the :as key
 (defmulti coerce-response-body (fn [as _] as))
 
 (defmethod coerce-response-body :byte-array [_ resp] resp)
