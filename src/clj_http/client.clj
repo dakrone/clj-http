@@ -309,7 +309,10 @@
 (defn accept-encoding-value [accept-encoding]
   (str/join ", " (map name accept-encoding)))
 
-(defn wrap-accept-encoding [client]
+(defn wrap-accept-encoding
+  "Middleware converting the :accept-encoding option to an acceptable
+  Accept-Encoding header in the request."
+  [client]
   (fn [{:keys [accept-encoding] :as req}]
     (if accept-encoding
       (client (-> req (dissoc :accept-encoding)
@@ -330,7 +333,10 @@
                               (util/url-encode (str v)))]))
                     params)))
 
-(defn wrap-query-params [client]
+(defn wrap-query-params
+  "Middleware converting the :query-params option to a querystring on
+  the request."
+  [client]
   (fn [{:keys [query-params] :as req}]
     (if query-params
       (client (-> req (dissoc :query-params)
@@ -344,7 +350,9 @@
                      (str (first basic-auth) ":" (second basic-auth)))]
     (str "Basic " (util/base64-encode (util/utf8-bytes basic-auth)))))
 
-(defn wrap-basic-auth [client]
+(defn wrap-basic-auth
+  "Middleware converting the :basic-auth option into an Authorization header."
+  [client]
   (fn [req]
     (if-let [basic-auth (:basic-auth req)]
       (client (-> req (dissoc :basic-auth)
@@ -352,7 +360,9 @@
                             (basic-auth-value basic-auth))))
       (client req))))
 
-(defn wrap-oauth [client]
+(defn wrap-oauth
+  "Middleware converting the :oauth-token option into an Authorization header."
+  [client]
   (fn [req]
     (if-let [oauth-token (:oauth-token req)]
       (client (-> req (dissoc :oauth-token)
@@ -365,20 +375,26 @@
   (when user-info
     (str/split user-info #":")))
 
-(defn wrap-user-info [client]
+(defn wrap-user-info
+  "Middleware converting the :user-info option into a :basic-auth option"
+  [client]
   (fn [req]
     (if-let [[user password] (parse-user-info (:user-info req))]
       (client (assoc req :basic-auth [user password]))
       (client req))))
 
-(defn wrap-method [client]
+(defn wrap-method
+  "Middleware converting the :method option into the :request-method option"
+  [client]
   (fn [req]
     (if-let [m (:method req)]
       (client (-> req (dissoc :method)
                   (assoc :request-method m)))
       (client req))))
 
-(defn wrap-form-params [client]
+(defn wrap-form-params
+  "Middleware wrapping the submission or form parameters."
+  [client]
   (fn [{:keys [form-params content-type request-method]
         :or {content-type :x-www-form-urlencoded}
         :as req}]
@@ -408,6 +424,7 @@
     request))
 
 (defn wrap-nested-params
+  "Middleware wrapping nested parameters for query strings."
   [client]
   (fn [{:keys [query-params form-params content-type] :as req}]
     (if (= :json content-type)
@@ -417,13 +434,18 @@
                req
                [:query-params :form-params])))))
 
-(defn wrap-url [client]
+(defn wrap-url
+  "Middleware wrapping request URL parsing."
+  [client]
   (fn [req]
     (if-let [url (:url req)]
       (client (-> req (dissoc :url) (merge (parse-url url))))
       (client req))))
 
-(defn wrap-unknown-host [client]
+(defn wrap-unknown-host
+  "Middleware ignoring unknown hosts when the :ignore-unknown-host? option
+  is set."
+  [client]
   (fn [{:keys [ignore-unknown-host?] :as req}]
     (try
       (client req)
@@ -479,6 +501,8 @@
   request
   (wrap-request #'core/request))
 
+;; Inline function to throw a slightly more readable exception when
+;; the URL is nil
 (definline check-url! [url]
   `(when (nil? ~url)
      (throw (IllegalArgumentException. "Host URL cannot be nil"))))

@@ -108,6 +108,7 @@
     request))
 
 (defn wrap-cookies
+  "Middleware wrapping cookie handling."
   [client]
   (fn [request]
     (let [response (client (encode-cookie-header request))]

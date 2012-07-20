@@ -167,6 +167,7 @@
    - change body decompression to be optional, if desired
    - make the :content-type and :character-encoding options part of
      middleware, not the core request
+   - document all the middleware
 ** 2012-07-17
    - merged https://github.com/dakrone/clj-http/pull/85 to allow
      low-level callback for debugging
