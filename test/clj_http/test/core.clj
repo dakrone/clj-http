@@ -94,15 +94,22 @@
 
 (deftest ^{:integration true} sets-content-type-with-charset
   (run-server)
-  (let [resp (request {:request-method :get :uri "/content-type"
-                       :content-type "text/plain" :character-encoding "UTF-8"})]
-    (is (= "text/plain; charset=UTF-8" (slurp-body resp)))))
+  (let [resp (client/request {:scheme :http
+                              :server-name "localhost"
+                              :server-port 18080
+                              :request-method :get :uri "/content-type"
+                              :content-type "text/plain"
+                              :character-encoding "UTF-8"})]
+    (is (= "text/plain; charset=UTF-8" (:body resp)))))
 
 (deftest ^{:integration true} sets-content-type-without-charset
   (run-server)
-  (let [resp (request {:request-method :get :uri "/content-type"
-                       :content-type "text/plain"})]
-    (is (= "text/plain" (slurp-body resp)))))
+  (let [resp (client/request {:scheme :http
+                              :server-name "localhost"
+                              :server-port 18080
+                              :request-method :get :uri "/content-type"
+                              :content-type "text/plain"})]
+    (is (= "text/plain" (:body resp)))))
 
 (deftest ^{:integration true} sets-arbitrary-headers
   (run-server)

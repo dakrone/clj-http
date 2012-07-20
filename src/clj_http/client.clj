@@ -285,12 +285,15 @@
 
 (defn wrap-content-type
   "Middleware converting a `:content-type <keyword>` option to the formal
-  application/<name> format."
+  application/<name> format and adding it as a header."
   [client]
-  (fn [{:keys [content-type] :as req}]
+  (fn [{:keys [content-type character-encoding] :as req}]
     (if content-type
-      (client (-> req (assoc :content-type
-                        (content-type-value content-type))))
+      (let [ctv (content-type-value content-type)
+            ct (if character-encoding
+                 (str ctv "; charset=" character-encoding)
+                 ctv)]
+        (client (update-in req [:headers] assoc "Content-Type" ct)))
       (client req))))
 
 (defn wrap-accept

@@ -152,10 +152,9 @@
    Note that where Ring uses InputStreams for the request and response bodies,
    the clj-http uses ByteArrays for the bodies."
   [{:keys [request-method scheme server-name server-port uri query-string
-           headers content-type character-encoding body socket-timeout
-           conn-timeout multipart debug debug-body insecure? save-request?
-           proxy-host proxy-port as cookie-store retry-handler
-           response-interceptor] :as req}]
+           headers body socket-timeout conn-timeout multipart debug debug-body
+           insecure? save-request? proxy-host proxy-port as cookie-store
+           retry-handler response-interceptor] :as req}]
   (let [conn-mgr (or conn/*connection-manager*
                      (conn/make-regular-conn-manager req))
         http-client (DefaultHttpClient. ^ClientConnectionManager conn-mgr)
@@ -182,11 +181,6 @@
          (proxy [HttpResponseInterceptor] []
            (process [resp ctx]
              (response-interceptor resp ctx)))))
-      (when (and content-type character-encoding)
-        (.addHeader http-req "Content-Type"
-                    (str content-type "; charset=" character-encoding)))
-      (when (and content-type (not character-encoding))
-        (.addHeader http-req "Content-Type" content-type))
       (when (instance? SingleClientConnManager conn-mgr)
         (.addHeader http-req "Connection" "close"))
       (doseq [[header-n header-v] headers]

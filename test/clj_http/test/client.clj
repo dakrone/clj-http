@@ -254,7 +254,12 @@
 (deftest apply-on-content-type
   (is-applied client/wrap-content-type
               {:content-type :json}
-              {:content-type "application/json"}))
+              {:headers {"Content-Type" "application/json"}
+               :content-type :json})
+  (is-applied client/wrap-content-type
+              {:content-type :json :character-encoding "UTF-8"}
+              {:headers {"Content-Type" "application/json; charset=UTF-8"}
+               :content-type :json :character-encoding "UTF-8"}))
 
 (deftest pass-on-no-content-type
   (is-passed client/wrap-content-type
