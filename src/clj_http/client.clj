@@ -39,7 +39,9 @@
 (defn when-pos [v]
   (when (and v (pos? v)) v))
 
-(defn parse-url [url]
+(defn parse-url
+  "Parse a URL string into a map of interesting parts."
+  [url]
   (let [url-parsed (URL. url)]
     {:scheme (keyword (.getProtocol url-parsed))
      :server-name (.getHost url-parsed)
@@ -48,9 +50,11 @@
      :user-info (.getUserInfo url-parsed)
      :query-string (.getQuery url-parsed)}))
 
+;; Statuses for which clj-http will not throw an exception
 (def unexceptional-status?
   #{200 201 202 203 204 205 206 207 300 301 302 303 307})
 
+;; helper methods to determine realm of a response
 (defn success?
   [{:keys [status]}]
   (<= 200 status 299))
@@ -62,7 +66,6 @@
 (defn conflict?
   [{:keys [status]}]
   (= status 409))
-
 
 (defn redirect?
   [{:keys [status]}]
@@ -76,7 +79,11 @@
   [{:keys [status]}]
   (<= 500 status 599))
 
-(defn wrap-exceptions [client]
+(defn wrap-exceptions
+  "Middleware that throws a slingshot exception if the response is not a
+  regular response. If :throw-entire-message? is set to true, the entire
+  response is used as the message, instead of just the status number."
+  [client]
   (fn [req]
     (let [{:keys [status] :as resp} (client req)]
       (if (or (not (clojure.core/get req :throw-exceptions true))
@@ -96,7 +103,19 @@
                                :url redirect
                                :trace-redirects trace-redirects))))
 
-(defn wrap-redirects [client]
+(defn wrap-redirects
+  "Middleware that follows redirects in the response. A slingshot exception is
+  thrown if too many redirects occur. Options
+
+  :follow-redirects - default:true, whether to follow redirects
+  :max-redirects - default:20, maximum number of redirects to follow
+  :force-redirects - default:false, force redirecting methods to GET requests
+
+  In the response:
+
+  :redirects-count - number of redirects
+  :trace-redirects - vector of sites the request was redirected from"
+  [client]
   (fn [{:keys [request-method follow-redirects max-redirects
                redirects-count trace-redirects url force-redirects
                throw-exceptions]
@@ -150,7 +169,11 @@
 
 (defmethod decompress-body :default [resp] resp)
 
-(defn wrap-decompression [client]
+(defn wrap-decompression
+  "Middleware handling automatic decompression of responses from web servers. If
+  :decompress-body is set to false, does not automatically set `Accept-Encoding`
+  header or decompress body."
+  [client]
   (fn [req]
     (if (= false (:decompress-body req))
       (client req)
@@ -213,14 +236,23 @@
    (string? as)  (assoc resp :body (String. #^"[B" body ^String as))
    :else (assoc resp :body (String. #^"[B" body "UTF-8"))))
 
-(defn wrap-output-coercion [client]
+(defn wrap-output-coercion
+  "Middleware converting a response body from a byte-array to a different
+  object. Defaults to a String if no :as key is specified, the
+  `coerce-response-body` multimethod may be extended to add
+  additional coercions."
+  [client]
   (fn [{:keys [as] :as req}]
     (let [{:keys [body] :as resp} (client req)]
       (if body
         (coerce-response-body as resp)
         resp))))
 
-(defn wrap-input-coercion [client]
+(defn wrap-input-coercion
+  "Middleware coercing the :body of a request from a number of formats into an
+  Apache Entity. Currently supports Strings, Files, InputStreams
+  and byte-arrays."
+  [client]
   (fn [{:keys [body body-encoding length] :as req}]
     (if body
       (cond
@@ -251,14 +283,19 @@
     (str "application/" (name type))
     type))
 
-(defn wrap-content-type [client]
+(defn wrap-content-type
+  "Middleware converting a `:content-type <keyword>` option to the formal
+  application/<name> format."
+  [client]
   (fn [{:keys [content-type] :as req}]
     (if content-type
       (client (-> req (assoc :content-type
                         (content-type-value content-type))))
       (client req))))
 
-(defn wrap-accept [client]
+(defn wrap-accept
+  "Middleware converting the :accept key in a request to application/<type>"
+  [client]
   (fn [{:keys [accept] :as req}]
     (if accept
       (client (-> req (dissoc :accept)
