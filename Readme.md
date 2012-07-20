@@ -410,7 +410,7 @@ There are four debugging methods you can use:
 ;; ^HttpResponse resp, HttpContext^ ctx
 ;; this allows low level debugging + access to socket.
 ;; see http://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/org/apache/http/HttpResponseInterceptor.html
-(client/get "http://example.org {:response-interceptor (fn [resp ctx] (println ctx))})
+(client/get "http://example.org" {:response-interceptor (fn [resp ctx] (println ctx))})
 ```
 
 
