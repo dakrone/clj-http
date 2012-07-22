@@ -163,6 +163,10 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-07-21
+   - update httpclient and httpmime to 4.2.1
+   - update commons-codec to 1.6
+   - update common-io to 2.4
 ** 2012-07-20
    - change body decompression to be optional, if desired
    - make the :content-type and :character-encoding options part of
