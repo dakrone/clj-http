@@ -21,13 +21,13 @@
     (catch Throwable _
       false)))
 
-(defn json-encode
+(defn ^:dynamic json-encode
   "Resolve and apply cheshire's json encoding dynamically."
   [& args]
   {:pre [json-enabled?]}
   (apply (ns-resolve (symbol "cheshire.core") (symbol "encode")) args))
 
-(defn json-decode
+(defn ^:dynamic json-decode
   "Resolve and apply cheshire's json decoding dynamically."
   [& args]
   {:pre [json-enabled?]}
