@@ -270,9 +270,9 @@ block:
 
 A proxy can be specified by setting the Java properties:
 `<scheme>.proxyHost` and `<scheme>.proxyPort` where `<scheme>` is the client
-scheme used (normally 'http' or 'https'). Additionally, per-request
+scheme used (normally 'http' or 'https'). `http.nonProxyHosts` allows you to specify a pattern for hostnames which do not require proxy routing - this is shared for all schemes. Additionally, per-request
 proxies can be specified with the `proxy-host` and `proxy-port`
-options:
+options (this overrides `http.nonProxyHosts` too):
 
 ```clojure
 (client/get "http://foo.com" {:proxy-host "127.0.0.1" :proxy-port 8118})
