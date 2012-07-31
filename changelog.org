@@ -163,6 +163,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-07-31
+   - merged https://github.com/dakrone/clj-http/pull/87 to allow using
+     http.nonProxyHosts
 ** 2012-07-30
    - mark json-encode and json-decode dynamic, so they could be
      rebound if desired

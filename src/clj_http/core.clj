@@ -62,7 +62,8 @@
 (def ^{:dynamic true} *cookie-store* nil)
 
 (defn- with-routing
-  "Use ProxySelectorRoutePlanner to choose proxy sensible based on http.nonProxyHosts"
+  "Use ProxySelectorRoutePlanner to choose proxy sensible based on
+  http.nonProxyHosts"
   [client]
   (.setRoutePlanner client
                     (ProxySelectorRoutePlanner.
@@ -72,11 +73,11 @@
 (defn maybe-force-proxy [client request proxy-host proxy-port]
   (let [uri (.getURI request)]
     (when (and (nil? (#{"localhost" "127.0.0.1"} (.getHost uri))) proxy-host)
-      (let [target (HttpHost. (.getHost uri) (.getPort uri) (.getScheme uri))]
-        (set-client-param client ConnRoutePNames/FORCED_ROUTE
-                          (HttpRoute. target nil (HttpHost. proxy-host proxy-port)
-                                      (.. client getConnectionManager getSchemeRegistry
-                                          (getScheme target) isLayered)))))
+      (let [target (HttpHost. (.getHost uri) (.getPort uri) (.getScheme uri))
+            route (HttpRoute. target nil (HttpHost. proxy-host proxy-port)
+                              (.. client getConnectionManager getSchemeRegistry
+                                  (getScheme target) isLayered))]
+        (set-client-param client ConnRoutePNames/FORCED_ROUTE route)))
     request))
 
 (defn add-client-params!
