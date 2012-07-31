@@ -17,9 +17,11 @@
                                            HttpEntityEnclosingRequestBase)
            (org.apache.http.client.params CookiePolicy ClientPNames)
            (org.apache.http.conn ClientConnectionManager)
+           (org.apache.http.conn.routing HttpRoute)
            (org.apache.http.conn.params ConnRoutePNames)
            (org.apache.http.impl.client DefaultHttpClient)
-           (org.apache.http.impl.conn SingleClientConnManager)
+           (org.apache.http.impl.conn SingleClientConnManager ProxySelectorRoutePlanner)
+
            (org.apache.http.util EntityUtils)))
 
 (defn parse-headers
@@ -59,18 +61,27 @@
 
 (def ^{:dynamic true} *cookie-store* nil)
 
-(defn- default-proxy-host-for
-  [scheme]
-  (System/getProperty (str scheme ".proxyHost")))
+(defn- with-routing
+  "Use ProxySelectorRoutePlanner to choose proxy sensible based on http.nonProxyHosts"
+  [client]
+  (.setRoutePlanner client
+                    (ProxySelectorRoutePlanner.
+                     (.. client getConnectionManager getSchemeRegistry) nil))
+  client)
 
-(defn- default-proxy-port-for
-  [scheme]
-  (Integer/parseInt (System/getProperty (str scheme ".proxyPort"))))
+(defn maybe-force-proxy [client request proxy-host proxy-port]
+  (let [uri (.getURI request)]
+    (when (and (nil? (#{"localhost" "127.0.0.1"} (.getHost uri))) proxy-host)
+      (let [target (HttpHost. (.getHost uri) (.getPort uri) (.getScheme uri))]
+        (set-client-param client ConnRoutePNames/FORCED_ROUTE
+                          (HttpRoute. target nil (HttpHost. proxy-host proxy-port)
+                                      (.. client getConnectionManager getSchemeRegistry
+                                          (getScheme target) isLayered)))))
+    request))
 
 (defn add-client-params!
   "Add various client params to the http-client object, if needed."
-  [http-client scheme socket-timeout conn-timeout server-name
-   proxy-host proxy-port]
+  [http-client scheme socket-timeout conn-timeout server-name]
   (doto http-client
     (set-client-param ClientPNames/COOKIE_POLICY
                       CookiePolicy/BROWSER_COMPATIBILITY)
@@ -78,15 +89,7 @@
     (set-client-param "http.socket.timeout"
                       (and socket-timeout (Integer. ^Long socket-timeout)))
     (set-client-param "http.connection.timeout"
-                      (and conn-timeout (Integer. ^Long conn-timeout))))
-  (when (nil? (#{"localhost" "127.0.0.1"} server-name))
-    (when-let [effective-proxy-host (or proxy-host
-                                        (default-proxy-host-for scheme))]
-      (let [effective-proxy-port (or proxy-port
-                                     (default-proxy-port-for scheme))]
-        (set-client-param http-client ConnRoutePNames/DEFAULT_PROXY
-                          (HttpHost. effective-proxy-host
-                                     effective-proxy-port))))))
+                      (and conn-timeout (Integer. ^Long conn-timeout)))))
 
 (defn- coerce-body-entity
   "Coerce the http-entity from an HttpResponse to either a byte-array, or a
@@ -157,7 +160,7 @@
            retry-handler response-interceptor] :as req}]
   (let [conn-mgr (or conn/*connection-manager*
                      (conn/make-regular-conn-manager req))
-        http-client (DefaultHttpClient. ^ClientConnectionManager conn-mgr)
+        http-client (with-routing (DefaultHttpClient. ^ClientConnectionManager conn-mgr))
         scheme (name scheme)]
     (when-let [cookie-store (or cookie-store *cookie-store*)]
       (.setCookieStore http-client cookie-store))
@@ -168,13 +171,17 @@
          (retryRequest [e cnt context]
            (retry-handler e cnt context)))))
     (add-client-params! http-client scheme socket-timeout
-                        conn-timeout server-name proxy-host proxy-port)
+                        conn-timeout server-name)
     (let [http-url (str scheme "://" server-name
                         (when server-port (str ":" server-port))
                         uri
                         (when query-string (str "?" query-string)))
           req (assoc req :http-url http-url)
-          #^HttpRequest http-req (http-request-for request-method http-url)]
+          #^HttpRequest http-req (maybe-force-proxy
+                                  http-client
+                                  (http-request-for request-method http-url)
+                                  proxy-host
+                                  proxy-port)]
       (when response-interceptor
         (.addResponseInterceptor
          http-client
