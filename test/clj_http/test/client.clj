@@ -394,7 +394,6 @@
   (is (nil? (client/get "http://aorecuf892983a.com"
                         {:ignore-unknown-host? true}))))
 
-
 (deftest test-status-predicates
   (testing "2xx statuses"
     (doseq [s (range 200 299)]

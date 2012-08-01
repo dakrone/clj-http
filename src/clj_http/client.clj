@@ -3,6 +3,7 @@
   (:use [clj-http.cookies :only [wrap-cookies]]
         [clj-http.links :only [wrap-links]]
         [slingshot.slingshot :only [throw+]]
+        [clojure.stacktrace :only [root-cause]]
         [clojure.walk :only [prewalk]])
   (:require [clojure.string :as str]
             [clj-http.conn-mgr :as conn]
@@ -449,9 +450,11 @@
   (fn [{:keys [ignore-unknown-host?] :as req}]
     (try
       (client req)
-      (catch UnknownHostException e
-        (when-not ignore-unknown-host?
-          (throw e))))))
+      (catch Exception e
+        (if (= (type (root-cause e)) java.net.UnknownHostException)
+          (when-not ignore-unknown-host?
+            (throw (root-cause e)))
+          (throw (root-cause e)))))))
 
 (defn wrap-request
   "Returns a battaries-included HTTP request function coresponding to the given

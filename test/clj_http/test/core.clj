@@ -137,10 +137,12 @@
 (deftest ^{:integration true} sets-socket-timeout
   (run-server)
   (try
-    (request {:request-method :get :uri "/timeout" :socket-timeout 1})
-    (throw (Exception. "Shouldn't get here."))
-    (catch Exception e
-      (is (= java.net.SocketTimeoutException (class e))))))
+    (is (thrown? java.net.SocketTimeoutException
+                 (client/request {:scheme :http
+                                  :server-name "localhost"
+                                  :server-port 18080
+                                  :request-method :get :uri "/timeout"
+                                  :socket-timeout 1})))))
 
 (deftest ^{:integration true} delete-with-body
   (run-server)
@@ -157,8 +159,10 @@
     (Thread/sleep 3000)
     (try
       (is (thrown? javax.net.ssl.SSLPeerUnverifiedException
-                   (request {:request-method :get :uri "/get"
-                             :server-port 18082 :scheme :https})))
+                   (client/request {:scheme :https
+                                    :server-name "localhost"
+                                    :server-port 18082
+                                    :request-method :get :uri "/get"})))
       (let [resp (request {:request-method :get :uri "/get" :server-port 18082
                            :scheme :https :insecure? true})]
         (is (= 200 (:status resp)))
