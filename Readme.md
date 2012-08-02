@@ -160,7 +160,12 @@ The client transparently accepts and decompresses the `gzip` and
 (client/post "http://site.com/resources"
              {:body (clojure.java.io/file "/tmp/foo") :body-encoding "UTF-8"})
 
-;; :length is NOT optional for passing an InputStream in
+;; :length is optional for passing in an InputStream; if not
+;; supplied it will default to -1 to signal to HttpClient to use
+;; chunked encoding
+(client/post "http://site.com/resources"
+             {:body (clojure.java.io/input-stream "/tmp/foo")})
+
 (client/post "http://site.com/resources"
              {:body (clojure.java.io/input-stream "/tmp/foo") :length 1000})
 ```
