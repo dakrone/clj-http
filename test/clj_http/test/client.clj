@@ -5,7 +5,8 @@
             [clj-http.util :as util]
             [cheshire.core :as json])
   (:import (java.net UnknownHostException)
-           (java.util Arrays)))
+           (java.util Arrays)
+           (java.io ByteArrayInputStream)))
 
 (def base-req
   {:scheme :http
@@ -250,6 +251,14 @@
 (deftest pass-on-no-input-coercion
   (is-passed client/wrap-input-coercion
              {:body nil}))
+
+(deftest no-length-for-input-stream
+  (let [i-client (client/wrap-input-coercion identity)
+        resp1 (i-client {:body (ByteArrayInputStream. (util/utf8-bytes "foo"))})
+        resp2 (i-client {:body (ByteArrayInputStream. (util/utf8-bytes "foo"))
+                         :length 3})]
+    (is (= -1 (-> resp1 :body .getContentLength)))
+    (is (= 3 (-> resp2 :body .getContentLength)))))
 
 (deftest apply-on-content-type
   (is-applied client/wrap-content-type
