@@ -64,7 +64,7 @@
 (defn run-server
   []
   (defonce server
-    (future (ring/run-jetty handler {:port 18080}))))
+    (ring/run-jetty handler {:port 18080 :join? false})))
 
 (defn localhost [path]
   (str "http://localhost:18080" path))
