@@ -1,8 +1,8 @@
 * Changelog
   List of changes that have gone into each release
 ** 0.5.2
-   - chunked encoding support (=:length= no longer required along with input
-     stream =:body=)
+   - merged https://github.com/dakrone/clj-http/pull/88 to add chunked encoding
+     support (=:length= no longer required along with input stream =:body=)
 ** 0.5.1
    - fix clojure 1.3's exception wrapping for some exceptions
    - merged https://github.com/dakrone/clj-http/pull/87 to allow using
