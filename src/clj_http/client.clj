@@ -267,9 +267,10 @@
                                                           "UTF-8")))))
        (instance? InputStream body)
        (do
-         (when-not (and length (pos? length))
+         (when-not (integer? length)
            (throw
-            (Exception. ":length key is required for InputStream bodies")))
+            (Exception. (str ":length key is required for InputStream"
+                             " bodies, and must be an integer"))))
          (client (-> req (assoc :body (InputStreamEntity. body length)))))
 
        (instance? (Class/forName "[B") body)
