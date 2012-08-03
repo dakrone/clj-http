@@ -119,7 +119,7 @@
   (doseq [method [:put :post :delete]
           status [301 302 307]]
     (let [client (fn [req] {:status status :body (:body req)
-                            :headers {"location" "http://foo.com/bat"}})
+                           :headers {"location" "http://foo.com/bat"}})
           r-client (client/wrap-redirects client)
           resp (r-client {:body "ok" :url "http://foo.com"
                           :request-method method})]
@@ -177,9 +177,9 @@
 (deftest apply-on-compressed
   (let [client (fn [req]
                  (is (= "gzip, deflate"
-                        (get-in req [:headers "Accept-Encoding"])))
+                        (get-in req [:headers "accept-encoding"])))
                  {:body (util/gzip (util/utf8-bytes "foofoofoo"))
-                  :headers {"Content-Encoding" "gzip"}})
+                  :headers {"content-encoding" "gzip"}})
         c-client (client/wrap-decompression client)
         resp (c-client {})]
     (is (= "foofoofoo" (util/utf8-string (:body resp))))))
@@ -187,9 +187,9 @@
 (deftest apply-on-deflated
   (let [client (fn [req]
                  (is (= "gzip, deflate"
-                        (get-in req [:headers "Accept-Encoding"])))
+                        (get-in req [:headers "accept-encoding"])))
                  {:body (util/deflate (util/utf8-bytes "barbarbar"))
-                  :headers {"Content-Encoding" "deflate"}})
+                  :headers {"content-encoding" "deflate"}})
         c-client (client/wrap-decompression client)
         resp (c-client {})]
     (is (= "barbarbar" (util/utf8-string (:body resp))))))
@@ -202,7 +202,7 @@
 (deftest apply-on-accept
   (is-applied client/wrap-accept
               {:accept :json}
-              {:headers {"Accept" "application/json"}}))
+              {:headers {"accept" "application/json"}}))
 
 (deftest pass-on-no-accept
   (is-passed client/wrap-accept
@@ -211,7 +211,7 @@
 (deftest apply-on-accept-encoding
   (is-applied client/wrap-accept-encoding
               {:accept-encoding [:identity :gzip]}
-              {:headers {"Accept-Encoding" "identity, gzip"}}))
+              {:headers {"accept-encoding" "identity, gzip"}}))
 
 (deftest pass-on-no-accept-encoding
   (is-passed client/wrap-accept-encoding
@@ -263,11 +263,11 @@
 (deftest apply-on-content-type
   (is-applied client/wrap-content-type
               {:content-type :json}
-              {:headers {"Content-Type" "application/json"}
+              {:headers {"content-type" "application/json"}
                :content-type :json})
   (is-applied client/wrap-content-type
               {:content-type :json :character-encoding "UTF-8"}
-              {:headers {"Content-Type" "application/json; charset=UTF-8"}
+              {:headers {"content-type" "application/json; charset=UTF-8"}
                :content-type :json :character-encoding "UTF-8"}))
 
 (deftest pass-on-no-content-type
@@ -286,7 +286,7 @@
 (deftest apply-on-basic-auth
   (is-applied client/wrap-basic-auth
               {:basic-auth ["Aladdin" "open sesame"]}
-              {:headers {"Authorization"
+              {:headers {"authorization"
                          "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="}}))
 
 (deftest pass-on-no-basic-auth
@@ -296,7 +296,7 @@
 (deftest apply-on-oauth
   (is-applied client/wrap-oauth
               {:oauth-token "my-token"}
-              {:headers {"Authorization"
+              {:headers {"authorization"
                          "Bearer my-token"}}))
 
 (deftest pass-on-no-oauth
@@ -432,3 +432,11 @@
     (is (client/conflict? {:status 409}))
     (is (not (client/conflict? {:status 201})))
     (is (not (client/conflict? {:status 404})))))
+
+(deftest test-wrap-headers
+  (is (= {:status 404} ((client/wrap-headers (fn [r] r)) {:status 404})))
+  (is (= {:headers {"content-type" "application/json"}}
+         ((client/wrap-headers
+           #(do (is (= {:headers {"accept" "application/json"}} %1))
+                {:headers {"Content-Type" "application/json"}}))
+          {:headers {"Accept" "application/json"}}))))

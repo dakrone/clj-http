@@ -114,7 +114,7 @@
 (deftest ^{:integration true} sets-arbitrary-headers
   (run-server)
   (let [resp (request {:request-method :get :uri "/header"
-                       :headers {"X-My-Header" "header-val"}})]
+                       :headers {"x-my-header" "header-val"}})]
     (is (= "header-val" (slurp-body resp)))))
 
 (deftest ^{:integration true} sends-and-returns-byte-array-body
