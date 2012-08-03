@@ -269,7 +269,7 @@
        ;; A length of -1 instructs HttpClient to use chunked encoding.
        (instance? InputStream body)
        (client (-> req (assoc :body
-                         (InputStreamEntity. body (or (:length req) -1)))))
+                         (InputStreamEntity. body (or length -1)))))
 
        (instance? (Class/forName "[B") body)
        (client (-> req (assoc :body (ByteArrayEntity. body))))
