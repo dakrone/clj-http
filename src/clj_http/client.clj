@@ -265,13 +265,11 @@
        (instance? File body)
        (client (-> req (assoc :body (FileEntity. body (or body-encoding
                                                           "UTF-8")))))
+
+       ;; A length of -1 instructs HttpClient to use chunked encoding.
        (instance? InputStream body)
-       (do
-         (when-not (integer? length)
-           (throw
-            (Exception. (str ":length key is required for InputStream"
-                             " bodies, and must be an integer"))))
-         (client (-> req (assoc :body (InputStreamEntity. body length)))))
+       (client (-> req (assoc :body
+                         (InputStreamEntity. body (or (:length req) -1)))))
 
        (instance? (Class/forName "[B") body)
        (client (-> req (assoc :body (ByteArrayEntity. body))))
