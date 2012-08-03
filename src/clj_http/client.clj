@@ -157,8 +157,7 @@
 ;; Multimethods for Content-Encoding dispatch automatically
 ;; decompressing response bodies
 (defmulti decompress-body
-  (fn [resp] (or (get-in resp [:headers "Content-Encoding"])
-                 (get-in resp [:headers "content-encoding"]))))
+  (fn [resp] (get-in resp [:headers "content-encoding"])))
 
 (defmethod decompress-body "gzip"
   [resp]
@@ -178,7 +177,7 @@
   (fn [req]
     (if (= false (:decompress-body req))
       (client req)
-      (let [req-c (update req :headers assoc "Accept-Encoding" "gzip, deflate")
+      (let [req-c (update req :headers assoc "accept-encoding" "gzip, deflate")
             resp-c (client req-c)]
         (decompress-body resp-c)))))
 
@@ -293,7 +292,7 @@
             ct (if character-encoding
                  (str ctv "; charset=" character-encoding)
                  ctv)]
-        (client (update-in req [:headers] assoc "Content-Type" ct)))
+        (client (update-in req [:headers] assoc "content-type" ct)))
       (client req))))
 
 (defn wrap-accept
@@ -302,7 +301,7 @@
   (fn [{:keys [accept] :as req}]
     (if accept
       (client (-> req (dissoc :accept)
-                  (assoc-in [:headers "Accept"]
+                  (assoc-in [:headers "accept"]
                             (content-type-value accept))))
       (client req))))
 
@@ -316,7 +315,7 @@
   (fn [{:keys [accept-encoding] :as req}]
     (if accept-encoding
       (client (-> req (dissoc :accept-encoding)
-                  (assoc-in [:headers "Accept-Encoding"]
+                  (assoc-in [:headers "accept-encoding"]
                             (accept-encoding-value accept-encoding))))
       (client req))))
 
@@ -356,7 +355,7 @@
   (fn [req]
     (if-let [basic-auth (:basic-auth req)]
       (client (-> req (dissoc :basic-auth)
-                  (assoc-in [:headers "Authorization"]
+                  (assoc-in [:headers "authorization"]
                             (basic-auth-value basic-auth))))
       (client req))))
 
@@ -366,7 +365,7 @@
   (fn [req]
     (if-let [oauth-token (:oauth-token req)]
       (client (-> req (dissoc :oauth-token)
-                  (assoc-in [:headers "Authorization"]
+                  (assoc-in [:headers "authorization"]
                             (str "Bearer " oauth-token))))
       (client req))))
 
@@ -455,11 +454,21 @@
             (throw (root-cause e)))
           (throw (root-cause e)))))))
 
+(defn wrap-headers [client]
+  (let [lower-case-headers
+        #(if-let [headers (:headers %1)]
+           (assoc %1 :headers (util/lower-case-keys headers))
+           %1)]
+    (fn [req]
+      (-> (client (lower-case-headers req))
+          (lower-case-headers)))))
+
 (defn wrap-request
   "Returns a battaries-included HTTP request function coresponding to the given
    core client. See client/client."
   [request]
   (-> request
+      wrap-headers
       wrap-query-params
       wrap-basic-auth
       wrap-oauth
