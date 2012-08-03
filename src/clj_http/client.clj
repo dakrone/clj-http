@@ -136,12 +136,11 @@
 
 (defn wrap-decompression [client]
   (fn [req]
-    (if (get-in req [:headers "Accept-Encoding"])
+    (if (get-in req [:headers "accept-encoding"])
       (client req)
-      (let [req-c (update req :headers assoc "Accept-Encoding" "gzip, deflate")
+      (let [req-c (update req :headers assoc "accept-encoding" "gzip, deflate")
             resp-c (client req-c)]
-        (case (or (get-in resp-c [:headers "Content-Encoding"])
-                  (get-in resp-c [:headers "content-encoding"]))
+        (case (get-in resp-c [:headers "content-encoding"])
           "gzip" (update resp-c :body util/gunzip)
           "deflate" (update resp-c :body util/inflate)
           resp-c)))))
@@ -250,7 +249,7 @@
   (fn [{:keys [accept] :as req}]
     (if accept
       (client (-> req (dissoc :accept)
-                  (assoc-in [:headers "Accept"]
+                  (assoc-in [:headers "accept"]
                             (content-type-value accept))))
       (client req))))
 
@@ -261,7 +260,7 @@
   (fn [{:keys [accept-encoding] :as req}]
     (if accept-encoding
       (client (-> req (dissoc :accept-encoding)
-                  (assoc-in [:headers "Accept-Encoding"]
+                  (assoc-in [:headers "accept-encoding"]
                             (accept-encoding-value accept-encoding))))
       (client req))))
 
@@ -296,7 +295,7 @@
   (fn [req]
     (if-let [basic-auth (:basic-auth req)]
       (client (-> req (dissoc :basic-auth)
-                  (assoc-in [:headers "Authorization"]
+                  (assoc-in [:headers "authorization"]
                             (basic-auth-value basic-auth))))
       (client req))))
 
@@ -304,7 +303,7 @@
   (fn [req]
     (if-let [oauth-token (:oauth-token req)]
       (client (-> req (dissoc :oauth-token)
-                  (assoc-in [:headers "Authorization"]
+                  (assoc-in [:headers "authorization"]
                             (str "Bearer " oauth-token))))
       (client req))))
 
@@ -379,11 +378,19 @@
         (when-not ignore-unknown-host?
           (throw e))))))
 
+(defn wrap-headers [client]
+  (let [lower-case-headers
+        #(assoc %1 :headers (util/lower-case-keys (:headers %1)))]
+    (fn [req]
+      (-> (client (lower-case-headers req))
+          (lower-case-headers)))))
+
 (defn wrap-request
   "Returns a battaries-included HTTP request function coresponding to the given
    core client. See client/client."
   [request]
   (-> request
+      wrap-headers
       wrap-query-params
       wrap-basic-auth
       wrap-oauth

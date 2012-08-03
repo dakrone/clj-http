@@ -176,9 +176,9 @@
 (deftest apply-on-compressed
   (let [client (fn [req]
                  (is (= "gzip, deflate"
-                        (get-in req [:headers "Accept-Encoding"])))
+                        (get-in req [:headers "accept-encoding"])))
                  {:body (util/gzip (util/utf8-bytes "foofoofoo"))
-                  :headers {"Content-Encoding" "gzip"}})
+                  :headers {"content-encoding" "gzip"}})
         c-client (client/wrap-decompression client)
         resp (c-client {})]
     (is (= "foofoofoo" (util/utf8-string (:body resp))))))
@@ -186,9 +186,9 @@
 (deftest apply-on-deflated
   (let [client (fn [req]
                  (is (= "gzip, deflate"
-                        (get-in req [:headers "Accept-Encoding"])))
+                        (get-in req [:headers "accept-encoding"])))
                  {:body (util/deflate (util/utf8-bytes "barbarbar"))
-                  :headers {"Content-Encoding" "deflate"}})
+                  :headers {"content-encoding" "deflate"}})
         c-client (client/wrap-decompression client)
         resp (c-client {})]
     (is (= "barbarbar" (util/utf8-string (:body resp))))))
@@ -201,7 +201,7 @@
 (deftest apply-on-accept
   (is-applied client/wrap-accept
               {:accept :json}
-              {:headers {"Accept" "application/json"}}))
+              {:headers {"accept" "application/json"}}))
 
 (deftest pass-on-no-accept
   (is-passed client/wrap-accept
@@ -210,7 +210,7 @@
 (deftest apply-on-accept-encoding
   (is-applied client/wrap-accept-encoding
               {:accept-encoding [:identity :gzip]}
-              {:headers {"Accept-Encoding" "identity, gzip"}}))
+              {:headers {"accept-encoding" "identity, gzip"}}))
 
 (deftest pass-on-no-accept-encoding
   (is-passed client/wrap-accept-encoding
@@ -272,7 +272,7 @@
 (deftest apply-on-basic-auth
   (is-applied client/wrap-basic-auth
               {:basic-auth ["Aladdin" "open sesame"]}
-              {:headers {"Authorization"
+              {:headers {"authorization"
                          "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="}}))
 
 (deftest pass-on-no-basic-auth
@@ -282,7 +282,7 @@
 (deftest apply-on-oauth
   (is-applied client/wrap-oauth
               {:oauth-token "my-token"}
-              {:headers {"Authorization"
+              {:headers {"authorization"
                          "Bearer my-token"}}))
 
 (deftest pass-on-no-oauth
