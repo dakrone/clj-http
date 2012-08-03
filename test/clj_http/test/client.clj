@@ -119,7 +119,7 @@
   (doseq [method [:put :post :delete]
           status [301 302 307]]
     (let [client (fn [req] {:status status :body (:body req)
-                           :headers {"location" "http://foo.com/bat"}})
+                            :headers {"location" "http://foo.com/bat"}})
           r-client (client/wrap-redirects client)
           resp (r-client {:body "ok" :url "http://foo.com"
                           :request-method method})]
