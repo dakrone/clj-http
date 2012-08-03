@@ -349,3 +349,18 @@
     (is (count trace-redirects) (count @saved-ctx))
     (is (every? #(= 18080 (:remote-port %)) @saved-ctx))
     (is (every? #(instance? HttpConnection (:http-conn %)) @saved-ctx))))
+
+(deftest ^{:integration true} t-send-input-stream-body
+ (run-server)
+ (let [b1 (:body (client/post "http://localhost:18080/post"
+                              {:body (ByteArrayInputStream. (.getBytes "foo"))
+                               :length 3}))
+       b2 (:body (client/post "http://localhost:18080/post"
+                              {:body (ByteArrayInputStream.
+                                      (.getBytes "foo"))}))
+       b3 (:body (client/post "http://localhost:18080/post"
+                              {:body (ByteArrayInputStream. (.getBytes "apple"))
+                               :length 2}))]
+   (is (= b1 "foo"))
+   (is (= b2 "foo"))
+   (is (= b3 "ap"))))
