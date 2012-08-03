@@ -1,5 +1,7 @@
 (ns clj-http.util
   "Helper functions for the HTTP client."
+  (:require [clojure.string :refer [lower-case]]
+            [clojure.walk :refer [postwalk]])
   (:import (org.apache.commons.codec.binary Base64)
            (org.apache.commons.io IOUtils)
            (java.io ByteArrayInputStream ByteArrayOutputStream)
@@ -64,3 +66,10 @@
   [b]
   (when b
     (IOUtils/toByteArray (DeflaterInputStream. (ByteArrayInputStream. b)))))
+
+(defn lower-case-keys
+  "Recursively lower-case all map keys that are strings."
+  {:added "1.1"}
+  [m]
+  (let [f (fn [[k v]] (if (string? k) [(lower-case k) v] [k v]))]
+    (postwalk (fn [x] (if (map? x) (into {} (map f x)) x)) m)))
