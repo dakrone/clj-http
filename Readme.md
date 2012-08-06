@@ -316,18 +316,21 @@ is provided with a _cookie store_.
 instance of a default implementation of
 `org.apache.http.client.CookieStore`.)
 
-Alternatively, you can provide a cookie store on a per-request basis
-that will supercede any cookie store that has been dynamically bound to
-`clj-http.core/*cookie-store*`:
+This will allow cookies to only be _written_ to the cookie store.
+Cookies from the cookie-store will not automatically be sent with
+future requests.
+
+If you would like cookies from the cookie-store to automatically be
+sent with each request, specify the cookie-store with the
+`:cookie-store` option:
 
 ```clojure
-(binding [clj-http.core/*cookie-store* (clj-http.cookies/cookie-store)]
+(let [my-cs (clj-http.cookies/cookie-store)]
   (client/post "http://site.com/login" {:form-params {:username "..."
-                                                      :password "..."}})
-  (let [data (:body (client/get "http://site.com/secured-page" {:as :json}))]
-    (client/post "http://othersite.com/update" {:form-params data
-                                                :cookie-store othersite-cookie-store})
-  ...))
+                                                      :password "..."}
+                                        :cookie-store cs})
+  (client/post "http://site.com/update" {:body my-data
+                                         :cookie-store cs}))
 ```
 
 You can also us the `get-cookies` function to retrieve the cookies

@@ -125,3 +125,15 @@
   [cookie-store]
   (when cookie-store
     (into {} (map to-cookie (.getCookies cookie-store)))))
+
+(defn wrap-cookie-store
+  "Middleware that sends cookies that are part of a cookie store automatically
+  with a request if the :cookie-store parameter is set."
+  [client]
+  (fn [req]
+    (if-let [cs (:cookie-store req)]
+      ;; If a cookie-store is supplied, merge the cookie-stores
+      ;; cookies with the request's cookies to send with the request
+      (let [new-req (merge-with merge req {:cookies (get-cookies cs)})]
+        (client new-req))
+      (client req))))

@@ -181,6 +181,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-08-06
+   - add wrap-cookie-store to send cookie-store cookies with a request
+     automatically
 ** 2012-08-03
    - merged https://github.com/dakrone/clj-http/pull/90 to standardize
      on lower-case headers for HTTP requests
