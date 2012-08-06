@@ -434,9 +434,10 @@
     (is (not (client/conflict? {:status 404})))))
 
 (deftest test-wrap-headers
-  (is (= {:status 404} ((client/wrap-headers (fn [r] r)) {:status 404})))
+  (is (= {:status 404} ((client/wrap-lower-case-headers
+                         (fn [r] r)) {:status 404})))
   (is (= {:headers {"content-type" "application/json"}}
-         ((client/wrap-headers
+         ((client/wrap-lower-case-headers
            #(do (is (= {:headers {"accept" "application/json"}} %1))
                 {:headers {"Content-Type" "application/json"}}))
           {:headers {"Accept" "application/json"}}))))

@@ -454,7 +454,10 @@
             (throw (root-cause e)))
           (throw (root-cause e)))))))
 
-(defn wrap-headers [client]
+(defn wrap-lower-case-headers
+  "Middleware lowercasing all headers, as per RFC (case-insensitive) and
+  Ring spec."
+  [client]
   (let [lower-case-headers
         #(if-let [headers (:headers %1)]
            (assoc %1 :headers (util/lower-case-keys headers))
@@ -468,7 +471,7 @@
    core client. See client/client."
   [request]
   (-> request
-      wrap-headers
+      wrap-lower-case-headers
       wrap-query-params
       wrap-basic-auth
       wrap-oauth
