@@ -61,7 +61,7 @@
 
 (def ^{:dynamic true} *cookie-store* nil)
 
-(defn- with-routing
+(defn- set-routing
   "Use ProxySelectorRoutePlanner to choose proxy sensible based on
   http.nonProxyHosts"
   [client]
@@ -161,7 +161,8 @@
            retry-handler response-interceptor] :as req}]
   (let [conn-mgr (or conn/*connection-manager*
                      (conn/make-regular-conn-manager req))
-        http-client (with-routing (DefaultHttpClient. ^ClientConnectionManager conn-mgr))
+        http-client (set-routing (DefaultHttpClient.
+                                   ^ClientConnectionManager conn-mgr))
         scheme (name scheme)]
     (when-let [cookie-store (or cookie-store *cookie-store*)]
       (.setCookieStore http-client cookie-store))
