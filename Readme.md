@@ -328,9 +328,9 @@ sent with each request, specify the cookie-store with the
 (let [my-cs (clj-http.cookies/cookie-store)]
   (client/post "http://site.com/login" {:form-params {:username "..."
                                                       :password "..."}
-                                        :cookie-store cs})
+                                        :cookie-store my-cs})
   (client/post "http://site.com/update" {:body my-data
-                                         :cookie-store cs}))
+                                         :cookie-store my-cs}))
 ```
 
 You can also us the `get-cookies` function to retrieve the cookies
