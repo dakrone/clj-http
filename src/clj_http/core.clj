@@ -21,7 +21,7 @@
            (org.apache.http.conn.params ConnRoutePNames)
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.impl.conn SingleClientConnManager ProxySelectorRoutePlanner)
-
+	   (org.apache.http.auth UsernamePasswordCredentials AuthScope)
            (org.apache.http.util EntityUtils)))
 
 (defn parse-headers
@@ -158,7 +158,7 @@
   [{:keys [request-method scheme server-name server-port uri query-string
            headers body socket-timeout conn-timeout multipart debug debug-body
            insecure? save-request? proxy-host proxy-port as cookie-store
-           retry-handler response-interceptor] :as req}]
+           retry-handler response-interceptor digest-auth] :as req}]
   (let [conn-mgr (or conn/*connection-manager*
                      (conn/make-regular-conn-manager req))
         http-client (set-routing (DefaultHttpClient.
@@ -174,6 +174,11 @@
            (retry-handler e cnt context)))))
     (add-client-params! http-client scheme socket-timeout
                         conn-timeout server-name)
+    (when-let [[user pass] digest-auth]
+      (.setCredentials
+       (.getCredentialsProvider http-client)
+       (AuthScope. nil -1 nil)
+       (UsernamePasswordCredentials. user pass)))
     (let [http-url (str scheme "://" server-name
                         (when server-port (str ":" server-port))
                         uri
