@@ -20,8 +20,9 @@
            (org.apache.http.conn.routing HttpRoute)
            (org.apache.http.conn.params ConnRoutePNames)
            (org.apache.http.impl.client DefaultHttpClient)
-           (org.apache.http.impl.conn SingleClientConnManager ProxySelectorRoutePlanner)
-	   (org.apache.http.auth UsernamePasswordCredentials AuthScope)
+           (org.apache.http.impl.conn SingleClientConnManager
+                                      ProxySelectorRoutePlanner)
+           (org.apache.http.auth UsernamePasswordCredentials AuthScope)
            (org.apache.http.util EntityUtils)))
 
 (defn parse-headers
