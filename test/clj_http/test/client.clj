@@ -441,3 +441,7 @@
            #(do (is (= {:headers {"accept" "application/json"}} %1))
                 {:headers {"Content-Type" "application/json"}}))
           {:headers {"Accept" "application/json"}}))))
+
+(deftest t-request-timing
+  (is (pos? (:request-time ((client/wrap-request-timing
+                             (fn [r] (Thread/sleep 15) r)) {})))))
