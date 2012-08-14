@@ -184,6 +184,8 @@
 ** 2012-08-14
    - merged https://github.com/dakrone/clj-http/pull/91 to add support
      for :digest-auth
+   - added request timing middleware to add :request-time key for
+     request timing
 ** 2012-08-06
    - add wrap-cookie-store to send cookie-store cookies with a request
      automatically

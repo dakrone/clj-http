@@ -466,11 +466,21 @@
       (-> (client (lower-case-headers req))
           (lower-case-headers)))))
 
+(defn wrap-request-timing
+  "Middleware that times the request, putting the total time (in milliseconds)
+  of the request into the :request-time key in the response."
+  [client]
+  (fn [req]
+    (let [start (System/currentTimeMillis)
+          resp (client req)]
+      (assoc resp :request-time (- (System/currentTimeMillis) start)))))
+
 (defn wrap-request
   "Returns a battaries-included HTTP request function coresponding to the given
    core client. See client/client."
   [request]
   (-> request
+      wrap-request-timing
       wrap-lower-case-headers
       wrap-query-params
       wrap-basic-auth
