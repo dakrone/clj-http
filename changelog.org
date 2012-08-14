@@ -1,5 +1,14 @@
 * Changelog
   List of changes that have gone into each release
+** 0.5.3
+   - merged https://github.com/dakrone/clj-http/pull/91 to add support
+     for :digest-auth
+   - added request timing middleware to add :request-time key for
+     request timing
+   - add wrap-cookie-store to send cookie-store cookies with a request
+     automatically
+   - merged https://github.com/dakrone/clj-http/pull/90 to standardize
+     on lower-case headers for HTTP requests
 ** 0.5.2
    - merged https://github.com/dakrone/clj-http/pull/88 to add chunked encoding
      support (=:length= no longer required along with input stream =:body=)
@@ -181,6 +190,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Release 0.5.3
 ** 2012-08-14
    - merged https://github.com/dakrone/clj-http/pull/91 to add support
      for :digest-auth
