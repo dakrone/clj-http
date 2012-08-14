@@ -118,6 +118,9 @@ More example requests:
 (client/get "http://site.com/protected" {:basic-auth ["user" "pass"]})
 (client/get "http://site.com/protected" {:basic-auth "user:pass"})
 
+;; Digest authentication
+(client/get "http://site.com/protected" {:digest-auth ["user" "pass"]})
+
 ;; OAuth 2
 (client/get "http://site.com/protected" {:oauth-token "secret-token"})
 
