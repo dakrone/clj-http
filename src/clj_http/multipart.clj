@@ -90,7 +90,7 @@
   (let [mp-entity (MultipartEntity.)]
     (doseq [m multipart]
       (let [klass (type (:content m))
-            name (:name m)
+            name (or (:part-name m) (:name m))
             ;; TODO: replace with multimethod? actually helpful?
             part (cond
                   (isa? klass File)

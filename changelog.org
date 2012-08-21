@@ -190,6 +190,8 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-08-21
+   - allow overriding the multipart part name with :part-name
 ** Release 0.5.3
 ** 2012-08-14
    - merged https://github.com/dakrone/clj-http/pull/91 to add support

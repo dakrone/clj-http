@@ -185,7 +185,10 @@
                                     :encoding "UTF-8"
                                     :mime-type "application/binary"}
                                    {:name "c" :content stream
-                                    :mime-type "application/json"}]})
+                                    :mime-type "application/json"}
+                                   {:name "e" :part-name "eggplant"
+                                    :content "content"
+                                    :mime-type "application/text"}]})
         resp-body (apply str (map #(try (char %) (catch Exception _ ""))
                                   (:body resp)))]
     (is (= 200 (:status resp)))
@@ -195,7 +198,9 @@
     (is (re-find #"UTF-8" resp-body))
     (is (re-find #"byte-test" resp-body))
     (is (re-find #"name=\"c\"" resp-body))
-    (is (re-find #"name=\"d\"" resp-body))))
+    (is (re-find #"name=\"d\"" resp-body))
+    (is (re-find #"name=\"eggplant\"" resp-body))
+    (is (re-find #"content" resp-body))))
 
 (deftest ^{:integration true} t-save-request-obj
   (run-server)

@@ -95,9 +95,11 @@ More example requests:
 (client/post "http//site.com" {:form-params {:foo "bar"} :content-type :json})
 
 ;; Multipart form uploads/posts
-;; takes a vector of maps, to preserve the order of entities
+;; takes a vector of maps, to preserve the order of entities, :name
+;; will be used as the part name unless :part-name is specified
 (client/post "http//example.org" {:multipart [{:name "title" :content "My Awesome Picture"}
                                               {:name "Content/type" :content "image/jpeg"}
+                                              {:name "foo.txt" :part-name "eggplant" :content "Eggplants"}
                                               {:name "file" :content (clojure.java.io/file "pic.jpg")}]})
 ;; Multipart :content values can be one of the following:
 ;; String, InputStream, File, or a byte-array
