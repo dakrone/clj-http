@@ -38,7 +38,8 @@
      :value (.getValue cookie)
      :version (.getVersion cookie)})])
 
-(defn to-basic-client-cookie
+(defn ^org.apache.http.impl.cookie.BasicClientCookie2
+  to-basic-client-cookie
   "Converts a cookie seq into a BasicClientCookie2."
   [[cookie-name cookie-content]]
   (doto (BasicClientCookie2. (name cookie-name)
