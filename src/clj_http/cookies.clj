@@ -5,7 +5,8 @@
            (org.apache.http.params BasicHttpParams)
            (org.apache.http.impl.cookie BasicClientCookie2)
            (org.apache.http.impl.cookie BrowserCompatSpecFactory)
-           (org.apache.http.message BasicHeader)))
+           (org.apache.http.message BasicHeader)
+           org.apache.http.client.CookieStore))
 
 (defn- cookie-spec ^org.apache.http.cookie.CookieSpec []
   (.newInstance
@@ -38,7 +39,8 @@
      :value (.getValue cookie)
      :version (.getVersion cookie)})])
 
-(defn to-basic-client-cookie
+(defn ^org.apache.http.impl.cookie.BasicClientCookie2
+  to-basic-client-cookie
   "Converts a cookie seq into a BasicClientCookie2."
   [[cookie-name cookie-content]]
   (doto (BasicClientCookie2. (name cookie-name)
@@ -122,7 +124,7 @@
 
 (defn get-cookies
   "Given a cookie-store, return a map of cookie name to a map of cookie values."
-  [cookie-store]
+  [^CookieStore cookie-store]
   (when cookie-store
     (into {} (map to-cookie (.getCookies cookie-store)))))
 
@@ -131,7 +133,7 @@
   with a request if the :cookie-store parameter is set."
   [client]
   (fn [req]
-    (if-let [cs (:cookie-store req)]
+    (if-let [^CookieStore cs (:cookie-store req)]
       ;; If a cookie-store is supplied, merge the cookie-stores
       ;; cookies with the request's cookies to send with the request
       (let [new-req (merge-with merge req {:cookies (get-cookies cs)})]
