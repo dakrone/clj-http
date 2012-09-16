@@ -24,7 +24,7 @@
     (.register (Scheme. "http" 80 (PlainSocketFactory/getSocketFactory)))
     (.register (Scheme. "https" 443 (SSLSocketFactory/getSocketFactory)))))
 
-(defn ^KeyStore get-keystore [keystore-file keystore-type keystore-pass]
+(defn ^KeyStore get-keystore [keystore-file keystore-type ^String keystore-pass]
   (when keystore-file
     (let [keystore (KeyStore/getInstance (or keystore-type
                                              (KeyStore/getDefaultType)))]

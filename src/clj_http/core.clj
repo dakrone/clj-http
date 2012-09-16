@@ -65,13 +65,13 @@
 (defn- set-routing
   "Use ProxySelectorRoutePlanner to choose proxy sensible based on
   http.nonProxyHosts"
-  [client]
+  [^DefaultHttpClient client]
   (.setRoutePlanner client
                     (ProxySelectorRoutePlanner.
                      (.. client getConnectionManager getSchemeRegistry) nil))
   client)
 
-(defn maybe-force-proxy [client request proxy-host proxy-port]
+(defn maybe-force-proxy [^DefaultHttpClient client ^HttpEntityEnclosingRequestBase request proxy-host proxy-port]
   (let [uri (.getURI request)]
     (when (and (nil? (#{"localhost" "127.0.0.1"} (.getHost uri))) proxy-host)
       (let [target (HttpHost. (.getHost uri) (.getPort uri) (.getScheme uri))
@@ -107,7 +107,7 @@
             (finally
               (when (instance? SingleClientConnManager conn-mgr)
                 (.shutdown conn-mgr))))))
-      (EntityUtils/toByteArray http-entity))))
+      (EntityUtils/toByteArray ^HttpEntity http-entity))))
 
 (defn- print-debug!
   "Print out debugging information to *out* for a given request."
@@ -122,7 +122,7 @@
 
               (isa? (type body) HttpEntity)
               (let [baos (ByteArrayOutputStream.)]
-                (.writeTo body baos)
+                (.writeTo ^HttpEntity body baos)
                 (.toString baos "UTF-8"))
 
               :else nil)
@@ -136,7 +136,7 @@
 
 (defn http-request-for
   "Provides the HttpRequest object for a particular request-method and url"
-  [request-method http-url]
+  [request-method ^String http-url]
   (case request-method
     :get     (proxy-get-with-body http-url)
     :head    (HttpHead. http-url)
@@ -160,10 +160,9 @@
            headers body socket-timeout conn-timeout multipart debug debug-body
            insecure? save-request? proxy-host proxy-port as cookie-store
            retry-handler response-interceptor digest-auth] :as req}]
-  (let [conn-mgr (or conn/*connection-manager*
-                     (conn/make-regular-conn-manager req))
-        http-client (set-routing (DefaultHttpClient.
-                                   ^ClientConnectionManager conn-mgr))
+  (let [^ClientConnectionManager conn-mgr (or conn/*connection-manager*
+                                              (conn/make-regular-conn-manager req))
+        ^DefaultHttpClient http-client (set-routing (DefaultHttpClient. conn-mgr))
         scheme (name scheme)]
     (when-let [cookie-store (or cookie-store *cookie-store*)]
       (.setCookieStore http-client cookie-store))
