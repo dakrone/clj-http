@@ -253,17 +253,15 @@
   Apache Entity. Currently supports Strings, Files, InputStreams
   and byte-arrays."
   [client]
-  (fn [{:keys [body body-encoding length] :as req}]
+  (fn [{:keys [body body-encoding length] :or {^String body-encoding "UTF-8"} :as req}]
     (if body
       (cond
        (string? body)
-       (client (-> req (assoc :body (StringEntity. body (or body-encoding
-                                                            "UTF-8"))
+       (client (-> req (assoc :body (StringEntity. ^String body ^String body-encoding)
                               :character-encoding (or body-encoding
                                                       "UTF-8"))))
        (instance? File body)
-       (client (-> req (assoc :body (FileEntity. body (or body-encoding
-                                                          "UTF-8")))))
+       (client (-> req (assoc :body (FileEntity. ^File body ^String body-encoding))))
 
        ;; A length of -1 instructs HttpClient to use chunked encoding.
        (instance? InputStream body)
