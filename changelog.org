@@ -190,6 +190,10 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-09-16
+   - Merged https://github.com/dakrone/clj-http/pull/94 to remove some
+     reflection
+   - update cheshire dep, make clojure a dev-dependency
 ** 2012-08-21
    - allow overriding the multipart part name with :part-name
 ** Release 0.5.3

@@ -7,14 +7,14 @@
   :repositories {"sona" "http://oss.sonatype.org/content/repositories/snapshots"}
   :warn-on-reflection false
   :min-lein-version "2.0.0"
-  :dependencies [[org.clojure/clojure "1.4.0"]
-                 [org.apache.httpcomponents/httpclient "4.2.1"]
+  :dependencies [[org.apache.httpcomponents/httpclient "4.2.1"]
                  [org.apache.httpcomponents/httpmime "4.2.1"]
                  [commons-codec "1.6"]
                  [commons-io "2.4"]
                  [slingshot "0.10.3"]
-                 [cheshire "4.0.1"]]
-  :profiles {:dev {:dependencies [[ring/ring-jetty-adapter "1.1.0"]
+                 [cheshire "4.0.2"]]
+  :profiles {:dev {:dependencies [[org.clojure/clojure "1.4.0"]
+                                  [ring/ring-jetty-adapter "1.1.0"]
                                   [ring/ring-devel "1.1.0"]]}
              :1.2 {:dependencies [[org.clojure/clojure "1.2.1"]]}
              :1.3 {:dependencies [[org.clojure/clojure "1.3.0"]]}
