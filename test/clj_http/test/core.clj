@@ -10,8 +10,9 @@
   (:import (java.io ByteArrayInputStream)
            (org.apache.http.message BasicHeader BasicHeaderIterator)
            (org.apache.http.client.methods HttpPost)
-           (org.apache.http HttpResponse HttpConnection)
-           (org.apache.http.protocol HttpContext ExecutionContext)))
+           (org.apache.http HttpResponse HttpConnection HttpVersion)
+           (org.apache.http.protocol HttpContext ExecutionContext)
+           (org.apache.http.impl.client DefaultHttpClient)))
 
 (defn handler [req]
   ;;(pp/pprint req)
@@ -369,3 +370,16 @@
    (is (= b1 "foo"))
    (is (= b2 "foo"))
    (is (= b3 "ap"))))
+
+(deftest t-add-client-params
+  (testing "Using add-client-params!"
+    (let [ps {"http.connection-manager.timeout" 100
+              "http.socket.timeout" 250
+              "http.protocol.allow-circular-redirects" false
+              "http.protocol.version" HttpVersion/HTTP_1_0
+              "http.useragent" "clj-http"}
+          setps (.getParams (doto (DefaultHttpClient.)
+                              (core/add-client-params! ps)))]
+      (doseq [[k v] ps]
+        (is (= v (.getParameter setps k)))))))
+
