@@ -77,6 +77,12 @@ More example requests:
    :conn-timeout 1000
    :accept :json})
 
+;; Set any specific client parameters manually:
+(client/post "http://example.com"
+  {:client-params {"http.protocol.allow-circular-redirects" false
+                   "http.protocol.version" HttpVersion/HTTP_1_0
+                   "http.useragent" "clj-http"}})
+
 ;; Need to contact a server with an untrusted SSL cert?
 (client/get "https://alioth.debian.org" {:insecure? true})
 

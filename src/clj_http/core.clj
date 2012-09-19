@@ -94,7 +94,7 @@
                       k (cond
                          (and (not= "http.connection-manager.timeout" k)
                               (instance? Long v)) (Integer. ^Long v)
-                         true v))))
+                              true v))))
 
 
 (defn- coerce-body-entity
@@ -178,9 +178,11 @@
          (retryRequest [e cnt context]
            (retry-handler e cnt context)))))
     (add-client-params! http-client
-                        (conj {"http.socket.timeout" socket-timeout
-                               "http.connection.timeout" conn-timeout}
-                              client-params))
+                        ;; merge in map of specified timeouts, to
+                        ;; support backward compatiblity.
+                        (merge {"http.socket.timeout" socket-timeout
+                                "http.connection.timeout" conn-timeout}
+                               client-params))
 
     (when-let [[user pass] digest-auth]
       (.setCredentials

@@ -190,6 +190,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-09-19
+   - merged https://github.com/dakrone/clj-http/pull/95 to add support
+     for setting aribtrary client params to the http client
 ** 2012-09-16
    - Merged https://github.com/dakrone/clj-http/pull/94 to remove some
      reflection
