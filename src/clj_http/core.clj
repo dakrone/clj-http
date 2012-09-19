@@ -83,15 +83,19 @@
 
 (defn add-client-params!
   "Add various client params to the http-client object, if needed."
-  [http-client scheme socket-timeout conn-timeout server-name]
+  [http-client kvs]
   (doto http-client
     (set-client-param ClientPNames/COOKIE_POLICY
                       CookiePolicy/BROWSER_COMPATIBILITY)
-    (set-client-param ClientPNames/HANDLE_REDIRECTS false)
-    (set-client-param "http.socket.timeout"
-                      (and socket-timeout (Integer. ^Long socket-timeout)))
-    (set-client-param "http.connection.timeout"
-                      (and conn-timeout (Integer. ^Long conn-timeout)))))
+    (set-client-param ClientPNames/HANDLE_REDIRECTS false))
+
+  (doseq [[k v] kvs]
+    (set-client-param http-client
+                      k (cond
+                         (and (not= "http.connection-manager.timeout" k)
+                              (instance? Long v)) (Integer. ^Long v)
+                         true v))))
+
 
 (defn- coerce-body-entity
   "Coerce the http-entity from an HttpResponse to either a byte-array, or a
@@ -159,7 +163,8 @@
   [{:keys [request-method scheme server-name server-port uri query-string
            headers body socket-timeout conn-timeout multipart debug debug-body
            insecure? save-request? proxy-host proxy-port as cookie-store
-           retry-handler response-interceptor digest-auth] :as req}]
+           retry-handler response-interceptor digest-auth
+           client-params] :as req}]
   (let [^ClientConnectionManager conn-mgr (or conn/*connection-manager*
                                               (conn/make-regular-conn-manager req))
         ^DefaultHttpClient http-client (set-routing (DefaultHttpClient. conn-mgr))
@@ -172,8 +177,11 @@
        (proxy [HttpRequestRetryHandler] []
          (retryRequest [e cnt context]
            (retry-handler e cnt context)))))
-    (add-client-params! http-client scheme socket-timeout
-                        conn-timeout server-name)
+    (add-client-params! http-client
+                        (conj {"http.socket.timeout" socket-timeout
+                               "http.connection.timeout" conn-timeout}
+                              client-params))
+
     (when-let [[user pass] digest-auth]
       (.setCredentials
        (.getCredentialsProvider http-client)
