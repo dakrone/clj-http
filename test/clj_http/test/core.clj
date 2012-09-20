@@ -383,3 +383,15 @@
       (doseq [[k v] ps]
         (is (= v (.getParameter setps k)))))))
 
+;; This relies on connections to writequit.org being slower than 1ms, if this
+;; fails, you must have very nice internet.
+(deftest ^{:integration true} sets-conn-timeout
+  (run-server)
+  (try
+    (is (thrown? org.apache.http.conn.ConnectTimeoutException
+                 (client/request {:scheme :https
+                                  :insecure? true
+                                  :server-name "www.writequit.org"
+                                  :server-port 80
+                                  :request-method :get :uri "/"
+                                  :conn-timeout 1})))))
