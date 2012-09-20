@@ -1,5 +1,12 @@
 * Changelog
-  List of changes that have gone into each release
+  List of user-visible changes that have gone into each release
+** 0.5.4
+   - merged https://github.com/dakrone/clj-http/pull/95 to add support
+     for setting aribtrary client params to the http client
+   - Merged https://github.com/dakrone/clj-http/pull/94 to remove some
+     reflection
+   - update cheshire dep, make clojure a dev-dependency
+   - allow overriding the multipart part name with :part-name
 ** 0.5.3
    - merged https://github.com/dakrone/clj-http/pull/91 to add support
      for :digest-auth
