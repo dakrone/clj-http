@@ -1,5 +1,7 @@
 * Changelog
   List of user-visible changes that have gone into each release
+** 0.5.5
+   - bump cheshire to fix json encoding bug
 ** 0.5.4
    - merged https://github.com/dakrone/clj-http/pull/95 to add support
      for setting aribtrary client params to the http client
@@ -197,6 +199,10 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Release 0.5.5
+** 2012-09-22
+   - bump cheshire to fix json bug
+** Release 0.5.4
 ** 2012-09-20
    - add a test for :conn-timeout
 ** 2012-09-19
