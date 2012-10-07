@@ -596,6 +596,8 @@
     default: 5
   :threads - Maximum number of threads that will be used for connecting
     default: 4
+  :default-per-route - Default maximum number of simultaneous connections per host
+    default: 2
   :insecure? - Boolean flag to specify allowing insecure HTTPS connections
     default: false
 
@@ -611,6 +613,7 @@
   [opts & body]
   `(let [timeout# (or (:timeout ~opts) 5)
          threads# (or (:threads ~opts) 4)
+         default-per-route# (or (:default-per-route ~opts) org.apache.http.conn.params.ConnPerRouteBean/DEFAULT_MAX_CONNECTIONS_PER_ROUTE)
          insecure?# (:insecure? ~opts)
          leftovers# (dissoc ~opts :timeout :threads :insecure?)]
      ;; I'm leaving the connection bindable for now because in the
@@ -621,7 +624,8 @@
                       (merge {:timeout timeout#
                               :insecure? insecure?#}
                              leftovers#))
-                 (.setMaxTotal threads#))]
+                 (.setMaxTotal threads#)
+                 (.setDefaultMaxPerRoute default-per-route#))]
        (try
          ~@body
          (finally

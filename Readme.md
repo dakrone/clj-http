@@ -385,7 +385,7 @@ clj-http can use persistent connections to speed up connections if
 multiple connections are being used:
 
 ```clojure
-(with-connection-pool {:timeout 5 :threads 4 :insecure? false}
+(with-connection-pool {:timeout 5 :threads 4 :insecure? false :default-per-route 10}
   (get "http://aoeu.com/1")
   (post "http://aoeu.com/2")
   (get "http://aoeu.com/3")
