@@ -71,7 +71,8 @@
                      (.. client getConnectionManager getSchemeRegistry) nil))
   client)
 
-(defn maybe-force-proxy [^DefaultHttpClient client ^HttpEntityEnclosingRequestBase request proxy-host proxy-port]
+(defn maybe-force-proxy [^DefaultHttpClient client ^HttpEntityEnclosingRequestBase
+                         request proxy-host proxy-port]
   (let [uri (.getURI request)]
     (when (and (nil? (#{"localhost" "127.0.0.1"} (.getHost uri))) proxy-host)
       (let [target (HttpHost. (.getHost uri) (.getPort uri) (.getScheme uri))
