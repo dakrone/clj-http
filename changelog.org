@@ -1,7 +1,5 @@
 * Changelog
   List of user-visible changes that have gone into each release
-** 0.5.6
-   - added optional :default-per-route to with-connection-pool
 ** 0.5.5
    - bump cheshire to fix json encoding bug
 ** 0.5.4
@@ -201,6 +199,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-10-08
+   - merged https://github.com/dakrone/clj-http/pull/98 to add
+     optional :default-per-route to with-connection-pool
 ** Release 0.5.5
 ** 2012-09-22
    - bump cheshire to fix json bug
