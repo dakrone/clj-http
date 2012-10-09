@@ -71,8 +71,9 @@
                      (.. client getConnectionManager getSchemeRegistry) nil))
   client)
 
-(defn maybe-force-proxy [^DefaultHttpClient client ^HttpEntityEnclosingRequestBase
-                         request proxy-host proxy-port]
+(defn maybe-force-proxy [^DefaultHttpClient client
+                         ^HttpEntityEnclosingRequestBase request
+                         proxy-host proxy-port]
   (let [uri (.getURI request)]
     (when (and (nil? (#{"localhost" "127.0.0.1"} (.getHost uri))) proxy-host)
       (let [target (HttpHost. (.getHost uri) (.getPort uri) (.getScheme uri))
@@ -166,9 +167,10 @@
            insecure? save-request? proxy-host proxy-port as cookie-store
            retry-handler response-interceptor digest-auth
            client-params] :as req}]
-  (let [^ClientConnectionManager conn-mgr (or conn/*connection-manager*
-                                              (conn/make-regular-conn-manager req))
-        ^DefaultHttpClient http-client (set-routing (DefaultHttpClient. conn-mgr))
+  (let [^ClientConnectionManager conn-mgr
+        (or conn/*connection-manager* (conn/make-regular-conn-manager req))
+        ^DefaultHttpClient http-client (set-routing
+                                        (DefaultHttpClient. conn-mgr))
         scheme (name scheme)]
     (when-let [cookie-store (or cookie-store *cookie-store*)]
       (.setCookieStore http-client cookie-store))

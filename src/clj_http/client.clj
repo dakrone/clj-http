@@ -11,6 +11,7 @@
             [clj-http.util :as util])
   (:import (java.io InputStream File)
            (java.net URL UnknownHostException)
+           (org.apache.http.conn.params ConnPerRouteBean)
            (org.apache.http.entity ByteArrayEntity InputStreamEntity
                                    FileEntity StringEntity))
   (:refer-clojure :exclude (get)))
@@ -253,15 +254,18 @@
   Apache Entity. Currently supports Strings, Files, InputStreams
   and byte-arrays."
   [client]
-  (fn [{:keys [body body-encoding length] :or {^String body-encoding "UTF-8"} :as req}]
+  (fn [{:keys [body body-encoding length]
+        :or {^String body-encoding "UTF-8"} :as req}]
     (if body
       (cond
        (string? body)
-       (client (-> req (assoc :body (StringEntity. ^String body ^String body-encoding)
+       (client (-> req (assoc :body (StringEntity. ^String body
+                                                   ^String body-encoding)
                               :character-encoding (or body-encoding
                                                       "UTF-8"))))
        (instance? File body)
-       (client (-> req (assoc :body (FileEntity. ^File body ^String body-encoding))))
+       (client (-> req (assoc :body (FileEntity. ^File body
+                                                 ^String body-encoding))))
 
        ;; A length of -1 instructs HttpClient to use chunked encoding.
        (instance? InputStream body)
@@ -584,6 +588,8 @@
   (check-url! url)
   (request (merge req {:method :patch :url url})))
 
+(def dmcpr ConnPerRouteBean/DEFAULT_MAX_CONNECTIONS_PER_ROUTE)
+
 (defmacro with-connection-pool
   "Macro to execute the body using a connection manager. Creates a
   ThreadSafeClientConnectionManager to use for all requests within the body of
@@ -596,7 +602,7 @@
     default: 5
   :threads - Maximum number of threads that will be used for connecting
     default: 4
-  :default-per-route - Default maximum number of simultaneous connections per host
+  :default-per-route - Maximum number of simultaneous connections per host
     default: 2
   :insecure? - Boolean flag to specify allowing insecure HTTPS connections
     default: false
@@ -613,7 +619,8 @@
   [opts & body]
   `(let [timeout# (or (:timeout ~opts) 5)
          threads# (or (:threads ~opts) 4)
-         default-per-route# (or (:default-per-route ~opts) org.apache.http.conn.params.ConnPerRouteBean/DEFAULT_MAX_CONNECTIONS_PER_ROUTE)
+         default-per-route# (or (:default-per-route ~opts)
+                                clj-http.client/dmcpr)
          insecure?# (:insecure? ~opts)
          leftovers# (dissoc ~opts :timeout :threads :insecure?)]
      ;; I'm leaving the connection bindable for now because in the
