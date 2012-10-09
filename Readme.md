@@ -237,6 +237,64 @@ can be specified:
     "connection" "close"}
 ```
 
+#### HTML Meta tag headers
+HTML 4.01 allows using the tag `<meta http-equiv="..." />` to specify
+a header that should be treated as an HTTP response header. By
+default, clj-http will ignore the body of the response (other than the
+regular output coercion), but if you need clj-http to parse the
+headers out of the body, you can use the `:decode-body-headers`
+option:
+
+```clojure
+;; without decoding body headers (defaults to off):
+(:headers (http/get "http://www.yomiuri.co.jp/"))
+=> {"server" "Apache",
+    "content-encoding" "gzip",
+    "content-type" "text/html",
+    "date" "Tue, 09 Oct 2012 18:02:41 GMT",
+    "cache-control" "max-age=0, no-cache",
+    "expires" "Tue, 09 Oct 2012 18:02:41 GMT",
+    "etag" "\"1dfb-2686-4cba2686fb8b1\"",
+    "pragma" "no-cache",
+    "connection" "close"}
+
+;; with decoding body headers, notice the content-type,
+;; content-style-type and content-script-type headers:
+(:headers (http/get "http://www.yomiuri.co.jp/" {:decode-body-headers true}))
+=> {"server" "Apache",
+    "content-encoding" "gzip",
+    "content-script-type" "text/javascript",
+    "content-style-type" "text/css",
+    "content-type" "text/html; charset=Shift_JIS",
+    "date" "Tue, 09 Oct 2012 18:02:59 GMT", 
+    "cache-control" "max-age=0, no-cache",
+    "expires" "Tue, 09 Oct 2012 18:02:59 GMT",
+    "etag" "\"1dfb-2686-4cba2686fb8b1\"",
+    "pragma" "no-cache",
+    "connection" "close"}
+```
+
+This can be used to have clj-http correctly interpret the body's
+charset by using:
+
+```clojure
+(http/get "http://www.yomiuri.co.jp/" {:decode-body-headers true :as :auto})
+=> ;; correctly formatted :body (Shift_JIS charset instead of UTF-8)
+```
+
+Note that this feature is currently beta and uses
+[Crouton](https://github.com/weavejester/crouton) to parse the body of
+the request. If you do not want to use this feature, you can exclude
+Crouton from clj-http's dependencies without causing any problems like so:
+
+```clojure
+(defproject foo "0.1.0-SNAPSHOT"
+  :dependencies [[org.clojure/clojure "1.3.0"]
+                 [clj-http "0.6.0" :exclusions [crouton]]])
+```
+
+clj-http will automatically disable the `:decode-body-headers` option.
+
 ### Misc
 
 A more general `request` function is also available, which is useful

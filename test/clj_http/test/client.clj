@@ -1,5 +1,6 @@
 (ns clj-http.test.client
   (:use [clojure.test]
+        [clojure.java.io :only [resource]]
         [clj-http.test.core :only [run-server]])
   (:require [clj-http.client :as client]
             [clj-http.util :as util]
@@ -445,3 +446,15 @@
 (deftest t-request-timing
   (is (pos? (:request-time ((client/wrap-request-timing
                              (fn [r] (Thread/sleep 15) r)) {})))))
+
+(deftest t-wrap-additional-header-parsing
+  (let [text (slurp (resource "header-test.html"))
+        client (fn [req] {:body (.getBytes text)})
+        new-client (client/wrap-additional-header-parsing client)
+        resp (new-client {:decode-body-headers true})
+        resp2 (new-client {:decode-body-headers false})]
+    (is (= {"content-type" "text/html; charset=Shift_JIS"
+            "content-style-type" "text/css"
+            "content-script-type" "text/javascript"}
+           (:headers resp)))
+    (is (nil? (:headers resp2)))))

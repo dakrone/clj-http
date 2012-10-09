@@ -16,12 +16,27 @@
                                    FileEntity StringEntity))
   (:refer-clojure :exclude (get)))
 
+;; Cheshire is an optional dependency, so we check for it at compile time.
 (def json-enabled?
   (try
     (require 'cheshire.core)
     true
     (catch Throwable _
       false)))
+
+;; Crouton is an optional dependency, so we check for it at compile time.
+(def crouton-enabled?
+  (try
+    (require 'crouton.html)
+    true
+    (catch Throwable _
+      false)))
+
+(defn ^:dynamic parse-html
+  "Resolve and apply crouton's HTML parsing."
+  [& args]
+  {:pre [crouton-enabled?]}
+  (apply (ns-resolve (symbol "crouton.html") (symbol "parse")) args))
 
 (defn ^:dynamic json-encode
   "Resolve and apply cheshire's json encoding dynamically."
@@ -279,6 +294,44 @@
        (client req))
       (client req))))
 
+;; TODO: support HTML 5's <meta charset="UTF-8" /> header, not just HTML 4.01's
+(defn get-headers-from-body
+  "Given a map of body content, return a map of header-name to header-value."
+  [body-map]
+  (let [;; parse out HTML content
+        h (or (:content body-map)
+              (:content (first (filter #(= (:tag %) :html) body-map))))
+        ;; parse out <head> tags
+        heads (:content (first (filter #(= (:tag %) :head) h)))
+        ;; parse out attributes of 'meta' head tags
+        attrs (map :attrs (filter #(= (:tag %) :meta) heads))
+        ;; parse out the 'http-equiv' meta head tags
+        http-attrs (filter :http-equiv attrs)
+        ;; convert http-attributes into map of headers (lowercased)
+        headers (apply merge (map (fn [{:keys [http-equiv content]}]
+                                    {(.toLowerCase http-equiv) content})
+                                  http-attrs))]
+    headers))
+
+(defn wrap-additional-header-parsing
+  "Middleware that parses additional http headers from the body of a
+  web page, adding them into the headers map of the response if any
+  are found. Only looks at the body if the :decode-body-headers option
+  is set to a truthy value. Will be silently disabled if crouton is excluded
+  from clj-http's dependencies."
+  [client]
+  (fn [req]
+    (if (:decode-body-headers req)
+      (if crouton-enabled?
+        (let [resp (client req)
+              b (:body resp)
+              body-map (parse-html b)
+              additional-headers (get-headers-from-body body-map)]
+          (assoc resp :headers (merge (:headers resp)
+                                      additional-headers)))
+        (client req))
+      (client req))))
+
 (defn content-type-value [type]
   (if (keyword? type)
     (str "application/" (name type))
@@ -492,6 +545,9 @@
       wrap-redirects
       wrap-decompression
       wrap-input-coercion
+      ;; put this before output-coercion, so additional charset
+      ;; headers can be used if desired
+      wrap-additional-header-parsing
       wrap-output-coercion
       wrap-exceptions
       wrap-accept

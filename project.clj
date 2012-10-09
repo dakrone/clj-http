@@ -12,7 +12,8 @@
                  [commons-codec "1.6"]
                  [commons-io "2.4"]
                  [slingshot "0.10.3"]
-                 [cheshire "4.0.3"]]
+                 [cheshire "4.0.3"]
+                 [crouton "0.1.0"]]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.4.0"]
                                   [ring/ring-jetty-adapter "1.1.0"]
                                   [ring/ring-devel "1.1.0"]]}

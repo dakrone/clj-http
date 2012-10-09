@@ -199,6 +199,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-10-09
+   - add feature to decode body headers, merging them into response
+     headers if they are present
 ** 2012-10-08
    - merged https://github.com/dakrone/clj-http/pull/98 to add
      optional :default-per-route to with-connection-pool
@@ -492,3 +495,4 @@
 
 * TODO
 ** Allow header names as keywords
+** Handler HTML 5 body charset header
