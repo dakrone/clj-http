@@ -8,6 +8,8 @@ pull request or open an issue if you have any problems
 
 [![Continuous Integration status](https://secure.travis-ci.org/dakrone/clj-http.png)](http://travis-ci.org/dakrone/clj-http)
 
+[Annotated source](http://dakrone.github.com/clj-http/)
+
 ## Installation
 
 `clj-http` is available as a Maven artifact from
