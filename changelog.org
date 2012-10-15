@@ -199,6 +199,8 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-10-15
+   - bump Crouton to 0.1.1 for faster speeds
 ** 2012-10-09
    - add feature to decode body headers, merging them into response
      headers if they are present
