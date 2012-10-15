@@ -1,5 +1,11 @@
 * Changelog
   List of user-visible changes that have gone into each release
+** 0.5.6
+   - bump Crouton to 0.1.1 for faster speeds
+   - add feature to decode body headers, merging them into response
+     headers if they are present
+   - merged https://github.com/dakrone/clj-http/pull/98 to add
+     optional :default-per-route to with-connection-pool
 ** 0.5.5
    - bump cheshire to fix json encoding bug
 ** 0.5.4
@@ -199,6 +205,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Released 0.5.6
 ** 2012-10-15
    - bump Crouton to 0.1.1 for faster speeds
 ** 2012-10-09
