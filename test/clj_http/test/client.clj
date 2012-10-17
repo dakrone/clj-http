@@ -458,3 +458,11 @@
             "content-script-type" "text/javascript"}
            (:headers resp)))
     (is (nil? (:headers resp2)))))
+
+(deftest t-wrap-additional-header-parsing-html5
+  (let [text (slurp (resource "header-html5-test.html"))
+        client (fn [req] {:body (.getBytes text)})
+        new-client (client/wrap-additional-header-parsing client)
+        resp (new-client {:decode-body-headers true})]
+    (is (= {"content-type" "text/html; charset=UTF-8"}
+           (:headers resp)))))

@@ -294,7 +294,6 @@
        (client req))
       (client req))))
 
-;; TODO: support HTML 5's <meta charset="UTF-8" /> header, not just HTML 4.01's
 (defn get-headers-from-body
   "Given a map of body content, return a map of header-name to header-value."
   [body-map]
@@ -307,10 +306,16 @@
         attrs (map :attrs (filter #(= (:tag %) :meta) heads))
         ;; parse out the 'http-equiv' meta head tags
         http-attrs (filter :http-equiv attrs)
+        ;; parse out HTML5 charset meta tags
+        html5-charset (filter :charset attrs)
         ;; convert http-attributes into map of headers (lowercased)
         headers (apply merge (map (fn [{:keys [http-equiv content]}]
                                     {(.toLowerCase http-equiv) content})
-                                  http-attrs))]
+                                  http-attrs))
+        ;; merge in html5 charset setting
+        headers (merge headers
+                       (when-let [cs (:charset (first html5-charset))]
+                         {"content-type" (str "text/html; charset=" cs)}))]
     headers))
 
 (defn wrap-additional-header-parsing
