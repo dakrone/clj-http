@@ -7,7 +7,8 @@
   :repositories {"sona" "http://oss.sonatype.org/content/repositories/snapshots"}
   :warn-on-reflection false
   :min-lein-version "2.0.0"
-  :dependencies [[org.apache.httpcomponents/httpclient "4.2.1"]
+  :dependencies [[org.apache.httpcomponents/httpcore "4.2.1"]
+                 [org.apache.httpcomponents/httpclient "4.2.1"]
                  [org.apache.httpcomponents/httpmime "4.2.1"]
                  [commons-codec "1.6"]
                  [commons-io "2.4"]
