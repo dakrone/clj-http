@@ -208,6 +208,7 @@
 ** 2012-11-02
    - create a custom X509HostnameVerifier for the :insecure? option
 ** 2012-11-01
+   - explicitly require httpcore instead of leaving it to a transitive dep
    - update httpcomponents to 4.2.2
 ** 2012-10-17
    - implement HTML5 charset header reading from body
