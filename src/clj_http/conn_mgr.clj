@@ -2,7 +2,10 @@
   "Utility methods for Scheme registries and HTTP connection managers"
   (:require [clojure.java.io :as io])
   (:import (java.security KeyStore)
-           (org.apache.http.conn.ssl SSLSocketFactory TrustStrategy)
+           (java.security.cert X509Certificate)
+           (javax.net.ssl SSLSession SSLSocket)
+           (org.apache.http.conn.ssl AllowAllHostnameVerifier SSLSocketFactory
+                                     TrustStrategy X509HostnameVerifier)
            (org.apache.http.conn.scheme PlainSocketFactory
                                         SchemeRegistry Scheme)
            (org.apache.http.impl.conn SingleClientConnManager
@@ -10,9 +13,30 @@
            (org.apache.http.impl.conn.tsccm ThreadSafeClientConnManager)))
 
 (def ^SSLSocketFactory insecure-socket-factory
-  (doto (SSLSocketFactory. (reify TrustStrategy
-                             (isTrusted [_ _ _] true)))
-    (.setHostnameVerifier SSLSocketFactory/ALLOW_ALL_HOSTNAME_VERIFIER)))
+  (SSLSocketFactory. (reify TrustStrategy
+                       (isTrusted [_ _ _] true))
+                     (reify X509HostnameVerifier
+                       (^void verify [this ^String host ^SSLSocket sock]
+                         ;; for some strange reason, only TLSv1 really
+                         ;; works here, if you know why, tell me.
+                         (.setEnabledProtocols
+                          sock (into-array String ["TLSv1"]))
+                         (.setWantClientAuth sock false)
+                         (let [session (.getSession sock)]
+                           (when-not session
+                             (.startHandshake sock))
+                           (aget (.getPeerCertificates session) 0)
+                           ;; normally you'd want to verify the cert
+                           ;; here, but since this is an insecure
+                           ;; socketfactory, we don't
+                           nil))
+                       (^void verify [_ ^String _ ^X509Certificate _]
+                         nil)
+                       (^void verify [_ ^String _ ^"[Ljava.lang.String;" _
+                                      ^"[Ljava.lang.String;" _]
+                         nil)
+                       (^boolean verify [_ ^String _ ^SSLSession _]
+                         true))))
 
 (def insecure-scheme-registry
   (doto (SchemeRegistry.)
@@ -47,12 +71,12 @@
 (defn ^SingleClientConnManager make-regular-conn-manager
   [{:keys [insecure? keystore trust-store] :as req}]
   (cond
-    (or keystore trust-store)
-    (SingleClientConnManager. (get-keystore-scheme-registry req))
+   (or keystore trust-store)
+   (SingleClientConnManager. (get-keystore-scheme-registry req))
 
-    insecure? (SingleClientConnManager. insecure-scheme-registry)
+   insecure? (SingleClientConnManager. insecure-scheme-registry)
 
-    :else (SingleClientConnManager.)))
+   :else (SingleClientConnManager.)))
 
 
 ;; need the fully qualified class name because this fn is later used in a
@@ -63,12 +87,12 @@
   ThreadSafeClientConnManager with <timeout> seconds set as the timeout value."
   [{:keys [timeout insecure? keystore trust-store] :as config}]
   (let [registry (cond
-                   insecure? insecure-scheme-registry
+                  insecure? insecure-scheme-registry
 
-                   (or keystore trust-store)
-                   (get-keystore-scheme-registry config)
+                  (or keystore trust-store)
+                  (get-keystore-scheme-registry config)
 
-                   :else regular-scheme-registry)]
+                  :else regular-scheme-registry)]
     (ThreadSafeClientConnManager.
      registry timeout java.util.concurrent.TimeUnit/SECONDS)))
 

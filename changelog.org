@@ -205,6 +205,10 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-11-02
+   - create a custom X509HostnameVerifier for the :insecure? option
+** 2012-11-01
+   - update httpcomponents to 4.2.2
 ** 2012-10-17
    - implement HTML5 charset header reading from body
 ** Released 0.5.6
