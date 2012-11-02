@@ -1,5 +1,10 @@
 * Changelog
   List of user-visible changes that have gone into each release
+** 0.5.7
+   - create a custom X509HostnameVerifier for the :insecure? option
+   - explicitly require httpcore instead of leaving it to a transitive dep
+   - update httpcomponents to 4.2.2
+   - implement HTML5 charset header reading from body
 ** 0.5.6
    - bump Crouton to 0.1.1 for faster speeds
    - add feature to decode body headers, merging them into response
@@ -205,6 +210,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Released 0.5.7
 ** 2012-11-02
    - create a custom X509HostnameVerifier for the :insecure? option
 ** 2012-11-01

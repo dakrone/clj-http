@@ -16,15 +16,15 @@ pull request or open an issue if you have any problems
 [Clojars](http://clojars.org/clj-http):
 
 ```clojure
-[clj-http "0.5.6"]
+[clj-http "0.5.7"]
 ```
 
 Previous versions available as
 
 ```clojure
+[clj-http "0.5.6"]
 [clj-http "0.5.5"]
 [clj-http "0.5.4"]
-[clj-http "0.5.3"]
 ```
 
 ## Usage
@@ -240,12 +240,12 @@ can be specified:
 ```
 
 #### HTML Meta tag headers
-HTML 4.01 allows using the tag `<meta http-equiv="..." />` to specify
-a header that should be treated as an HTTP response header. By
-default, clj-http will ignore the body of the response (other than the
-regular output coercion), but if you need clj-http to parse the
-headers out of the body, you can use the `:decode-body-headers`
-option:
+HTML 4.01 allows using the tag `<meta http-equiv="..." />` and HTML 5
+allows using the tag `<meta charset="..." />` to specify a header that
+should be treated as an HTTP response header. By default, clj-http
+will ignore the body of the response (other than the regular output
+coercion), but if you need clj-http to parse the headers out of the
+body, you can use the `:decode-body-headers` option:
 
 ```clojure
 ;; without decoding body headers (defaults to off):
