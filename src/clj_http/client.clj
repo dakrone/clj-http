@@ -12,8 +12,8 @@
   (:import (java.io InputStream File)
            (java.net URL UnknownHostException)
            (org.apache.http.conn.params ConnPerRouteBean)
-           (org.apache.http.entity ByteArrayEntity InputStreamEntity
-                                   FileEntity StringEntity))
+           (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
+                                   InputStreamEntity FileEntity StringEntity))
   (:refer-clojure :exclude (get)))
 
 ;; Cheshire is an optional dependency, so we check for it at compile time.
@@ -264,6 +264,13 @@
         (coerce-response-body as resp)
         resp))))
 
+(defn maybe-wrap-entity
+  "Wrap an HttpEntity in a BufferedHttpEntity if warranted."
+  [{:keys [entity-buffering]} entity]
+  (if (and entity-buffering (not= BufferedHttpEntity (class entity)))
+    (BufferedHttpEntity. entity)
+    entity))
+
 (defn wrap-input-coercion
   "Middleware coercing the :body of a request from a number of formats into an
   Apache Entity. Currently supports Strings, Files, InputStreams
@@ -274,21 +281,27 @@
     (if body
       (cond
        (string? body)
-       (client (-> req (assoc :body (StringEntity. ^String body
-                                                   ^String body-encoding)
+       (client (-> req (assoc :body (maybe-wrap-entity
+                                     req (StringEntity. ^String body
+                                                        ^String body-encoding))
                               :character-encoding (or body-encoding
                                                       "UTF-8"))))
        (instance? File body)
-       (client (-> req (assoc :body (FileEntity. ^File body
-                                                 ^String body-encoding))))
+       (client (-> req (assoc :body (maybe-wrap-entity
+                                     req (FileEntity. ^File body
+                                                      ^String body-encoding)))))
 
        ;; A length of -1 instructs HttpClient to use chunked encoding.
        (instance? InputStream body)
        (client (-> req (assoc :body
-                         (InputStreamEntity. body (or length -1)))))
+                         (if length
+                           (InputStreamEntity. body length)
+                           (maybe-wrap-entity
+                            req (InputStreamEntity. body -1))))))
 
        (instance? (Class/forName "[B") body)
-       (client (-> req (assoc :body (ByteArrayEntity. body))))
+       (client (-> req (assoc :body (maybe-wrap-entity
+                                     req (ByteArrayEntity. body)))))
 
        :else
        (client req))
