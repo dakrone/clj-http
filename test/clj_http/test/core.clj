@@ -60,7 +60,9 @@
     [:move "/move"]
     {:status 200 :body "move"}
     [:patch "/patch"]
-    {:status 200 :body "patch"}))
+    {:status 200 :body "patch"}
+    [:get "/headers"]
+    {:status 200 :body (json/encode (:headers req))}))
 
 (defn run-server
   []
@@ -410,3 +412,13 @@
           timeout-error1 (is-pool-timeout-error? req1)
           timeout-error2 (is-pool-timeout-error? req2)]
       (is (or timeout-error1 timeout-error2)))))
+
+(deftest ^{:integration true} t-header-collections
+  (run-server)
+  (let [headers (-> (client/get "http://localhost:18080/headers"
+                                {:headers {"foo" ["bar" "baz"]
+                                           "eggplant" "quux"}})
+                    :body
+                    json/decode)]
+    (is (= {"eggplant" "quux" "foo" "bar,baz"}
+           (select-keys headers ["foo" "eggplant"])))))
