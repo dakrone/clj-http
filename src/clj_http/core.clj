@@ -211,7 +211,10 @@
       (when (instance? SingleClientConnManager conn-mgr)
         (.addHeader http-req "Connection" "close"))
       (doseq [[header-n header-v] headers]
-        (.addHeader http-req header-n header-v))
+        (if (coll? header-v)
+          (doseq [header-vth header-v]
+            (.addHeader http-req header-n header-vth))
+          (.addHeader http-req header-n header-v)))
       (if multipart
         (.setEntity #^HttpEntityEnclosingRequest http-req
                     (mp/create-multipart-entity multipart))
