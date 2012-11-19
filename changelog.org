@@ -213,6 +213,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-11-19
+   - merged https://github.com/dakrone/clj-http/pull/101 to allow
+     request headers to specify multiple values
 ** Released 0.5.8
 ** 2012-11-15
    - add buffering for HttpEntity, with ability to turn off if needed,

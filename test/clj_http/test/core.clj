@@ -359,19 +359,19 @@
     (is (every? #(instance? HttpConnection (:http-conn %)) @saved-ctx))))
 
 (deftest ^{:integration true} t-send-input-stream-body
- (run-server)
- (let [b1 (:body (client/post "http://localhost:18080/post"
-                              {:body (ByteArrayInputStream. (.getBytes "foo"))
-                               :length 3}))
-       b2 (:body (client/post "http://localhost:18080/post"
-                              {:body (ByteArrayInputStream.
-                                      (.getBytes "foo"))}))
-       b3 (:body (client/post "http://localhost:18080/post"
-                              {:body (ByteArrayInputStream. (.getBytes "apple"))
-                               :length 2}))]
-   (is (= b1 "foo"))
-   (is (= b2 "foo"))
-   (is (= b3 "ap"))))
+  (run-server)
+  (let [b1 (:body (client/post "http://localhost:18080/post"
+                               {:body (ByteArrayInputStream. (.getBytes "foo"))
+                                :length 3}))
+        b2 (:body (client/post "http://localhost:18080/post"
+                               {:body (ByteArrayInputStream.
+                                       (.getBytes "foo"))}))
+        b3 (:body (client/post "http://localhost:18080/post"
+                               {:body (ByteArrayInputStream. (.getBytes "apple"))
+                                :length 2}))]
+    (is (= b1 "foo"))
+    (is (= b2 "foo"))
+    (is (= b3 "ap"))))
 
 (deftest t-add-client-params
   (testing "Using add-client-params!"
@@ -402,11 +402,11 @@
   (run-server)
   (client/with-connection-pool {:threads 1}
     (let [async-request #(future (client/request {:scheme :http
-                                          :server-name "localhost"
-                                          :server-port 18080
-                                          :request-method :get :uri "/timeout"}))
-         is-pool-timeout-error? (fn[req-fut] instance? org.apache.http.conn.ConnectionPoolTimeoutException
-                                  (try @req-fut (catch Exception e (.getCause e))))
+                                                  :server-name "localhost"
+                                                  :server-port 18080
+                                                  :request-method :get :uri "/timeout"}))
+          is-pool-timeout-error? (fn[req-fut] instance? org.apache.http.conn.ConnectionPoolTimeoutException
+                                   (try @req-fut (catch Exception e (.getCause e))))
           req1 (async-request)
           req2 (async-request)
           timeout-error1 (is-pool-timeout-error? req1)
