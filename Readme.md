@@ -79,6 +79,10 @@ More example requests:
    :conn-timeout 1000
    :accept :json})
 
+;; Specifying headers as either a string or collection:
+(client/get "http://example.com"
+  {:headers {"foo" ["bar" "baz"], "eggplant" "quux"}})
+
 ;; Set any specific client parameters manually:
 (client/post "http://example.com"
   {:client-params {"http.protocol.allow-circular-redirects" false
