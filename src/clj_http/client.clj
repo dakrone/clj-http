@@ -323,7 +323,7 @@
         html5-charset (filter :charset attrs)
         ;; convert http-attributes into map of headers (lowercased)
         headers (apply merge (map (fn [{:keys [http-equiv content]}]
-                                    {(.toLowerCase http-equiv) content})
+                                    {(.toLowerCase ^String http-equiv) content})
                                   http-attrs))
         ;; merge in html5 charset setting
         headers (merge headers
