@@ -27,3 +27,4 @@ aws.clj
 /.lein-deps-sum
 .lein-repl-history
 docs/*
+doc
