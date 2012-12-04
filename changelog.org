@@ -1,5 +1,9 @@
 * Changelog
   List of user-visible changes that have gone into each release
+** 0.6.0
+   (bumped to 0.6.0 since Cheshire has changed major versions)
+   - Update Cheshire to 5.0.1
+   - Add type hint for getting headers from body (michaelklishin)
 ** 0.5.8
    - add buffering for HttpEntity, with ability to turn off if needed,
      fixes lein issue with repeatable requests
@@ -213,6 +217,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Released 0.6.0
+** 2012-12-04
+   - Update Cheshire to 5.0.1
 ** 2012-12-03
    - Add type hint for getting headers from body (michaelklishin)
 ** 2012-11-19
