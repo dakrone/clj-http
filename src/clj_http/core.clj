@@ -12,7 +12,7 @@
            (org.apache.http.util EntityUtils)
            (org.apache.http.entity ByteArrayEntity StringEntity)
            (org.apache.http.client HttpClient HttpRequestRetryHandler)
-           (org.apache.http.client.methods HttpGet HttpHead HttpPut
+           (org.apache.http.client.methods HttpGet HttpHead HttpPatch HttpPut
                                            HttpPost HttpDelete HttpOptions
                                            HttpEntityEnclosingRequestBase)
            (org.apache.http.client.params CookiePolicy ClientPNames)
@@ -142,17 +142,23 @@
 
 (defn http-request-for
   "Provides the HttpRequest object for a particular request-method and url"
-  [request-method ^String http-url]
+  [request-method ^String http-url body]
   (case request-method
-    :get     (proxy-get-with-body http-url)
+    :get     (if body
+               (proxy-get-with-body http-url)
+               (HttpGet. http-url))
     :head    (HttpHead. http-url)
     :put     (HttpPut. http-url)
     :post    (HttpPost. http-url)
     :options (HttpOptions. http-url)
-    :delete  (proxy-delete-with-body http-url)
+    :delete  (if body
+               (proxy-delete-with-body http-url)
+               (HttpDelete. http-url))
     :copy    (proxy-copy-with-body http-url)
     :move    (proxy-move-with-body http-url)
-    :patch   (proxy-patch-with-body http-url)
+    :patch   (if body
+               (proxy-patch-with-body http-url)
+               (HttpPatch. http-url))
     (throw (IllegalArgumentException.
             (str "Invalid request method " request-method)))))
 
@@ -199,7 +205,7 @@
           req (assoc req :http-url http-url)
           #^HttpRequest http-req (maybe-force-proxy
                                   http-client
-                                  (http-request-for request-method http-url)
+                                  (http-request-for request-method http-url body)
                                   proxy-host
                                   proxy-port)]
       (when response-interceptor

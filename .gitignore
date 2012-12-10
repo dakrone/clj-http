@@ -28,3 +28,4 @@ aws.clj
 .lein-repl-history
 docs/*
 doc
+pom.xml.asc

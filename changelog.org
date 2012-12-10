@@ -217,6 +217,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-12-10
+   - Fix an issue (#105) related to the "Content-Length" header being
+     automatically added to GET requests
 ** Released 0.6.0
 ** 2012-12-04
    - Update Cheshire to 5.0.1
