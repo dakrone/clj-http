@@ -78,6 +78,24 @@
     (is (= ["http://foo.com" "http://foo.com/bat"] (:trace-redirects resp)))
     (is (= "/bat" (:uri (:req resp))))))
 
+(deftest redirect-with-query-string
+  (let [client (fn [req]
+                 (if (= "foo.com" (:server-name req))
+                   {:status 302
+                    :headers {"location" "http://bar.com/bat?x=y"}}
+                   {:status 200
+                    :req req}))
+        r-client (-> client client/wrap-url client/wrap-redirects)
+        resp (r-client {:server-name "foo.com" :url "http://foo.com"
+                        :request-method :get :query-params {:x "z"}})]
+    (is (= 200 (:status resp)))
+    (is (= :get (:request-method (:req resp))))
+    (is (= :http (:scheme (:req resp))))
+    (is (= ["http://foo.com" "http://bar.com/bat?x=y"] (:trace-redirects resp)))
+    (is (= "/bat" (:uri (:req resp))))
+    (is (= "x=y" (:query-string (:req resp))))
+    (is (nil? (:query-params (:req resp))))))
+
 (deftest max-redirects
   (let [client (fn [req]
                  (if (= "foo.com" (:server-name req))
