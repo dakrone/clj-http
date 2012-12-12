@@ -1,4 +1,4 @@
-(defproject clj-http "0.6.1-SNAPSHOT"
+(defproject clj-http "0.6.1"
   :description "A Clojure HTTP library wrapping the Apache HttpComponents client."
   :url "https://github.com/dakrone/clj-http/"
   :license {:name "The MIT License"
@@ -7,7 +7,7 @@
   :repositories {"sona" "http://oss.sonatype.org/content/repositories/snapshots"}
   :warn-on-reflection false
   :min-lein-version "2.0.0"
-  :dependencies [[org.apache.httpcomponents/httpcore "4.2.2"]
+  :dependencies [[org.apache.httpcomponents/httpcore "4.2.3"]
                  [org.apache.httpcomponents/httpclient "4.2.2"]
                  [org.apache.httpcomponents/httpmime "4.2.2"]
                  [commons-codec "1.6"]
