@@ -205,7 +205,8 @@
           req (assoc req :http-url http-url)
           #^HttpRequest http-req (maybe-force-proxy
                                   http-client
-                                  (http-request-for request-method http-url body)
+                                  (http-request-for request-method
+                                                    http-url body)
                                   proxy-host
                                   proxy-port)]
       (when response-interceptor

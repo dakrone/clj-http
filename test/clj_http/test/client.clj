@@ -56,7 +56,8 @@
                    {:status 200
                     :req req}))
         r-client (-> client client/wrap-url client/wrap-redirects)
-        resp (r-client {:server-name "foo.com" :url "http://foo.com" :request-method :get})]
+        resp (r-client {:server-name "foo.com" :url "http://foo.com"
+                        :request-method :get})]
     (is (= 200 (:status resp)))
     (is (= :get (:request-method (:req resp))))
     (is (= :http (:scheme (:req resp))))
@@ -71,7 +72,8 @@
                    {:status 302
                     :headers {"location" "/bat"}}))
         r-client (-> client client/wrap-url client/wrap-redirects)
-        resp (r-client {:server-name "foo.com" :url "http://foo.com" :request-method :get})]
+        resp (r-client {:server-name "foo.com" :url "http://foo.com"
+                        :request-method :get})]
     (is (= 200 (:status resp)))
     (is (= :get (:request-method (:req resp))))
     (is (= :http (:scheme (:req resp))))
@@ -104,8 +106,8 @@
                    {:status 200
                     :req req}))
         r-client (-> client client/wrap-url client/wrap-redirects)
-        resp (r-client {:server-name "foo.com" :url "http://foo.com" :request-method
-                        :get :max-redirects 0})]
+        resp (r-client {:server-name "foo.com" :url "http://foo.com"
+                        :request-method :get :max-redirects 0})]
     (is (= 302 (:status resp)))
     (is (= ["http://foo.com"] (:trace-redirects resp)))
     (is (= "http://bar.com/bat" (get (:headers resp) "location")))))
@@ -119,7 +121,8 @@
                      {:status 200
                       :req req}))
           r-client (-> client client/wrap-url client/wrap-redirects)
-          resp (r-client {:server-name "foo.com" :url "http://foo.com" :request-method method})]
+          resp (r-client {:server-name "foo.com" :url "http://foo.com"
+                          :request-method method})]
       (is (= 200 (:status resp)))
       (is (= :get (:request-method (:req resp))))
       (is (= :http (:scheme (:req resp))))

@@ -367,7 +367,8 @@
                                {:body (ByteArrayInputStream.
                                        (.getBytes "foo"))}))
         b3 (:body (client/post "http://localhost:18080/post"
-                               {:body (ByteArrayInputStream. (.getBytes "apple"))
+                               {:body (ByteArrayInputStream.
+                                       (.getBytes "apple"))
                                 :length 2}))]
     (is (= b1 "foo"))
     (is (= b2 "foo"))
@@ -400,13 +401,17 @@
 
 (deftest ^{:integration true} connection-pool-timeout
   (run-server)
-  (client/with-connection-pool {:threads 1}
+  (client/with-connection-pool {:timeout 1 :threads 1 :default-per-route 1}
     (let [async-request #(future (client/request {:scheme :http
                                                   :server-name "localhost"
                                                   :server-port 18080
-                                                  :request-method :get :uri "/timeout"}))
-          is-pool-timeout-error? (fn[req-fut] instance? org.apache.http.conn.ConnectionPoolTimeoutException
-                                   (try @req-fut (catch Exception e (.getCause e))))
+                                                  :request-method :get
+                                                  :conn-timeout 1
+                                                  :uri "/timeout"}))
+          is-pool-timeout-error?
+          (fn [req-fut]
+            (instance? org.apache.http.conn.ConnectionPoolTimeoutException
+                       (try @req-fut (catch Exception e (.getCause e)))))
           req1 (async-request)
           req2 (async-request)
           timeout-error1 (is-pool-timeout-error? req1)

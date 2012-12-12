@@ -63,7 +63,8 @@
         ts (get-keystore trust-store trust-store-type trust-store-pass)
         factory (SSLSocketFactory. ks keystore-pass ts)]
     (if insecure?
-      (.setHostnameVerifier factory SSLSocketFactory/ALLOW_ALL_HOSTNAME_VERIFIER))
+      (.setHostnameVerifier factory
+                            SSLSocketFactory/ALLOW_ALL_HOSTNAME_VERIFIER))
     (doto (SchemeRegistryFactory/createDefault)
       (.register (Scheme. "https" 443 factory)))))
 
