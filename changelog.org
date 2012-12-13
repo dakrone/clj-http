@@ -1,5 +1,9 @@
 * Changelog
   List of user-visible changes that have gone into each release
+** 0.6.2
+   - merged https://github.com/dakrone/clj-http/pull/106 to remove
+     query params for redirection.
+   - whitespace fixes; fix test that wasn't working correctly
 ** 0.6.1
    - bump httpcore to 4.2.3
    - Fix an issue (#105) related to the "Content-Length" header being
@@ -221,6 +225,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Released 0.6.2
 ** 2012-12-12
    - merged https://github.com/dakrone/clj-http/pull/106 to remove
      query params for redirection.
