@@ -179,7 +179,12 @@
                                         (DefaultHttpClient. conn-mgr))
         scheme (name scheme)]
     (when-let [cookie-store (or cookie-store *cookie-store*)]
-      (.setCookieStore http-client cookie-store))
+      (println :count? (count (.getCookies cookie-store)))
+      (and
+       (pos? (count (.getCookies cookie-store)))
+       (do
+         (println :adding-cs)
+         (.setCookieStore http-client cookie-store))))
     (when retry-handler
       (.setHttpRequestRetryHandler
        http-client

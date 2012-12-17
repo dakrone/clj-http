@@ -136,6 +136,8 @@
     (if-let [^CookieStore cs (:cookie-store req)]
       ;; If a cookie-store is supplied, merge the cookie-stores
       ;; cookies with the request's cookies to send with the request
-      (let [new-req (merge-with merge req {:cookies (get-cookies cs)})]
-        (client new-req))
+      (if (pos? (count (.getCookies cs)))
+        (let [new-req (merge-with merge req {:cookies (get-cookies cs)})]
+          (client new-req))
+        (client req))
       (client req))))
