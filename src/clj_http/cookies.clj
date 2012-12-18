@@ -110,7 +110,9 @@
     request))
 
 (defn wrap-cookies
-  "Middleware wrapping cookie handling."
+  "Middleware wrapping cookie handling. Handles converting
+  the :cookies request parameter into the 'Cookies' header for an HTTP
+  request."
   [client]
   (fn [request]
     (let [response (client (encode-cookie-header request))]
@@ -130,7 +132,11 @@
 
 (defn wrap-cookie-store
   "Middleware that sends cookies that are part of a cookie store automatically
-  with a request if the :cookie-store parameter is set."
+  with a request if the :cookie-store parameter is set.
+
+  Note: this middleware requires the `wrap-cookies` middleware, since
+  it only merges cookies from the CookieStore into the :cookies key in
+  the request."
   [client]
   (fn [req]
     (if-let [^CookieStore cs (:cookie-store req)]
