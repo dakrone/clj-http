@@ -16,6 +16,7 @@
                                            HttpPost HttpDelete HttpOptions
                                            HttpEntityEnclosingRequestBase)
            (org.apache.http.client.params CookiePolicy ClientPNames)
+           (org.apache.http.cookie.params CookieSpecPNames)
            (org.apache.http.conn ClientConnectionManager)
            (org.apache.http.conn.routing HttpRoute)
            (org.apache.http.conn.params ConnRoutePNames)
@@ -89,6 +90,7 @@
   (doto http-client
     (set-client-param ClientPNames/COOKIE_POLICY
                       CookiePolicy/BROWSER_COMPATIBILITY)
+    (set-client-param CookieSpecPNames/SINGLE_COOKIE_HEADER true)
     (set-client-param ClientPNames/HANDLE_REDIRECTS false))
 
   (doseq [[k v] kvs]
