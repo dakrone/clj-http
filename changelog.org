@@ -1,5 +1,12 @@
 * Changelog
   List of user-visible changes that have gone into each release
+** 0.6.3
+   - Remove wrap-cookie-store middleware, CookieStore headers are
+     automatically added by Apache
+   - set the SINGLE_COOKIE_HEADER value to true to ensure Apache sends
+     only one "Cookie:" header
+   - Do not add CookieStore or Cookie header if there are no cookies
+     in the cookie jar
 ** 0.6.2
    - merged https://github.com/dakrone/clj-http/pull/106 to remove
      query params for redirection.
