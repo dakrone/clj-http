@@ -225,6 +225,11 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-12-18
+   - Remove wrap-cookie-store middleware, CookieStore headers are
+     automatically added by Apache
+   - set the SINGLE_COOKIE_HEADER value to true to ensure Apache sends
+     only one "Cookie:" header
 ** 2012-12-17
    - Do not add CookieStore or Cookie header if there are no cookies
      in the cookie jar
