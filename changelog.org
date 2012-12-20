@@ -232,6 +232,13 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-12-20
+   - added `with-middleware` to allow running requests with a custom
+     middleware list
+   - added `all-middleware` var listing all the wrap-* middleware that
+     clj-http knows of
+   - clj-http.client/request is now marked as dynamic for rebinding
+** Released 0.6.3
 ** 2012-12-18
    - Remove wrap-cookie-store middleware, CookieStore headers are
      automatically added by Apache

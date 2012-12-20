@@ -472,6 +472,22 @@ what most browser have, you can set `:force-redirects` to `true` in
 your request to have automatic redirection work on all methods by
 transforming the method of the request to `GET`.
 
+### Custom middleware lists
+Sometime it is desirable to run a request with some middleware enabled
+and some left out, the `with-middleware` method provides this
+functionality:
+
+```clojure
+(with-middleware [#'clj-http.client/wrap-method
+                  #'clj-http.client/wrap-url
+                  #'clj-http.client/wrap-exceptions]
+  (get "http://example.com")
+  (post "http://example.com/foo" {:body (.getBytes "foo")}))
+```
+
+To see available middleware, check the `clj-http.client/all-middleware`
+var, which is a vector of all the middleware that clj-http uses.
+
 ## Debugging
 
 There are four debugging methods you can use:

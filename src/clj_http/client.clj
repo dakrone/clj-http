@@ -579,7 +579,8 @@
       wrap-links
       wrap-unknown-host))
 
-(def ^{:doc
+(def ^{:dynamic true
+       :doc
        "Executes the HTTP request corresponding to the given map and returns
    the response map for corresponding to the resulting HTTP response.
 
@@ -661,6 +662,31 @@
   [url & [req]]
   (check-url! url)
   (request (merge req {:method :patch :url url})))
+
+(defmacro with-middleware
+  "Perform the body of the macro with a custom middleware list.
+
+  It is highly recommended to at least include:
+  clj-http.client/wrap-url
+  clj-http.client/wrap-method
+
+  Unless you really know what you are doing."
+  [middleware & body]
+  `(binding [clj-http.client/request
+             (reduce #(%2 %1) clj-http.core/request (seq ~middleware))]
+     ~@body))
+
+;; This is not the greatest way to do this, but it works for now.
+(def all-middleware
+  ^{:doc "Returns a vector of all middleware clj-http knows about."}
+  (->> (concat (ns-publics *ns*)
+               (ns-publics (clojure.lang.Namespace/find
+                            (symbol "clj-http.cookies")))
+               (ns-publics (clojure.lang.Namespace/find
+                            (symbol "clj-http.links"))))
+       vals
+       (filter #(.startsWith (str (:name (meta %))) "wrap-"))
+       vec))
 
 (def dmcpr ConnPerRouteBean/DEFAULT_MAX_CONNECTIONS_PER_ROUTE)
 
