@@ -232,6 +232,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-12-31
+   - merged https://github.com/dakrone/clj-http/pull/110 to handle the
+     case when the server-side uses deflate incorrectly
 ** 2012-12-20
    - added `with-middleware` to allow running requests with a custom
      middleware list

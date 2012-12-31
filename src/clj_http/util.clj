@@ -61,9 +61,13 @@
   (when b
     (try
       (IOUtils/toByteArray (InflaterInputStream. (ByteArrayInputStream. b)))
-      (catch java.util.zip.ZipException e ;broken inflate implementation server-side,
-                                          ; see http://stackoverflow.com/questions/3932117/handling-http-contentencoding-deflate
-        (IOUtils/toByteArray (InflaterInputStream. (ByteArrayInputStream. b) (java.util.zip.Inflater. true)))))))
+      ;; broken inflate implementation server-side,
+      ;; see [http://stackoverflow.com/questions/3932117/handling-http
+      ;; -contentencoding-deflate]
+      (catch java.util.zip.ZipException e
+        (IOUtils/toByteArray
+         (InflaterInputStream. (ByteArrayInputStream. b)
+                               (java.util.zip.Inflater. true)))))))
 
 (defn deflate
   "Returns a deflate'd version of the given byte array."
