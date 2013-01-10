@@ -487,3 +487,13 @@
         resp (new-client {:decode-body-headers true})]
     (is (= {"content-type" "text/html; charset=UTF-8"}
            (:headers resp)))))
+
+(deftest ^{:integration true} t-request-without-url-set
+  (run-server)
+  (Thread/sleep 1000)
+  ;; roundtrip with scheme as a keyword
+  (let [resp (client/request (merge base-req {:uri "/redirect-to-get"
+                                              :method :get}))]
+    (is (= 200 (:status resp)))
+    (is (= "close" (get-in resp [:headers "connection"])))
+    (is (= "get" (:body resp)))))

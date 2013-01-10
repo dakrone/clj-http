@@ -113,8 +113,12 @@
 (declare wrap-redirects)
 
 (defn follow-redirect
-  [client {:keys [url] :as req} {:keys [trace-redirects] :as resp}]
-  (let [raw-redirect (get-in resp [:headers "location"])
+  [client {:keys [uri url scheme server-name server-port] :as req}
+   {:keys [trace-redirects] :as resp}]
+  (let [url (or url (str (name scheme) "://" server-name
+                         (when server-port (str ":" server-port))
+                         uri))
+        raw-redirect (get-in resp [:headers "location"])
         redirect (str (URL. (URL. url) raw-redirect))]
     ((wrap-redirects client) (-> req
                                  (dissoc :query-params)
