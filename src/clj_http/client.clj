@@ -242,8 +242,7 @@
          (read-string (String. #^"[B" body "UTF-8")))
 
        (and (.startsWith (str typestring) "application/json")
-            json-enabled?
-            (unexceptional-status? status))
+            json-enabled?)
        (if-let [charset (second (re-find #"charset=(.*)"
                                          (str typestring)))]
          (json-decode (String. #^"[B" body ^String charset) true)
