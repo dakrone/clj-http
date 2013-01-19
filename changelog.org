@@ -232,6 +232,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2012-01-19
+   - merged https://github.com/dakrone/clj-http/pull/112 to allow
+     json coercion on error responses when :as :auto is used
 ** 2013-01-10
    - allow redirects when :url is not set in the request
 ** 2012-12-31
