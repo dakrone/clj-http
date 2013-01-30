@@ -3,6 +3,7 @@
         [clojure.java.io :only [resource]]
         [clj-http.test.core :only [run-server]])
   (:require [clj-http.client :as client]
+            [clj-http.conn-mgr :as conn]
             [clj-http.util :as util]
             [cheshire.core :as json])
   (:import (java.net UnknownHostException)
@@ -497,3 +498,19 @@
     (is (= 200 (:status resp)))
     (is (= "close" (get-in resp [:headers "connection"])))
     (is (= "get" (:body resp)))))
+
+(deftest ^{:integration true} t-reusable-conn-mgrs
+  (run-server)
+  (Thread/sleep 1000)
+  (let [cm (conn/make-reusable-conn-manager {:timeout 10 :insecure? false})
+        resp1 (client/request (merge base-req {:uri "/redirect-to-get"
+                                               :method :get
+                                               :connection-manager cm}))
+        resp2 (client/request (merge base-req {:uri "/redirect-to-get"
+                                               :method :get}))]
+    (is (= 200 (:status resp1) (:status resp2)))
+    (is (nil? (get-in resp1 [:headers "connection"]))
+        "connection should remain open")
+    (is (= "close" (get-in resp2 [:headers "connection"]))
+        "connection should be closed")
+    (.shutdown cm)))

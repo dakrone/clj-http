@@ -691,11 +691,9 @@
        (filter #(.startsWith (str (:name (meta %))) "wrap-"))
        vec))
 
-(def dmcpr ConnPerRouteBean/DEFAULT_MAX_CONNECTIONS_PER_ROUTE)
-
 (defmacro with-connection-pool
   "Macro to execute the body using a connection manager. Creates a
-  ThreadSafeClientConnectionManager to use for all requests within the body of
+  PoolingClientConnectionManager to use for all requests within the body of
   the expression. An option map is allowed to set options for the connection
   manager.
 
@@ -720,32 +718,14 @@
   If the value 'nil' is specified or the value is not set, the default value
   will be used."
   [opts & body]
-  `(let [timeout# (or (:timeout ~opts) 5)
-         threads# (or (:threads ~opts) 4)
-         default-per-route# (or (:default-per-route ~opts)
-                                clj-http.client/dmcpr)
-         insecure?# (:insecure? ~opts)
-         leftovers# (dissoc ~opts :timeout :threads :insecure?)]
-     ;; I'm leaving the connection bindable for now because in the
-     ;; future I'm toying with the idea of managing the connection
-     ;; manager yourself and passing it into the request
-     (binding [conn/*connection-manager*
-               (doto (conn/make-reusable-conn-manager
-                      (merge {:timeout timeout#
-                              :insecure? insecure?#}
-                             leftovers#))
-                 (.setMaxTotal threads#)
-                 (.setDefaultMaxPerRoute default-per-route#))]
+  ;; I'm leaving the connection bindable for now because in the
+  ;; future I'm toying with the idea of managing the connection
+  ;; manager yourself and passing it into the request
+  `(let [cm# (conn/make-reusable-conn-manager ~opts)]
+     (binding [conn/*connection-manager* cm#]
        (try
          ~@body
          (finally
            (.shutdown
-             ^org.apache.http.impl.conn.PoolingClientConnectionManager
+            ^org.apache.http.impl.conn.PoolingClientConnectionManager
             conn/*connection-manager*))))))
-
-(defmacro with-named-connection-pool
-  "Implementation of the above comment for binding."
-  [connection & body]
-     `(binding [conn/*connection-manager*
-               ~connection]
-       ~@body))

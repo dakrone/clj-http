@@ -84,9 +84,10 @@
 ;; need the fully qualified class name because this fn is later used in a
 ;; macro from a different ns
 (defn ^org.apache.http.impl.conn.PoolingClientConnectionManager
-  make-reusable-conn-manager
+  make-reusable-conn-manager*
   "Given an timeout and optional insecure? flag, create a
-  PoolingClientConnectionManager with <timeout> seconds set as the timeout value."
+  PoolingClientConnectionManager with <timeout> seconds set as the
+  timeout value."
   [{:keys [timeout insecure? keystore trust-store] :as config}]
   (let [registry (cond
                   insecure? insecure-scheme-registry
@@ -95,33 +96,51 @@
                   (get-keystore-scheme-registry config)
 
                   :else regular-scheme-registry)]
-     (PoolingClientConnectionManager.
+    (PoolingClientConnectionManager.
      registry timeout java.util.concurrent.TimeUnit/SECONDS)))
 
-;; needed to import/define this here since it being called outside the client ns
 (def dmcpr ConnPerRouteBean/DEFAULT_MAX_CONNECTIONS_PER_ROUTE)
 
-(defn make-manager
-  "returns reusable PoolingClientConnectionManager"
+(defn make-reusable-conn-manager
+  "Creates a default pooling connection manager with the specified options.
+
+  The following options are supported:
+
+  :timeout - Time that connections are left open before automatically closing
+    default: 5
+  :threads - Maximum number of threads that will be used for connecting
+    default: 4
+  :default-per-route - Maximum number of simultaneous connections per host
+    default: 2
+  :insecure? - Boolean flag to specify allowing insecure HTTPS connections
+    default: false
+
+  :keystore - keystore file to be used for connection manager
+  :keystore-pass - keystore password
+  :trust-store - trust store file to be used for connection manager
+  :trust-store-pass - trust store password
+
+  Note that :insecure? and :keystore/:trust-store options are mutually exclusive
+
+  If the value 'nil' is specified or the value is not set, the default value
+  will be used."
   [opts]
-  (let [timeout# (or (:timeout opts) 5)
-        threads# (or (:threads opts) 4)
-        default-per-route# (or (:default-per-route opts) dmcpr)
-        insecure?# (:insecure? opts)
-        leftovers# (dissoc opts :timeout :threads :insecure?)]
-  (doto (make-reusable-conn-manager 
-     (merge {:timeout timeout#
-             :insecure? insecure?#}
-             leftovers#))
-         (.setMaxTotal threads#)
-         (.setDefaultMaxPerRoute default-per-route#))))
+  (let [timeout (or (:timeout opts) 5)
+        threads (or (:threads opts) 4)
+        default-per-route (or (:default-per-route opts) dmcpr)
+        insecure? (:insecure? opts)
+        leftovers (dissoc opts :timeout :threads :insecure?)]
+    (doto (make-reusable-conn-manager* (merge {:timeout timeout
+                                               :insecure? insecure?}
+                                              leftovers))
+      (.setMaxTotal threads)
+      (.setDefaultMaxPerRoute default-per-route))))
 
-
-
-(defn shutdown-manager 
+(defn shutdown-manager
   "Define function to shutdown manager"
   [manager]
-  (doto manager (.shutdown)))
+  (and manager (.shutdown manager)))
 
-;; connection manager to be rebound during request execution
-(def ^{:dynamic true} *connection-manager* nil)
+(def ^{:dynamic true
+       :doc "connection manager to be rebound during request execution"}
+  *connection-manager* nil)

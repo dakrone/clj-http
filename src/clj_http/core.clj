@@ -173,10 +173,12 @@
   [{:keys [request-method scheme server-name server-port uri query-string
            headers body socket-timeout conn-timeout multipart debug debug-body
            insecure? save-request? proxy-host proxy-port as cookie-store
-           retry-handler response-interceptor digest-auth
+           retry-handler response-interceptor digest-auth connection-manager
            client-params] :as req}]
   (let [^ClientConnectionManager conn-mgr
-        (or conn/*connection-manager* (conn/make-regular-conn-manager req))
+        (or connection-manager
+            conn/*connection-manager*
+            (conn/make-regular-conn-manager req))
         ^DefaultHttpClient http-client (set-routing
                                         (DefaultHttpClient. conn-mgr))
         scheme (name scheme)]

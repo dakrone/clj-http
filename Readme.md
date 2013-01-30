@@ -461,7 +461,21 @@ This is MUCH faster than sequentially performing all requests, because
 a persistent connection can be used instead creating a new connection
 for each request.
 
-This feature is fairly new, please let me know if you have any feedback!
+If you would prefer to handle managing the connection manager
+yourself, you can create a connection manager yourself and specify it
+for each request:
+
+```clojure
+(def cm (clj-http.conn-mgr/make-reusable-conn-manager {:timeout 2 :threads 3}))
+(def cm2 (clj-http.conn-mgr/make-reusable-conn-manager {:timeout 10 :threads 1}))
+
+(get "http://aoeu.com/1" {:connection-manager cm2})
+(post "http://aoeu.com/2" {:connection-manager cm})
+(get "http://aoeu.com/3" {:connection-manager cm2})
+```
+
+See the docstring on `make-reusable-conn-manager` for options and
+default values.
 
 ### Redirects handling
 clj-http conforms its behaviour regarding automatic redirects to the
