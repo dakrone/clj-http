@@ -740,5 +740,12 @@
          ~@body
          (finally
            (.shutdown
-            ^org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager
+             ^org.apache.http.impl.conn.PoolingClientConnectionManager
             conn/*connection-manager*))))))
+
+(defmacro with-named-connection-pool
+  "Implementation of the above comment for binding."
+  [connection & body]
+     `(binding [conn/*connection-manager*
+               ~connection]
+       ~@body))
