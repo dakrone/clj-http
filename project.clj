@@ -20,8 +20,8 @@
                                   [ring/ring-devel "1.1.0"]]}
              :1.2 {:dependencies [[org.clojure/clojure "1.2.1"]]}
              :1.3 {:dependencies [[org.clojure/clojure "1.3.0"]]}
-             :1.5 {:dependencies [[org.clojure/clojure "1.5.0-master-SNAPSHOT"]]}}
-  :aliases {"all" ["with-profile" "dev,1.2:dev,1.3:dev:1.5,dev"]}
+             :1.5 {:dependencies [[org.clojure/clojure "1.5.0-RC4"]]}}
+  :aliases {"all" ["with-profile" "dev,1.3:dev:1.5,dev"]}
   :plugins [[codox "0.6.3"]]
   :test-selectors {:default  #(not (:integration %))
                    :integration :integration
