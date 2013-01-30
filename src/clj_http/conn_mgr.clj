@@ -10,7 +10,6 @@
                                         SchemeRegistry Scheme)
            (org.apache.http.impl.conn SingleClientConnManager
                                       SchemeRegistryFactory)
-           ;(org.apache.http.impl.conn.tsccm ThreadSafeClientConnManager)))
            (org.apache.http.impl.conn PoolingClientConnectionManager)
            (org.apache.http.conn.params ConnPerRouteBean)))
 
