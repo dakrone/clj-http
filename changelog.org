@@ -1,5 +1,20 @@
 * Changelog
   List of user-visible changes that have gone into each release
+** 0.6.4
+   - merged https://github.com/dakrone/clj-http/pull/113 to update
+     the connection pooling code
+   - refactor pooled connection managers to allow specifying
+     the :connection-manager option
+   - merged https://github.com/dakrone/clj-http/pull/112 to allow
+     json coercion on error responses when :as :auto is used
+   - allow redirects when :url is not set in the request
+   - merged https://github.com/dakrone/clj-http/pull/110 to handle the
+     case when the server-side uses deflate incorrectly
+   - added `with-middleware` to allow running requests with a custom
+     middleware list
+   - added `all-middleware` var listing all the wrap-* middleware that
+     clj-http knows of
+   - clj-http.client/request is now marked as dynamic for rebinding
 ** 0.6.3
    - Remove wrap-cookie-store middleware, CookieStore headers are
      automatically added by Apache
@@ -232,6 +247,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Released 0.6.4
 ** 2012-01-30
    - merged https://github.com/dakrone/clj-http/pull/113 to update
      the connection pooling code
