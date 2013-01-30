@@ -103,7 +103,7 @@
 
 (defn make-manager
   "returns reusable PoolingClientConnectionManager"
-  [& opts]
+  [opts]
   (let [timeout# (or (:timeout opts) 5)
         threads# (or (:threads opts) 4)
         default-per-route# (or (:default-per-route opts) dmcpr)
