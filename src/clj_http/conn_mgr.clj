@@ -10,7 +10,9 @@
                                         SchemeRegistry Scheme)
            (org.apache.http.impl.conn SingleClientConnManager
                                       SchemeRegistryFactory)
-           (org.apache.http.impl.conn.tsccm ThreadSafeClientConnManager)))
+           ;(org.apache.http.impl.conn.tsccm ThreadSafeClientConnManager)))
+           (org.apache.http.impl.conn PoolingClientConnectionManager)
+           (org.apache.http.conn.params ConnPerRouteBean)))
 
 (def ^SSLSocketFactory insecure-socket-factory
   (SSLSocketFactory. (reify TrustStrategy
@@ -82,10 +84,10 @@
 
 ;; need the fully qualified class name because this fn is later used in a
 ;; macro from a different ns
-(defn ^org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager
+(defn ^org.apache.http.impl.conn.PoolingClientConnectionManager
   make-reusable-conn-manager
   "Given an timeout and optional insecure? flag, create a
-  ThreadSafeClientConnManager with <timeout> seconds set as the timeout value."
+  PoolingClientConnectionManager with <timeout> seconds set as the timeout value."
   [{:keys [timeout insecure? keystore trust-store] :as config}]
   (let [registry (cond
                   insecure? insecure-scheme-registry
@@ -94,8 +96,33 @@
                   (get-keystore-scheme-registry config)
 
                   :else regular-scheme-registry)]
-    (ThreadSafeClientConnManager.
+     (PoolingClientConnectionManager.
      registry timeout java.util.concurrent.TimeUnit/SECONDS)))
+
+;; needed to import/define this here since it being called outside the client ns
+(def dmcpr ConnPerRouteBean/DEFAULT_MAX_CONNECTIONS_PER_ROUTE)
+
+(defn make-manager
+  "returns reusable PoolingClientConnectionManager"
+  [& opts]
+  (let [timeout# (or (:timeout opts) 5)
+        threads# (or (:threads opts) 4)
+        default-per-route# (or (:default-per-route opts) dmcpr)
+        insecure?# (:insecure? opts)
+        leftovers# (dissoc opts :timeout :threads :insecure?)]
+  (doto (make-reusable-conn-manager 
+     (merge {:timeout timeout#
+             :insecure? insecure?#}
+             leftovers#))
+         (.setMaxTotal threads#)
+         (.setDefaultMaxPerRoute default-per-route#))))
+
+
+
+(defn shutdown-manager 
+  "Define function to shutdown manager"
+  [manager]
+  (doto manager (.shutdown)))
 
 ;; connection manager to be rebound during request execution
 (def ^{:dynamic true} *connection-manager* nil)
