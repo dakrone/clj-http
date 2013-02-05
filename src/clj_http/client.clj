@@ -222,7 +222,8 @@
     (assoc resp :body (String. #^"[B" body "UTF-8"))))
 
 (defmethod coerce-response-body :clojure [_ {:keys [status body] :as resp}]
-  (assoc resp :body (read-string (String. #^"[B" body "UTF-8"))))
+  (binding [*read-eval* false]
+    (assoc resp :body (read-string (String. #^"[B" body "UTF-8")))))
 
 (defmethod coerce-response-body :auto [_ {:keys [status body] :as resp}]
   (assoc resp
@@ -236,10 +237,11 @@
          (String. #^"[B" body "UTF-8"))
 
        (.startsWith (str typestring) "application/clojure")
-       (if-let [charset (second (re-find #"charset=(.*)"
-                                         (str typestring)))]
-         (read-string (String. #^"[B" body ^String charset))
-         (read-string (String. #^"[B" body "UTF-8")))
+       (binding [*read-eval* false]
+         (if-let [charset (second (re-find #"charset=(.*)"
+                                           (str typestring)))]
+           (read-string (String. #^"[B" body ^String charset))
+           (read-string (String. #^"[B" body "UTF-8"))))
 
        (and (.startsWith (str typestring) "application/json")
             json-enabled?)

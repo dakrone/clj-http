@@ -247,13 +247,15 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2013-02-05
+   - bind *read-eval* to false when reading for {:as :clojure}
 ** Released 0.6.4
-** 2012-01-30
+** 2013-01-30
    - merged https://github.com/dakrone/clj-http/pull/113 to update
      the connection pooling code
    - refactor pooled connection managers to allow specifying
      the :connection-manager option
-** 2012-01-19
+** 2013-01-19
    - merged https://github.com/dakrone/clj-http/pull/112 to allow
      json coercion on error responses when :as :auto is used
 ** 2013-01-10

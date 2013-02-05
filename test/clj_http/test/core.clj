@@ -23,6 +23,9 @@
     [:get "/clojure"]
     {:status 200 :body "{:foo \"bar\" :baz 7M :eggplant {:quux #{1 2 3}}}"
      :headers {"content-type" "application/clojure"}}
+    [:get "/clojure-bad"]
+    {:status 200 :body "{:foo \"bar\" :baz #=(+ 1 1)}"
+     :headers {"content-type" "application/clojure"}}
     [:get "/json"]
     {:status 200 :body "{\"foo\":\"bar\"}"}
     [:get "/json-bad"]
@@ -427,3 +430,11 @@
                     json/decode)]
     (is (= {"eggplant" "quux" "foo" "bar,baz"}
            (select-keys headers ["foo" "eggplant"])))))
+
+(deftest ^{:integration true} t-clojure-no-read-eval
+  (run-server)
+  (is (thrown-with-msg?
+        java.lang.RuntimeException
+        #".*(EvalReader|eval reading) not allowed when \*read-eval\* is false.*"
+        (client/get (localhost "/clojure-bad") {:as :clojure}))
+      "Don't evaluate clojure."))
