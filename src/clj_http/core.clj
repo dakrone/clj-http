@@ -237,32 +237,34 @@
                           (StringEntity. body "UTF-8")
                           (ByteArrayEntity. body))))))
       (when debug (print-debug! req http-req))
-      (let [http-resp (.execute http-client http-req)
-            http-entity (.getEntity http-resp)
-            resp {:status (.getStatusCode (.getStatusLine http-resp))
-                  :headers (parse-headers (.headerIterator http-resp))
-                  :body (coerce-body-entity req http-entity conn-mgr)}]
-        (when (and (instance? SingleClientConnManager conn-mgr)
-                   (not= :stream as))
-          (.shutdown ^ClientConnectionManager conn-mgr))
-        (if save-request?
-          (-> resp
-              (assoc :request req)
-              (assoc-in [:request :body-type] (type body))
-              (update-in [:request]
-                         #(if debug-body
-                            (assoc % :body-content
-                                   (cond
-                                    (isa? (type (:body %)) String)
-                                    (:body %)
+      (try
+        (let [http-resp (.execute http-client http-req)
+              http-entity (.getEntity http-resp)
+              resp {:status (.getStatusCode (.getStatusLine http-resp))
+                    :headers (parse-headers (.headerIterator http-resp))
+                    :body (coerce-body-entity req http-entity conn-mgr)}]
+          (if save-request?
+            (-> resp
+                (assoc :request req)
+                (assoc-in [:request :body-type] (type body))
+                (update-in [:request]
+                           #(if debug-body
+                              (assoc % :body-content
+                                     (cond
+                                      (isa? (type (:body %)) String)
+                                      (:body %)
 
-                                    (isa? (type (:body %)) HttpEntity)
-                                    (let [baos (ByteArrayOutputStream.)]
-                                      (.writeTo (:body %) baos)
-                                      (.toString baos "UTF-8"))
+                                      (isa? (type (:body %)) HttpEntity)
+                                      (let [baos (ByteArrayOutputStream.)]
+                                        (.writeTo (:body %) baos)
+                                        (.toString baos "UTF-8"))
 
-                                    :else nil))
-                            %))
-              (assoc-in [:request :http-req] http-req)
-              (dissoc :save-request?))
-          resp)))))
+                                      :else nil))
+                              %))
+                (assoc-in [:request :http-req] http-req)
+                (dissoc :save-request?))
+            resp))
+        (finally
+          (when (and (instance? SingleClientConnManager conn-mgr)
+                     (not= :stream as))
+            (.shutdown ^ClientConnectionManager conn-mgr)))))))

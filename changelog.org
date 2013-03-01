@@ -247,6 +247,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2013-03-01
+   - Update clojure to 1.5
+   - Move SingleClientConnManager shutdown into finally block
 ** 2013-02-05
    - bind *read-eval* to false when reading for {:as :clojure}
 ** Released 0.6.4
