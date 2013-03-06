@@ -203,29 +203,41 @@
         (decompress-body resp-c)))))
 
 ;; Multimethods for coercing body type to the :as key
-(defmulti coerce-response-body (fn [as _] as))
+(defmulti coerce-response-body (fn [req _] (:as req)))
 
 (defmethod coerce-response-body :byte-array [_ resp] resp)
 
 (defmethod coerce-response-body :stream [_ resp] resp)
 
-(defmethod coerce-response-body :json [_ {:keys [body status] :as resp}]
-  (if (and json-enabled? (unexceptional-status? status))
-    (assoc resp :body (json-decode (String. #^"[B" body "UTF-8") true))
-    (assoc resp :body (String. #^"[B" body "UTF-8"))))
+(defn coerce-json-body
+  [{:keys [coerce]} {:keys [body status] :as resp} keyword? & [charset]]
+  (let [charset (or charset "UTF-8")]
+    (if json-enabled?
+      (cond
+       (= coerce :always)
+       (assoc resp :body (json-decode (String. #^"[B" body charset) keyword?))
 
-(defmethod coerce-response-body
-  :json-string-keys
-  [_ {:keys [body status] :as resp}]
-  (if (and json-enabled? (unexceptional-status? status))
-    (assoc resp :body (json-decode (String. #^"[B" body "UTF-8")))
-    (assoc resp :body (String. #^"[B" body "UTF-8"))))
+       (and (unexceptional-status? status)
+            (or (nil? coerce) (= coerce :unexceptional)))
+       (assoc resp :body (json-decode (String. #^"[B" body charset) keyword?))
+
+       (and (not (unexceptional-status? status)) (= coerce :exceptional))
+       (assoc resp :body (json-decode (String. #^"[B" body charset) keyword?))
+
+       :else (assoc resp :body (String. #^"[B" body charset)))
+      (assoc resp :body (String. #^"[B" body charset)))))
+
+(defmethod coerce-response-body :json [req resp]
+  (coerce-json-body req resp true))
+
+(defmethod coerce-response-body :json-string-keys [_ resp]
+  (coerce-json-body resp false))
 
 (defmethod coerce-response-body :clojure [_ {:keys [status body] :as resp}]
   (binding [*read-eval* false]
     (assoc resp :body (read-string (String. #^"[B" body "UTF-8")))))
 
-(defmethod coerce-response-body :auto [_ {:keys [status body] :as resp}]
+(defmethod coerce-response-body :auto [_ {:keys [body coerce status] :as resp}]
   (assoc resp
     :body
     (let [typestring (get-in resp [:headers "content-type"])]
@@ -247,13 +259,14 @@
             json-enabled?)
        (if-let [charset (second (re-find #"charset=(.*)"
                                          (str typestring)))]
-         (json-decode (String. #^"[B" body ^String charset) true)
-         (json-decode (String. #^"[B" body "UTF-8") true))
+         (coerce-json-body resp true charset)
+         (coerce-json-body resp true "UTF-8"))
 
        :else
        (String. #^"[B" body "UTF-8")))))
 
-(defmethod coerce-response-body :default [as {:keys [status body] :as resp}]
+(defmethod coerce-response-body :default
+  [{:keys [as]} {:keys [status body] :as resp}]
   (cond
    (string? as)  (assoc resp :body (String. #^"[B" body ^String as))
    :else (assoc resp :body (String. #^"[B" body "UTF-8"))))
@@ -264,10 +277,10 @@
   `coerce-response-body` multimethod may be extended to add
   additional coercions."
   [client]
-  (fn [{:keys [as] :as req}]
+  (fn [req]
     (let [{:keys [body] :as resp} (client req)]
       (if body
-        (coerce-response-body as resp)
+        (coerce-response-body req resp)
         resp))))
 
 (defn maybe-wrap-entity

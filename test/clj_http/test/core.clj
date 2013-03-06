@@ -295,13 +295,27 @@
 (deftest ^{:integration true} t-json-output-coercion
   (run-server)
   (let [resp (client/get (localhost "/json") {:as :json})
+        resp-str (client/get (localhost "/json")
+                             {:as :json :coerce :exceptional})
         bad-resp (client/get (localhost "/json-bad")
-                             {:throw-exceptions false :as :json})]
-    (is (= 200 (:status resp)))
+                             {:throw-exceptions false :as :json})
+        bad-resp-json (client/get (localhost "/json-bad")
+                                  {:throw-exceptions false :as :json
+                                   :coerce :always})
+        bad-resp-json2 (client/get (localhost "/json-bad")
+                                   {:throw-exceptions false :as :json
+                                    :coerce :unexceptional})]
+    (is (= 200 (:status resp) (:status resp-str)))
     (is (= {:foo "bar"} (:body resp)))
-    (is (= 400 (:status bad-resp)))
+    (is (= "{\"foo\":\"bar\"}" (:body resp-str)))
+    (is (= 400
+           (:status bad-resp)
+           (:status bad-resp-json)
+           (:status bad-resp-json2)))
     (is (= "{\"foo\":\"bar\"}" (:body bad-resp))
-        "don't coerce on bad response status")))
+        "don't coerce on bad response status by default")
+    (is (= {:foo "bar"} (:body bad-resp-json)))
+    (is (= "{\"foo\":\"bar\"}" (:body bad-resp-json2)))))
 
 (deftest ^{:integration true} t-ipv6
   (run-server)

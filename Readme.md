@@ -217,6 +217,19 @@ The client transparently accepts and decompresses the `gzip` and
 ;; stream has been read
 ```
 
+JSON coercion defaults to only an "unexceptional" statuses, meaning
+status codes in the #{200 201 202 203 204 205 206 207 300 301 302 303
+307} range. If you would like to change this, you can send the
+`:coerce` option, which can be set to:
+
+```clojure
+:always        ;; always json decode the body
+:unexceptional ;; only json decode when not an HTTP error response
+:exceptional   ;; only json decode when it IS an HTTP error response
+```
+
+The `:coerce` setting defaults to `:unexceptional`.
+
 #### Body decompression
 By default, clj-http will add the `{"Accept-Encoding" "gzip, deflate"}`
 header to requests, and automatically decompress the resulting gzip or
