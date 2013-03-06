@@ -1,4 +1,4 @@
-(defproject clj-http "0.6.5-SNAPSHOT"
+(defproject clj-http "0.6.5"
   :description "A Clojure HTTP library wrapping the Apache HttpComponents client."
   :url "https://github.com/dakrone/clj-http/"
   :license {:name "The MIT License"
@@ -13,7 +13,7 @@
                  [commons-codec "1.6"]
                  [commons-io "2.4"]
                  [slingshot "0.10.3"]
-                 [cheshire "5.0.1"]
+                 [cheshire "5.0.2"]
                  [crouton "0.1.1"]]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.5.0"]
                                   [ring/ring-jetty-adapter "1.1.0"]

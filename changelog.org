@@ -1,5 +1,12 @@
 * Changelog
   List of user-visible changes that have gone into each release
+** 0.6.5
+   - allow json coercion for exception cases based on :coerce setting,
+     can be either :always, :exceptional or :unexceptional
+   - Update clojure to 1.5
+   - Move SingleClientConnManager shutdown into finally block
+   - bind *read-eval* to false when reading for {:as :clojure}
+   - bump cheshire to 5.0.2
 ** 0.6.4
    - merged https://github.com/dakrone/clj-http/pull/113 to update
      the connection pooling code
@@ -250,6 +257,7 @@
 ** 2013-03-06
    - allow json coercion for exception cases based on :coerce setting,
      can be either :always, :exceptional or :unexceptional
+   - bump cheshire to 5.0.2
 ** 2013-03-01
    - Update clojure to 1.5
    - Move SingleClientConnManager shutdown into finally block
