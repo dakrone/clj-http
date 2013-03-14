@@ -75,8 +75,8 @@ More example requests:
    :body "{\"json\": \"input\"}"
    :headers {"X-Api-Version" "2"}
    :content-type :json
-   :socket-timeout 1000
-   :conn-timeout 1000
+   :socket-timeout 1000  ;; in milliseconds
+   :conn-timeout 1000    ;; in milliseconds
    :accept :json})
 
 ;; Specifying headers as either a string or collection:
@@ -100,6 +100,10 @@ More example requests:
 
 ;; Throw an exception if redirected too many times:
 (client/get "http://site.come/redirects-somewhere" {:max-redirects 5 :throw-exceptions true})
+
+;; Throw an exception if the get takes too long. Timeouts in milliseconds.
+(client/get "http://site.come/redirects-somewhere" {:socket-timeout 1000 :conn-timeout 1000})
+
 
 ;; Send form params as a urlencoded body (POST or PUT)
 (client/post "http//site.com" {:form-params {:foo "bar"}})
