@@ -171,7 +171,8 @@
    Note that where Ring uses InputStreams for the request and response bodies,
    the clj-http uses ByteArrays for the bodies."
   [{:keys [request-method scheme server-name server-port uri query-string
-           headers body socket-timeout conn-timeout multipart debug debug-body
+           headers body multipart debug debug-body
+           socket-timeout conn-timeout  ;; in milliseconds
            insecure? save-request? proxy-host proxy-port as cookie-store
            retry-handler response-interceptor digest-auth connection-manager
            client-params] :as req}]
