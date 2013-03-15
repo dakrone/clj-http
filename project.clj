@@ -15,7 +15,7 @@
                  [slingshot "0.10.3"]
                  [cheshire "5.0.2"]
                  [crouton "0.1.1"]]
-  :profiles {:dev {:dependencies [[org.clojure/clojure "1.5.0"]
+  :profiles {:dev {:dependencies [[org.clojure/clojure "1.5.1"]
                                   [ring/ring-jetty-adapter "1.1.0"]
                                   [ring/ring-devel "1.1.0"]]}
              :1.2 {:dependencies [[org.clojure/clojure "1.2.1"]]}
