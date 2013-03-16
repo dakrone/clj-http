@@ -10,6 +10,7 @@
   :dependencies [[org.apache.httpcomponents/httpcore "4.2.3"]
                  [org.apache.httpcomponents/httpclient "4.2.2"]
                  [org.apache.httpcomponents/httpmime "4.2.2"]
+                 [org.clojure/tools.reader "0.7.3"]
                  [commons-codec "1.6"]
                  [commons-io "2.4"]
                  [slingshot "0.10.3"]
