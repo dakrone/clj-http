@@ -6,6 +6,7 @@
         [clojure.stacktrace :only [root-cause]]
         [clojure.walk :only [prewalk]])
   (:require [clojure.string :as str]
+            [clojure.tools.reader.edn :as edn]
             [clj-http.conn-mgr :as conn]
             [clj-http.core :as core]
             [clj-http.util :as util])
@@ -234,8 +235,8 @@
   (coerce-json-body resp false))
 
 (defmethod coerce-response-body :clojure [_ {:keys [status body] :as resp}]
-  (binding [*read-eval* false]
-    (assoc resp :body (read-string (String. #^"[B" body "UTF-8")))))
+  (->> (edn/read-string {:readers *data-readers*} (String. #^"[B" body "UTF-8"))
+       (assoc resp :body)))
 
 (defmethod coerce-response-body :auto [_ {:keys [body coerce status] :as resp}]
   (assoc resp
@@ -248,12 +249,13 @@
          (String. #^"[B" body ^String charset)
          (String. #^"[B" body "UTF-8"))
 
-       (.startsWith (str typestring) "application/clojure")
-       (binding [*read-eval* false]
-         (if-let [charset (second (re-find #"charset=(.*)"
-                                           (str typestring)))]
-           (read-string (String. #^"[B" body ^String charset))
-           (read-string (String. #^"[B" body "UTF-8"))))
+       (or (.startsWith (str typestring) "application/edn")
+           (.startsWith (str typestring) "application/clojure"))
+       (edn/read-string
+        {:readers *data-readers*}
+        (if-let [charset (second (re-find #"charset=(.*)" (str typestring)))]
+          (String. #^"[B" body ^String charset)
+          (String. #^"[B" body "UTF-8")))
 
        (and (.startsWith (str typestring) "application/json")
             json-enabled?)
