@@ -23,6 +23,9 @@
     [:get "/clojure"]
     {:status 200 :body "{:foo \"bar\" :baz 7M :eggplant {:quux #{1 2 3}}}"
      :headers {"content-type" "application/clojure"}}
+    [:get "/edn"]
+    {:status 200 :body "{:foo \"bar\" :baz 7M :eggplant {:quux #{1 2 3}}}"
+     :headers {"content-type" "application/edn"}}
     [:get "/clojure-bad"]
     {:status 200 :body "{:foo \"bar\" :baz #=(+ 1 1)}"
      :headers {"content-type" "application/clojure"}}
@@ -288,9 +291,12 @@
   (let [resp (client/get (localhost "/clojure") {:as :clojure})]
     (is (= 200 (:status resp)))
     (is (= {:foo "bar" :baz 7M :eggplant {:quux #{1 2 3}}} (:body resp))))
-  (let [resp (client/get (localhost "/clojure") {:as :auto})]
-    (is (= 200 (:status resp)))
-    (is (= {:foo "bar" :baz 7M :eggplant {:quux #{1 2 3}}} (:body resp)))))
+  (let [clj-resp (client/get (localhost "/clojure") {:as :auto})
+        edn-resp (client/get (localhost "/edn") {:as :auto})]
+    (is (= 200 (:status clj-resp) (:status edn-resp)))
+    (is (= {:foo "bar" :baz 7M :eggplant {:quux #{1 2 3}}}
+           (:body clj-resp)
+           (:body edn-resp)))))
 
 (deftest ^{:integration true} t-json-output-coercion
   (run-server)
@@ -447,8 +453,5 @@
 
 (deftest ^{:integration true} t-clojure-no-read-eval
   (run-server)
-  (is (thrown-with-msg?
-        java.lang.RuntimeException
-        #".*(EvalReader|eval reading) not allowed when \*read-eval\* is false.*"
-        (client/get (localhost "/clojure-bad") {:as :clojure}))
-      "Don't evaluate clojure."))
+  (is (thrown? Exception (client/get (localhost "/clojure-bad") {:as :clojure}))
+      "Should throw an exception when reading clojure eval components"))

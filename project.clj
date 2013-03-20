@@ -14,7 +14,8 @@
                  [commons-io "2.4"]
                  [slingshot "0.10.3"]
                  [cheshire "5.0.2"]
-                 [crouton "0.1.1"]]
+                 [crouton "0.1.1"]
+                 [org.clojure/tools.reader "0.7.3"]]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.5.1"]
                                   [ring/ring-jetty-adapter "1.1.0"]
                                   [ring/ring-devel "1.1.0"]]}
@@ -22,7 +23,7 @@
              :1.3 {:dependencies [[org.clojure/clojure "1.3.0"]]}
              :1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}}
   :aliases {"all" ["with-profile" "dev,1.3:dev,1.4:dev"]}
-  :plugins [[codox "0.6.3"]]
+  :plugins [[codox "0.6.4"]]
   :test-selectors {:default  #(not (:integration %))
                    :integration :integration
                    :all (constantly true)})

@@ -565,6 +565,19 @@ Ring-style middleware to layer functionality over the core HTTP
 request/response implementation. Methods like `clj-http.client/get`
 are sugar over this `clj-http.client/request` function.
 
+## Optional dependencies
+
+clj-http currently has three optional dependencies, `cheshire`,
+`crouton` and `tools.reader`. Any number of them  may be removed by
+excluding them from the clj-http dependency in your project.clj:
+
+```clojure
+(defproject foo "0.1.0-SNAPSHOT"
+  :dependencies [[org.clojure/clojure "1.5.1"]
+                 [clj-http "0.3.4" :exclusions [cheshire crouton
+                                                org.clojure/tools.reader]]])
+```
+
 ## Known issues / Issues you may run into
 
 ### VerifyError class org.codehaus.jackson.smile.SmileParser overrides final method getBinaryValue...

@@ -21,16 +21,28 @@
   (try
     (require 'cheshire.core)
     true
-    (catch Throwable _
-      false)))
+    (catch Throwable _ false)))
 
 ;; Crouton is an optional dependency, so we check for it at compile time.
 (def crouton-enabled?
   (try
     (require 'crouton.html)
     true
-    (catch Throwable _
-      false)))
+    (catch Throwable _ false)))
+
+;; tools.reader is an optional dependency, so check at compile time.
+(def edn-enabled?
+  (try
+    (require 'clojure.tools.reader.edn)
+    true
+    (catch Throwable _ false)))
+
+(defn ^:dynamic parse-edn
+  "Resolve and apply tool.reader's EDN parsing."
+  [& args]
+  {:pre [edn-enabled?]}
+  (apply (ns-resolve (symbol "clojure.tools.reader.edn")
+                     (symbol "read-string")) args))
 
 (defn ^:dynamic parse-html
   "Resolve and apply crouton's HTML parsing."
@@ -233,9 +245,11 @@
 (defmethod coerce-response-body :json-string-keys [_ resp]
   (coerce-json-body resp false))
 
-(defmethod coerce-response-body :clojure [_ {:keys [status body] :as resp}]
-  (binding [*read-eval* false]
-    (assoc resp :body (read-string (String. #^"[B" body "UTF-8")))))
+(defmethod coerce-response-body :clojure [_ {:keys [body] :as resp}]
+  (if edn-enabled?
+    (assoc resp :body (parse-edn (String. #^"[B" body "UTF-8")))
+    (binding [*read-eval* false]
+      (assoc resp :body (read-string (String. #^"[B" body "UTF-8"))))))
 
 (defmethod coerce-response-body :auto [_ {:keys [body coerce status] :as resp}]
   (assoc resp
@@ -248,12 +262,14 @@
          (String. #^"[B" body ^String charset)
          (String. #^"[B" body "UTF-8"))
 
-       (.startsWith (str typestring) "application/clojure")
-       (binding [*read-eval* false]
-         (if-let [charset (second (re-find #"charset=(.*)"
-                                           (str typestring)))]
-           (read-string (String. #^"[B" body ^String charset))
-           (read-string (String. #^"[B" body "UTF-8"))))
+       (or (.startsWith (str typestring) "application/clojure")
+           (.startsWith (str typestring) "application/edn"))
+       (let [charset (or (second (re-find #"charset=(.*)" (str typestring)))
+                         "UTF-8")]
+         (if edn-enabled?
+           (parse-edn (String. #^"[B" body ^String charset))
+           (binding [*read-eval* false]
+             (read-string (String. #^"[B" body ^String charset)))))
 
        (and (.startsWith (str typestring) "application/json")
             json-enabled?)

@@ -254,6 +254,11 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2013-03-20
+   - support application/edn as an auto-coercion type
+   - add tools.reader as an optional dependency, edn/read will be
+     used if available, otherwise read-string with *read-eval* bound
+     to false is used. See https://github.com/dakrone/clj-http/pull/120
 ** 2013-03-14
    - Bump clojure to 1.5.1
 ** Released 0.6.5
