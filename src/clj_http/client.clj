@@ -242,8 +242,8 @@
 (defmethod coerce-response-body :json [req resp]
   (coerce-json-body req resp true))
 
-(defmethod coerce-response-body :json-string-keys [_ resp]
-  (coerce-json-body resp false))
+(defmethod coerce-response-body :json-string-keys [req resp]
+  (coerce-json-body req resp false))
 
 (defmethod coerce-response-body :clojure [_ {:keys [body] :as resp}]
   (if edn-enabled?
@@ -251,7 +251,7 @@
     (binding [*read-eval* false]
       (assoc resp :body (read-string (String. #^"[B" body "UTF-8"))))))
 
-(defmethod coerce-response-body :auto [_ {:keys [body coerce status] :as resp}]
+(defmethod coerce-response-body :auto [req {:keys [body coerce status] :as resp}]
   (assoc resp
     :body
     (let [typestring (get-in resp [:headers "content-type"])]
@@ -275,8 +275,8 @@
             json-enabled?)
        (if-let [charset (second (re-find #"charset=(.*)"
                                          (str typestring)))]
-         (coerce-json-body resp true charset)
-         (coerce-json-body resp true "UTF-8"))
+         (:body (coerce-json-body req resp true charset))
+         (:body (coerce-json-body req resp true "UTF-8")))
 
        :else
        (String. #^"[B" body "UTF-8")))))
