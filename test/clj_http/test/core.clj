@@ -30,7 +30,7 @@
     {:status 200 :body "{:foo \"bar\" :baz #=(+ 1 1)}"
      :headers {"content-type" "application/clojure"}}
     [:get "/json"]
-    {:status 200 :body "{\"foo\":\"bar\"}"}
+    {:status 200 :body "{\"foo\":\"bar\"}" :headers {"content-type" "application/json"}}
     [:get "/json-bad"]
     {:status 400 :body "{\"foo\":\"bar\"}"}
     [:get "/redirect"]
@@ -303,6 +303,7 @@
   (let [resp (client/get (localhost "/json") {:as :json})
         resp-str (client/get (localhost "/json")
                              {:as :json :coerce :exceptional})
+        resp-auto (client/get (localhost "/json") {:as :auto})
         bad-resp (client/get (localhost "/json-bad")
                              {:throw-exceptions false :as :json})
         bad-resp-json (client/get (localhost "/json-bad")
@@ -311,8 +312,13 @@
         bad-resp-json2 (client/get (localhost "/json-bad")
                                    {:throw-exceptions false :as :json
                                     :coerce :unexceptional})]
-    (is (= 200 (:status resp) (:status resp-str)))
-    (is (= {:foo "bar"} (:body resp)))
+    (is (= 200
+           (:status resp)
+           (:status resp-str)
+           (:status resp-auto)))
+    (is (= {:foo "bar"}
+           (:body resp)
+           (:body resp-auto)))
     (is (= "{\"foo\":\"bar\"}" (:body resp-str)))
     (is (= 400
            (:status bad-resp)
