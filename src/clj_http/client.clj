@@ -43,7 +43,7 @@
   {:pre [edn-enabled?]}
   (apply (ns-resolve (symbol "clojure.tools.reader.edn")
                      (symbol "read-string"))
-         {:readers @(resolve '*data-readers*)} args))
+         {:readers @(or (resolve '*data-readers*) (atom {}))} args))
 
 (defn ^:dynamic parse-html
   "Resolve and apply crouton's HTML parsing."
