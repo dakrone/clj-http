@@ -16,15 +16,15 @@ pull request or open an issue if you have any problems
 [Clojars](http://clojars.org/clj-http):
 
 ```clojure
-[clj-http "0.6.5"]
+[clj-http "0.7.0"]
 ```
 
 Previous versions available as
 
 ```clojure
+[clj-http "0.6.5"]
 [clj-http "0.6.4"]
 [clj-http "0.6.3"]
-[clj-http "0.6.2"]
 ```
 
 ## Usage
@@ -213,6 +213,8 @@ The client transparently accepts and decompresses the `gzip` and
 ;; Try to automatically coerce the output based on the content-type
 ;; header (this is currently a BETA feature!). Currently supports
 ;; text, json and clojure (with automatic charset detection)
+;; clojure coercion requires "application/clojure" or
+;; "application/edn" in the content-type header
 (client/get "http://site.com/foo.json" {:as :auto})
 
 ;; Return the body as a stream

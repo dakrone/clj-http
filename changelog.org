@@ -1,5 +1,16 @@
 * Changelog
   List of user-visible changes that have gone into each release
+** 0.7.0
+   - merged https://github.com/dakrone/clj-http/pull/122 for
+     using *data-readers* when using tools.reader to parse EDN
+   - fix an issue with 1.3 where *data-readers* is not available
+   - merged https://github.com/dakrone/clj-http/pull/121 to fix
+     auto-coercion with json
+   - support application/edn as an auto-coercion type
+   - add tools.reader as an optional dependency, edn/read will be
+     used if available, otherwise read-string with *read-eval* bound
+     to false is used. See https://github.com/dakrone/clj-http/pull/120
+   - Bump clojure to 1.5.1
 ** 0.6.5
    - allow json coercion for exception cases based on :coerce setting,
      can be either :always, :exceptional or :unexceptional
@@ -254,6 +265,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Released 0.7.0
 ** 2013-03-22
    - merged https://github.com/dakrone/clj-http/pull/122 for
      using *data-readers* when using tools.reader to parse EDN
