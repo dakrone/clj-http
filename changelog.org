@@ -265,6 +265,8 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2013-03-29
+   - bump dependencies to latest versions
 ** Released 0.7.0
 ** 2013-03-22
    - merged https://github.com/dakrone/clj-http/pull/122 for
