@@ -7,7 +7,7 @@
   :repositories {"sona" "http://oss.sonatype.org/content/repositories/snapshots"}
   :warn-on-reflection false
   :min-lein-version "2.0.0"
-  :dependencies [[org.apache.httpcomponents/httpcore "4.2.3"]
+  :dependencies [[org.apache.httpcomponents/httpcore "4.2.4"]
                  [org.apache.httpcomponents/httpclient "4.2.3"]
                  [org.apache.httpcomponents/httpmime "4.2.3"]
                  [commons-codec "1.7"]
@@ -22,7 +22,7 @@
              :1.2 {:dependencies [[org.clojure/clojure "1.2.1"]]}
              :1.3 {:dependencies [[org.clojure/clojure "1.3.0"]]}
              :1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}}
-  :aliases {"all" ["with-profile" "dev,1.3:dev,1.4:dev"]}
+  :aliases {"all" ["with-profile" "dev,1.2:dev,1.3:dev,1.4:dev"]}
   :plugins [[codox "0.6.4"]]
   :test-selectors {:default  #(not (:integration %))
                    :integration :integration
