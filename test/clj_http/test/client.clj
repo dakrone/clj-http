@@ -342,11 +342,11 @@
 
 (deftest apply-on-url
   (let [u-client (client/wrap-url identity)
-        resp (u-client {:url "http://google.com:8080/foo?bar=bat"})]
+        resp (u-client {:url "http://google.com:8080/baz foo?bar=bat"})]
     (is (= :http (:scheme resp)))
     (is (= "google.com" (:server-name resp)))
     (is (= 8080 (:server-port resp)))
-    (is (= "/foo" (:uri resp)))
+    (is (= "/baz+foo" (:uri resp)))
     (is (= "bar=bat" (:query-string resp)))))
 
 (deftest pass-on-no-url
@@ -514,3 +514,12 @@
     (is (= "close" (get-in resp2 [:headers "connection"]))
         "connection should be closed")
     (.shutdown cm)))
+
+(deftest test-url-encode-path
+  (is (= (client/url-encode-path "foo bar+baz[]75") "foo+bar+baz%5B%5D75"))
+  (let [all-chars (apply str (map char (range 256)))
+        all-chars-encoded (client/url-encode-path all-chars)] ;fixed point
+    (is (= all-chars-encoded (client/url-encode-path all-chars-encoded)))))
+
+
+         
