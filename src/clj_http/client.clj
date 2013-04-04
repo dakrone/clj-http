@@ -564,7 +564,7 @@
     (try
       (client req)
       (catch Exception e
-        (if (= (type (root-cause e)) java.net.UnknownHostException)
+        (if (= (type (root-cause e)) UnknownHostException)
           (when-not ignore-unknown-host?
             (throw (root-cause e)))
           (throw (root-cause e)))))))
