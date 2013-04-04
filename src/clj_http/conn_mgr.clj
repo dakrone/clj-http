@@ -8,7 +8,7 @@
                                      TrustStrategy X509HostnameVerifier)
            (org.apache.http.conn.scheme PlainSocketFactory
                                         SchemeRegistry Scheme)
-           (org.apache.http.impl.conn SingleClientConnManager
+           (org.apache.http.impl.conn BasicClientConnectionManager
                                       SchemeRegistryFactory)
            (org.apache.http.impl.conn PoolingClientConnectionManager)
            (org.apache.http.conn.params ConnPerRouteBean)))
@@ -70,15 +70,15 @@
       (.register (Scheme. "https" 443 factory)))))
 
 
-(defn ^SingleClientConnManager make-regular-conn-manager
+(defn ^BasicClientConnectionManager make-regular-conn-manager
   [{:keys [insecure? keystore trust-store] :as req}]
   (cond
    (or keystore trust-store)
-   (SingleClientConnManager. (get-keystore-scheme-registry req))
+   (BasicClientConnectionManager. (get-keystore-scheme-registry req))
 
-   insecure? (SingleClientConnManager. insecure-scheme-registry)
+   insecure? (BasicClientConnectionManager. insecure-scheme-registry)
 
-   :else (SingleClientConnManager.)))
+   :else (BasicClientConnectionManager.)))
 
 
 ;; need the fully qualified class name because this fn is later used in a
