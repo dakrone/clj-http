@@ -11,7 +11,6 @@
             [clj-http.util :as util])
   (:import (java.io InputStream File)
            (java.net URL UnknownHostException)
-           (org.apache.http.conn.params ConnPerRouteBean)
            (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
                                    InputStreamEntity FileEntity StringEntity))
   (:refer-clojure :exclude (get)))
