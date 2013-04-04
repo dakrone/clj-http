@@ -11,7 +11,6 @@
             [clj-http.util :as util])
   (:import (java.io InputStream File)
            (java.net URL UnknownHostException)
-           (org.apache.http.conn.params ConnPerRouteBean)
            (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
                                    InputStreamEntity FileEntity StringEntity))
   (:refer-clojure :exclude (get)))
@@ -565,7 +564,7 @@
     (try
       (client req)
       (catch Exception e
-        (if (= (type (root-cause e)) java.net.UnknownHostException)
+        (if (= (type (root-cause e)) UnknownHostException)
           (when-not ignore-unknown-host?
             (throw (root-cause e)))
           (throw (root-cause e)))))))
