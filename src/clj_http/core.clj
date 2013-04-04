@@ -87,9 +87,18 @@
 (defn add-client-params!
   "Add various client params to the http-client object, if needed."
   [http-client kvs]
-  (doto http-client
+  (let [cookie-spec-factory (:cookie-spec-factory kvs)        
+        cookie-policy (or 
+                        (not-empty (str (class cookie-spec-factory))) 
+                        CookiePolicy/BROWSER_COMPATIBILITY)
+        kvs (dissoc kvs :cookie-spec-factory)]
+    (when cookie-spec-factory
+      (-> http-client 
+        .getCookieSpecs 
+        (.register cookie-policy, cookie-spec-factory)))
+  (doto http-client        
     (set-client-param ClientPNames/COOKIE_POLICY
-                      CookiePolicy/BROWSER_COMPATIBILITY)
+                      cookie-policy)
     (set-client-param CookieSpecPNames/SINGLE_COOKIE_HEADER true)
     (set-client-param ClientPNames/HANDLE_REDIRECTS false))
 
@@ -98,7 +107,7 @@
                       k (cond
                          (and (not= "http.connection-manager.timeout" k)
                               (instance? Long v)) (Integer. ^Long v)
-                              true v))))
+                              true v)))))
 
 
 (defn- coerce-body-entity
@@ -175,7 +184,7 @@
            socket-timeout conn-timeout  ;; in milliseconds
            insecure? save-request? proxy-host proxy-port as cookie-store
            retry-handler response-interceptor digest-auth connection-manager
-           client-params] :as req}]
+           client-params] :as req}]  
   (let [^ClientConnectionManager conn-mgr
         (or connection-manager
             conn/*connection-manager*
