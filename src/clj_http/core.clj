@@ -12,6 +12,7 @@
            (org.apache.http.util EntityUtils)
            (org.apache.http.entity ByteArrayEntity StringEntity)
            (org.apache.http.client HttpClient HttpRequestRetryHandler)
+           (org.apache.http.impl.client.cache CachingHttpClient)
            (org.apache.http.client.methods HttpGet HttpHead HttpPatch HttpPut
                                            HttpPost HttpDelete HttpOptions
                                            HttpEntityEnclosingRequestBase)
@@ -177,13 +178,18 @@
            socket-timeout conn-timeout  ;; in milliseconds
            insecure? save-request? proxy-host proxy-port as cookie-store
            retry-handler response-interceptor digest-auth connection-manager
-           client-params] :as req}]
+           client-params cache cache-config] :as req}]
   (let [^ClientConnectionManager conn-mgr
         (or connection-manager
             conn/*connection-manager*
             (conn/make-regular-conn-manager req))
         ^DefaultHttpClient http-client (set-routing
                                         (DefaultHttpClient. conn-mgr))
+        http-client (or (and cache
+                             (if cache-config
+                               (CachingHttpClient. http-client cache-config)
+                               (CachingHttpClient. http-client)))
+                        http-client)
         scheme (name scheme)]
     (when-let [cookie-store (or cookie-store *cookie-store*)]
       (.setCookieStore http-client cookie-store))
