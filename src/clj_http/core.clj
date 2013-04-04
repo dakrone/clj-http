@@ -21,7 +21,7 @@
            (org.apache.http.conn.routing HttpRoute)
            (org.apache.http.conn.params ConnRoutePNames)
            (org.apache.http.impl.client DefaultHttpClient)
-           (org.apache.http.impl.conn SingleClientConnManager
+           (org.apache.http.impl.conn BasicClientConnectionManager
                                       ProxySelectorRoutePlanner)
            (org.apache.http.auth UsernamePasswordCredentials AuthScope)
            (org.apache.http.util EntityUtils)))
@@ -113,7 +113,7 @@
           (try
             (proxy-super close)
             (finally
-              (when (instance? SingleClientConnManager conn-mgr)
+              (when (instance? BasicClientConnectionManager conn-mgr)
                 (.shutdown conn-mgr))))))
       (EntityUtils/toByteArray ^HttpEntity http-entity))))
 
@@ -220,7 +220,7 @@
          (proxy [HttpResponseInterceptor] []
            (process [resp ctx]
              (response-interceptor resp ctx)))))
-      (when (instance? SingleClientConnManager conn-mgr)
+      (when (instance? BasicClientConnectionManager conn-mgr)
         (.addHeader http-req "Connection" "close"))
       (doseq [[header-n header-v] headers]
         (if (coll? header-v)
@@ -266,6 +266,6 @@
                 (dissoc :save-request?))
             resp))
         (finally
-          (when (and (instance? SingleClientConnManager conn-mgr)
+          (when (and (instance? BasicClientConnectionManager conn-mgr)
                      (not= :stream as))
             (.shutdown ^ClientConnectionManager conn-mgr)))))))
