@@ -73,7 +73,8 @@
   "Takes a raw path and url-encodes any illegal characters."
   [path]
   (str/replace path
-    #"[^a-zA-Z0-9\.\-\_\~\!\$\&\'\(\)\*\+\,\;\=\:\@\/\%]" util/url-encode))
+               #"[^a-zA-Z0-9\.\-\_\~\!\$\&\'\(\)\*\+\,\;\=\:\@\/\%]"
+               util/url-encode))
 
 (defn parse-url
   "Parse a URL string into a map of interesting parts."

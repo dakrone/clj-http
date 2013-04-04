@@ -32,13 +32,13 @@
 
 (deftest ^{:integration true} nil-input
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
-        (client/get nil)))
+                        (client/get nil)))
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
-        (client/post nil)))
+                        (client/post nil)))
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
-        (client/put nil)))
+                        (client/put nil)))
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
-        (client/delete nil))))
+                        (client/delete nil))))
 
 
 (defn is-passed [middleware req]
@@ -179,11 +179,11 @@
   (let [client (fn [req] {:status 500})
         e-client (client/wrap-exceptions client)]
     (is (thrown-with-msg? Exception #"500"
-          (e-client {}))))
+                          (e-client {}))))
   (let [client (fn [req] {:status 500 :body "foo"})
         e-client (client/wrap-exceptions client)]
     (is (thrown-with-msg? Exception #":body"
-          (e-client {:throw-entire-message? true})))))
+                          (e-client {:throw-entire-message? true})))))
 
 (deftest pass-on-non-exceptional
   (let [client (fn [req] {:status 200})
@@ -520,6 +520,3 @@
   (let [all-chars (apply str (map char (range 256)))
         all-chars-encoded (client/url-encode-path all-chars)] ;fixed point
     (is (= all-chars-encoded (client/url-encode-path all-chars-encoded)))))
-
-
-         

@@ -265,6 +265,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2013-04-04
+   - merged https://github.com/dakrone/clj-http/pull/124 to handle
+     URL-encoding invalid characters in the URI
 ** 2013-04-01
    - merged https://github.com/dakrone/clj-http/pull/126 to bump
      httpcore version
