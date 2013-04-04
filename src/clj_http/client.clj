@@ -69,6 +69,12 @@
 (defn when-pos [v]
   (when (and v (pos? v)) v))
 
+(defn url-encode-path
+  "Takes a raw path and url-encodes any illegal characters."
+  [path]
+  (str/replace path
+    #"[^a-zA-Z0-9\.\-\_\~\!\$\&\'\(\)\*\+\,\;\=\:\@\/\%]" util/url-encode))
+
 (defn parse-url
   "Parse a URL string into a map of interesting parts."
   [url]
@@ -76,7 +82,7 @@
     {:scheme (keyword (.getProtocol url-parsed))
      :server-name (.getHost url-parsed)
      :server-port (when-pos (.getPort url-parsed))
-     :uri (.getPath url-parsed)
+     :uri (url-encode-path (.getPath url-parsed))
      :user-info (.getUserInfo url-parsed)
      :query-string (.getQuery url-parsed)}))
 
