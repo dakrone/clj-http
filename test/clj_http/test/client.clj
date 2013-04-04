@@ -517,6 +517,16 @@
 
 (deftest test-url-encode-path
   (is (= (client/url-encode-path "foo bar+baz[]75") "foo+bar+baz%5B%5D75"))
+  (is (= (str "/:@-._~!$&'()*+,="
+              ";"
+              ":@-._~!$&'()*+,"
+              "="
+              ":@-._~!$&'()*+,==")
+         ;; This URL sucks, yes, it's actually a valid URL
+         (:uri (client/parse-url
+                (str "http://example.com/:@-._~!$&'()*+,=;:@-._~!$&'()*+"
+                     ",=:@-._~!$&'()*+,==?/?:@-._~!$'()*+,;=/?:@-._~!$'("
+                     ")*+,;==#/?:@-._~!$&'()*+,;=")))))
   (let [all-chars (apply str (map char (range 256)))
         all-chars-encoded (client/url-encode-path all-chars)] ;fixed point
     (is (= all-chars-encoded (client/url-encode-path all-chars-encoded)))))
