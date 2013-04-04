@@ -268,6 +268,7 @@
 ** 2013-04-04
    - merged https://github.com/dakrone/clj-http/pull/124 to handle
      URL-encoding invalid characters in the URI
+   - bump cheshire to 5.1.0
 ** 2013-04-01
    - merged https://github.com/dakrone/clj-http/pull/126 to bump
      httpcore version
