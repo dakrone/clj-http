@@ -24,7 +24,10 @@
            (org.apache.http.impl.conn SingleClientConnManager
                                       ProxySelectorRoutePlanner)
            (org.apache.http.auth UsernamePasswordCredentials AuthScope)
-           (org.apache.http.util EntityUtils)))
+           (org.apache.http.util EntityUtils)
+           (org.apache.http.cookie CookieSpecFactory)
+           (org.apache.http.impl.cookie BrowserCompatSpec)))
+
 
 (defn parse-headers
   "Takes a HeaderIterator and returns a map of names to values.
@@ -84,21 +87,27 @@
         (set-client-param client ConnRoutePNames/FORCED_ROUTE route)))
     request))
 
+(defn- cookie-spec [f] (proxy [BrowserCompatSpec] []
+                        (validate [cookie origin] (f cookie origin))))
+
+(defn- cookie-spec-factory [f] (proxy [CookieSpecFactory] []
+                           (newInstance [params] (cookie-spec f))))
+
 (defn add-client-params!
   "Add various client params to the http-client object, if needed."
   [http-client kvs]
-  (let [cookie-spec-factory (:cookie-spec-factory kvs)        
-        cookie-policy (or 
-                        (not-empty (str (class cookie-spec-factory))) 
-                        CookiePolicy/BROWSER_COMPATIBILITY)
-        kvs (dissoc kvs :cookie-spec-factory)]
+  (let [cookie-policy (:cookie-policy kvs)
+        cookie-policy-name (str (type cookie-policy))                
+        kvs (dissoc kvs :cookie-policy)]
     (when cookie-spec-factory
       (-> http-client 
         .getCookieSpecs 
-        (.register cookie-policy, cookie-spec-factory)))
+        (.register cookie-policy-name (cookie-spec-factory cookie-policy))))
   (doto http-client        
     (set-client-param ClientPNames/COOKIE_POLICY
-                      cookie-policy)
+                      (if cookie-policy
+                        cookie-policy-name
+                        CookiePolicy/BROWSER_COMPATIBILITY))
     (set-client-param CookieSpecPNames/SINGLE_COOKIE_HEADER true)
     (set-client-param ClientPNames/HANDLE_REDIRECTS false))
 
