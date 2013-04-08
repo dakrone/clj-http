@@ -520,8 +520,9 @@ functionality:
   (post "http://example.com/foo" {:body (.getBytes "foo")}))
 ```
 
-To see available middleware, check the `clj-http.client/all-middleware`
-var, which is a vector of all the middleware that clj-http uses.
+To see available middleware, check the
+`clj-http.client/default-middleware` var, which is a vector of the
+default middleware that clj-http uses.
 
 ## Debugging
 

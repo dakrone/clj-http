@@ -590,35 +590,43 @@
           resp (client req)]
       (assoc resp :request-time (- (System/currentTimeMillis) start)))))
 
+(def ^{:doc "The default list of middleware clj-http uses for wrapping
+  requests."}
+  default-middleware
+  [wrap-request-timing
+   wrap-lower-case-headers
+   wrap-query-params
+   wrap-basic-auth
+   wrap-oauth
+   wrap-user-info
+   wrap-url
+   wrap-redirects
+   wrap-decompression
+   wrap-input-coercion
+   ;; put this before output-coercion, so additional charset
+   ;; headers can be used if desired
+   wrap-additional-header-parsing
+   wrap-output-coercion
+   wrap-exceptions
+   wrap-accept
+   wrap-accept-encoding
+   wrap-content-type
+   wrap-form-params
+   wrap-nested-params
+   wrap-method
+   wrap-cookies
+   wrap-links
+   wrap-unknown-host])
+
 (defn wrap-request
   "Returns a battaries-included HTTP request function coresponding to the given
-   core client. See client/client."
+  core client. See default-middleware for the middleware wrappers that are used
+  by default"
   [request]
-  (-> request
-      wrap-request-timing
-      wrap-lower-case-headers
-      wrap-query-params
-      wrap-basic-auth
-      wrap-oauth
-      wrap-user-info
-      wrap-url
-      wrap-redirects
-      wrap-decompression
-      wrap-input-coercion
-      ;; put this before output-coercion, so additional charset
-      ;; headers can be used if desired
-      wrap-additional-header-parsing
-      wrap-output-coercion
-      wrap-exceptions
-      wrap-accept
-      wrap-accept-encoding
-      wrap-content-type
-      wrap-form-params
-      wrap-nested-params
-      wrap-method
-      wrap-cookies
-      wrap-links
-      wrap-unknown-host))
+  (reduce (fn wrap-request* [request middleware]
+            (middleware request))
+          request
+          default-middleware))
 
 (def ^{:dynamic true
        :doc
@@ -716,18 +724,6 @@
   `(binding [clj-http.client/request
              (reduce #(%2 %1) clj-http.core/request (seq ~middleware))]
      ~@body))
-
-;; This is not the greatest way to do this, but it works for now.
-(def all-middleware
-  ^{:doc "Returns a vector of all middleware clj-http knows about."}
-  (->> (concat (ns-publics *ns*)
-               (ns-publics (clojure.lang.Namespace/find
-                            (symbol "clj-http.cookies")))
-               (ns-publics (clojure.lang.Namespace/find
-                            (symbol "clj-http.links"))))
-       vals
-       (filter #(.startsWith (str (:name (meta %))) "wrap-"))
-       vec))
 
 (defmacro with-connection-pool
   "Macro to execute the body using a connection manager. Creates a
