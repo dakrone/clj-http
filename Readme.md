@@ -333,8 +333,9 @@ as a primitive for building higher-level interfaces:
 
 ### Exceptions
 
-The client will throw exceptions on, well, exceptional status
-codes. clj-http will throw a
+The client will throw exceptions on, well, exceptional status codes,
+meaning all HTTP responses other than `#{200 201 202 203 204 205 206
+207 300 301 302 303 307}`. clj-http will throw a
 [Slingshot](http://github.com/scgilardi/slingshot) Stone that can be
 caught by a regular `(catch Exception e ...)` or in Slingshot's `try+`
 block:
@@ -357,12 +358,13 @@ block:
                                        :body "...body here..."}
    clj-http.client/wrap-exceptions/fn--584 (client.clj:42
 
-;; You can also ignore exceptions and handle them yourself:
+;; You can also ignore HTTP-status-code exceptions and handle them yourself:
 (client/get "http://site.com/broken" {:throw-exceptions false})
 ;; Or ignore an unknown host (methods return 'nil' if this is set to
 ;; true and the host does not exist:
 (client/get "http://aoeuntahuf89o.com" {:ignore-unknown-host? true})
 ````
+
 (spacing added by me to be human readable)
 
 ### Proxies

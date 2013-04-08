@@ -265,6 +265,8 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2013-04-08
+   - clarify :throw-exceptions in documentation
 ** 2013-04-04
    - merged https://github.com/dakrone/clj-http/pull/124 to handle
      URL-encoding invalid characters in the URI
