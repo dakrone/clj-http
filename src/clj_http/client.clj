@@ -68,12 +68,15 @@
 (defn when-pos [v]
   (when (and v (pos? v)) v))
 
-(defn url-encode-path
-  "Takes a raw path and url-encodes any illegal characters."
-  [path]
-  (str/replace path
-               #"[^a-zA-Z0-9\.\-\_\~\!\$\&\'\(\)\*\+\,\;\=\:\@\/\%]"
-               util/url-encode))
+(defn url-encode-illegal-characters
+  "Takes a raw url path or query and url-encodes any illegal characters.
+   Minimizes ambiguity by encoding space to %20."
+  [path-or-query]
+  (when path-or-query
+    (-> path-or-query
+        (str/replace " " "%20")
+        (str/replace #"[^a-zA-Z0-9\.\-\_\~\!\$\&\'\(\)\*\+\,\;\=\:\@\/\%\?]"
+                     util/url-encode))))
 
 (defn parse-url
   "Parse a URL string into a map of interesting parts."
@@ -82,9 +85,9 @@
     {:scheme (keyword (.getProtocol url-parsed))
      :server-name (.getHost url-parsed)
      :server-port (when-pos (.getPort url-parsed))
-     :uri (url-encode-path (.getPath url-parsed))
+     :uri (url-encode-illegal-characters (.getPath url-parsed))
      :user-info (.getUserInfo url-parsed)
-     :query-string (.getQuery url-parsed)}))
+     :query-string (url-encode-illegal-characters (.getQuery url-parsed))}))
 
 ;; Statuses for which clj-http will not throw an exception
 (def unexceptional-status?
