@@ -1,5 +1,18 @@
 * Changelog
   List of user-visible changes that have gone into each release
+** 0.7.1
+   - clarify :throw-exceptions in documentation
+   - define default-middleware for use in wrap-request, remove bad
+     all-middleware method
+   - merged https://github.com/dakrone/clj-http/pull/130 to encode
+     query-params
+   - merged https://github.com/dakrone/clj-http/pull/124 to handle
+     URL-encoding invalid characters in the URI
+   - bump cheshire to 5.1.0
+   - Switch from deprecated SingleClientConnManager to BasicClientConnectionManager
+   - merged https://github.com/dakrone/clj-http/pull/126 to bump
+     httpcore version
+   - bump dependencies to latest versions
 ** 0.7.0
    - merged https://github.com/dakrone/clj-http/pull/122 for
      using *data-readers* when using tools.reader to parse EDN
