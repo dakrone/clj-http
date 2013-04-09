@@ -342,12 +342,12 @@
 
 (deftest apply-on-url
   (let [u-client (client/wrap-url identity)
-        resp (u-client {:url "http://google.com:8080/baz foo?bar=bat"})]
+        resp (u-client {:url "http://google.com:8080/baz foo?bar=bat bit?"})]
     (is (= :http (:scheme resp)))
     (is (= "google.com" (:server-name resp)))
     (is (= 8080 (:server-port resp)))
-    (is (= "/baz+foo" (:uri resp)))
-    (is (= "bar=bat" (:query-string resp)))))
+    (is (= "/baz%20foo" (:uri resp)))
+    (is (= "bar=bat%20bit?" (:query-string resp)))))
 
 (deftest pass-on-no-url
   (let [u-client (client/wrap-url identity)
@@ -516,7 +516,8 @@
     (.shutdown cm)))
 
 (deftest test-url-encode-path
-  (is (= (client/url-encode-path "foo bar+baz[]75") "foo+bar+baz%5B%5D75"))
+  (is (= (client/url-encode-illegal-characters "?foo bar+baz[]75")
+         "?foo%20bar+baz%5B%5D75"))
   (is (= (str "/:@-._~!$&'()*+,="
               ";"
               ":@-._~!$&'()*+,"
@@ -528,5 +529,6 @@
                      ",=:@-._~!$&'()*+,==?/?:@-._~!$'()*+,;=/?:@-._~!$'("
                      ")*+,;==#/?:@-._~!$&'()*+,;=")))))
   (let [all-chars (apply str (map char (range 256)))
-        all-chars-encoded (client/url-encode-path all-chars)] ;fixed point
-    (is (= all-chars-encoded (client/url-encode-path all-chars-encoded)))))
+        all-legal (client/url-encode-illegal-characters all-chars)] 
+    (is (= all-legal
+           (client/url-encode-illegal-characters all-legal)))))
