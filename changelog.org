@@ -269,6 +269,8 @@
    - clarify :throw-exceptions in documentation
    - define default-middleware for use in wrap-request, remove bad
      all-middleware method
+   - merged https://github.com/dakrone/clj-http/pull/130 to encode
+     query-params
 ** 2013-04-04
    - merged https://github.com/dakrone/clj-http/pull/124 to handle
      URL-encoding invalid characters in the URI

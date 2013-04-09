@@ -518,17 +518,21 @@
 (deftest test-url-encode-path
   (is (= (client/url-encode-illegal-characters "?foo bar+baz[]75")
          "?foo%20bar+baz%5B%5D75"))
-  (is (= (str "/:@-._~!$&'()*+,="
-              ";"
-              ":@-._~!$&'()*+,"
-              "="
-              ":@-._~!$&'()*+,==")
+  (is (= {:uri (str "/:@-._~!$&'()*+,="
+                    ";"
+                    ":@-._~!$&'()*+,"
+                    "="
+                    ":@-._~!$&'()*+,==")
+          :query-string (str "/?:@-._~!$'()*+,;"
+                             "="
+                             "/?:@-._~!$'()*+,;==")}
          ;; This URL sucks, yes, it's actually a valid URL
-         (:uri (client/parse-url
-                (str "http://example.com/:@-._~!$&'()*+,=;:@-._~!$&'()*+"
-                     ",=:@-._~!$&'()*+,==?/?:@-._~!$'()*+,;=/?:@-._~!$'("
-                     ")*+,;==#/?:@-._~!$&'()*+,;=")))))
+         (select-keys (client/parse-url
+                       (str "http://example.com/:@-._~!$&'()*+,=;:@-._~!$&'()*+"
+                            ",=:@-._~!$&'()*+,==?/?:@-._~!$'()*+,;=/?:@-._~!$'("
+                            ")*+,;==#/?:@-._~!$&'()*+,;="))
+                      [:uri :query-string])))
   (let [all-chars (apply str (map char (range 256)))
-        all-legal (client/url-encode-illegal-characters all-chars)] 
+        all-legal (client/url-encode-illegal-characters all-chars)]
     (is (= all-legal
            (client/url-encode-illegal-characters all-legal)))))
