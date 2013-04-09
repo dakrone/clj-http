@@ -278,6 +278,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Released 0.7.1
 ** 2013-04-08
    - clarify :throw-exceptions in documentation
    - define default-middleware for use in wrap-request, remove bad
