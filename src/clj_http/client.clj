@@ -625,11 +625,11 @@
   "Returns a battaries-included HTTP request function coresponding to the given
   core client. See default-middleware for the middleware wrappers that are used
   by default"
-  [request]
+  [request middlewares]
   (reduce (fn wrap-request* [request middleware]
             (middleware request))
           request
-          default-middleware))
+          middlewares))
 
 (def ^{:dynamic true
        :doc
@@ -653,7 +653,7 @@
    * Input and output bodies are coerced as required and indicated by the :as
      option."}
   request
-  (wrap-request #'core/request))
+  (wrap-request #'core/request default-middleware))
 
 ;; Inline function to throw a slightly more readable exception when
 ;; the URL is nil
