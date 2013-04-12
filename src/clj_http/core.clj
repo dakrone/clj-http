@@ -87,10 +87,17 @@
         (set-client-param client ConnRoutePNames/FORCED_ROUTE route)))
     request))
 
-(defn- cookie-spec [f] (proxy [BrowserCompatSpec] []
+(defn cookie-spec 
+  "Create an instance of a org.apache.http.impl.cookie.BrowserCompatSpec with a validate function
+  that you pass in.  This function takes two parameters, a cookie and an origin."
+  [f] (proxy [BrowserCompatSpec] []
                         (validate [cookie origin] (f cookie origin))))
 
-(defn- cookie-spec-factory [f] (proxy [CookieSpecFactory] []
+(defn cookie-spec-factory 
+  "Create an instance of a org.apache.http.cookie.CookieSpecFactory with a newInstance implementation
+  that returns a cookie specification with a validate function that you pass in.  The function takes
+  two parameters: cookie and origin."
+  [f] (proxy [CookieSpecFactory] []
                            (newInstance [params] (cookie-spec f))))
 
 (defn add-client-params!
@@ -99,7 +106,7 @@
   (let [cookie-policy (:cookie-policy kvs)
         cookie-policy-name (str (type cookie-policy))                
         kvs (dissoc kvs :cookie-policy)]
-    (when cookie-spec-factory
+    (when cookie-policy
       (-> http-client 
         .getCookieSpecs 
         (.register cookie-policy-name (cookie-spec-factory cookie-policy))))
