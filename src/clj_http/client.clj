@@ -233,7 +233,7 @@
 
 (defn coerce-json-body
   [{:keys [coerce]} {:keys [body status] :as resp} keyword? & [charset]]
-  (let [charset (or charset "UTF-8")]
+  (let [^String charset (or charset "UTF-8")]
     (if json-enabled?
       (cond
        (= coerce :always)
