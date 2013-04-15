@@ -25,7 +25,10 @@
                                       SingleClientConnManager
                                       ProxySelectorRoutePlanner)
            (org.apache.http.auth UsernamePasswordCredentials AuthScope)
-           (org.apache.http.util EntityUtils)))
+           (org.apache.http.util EntityUtils)
+           (org.apache.http.cookie CookieSpecFactory)
+           (org.apache.http.impl.cookie BrowserCompatSpec)))
+
 
 (defn parse-headers
   "Takes a HeaderIterator and returns a map of names to values.
@@ -85,12 +88,34 @@
         (set-client-param client ConnRoutePNames/FORCED_ROUTE route)))
     request))
 
+(defn cookie-spec 
+  "Create an instance of a org.apache.http.impl.cookie.BrowserCompatSpec with a validate function
+  that you pass in.  This function takes two parameters, a cookie and an origin."
+  [f] (proxy [BrowserCompatSpec] []
+                        (validate [cookie origin] (f cookie origin))))
+
+(defn cookie-spec-factory 
+  "Create an instance of a org.apache.http.cookie.CookieSpecFactory with a newInstance implementation
+  that returns a cookie specification with a validate function that you pass in.  The function takes
+  two parameters: cookie and origin."
+  [f] (proxy [CookieSpecFactory] []
+                           (newInstance [params] (cookie-spec f))))
+
 (defn add-client-params!
   "Add various client params to the http-client object, if needed."
   [http-client kvs]
-  (doto http-client
+  (let [cookie-policy (:cookie-policy kvs)
+        cookie-policy-name (str (type cookie-policy))                
+        kvs (dissoc kvs :cookie-policy)]
+    (when cookie-policy
+      (-> http-client 
+        .getCookieSpecs 
+        (.register cookie-policy-name (cookie-spec-factory cookie-policy))))
+  (doto http-client        
     (set-client-param ClientPNames/COOKIE_POLICY
-                      CookiePolicy/BROWSER_COMPATIBILITY)
+                      (if cookie-policy
+                        cookie-policy-name
+                        CookiePolicy/BROWSER_COMPATIBILITY))
     (set-client-param CookieSpecPNames/SINGLE_COOKIE_HEADER true)
     (set-client-param ClientPNames/HANDLE_REDIRECTS false))
 
@@ -99,7 +124,7 @@
                       k (cond
                          (and (not= "http.connection-manager.timeout" k)
                               (instance? Long v)) (Integer. ^Long v)
-                              true v))))
+                              true v)))))
 
 
 (defn- coerce-body-entity
@@ -176,7 +201,7 @@
            headers body multipart debug debug-body socket-timeout conn-timeout
            insecure? save-request? proxy-host proxy-port as cookie-store
            retry-handler response-interceptor digest-auth connection-manager
-           client-params] :as req}]
+           client-params] :as req}]  
   (let [^ClientConnectionManager conn-mgr
         (or connection-manager
             conn/*connection-manager*

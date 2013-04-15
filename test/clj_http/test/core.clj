@@ -12,7 +12,11 @@
            (org.apache.http.client.methods HttpPost)
            (org.apache.http HttpResponse HttpConnection HttpVersion)
            (org.apache.http.protocol HttpContext ExecutionContext)
-           (org.apache.http.impl.client DefaultHttpClient)))
+           (org.apache.http.impl.client DefaultHttpClient)
+           (org.apache.http.cookie CookieSpecFactory)
+           (org.apache.http.impl.cookie BrowserCompatSpec)
+           (org.apache.http.client.params CookiePolicy ClientPNames)
+           (org.apache.http.cookie.params CookieSpecPNames)))
 
 (defn handler [req]
   ;;(pp/pprint req)
@@ -414,6 +418,21 @@
                               (core/add-client-params! ps)))]
       (doseq [[k v] ps]
         (is (= v (.getParameter setps k)))))))
+
+;; If you don't explicitly set a :cookie-policy, use CookiePolicy/BROWSER_COMPATIBILITY 
+(deftest t-add-client-params-default-cookie-policy
+  (testing "Using add-client-params! to get a default cookie policy"
+    (let [setps (.getParams (doto (DefaultHttpClient.)
+                              (core/add-client-params! {})))]      
+        (is (= CookiePolicy/BROWSER_COMPATIBILITY (.getParameter setps ClientPNames/COOKIE_POLICY))))))
+
+;; If you set a :cookie-policy, the name of the policy is registered as (str (type cookie-policy))
+(deftest t-add-client-params-default-cookie-policy
+  (testing "Using add-client-params! to get an explicitly set :cookie-policy"
+    (let [setps (.getParams (doto (DefaultHttpClient.)
+                              (core/add-client-params! {:cookie-policy (constantly nil)})))]      
+        (is (.startsWith (.getParameter setps ClientPNames/COOKIE_POLICY) "class ")))))
+
 
 ;; This relies on connections to writequit.org being slower than 1ms, if this
 ;; fails, you must have very nice internet.
