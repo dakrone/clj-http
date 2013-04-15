@@ -33,9 +33,20 @@
 
 (defn make-input-stream-body
   "Create an InputStreamBody object from the given map, requiring at least
-  :content and :name."
-  [{:keys [name mime-type content]}]
+  :content and :name. If no :length is specified, clj-http will use
+  chunked transfer-encoding, if :length is specified, clj-http will
+  workaround things be proxying the InputStreamBody to return a length."
+  [{:keys [name mime-type content length]}]
   (cond
+   (and content name length)
+   (if mime-type
+     (proxy [InputStreamBody] [content mime-type name]
+       (getContentLength []
+         length))
+     (proxy [InputStreamBody] [content name]
+       (getContentLength []
+         length)))
+
    (and content mime-type name)
    (InputStreamBody. content mime-type name)
 

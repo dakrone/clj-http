@@ -216,6 +216,18 @@
     (is (re-find #"name=\"eggplant\"" resp-body))
     (is (re-find #"content" resp-body))))
 
+(deftest ^{:integration true} multipart-inputstream-length
+  (run-server)
+  (let [bytes (util/utf8-bytes "byte-test")
+        stream (ByteArrayInputStream. bytes)
+        resp (request {:request-method :post :uri "/multipart"
+                       :multipart [{:name "c" :content stream :length 9
+                                    :mime-type "application/json"}]})
+        resp-body (apply str (map #(try (char %) (catch Exception _ ""))
+                                  (:body resp)))]
+    (is (= 200 (:status resp)))
+    (is (re-find #"byte-test" resp-body))))
+
 (deftest ^{:integration true} t-save-request-obj
   (run-server)
   (let [resp (request {:request-method :post :uri "/post"

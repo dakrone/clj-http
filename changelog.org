@@ -281,6 +281,8 @@
 ** 2013-04-15
    - merged https://github.com/dakrone/clj-http/pull/127 to allow
      custom cookie policies
+   - allow specifying :length for mulitpart inputstream bodies to
+     avoid chunked transfer encoding
 ** 2013-04-14
    - merged https://github.com/dakrone/clj-http/pull/133 to remove
      some reflection
