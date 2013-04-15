@@ -237,7 +237,7 @@
             (.setEntity #^HttpEntityEnclosingRequest http-req body)
             (.setEntity #^HttpEntityEnclosingRequest http-req
                         (if (string? body)
-                          (StringEntity. body "UTF-8")
+                          (StringEntity. ^String body "UTF-8")
                           (ByteArrayEntity. body))))))
       (when debug (print-debug! req http-req))
       (try
@@ -259,7 +259,7 @@
 
                                       (isa? (type (:body %)) HttpEntity)
                                       (let [baos (ByteArrayOutputStream.)]
-                                        (.writeTo (:body %) baos)
+                                        (.writeTo ^HttpEntity (:body %) baos)
                                         (.toString baos "UTF-8"))
 
                                       :else nil))
