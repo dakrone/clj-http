@@ -1,5 +1,13 @@
 * Changelog
   List of user-visible changes that have gone into each release
+** 0.7.2
+   - merged https://github.com/dakrone/clj-http/pull/127 to allow
+     custom cookie policies
+   - allow specifying :length for mulitpart inputstream bodies to
+     avoid chunked transfer encoding
+   - bumped cheshire to 5.1.1
+   - merged https://github.com/dakrone/clj-http/pull/133 to remove
+     some reflection
 ** 0.7.1
    - clarify :throw-exceptions in documentation
    - define default-middleware for use in wrap-request, remove bad
@@ -278,11 +286,13 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Released 0.7.2
 ** 2013-04-15
    - merged https://github.com/dakrone/clj-http/pull/127 to allow
      custom cookie policies
    - allow specifying :length for mulitpart inputstream bodies to
      avoid chunked transfer encoding
+   - bumped cheshire to 5.1.1
 ** 2013-04-14
    - merged https://github.com/dakrone/clj-http/pull/133 to remove
      some reflection
