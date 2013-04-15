@@ -278,6 +278,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2013-04-15
+   - merged https://github.com/dakrone/clj-http/pull/127 to allow
+     custom cookie policies
 ** 2013-04-14
    - merged https://github.com/dakrone/clj-http/pull/133 to remove
      some reflection

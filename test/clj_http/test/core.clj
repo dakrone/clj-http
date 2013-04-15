@@ -34,7 +34,8 @@
     {:status 200 :body "{:foo \"bar\" :baz #=(+ 1 1)}"
      :headers {"content-type" "application/clojure"}}
     [:get "/json"]
-    {:status 200 :body "{\"foo\":\"bar\"}" :headers {"content-type" "application/json"}}
+    {:status 200 :body "{\"foo\":\"bar\"}"
+     :headers {"content-type" "application/json"}}
     [:get "/json-bad"]
     {:status 400 :body "{\"foo\":\"bar\"}"}
     [:get "/redirect"]
@@ -262,7 +263,8 @@
 
 (deftest throw-on-invalid-body
   (is (thrown-with-msg? IllegalArgumentException #"Invalid request method :bad"
-        (client/request {:method :bad :url "http://example.org"}))))
+                        (client/request {:url "http://example.org"
+                                         :method :bad}))))
 
 (deftest ^{:integration true} throw-on-too-many-redirects
   (run-server)
@@ -272,11 +274,11 @@
     (is (= (apply vector (repeat 3 "http://localhost:18080/redirect"))
            (:trace-redirects resp))))
   (is (thrown-with-msg? Exception #"Too many redirects: 3"
-        (client/get (localhost "/redirect")
-                    {:max-redirects 2 :throw-exceptions true})))
+                        (client/get (localhost "/redirect")
+                                    {:max-redirects 2 :throw-exceptions true})))
   (is (thrown-with-msg? Exception #"Too many redirects: 21"
-        (client/get (localhost "/redirect")
-                    {:throw-exceptions true}))))
+                        (client/get (localhost "/redirect")
+                                    {:throw-exceptions true}))))
 
 (deftest ^{:integration true} get-with-body
   (run-server)
@@ -419,19 +421,24 @@
       (doseq [[k v] ps]
         (is (= v (.getParameter setps k)))))))
 
-;; If you don't explicitly set a :cookie-policy, use CookiePolicy/BROWSER_COMPATIBILITY 
+;; If you don't explicitly set a :cookie-policy, use
+;; CookiePolicy/BROWSER_COMPATIBILITY
 (deftest t-add-client-params-default-cookie-policy
   (testing "Using add-client-params! to get a default cookie policy"
     (let [setps (.getParams (doto (DefaultHttpClient.)
-                              (core/add-client-params! {})))]      
-        (is (= CookiePolicy/BROWSER_COMPATIBILITY (.getParameter setps ClientPNames/COOKIE_POLICY))))))
+                              (core/add-client-params! {})))]
+      (is (= CookiePolicy/BROWSER_COMPATIBILITY
+             (.getParameter setps ClientPNames/COOKIE_POLICY))))))
 
-;; If you set a :cookie-policy, the name of the policy is registered as (str (type cookie-policy))
+;; If you set a :cookie-policy, the name of the policy is registered
+;; as (str (type cookie-policy))
 (deftest t-add-client-params-default-cookie-policy
   (testing "Using add-client-params! to get an explicitly set :cookie-policy"
     (let [setps (.getParams (doto (DefaultHttpClient.)
-                              (core/add-client-params! {:cookie-policy (constantly nil)})))]      
-        (is (.startsWith (.getParameter setps ClientPNames/COOKIE_POLICY) "class ")))))
+                              (core/add-client-params!
+                               {:cookie-policy (constantly nil)})))]
+      (is (.startsWith (.getParameter setps ClientPNames/COOKIE_POLICY)
+                       "class ")))))
 
 
 ;; This relies on connections to writequit.org being slower than 1ms, if this

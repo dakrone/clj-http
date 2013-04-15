@@ -261,7 +261,8 @@
     (binding [*read-eval* false]
       (assoc resp :body (read-string (String. #^"[B" body "UTF-8"))))))
 
-(defmethod coerce-response-body :auto [req {:keys [body coerce status] :as resp}]
+(defmethod coerce-response-body :auto
+  [req {:keys [body coerce status] :as resp}]
   (assoc resp
     :body
     (let [typestring (get-in resp [:headers "content-type"])]
