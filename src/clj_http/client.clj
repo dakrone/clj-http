@@ -622,6 +622,13 @@
    wrap-links
    wrap-unknown-host])
 
+(def ^{:doc
+       "Available at any time to retrieve the middleware being
+used. Automatically bound when `with-middleware` is used."
+       :dynamic true}
+  *current-middleware*
+  default-middleware)
+
 (defn wrap-request
   "Returns a battaries-included HTTP request function coresponding to the given
   core client. See default-middleware for the middleware wrappers that are used
@@ -725,7 +732,8 @@
 
   Unless you really know what you are doing."
   [middleware & body]
-  `(binding [clj-http.client/request
+  `(binding [*current-middleware* ~middleware
+             clj-http.client/request
              (reduce #(%2 %1) clj-http.core/request (seq ~middleware))]
      ~@body))
 

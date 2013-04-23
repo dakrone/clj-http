@@ -286,6 +286,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2013-04-23
+   - add *current-middleware* to see available middleware during a
+     with-middleware request (for nesting)
 ** Released 0.7.2
 ** 2013-04-15
    - merged https://github.com/dakrone/clj-http/pull/127 to allow
