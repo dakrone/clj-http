@@ -29,10 +29,11 @@
        "" nil
        "example-cookie=example-value;Path=/"
        ["example-cookie"
-        {:discard true :path "/" :value "example-value" :version 0}]
+        {:discard true :path "/" :secure false
+         :value "example-value" :version 0}]
        "example-cookie=example-value;Domain=.example.com;Path=/"
        ["example-cookie"
-        {:discard true :domain ".example.com" :path "/"
+        {:discard true :domain ".example.com" :secure false :path "/"
          :value "example-value" :version 0}]))
 
 (deftest test-decode-cookies-with-seq
@@ -62,12 +63,12 @@
   (are [response expected]
        (is (= expected (decode-cookie-header response)))
        {:headers {"set-cookie" "a=1"}}
-       {:cookies {"a" {:discard true :path "/"
+       {:cookies {"a" {:discard true :path "/" :secure false
                        :value "1" :version 0}} :headers {}}
        {:headers {"set-cookie"
                   (str "ring-session=" session ";Path=/")}}
        {:cookies {"ring-session"
-                  {:discard true :path "/"
+                  {:discard true :path "/" :secure false
                    :value session :version 0}} :headers {}}))
 
 (deftest test-encode-cookie
@@ -201,7 +202,7 @@
 (deftest test-wrap-cookies
   (is (= {:cookies {"example-cookie" {:discard true :domain ".example.com"
                                       :path "/" :value "example-value"
-                                      :version 0}} :headers {}}
+                                      :version 0 :secure false}} :headers {}}
          ((wrap-cookies
            (fn [request]
              (is (= (get (:headers request) "Cookie") "a=1;b=2"))

@@ -8,17 +8,20 @@
            (org.apache.http.message BasicHeader)
            org.apache.http.client.CookieStore))
 
-(defn- cookie-spec ^org.apache.http.cookie.CookieSpec []
+(defn cookie-spec ^org.apache.http.cookie.CookieSpec []
   (.newInstance
    (BrowserCompatSpecFactory.)
    (doto (BasicHttpParams.)
      (.setParameter ClientPNames/COOKIE_POLICY
                     CookiePolicy/BROWSER_COMPATIBILITY))))
 
-(defn- compact-map
+(defn compact-map
   "Removes all map entries where value is nil."
   [m]
-  (reduce #(if (get m %2) (assoc %1 %2 (get m %2)) %1)
+  (reduce (fn [newm k]
+            (if (not (nil? (get m k)))
+              (assoc newm k (get m k))
+              newm))
           (sorted-map) (sort (keys m))))
 
 (defn to-cookie
