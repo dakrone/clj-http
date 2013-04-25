@@ -50,13 +50,13 @@
                              (name (:value cookie-content)))
     (.setComment (:comment cookie-content))
     (.setCommentURL (:comment-url cookie-content))
-    (.setDiscard (or (:discard cookie-content) true))
+    (.setDiscard (:discard cookie-content true))
     (.setDomain (:domain cookie-content))
     (.setExpiryDate (:expires cookie-content))
     (.setPath (:path cookie-content))
     (.setPorts (int-array (:ports cookie-content)))
-    (.setSecure (or (:secure cookie-content) false))
-    (.setVersion (or (:version cookie-content) 0))))
+    (.setSecure (:secure cookie-content false))
+    (.setVersion (:version cookie-content 0))))
 
 (defn decode-cookie
   "Decode the Set-Cookie string into a cookie seq."
