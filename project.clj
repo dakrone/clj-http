@@ -8,8 +8,8 @@
   :warn-on-reflection false
   :min-lein-version "2.0.0"
   :dependencies [[org.apache.httpcomponents/httpcore "4.2.4"]
-                 [org.apache.httpcomponents/httpclient "4.2.3"]
-                 [org.apache.httpcomponents/httpmime "4.2.3"]
+                 [org.apache.httpcomponents/httpclient "4.2.5"]
+                 [org.apache.httpcomponents/httpmime "4.2.5"]
                  [commons-codec "1.7"]
                  [commons-io "2.4"]
                  [slingshot "0.10.3"]
