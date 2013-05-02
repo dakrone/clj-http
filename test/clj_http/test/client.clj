@@ -153,11 +153,11 @@
 
 (deftest force-redirects-on-non-redirectable-methods
   (doseq [method [:put :post :delete]
-          status [301 302 307]]
+          [status expected-method] [[301 :get] [302 :get] [307 method]]]
     (let [client (fn [{:keys [trace-redirects body] :as req}]
                    (if trace-redirects
-                     {:status 200 :body body :trace-redirects trace-redirects}
-                     {:status status :body body
+                     {:status 200 :body body :trace-redirects trace-redirects :req req}
+                     {:status status :body body :req req
                       :headers {"location" "http://foo.com/bat"}}))
           r-client (client/wrap-redirects client)
           resp (r-client {:body "ok" :url "http://foo.com"
@@ -165,7 +165,8 @@
                           :force-redirects true})]
       (is (= 200 (:status resp)))
       (is (= ["http://foo.com" "http://foo.com/bat"] (:trace-redirects resp)))
-      (is (= "ok" (:body resp))))))
+      (is (= "ok" (:body resp)))
+      (is (= expected-method (:request-method (:req resp)))))))
 
 (deftest pass-on-follow-redirects-false
   (let [client (fn [req] {:status 302 :body (:body req)})
