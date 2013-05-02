@@ -182,7 +182,7 @@
        (follow-redirect client (assoc req :request-method :get
                                       :redirects-count (inc redirects-count))
                         resp-r)
-       (#{301 302 307} status)
+       (#{301 302} status)
        (cond
         (#{:get :head} request-method)
         (follow-redirect client (assoc req :redirects-count
@@ -194,6 +194,12 @@
                          resp-r)
         :else
         resp-r)
+       (= 307 status)
+       (if (or (#{:get :head} request-method)
+               force-redirects)
+         (follow-redirect client (assoc req :redirects-count
+                                        (inc redirects-count)) resp-r)
+         resp-r)
        :else
        resp-r))))
 
