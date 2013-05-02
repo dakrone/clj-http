@@ -143,9 +143,10 @@
         raw-redirect (get-in resp [:headers "location"])
         redirect (str (URL. (URL. url) raw-redirect))]
     ((wrap-redirects client) (-> req
+                                 (merge (parse-url redirect))
                                  (dissoc :query-params)
-                                 (assoc :url redirect
-                                        :trace-redirects trace-redirects)))))
+                                 (assoc :url redirect)
+                                 (assoc :trace-redirects trace-redirects)))))
 
 (defn wrap-redirects
   "Middleware that follows redirects in the response. A slingshot exception is

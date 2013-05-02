@@ -289,6 +289,8 @@
 ** 2013-05-02
    - merged https://github.com/dakrone/clj-http/pull/138 to preserve
      http method for 307 redirect
+   - merged in parse-url parameters into follow-redirect so request
+     map is not inconsistent
 ** 2013-05-01
    - bumped http* deps to 4.2.5
 ** 2013-04-25
