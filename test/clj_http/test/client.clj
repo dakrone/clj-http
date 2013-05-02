@@ -156,7 +156,8 @@
           [status expected-method] [[301 :get] [302 :get] [307 method]]]
     (let [client (fn [{:keys [trace-redirects body] :as req}]
                    (if trace-redirects
-                     {:status 200 :body body :trace-redirects trace-redirects :req req}
+                     {:status 200 :body body :trace-redirects trace-redirects
+                      :req req}
                      {:status status :body body :req req
                       :headers {"location" "http://foo.com/bat"}}))
           r-client (client/wrap-redirects client)
