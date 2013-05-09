@@ -41,11 +41,11 @@
    (and content name length)
    (if mime-type
      (proxy [InputStreamBody] [content mime-type name]
-       (getContentLength []
-         length))
+       (getContentLength [] length)
+       (isStreaming [] false))
      (proxy [InputStreamBody] [content name]
-       (getContentLength []
-         length)))
+       (getContentLength [] length)
+       (isStreaming [] false)))
 
    (and content mime-type name)
    (InputStreamBody. content mime-type name)
