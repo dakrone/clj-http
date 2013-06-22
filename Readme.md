@@ -16,15 +16,15 @@ pull request or open an issue if you have any problems
 [Clojars](http://clojars.org/clj-http):
 
 ```clojure
-[clj-http "0.7.2"]
+[clj-http "0.7.3"]
 ```
 
 Previous versions available as
 
 ```clojure
+[clj-http "0.7.2"]
 [clj-http "0.7.1"]
 [clj-http "0.7.0"]
-[clj-http "0.6.5"]
 ```
 
 ## Usage
@@ -522,7 +522,9 @@ functionality:
 
 To see available middleware, check the
 `clj-http.client/default-middleware` var, which is a vector of the
-default middleware that clj-http uses.
+default middleware that clj-http
+uses. `clj-http.client/*current-middleware*` is bound to the current
+list of middleware during request time.
 
 ## Debugging
 
