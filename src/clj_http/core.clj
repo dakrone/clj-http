@@ -105,7 +105,7 @@
   [f]
   (proxy
       [CookieSpecFactory] []
-      (newInstance [params] (cookie-spec f))))
+    (newInstance [params] (cookie-spec f))))
 
 (defn add-client-params!
   "Add various client params to the http-client object, if needed."
@@ -298,6 +298,12 @@
                 (assoc-in [:request :http-req] http-req)
                 (dissoc :save-request?))
             resp))
+        (catch Throwable e
+          (when (and (= :stream as)
+                     (or (instance? SingleClientConnManager conn-mgr)
+                         (instance? BasicClientConnectionManager conn-mgr)))
+            (.shutdown ^ClientConnectionManager conn-mgr))
+          (throw e))
         (finally
           (when (and (or (instance? SingleClientConnManager conn-mgr)
                          (instance? BasicClientConnectionManager conn-mgr))

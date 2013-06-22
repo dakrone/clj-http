@@ -2,9 +2,11 @@
   (:use [clojure.test])
   (:require [clj-http.conn-mgr :as conn-mgr]
             [clj-http.core :as core]
+            [clj-http.test.core :refer [run-server]]
             [ring.adapter.jetty :as ring])
   (:import (java.security KeyStore)
-           (org.apache.http.conn.ssl SSLSocketFactory)))
+           (org.apache.http.conn.ssl SSLSocketFactory)
+           (org.apache.http.impl.conn BasicClientConnectionManager)))
 
 (def client-ks "test-resources/client-keystore")
 (def client-ks-pass "keykey")
@@ -46,3 +48,21 @@
       (is (= 403 (:status resp))))
     (let [resp (core/request secure-request)]
       (is (= 200 (:status resp))))))
+
+(deftest ^{:integration true} t-closed-conn-mgr-for-as-stream
+  (run-server)
+  (let [shutdown? (atom false)
+        cm (proxy [BasicClientConnectionManager] []
+             (shutdown []
+               (reset! shutdown? true)))]
+    (try
+      (core/request {:request-method :get :uri "/get"
+                     :server-port 18080 :scheme :http
+                     :server-name "localhost"
+                     ;; socket timeout forces a timeout
+                     :socket-timeout 1
+                     :connection-manager cm
+                     :as :stream})
+      (is false "request should have thrown an exception")
+      (catch Exception e))
+    (is @shutdown? "Connection manager has been shut down")))
