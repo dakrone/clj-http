@@ -56,11 +56,12 @@
              (shutdown []
                (reset! shutdown? true)))]
     (try
-      (core/request {:request-method :get :uri "/get"
+      (core/request {:request-method :get :uri "/timeout"
                      :server-port 18080 :scheme :http
                      :server-name "localhost"
-                     ;; socket timeout forces a timeout
+                     ;; timeouts forces an exception being thrown
                      :socket-timeout 1
+                     :conn-timeout 1
                      :connection-manager cm
                      :as :stream})
       (is false "request should have thrown an exception")
