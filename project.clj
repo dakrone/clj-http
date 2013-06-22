@@ -12,10 +12,11 @@
                  [org.apache.httpcomponents/httpmime "4.2.5"]
                  [commons-codec "1.7"]
                  [commons-io "2.4"]
-                 [slingshot "0.10.3"]
+                 [slingshot "0.10.3" :exclusions [org.clojure/clojure]]
                  [cheshire "5.1.1"]
-                 [crouton "0.1.1"]
-                 [org.clojure/tools.reader "0.7.3"]]
+                 [crouton "0.1.1" :exclusions [org.clojure/clojure]]
+                 [org.clojure/tools.reader "0.7.3"
+                  :exclusions [org.clojure/clojure]]]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.5.1"]
                                   [ring/ring-jetty-adapter "1.1.8"]
                                   [ring/ring-devel "1.1.8"]]}
