@@ -1,8 +1,8 @@
 (ns clj-http.test.conn-mgr
-  (:use [clojure.test])
+  (:use [clojure.test]
+        [clj-http.test.core :only [run-server]])
   (:require [clj-http.conn-mgr :as conn-mgr]
             [clj-http.core :as core]
-            [clj-http.test.core :refer [run-server]]
             [ring.adapter.jetty :as ring])
   (:import (java.security KeyStore)
            (org.apache.http.conn.ssl SSLSocketFactory)
