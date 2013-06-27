@@ -253,10 +253,11 @@
         o-client (client/wrap-output-coercion client)
         resp (o-client {:uri "/foo"})]
     (is (nil? (:body resp))))
-  (let [client (fn [req] {:body :thestream})
+  (let [the-stream (ByteArrayInputStream. (byte-array []))
+        client (fn [req] {:body the-stream})
         o-client (client/wrap-output-coercion client)
         resp (o-client {:uri "/foo" :as :stream})]
-    (is (= :thestream (:body resp))))
+    (is (= the-stream (:body resp))))
   (let [client (fn [req] {:body :thebytes})
         o-client (client/wrap-output-coercion client)
         resp (o-client {:uri "/foo" :as :byte-array})]
