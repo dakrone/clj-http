@@ -236,7 +236,10 @@
 
 (defmethod coerce-response-body :byte-array [_ resp] resp)
 
-(defmethod coerce-response-body :stream [_ resp] resp)
+(defmethod coerce-response-body :stream [_ resp]
+           (let [body (:body resp)]
+             (cond (instance? java.io.InputStream body) resp
+                   (instance? (Class/forName "[B") body) (assoc resp :body (java.io.ByteArrayInputStream. body)))))
 
 (defn coerce-json-body
   [{:keys [coerce]} {:keys [body status] :as resp} keyword? & [charset]]
