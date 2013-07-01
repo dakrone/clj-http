@@ -637,7 +637,7 @@ used. Automatically bound when `with-middleware` is used."
   default-middleware)
 
 (defn wrap-request
-  "Returns a battaries-included HTTP request function coresponding to the given
+  "Returns a batteries-included HTTP request function corresponding to the given
   core client. See default-middleware for the middleware wrappers that are used
   by default"
   [request]
