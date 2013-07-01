@@ -249,7 +249,7 @@ can be specified:
 (def resp (client/get "http://google.com" {:headers h}))
 (:headers resp)
 => {"server" "gws",
-    "content-encoding" "gzip", ;; <= google sent respones gzipped
+    "content-encoding" "gzip", ;; <= google sent response gzipped
     "content-type" "text/html; charset=UTF-8",
     "content-length" "26538",
     "connection" "close"}
@@ -291,7 +291,7 @@ body, you can use the `:decode-body-headers` option:
     "content-script-type" "text/javascript",
     "content-style-type" "text/css",
     "content-type" "text/html; charset=Shift_JIS",
-    "date" "Tue, 09 Oct 2012 18:02:59 GMT", 
+    "date" "Tue, 09 Oct 2012 18:02:59 GMT",
     "cache-control" "max-age=0, no-cache",
     "expires" "Tue, 09 Oct 2012 18:02:59 GMT",
     "etag" "\"1dfb-2686-4cba2686fb8b1\"",
