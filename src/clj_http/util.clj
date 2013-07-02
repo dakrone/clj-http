@@ -4,7 +4,8 @@
         [clojure.walk :only [postwalk]])
   (:import (org.apache.commons.codec.binary Base64)
            (org.apache.commons.io IOUtils)
-           (java.io ByteArrayInputStream ByteArrayOutputStream)
+           (java.io BufferedInputStream ByteArrayInputStream
+                    ByteArrayOutputStream)
            (java.net URLEncoder URLDecoder)
            (java.util.zip InflaterInputStream DeflaterInputStream
                           GZIPInputStream GZIPOutputStream)))
@@ -55,7 +56,7 @@
       (.close gos)
       (.toByteArray baos))))
 
-(defn- force-byte-array
+(defn force-byte-array
   "force b as byte array if it is an InputStream."
   [b]
   (if (instance? java.io.InputStream b)
@@ -65,16 +66,21 @@
 (defn inflate
   "Returns a zlib inflate'd version of the given byte array or InputStream."
   [b]
-  (when-let [data-arr (force-byte-array b)]
-    (try
-      (IOUtils/toByteArray (InflaterInputStream. (ByteArrayInputStream. data-arr)))
-      ;; broken inflate implementation server-side
-      ;; see [http://stackoverflow.com/questions/3932117/handling-http
-      ;; -contentencoding-deflate]
-      (catch java.util.zip.ZipException e
-        (IOUtils/toByteArray
-         (InflaterInputStream. (ByteArrayInputStream. data-arr)
-                               (java.util.zip.Inflater. true)))))))
+  (when b
+    ;; This weirdness is because HTTP servers lie about what kind of deflation
+    ;; they're using, so we try one way, then if that doesn't work, reset and
+    ;; try the other way
+    (let [stream (BufferedInputStream. (if (instance? java.io.InputStream b)
+                                         b
+                                         (ByteArrayInputStream. b)))
+          _ (.mark stream 512)
+          iis (InflaterInputStream. stream)
+          readable? (try (.read iis) true
+                         (catch java.util.zip.ZipException _ false))]
+      (.reset stream)
+      (if readable?
+        (InflaterInputStream. stream)
+        (InflaterInputStream. stream (java.util.zip.Inflater. true))))))
 
 (defn deflate
   "Returns a deflate'd version of the given byte array."

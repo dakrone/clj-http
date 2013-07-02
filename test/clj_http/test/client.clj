@@ -217,7 +217,8 @@
                   :headers {"content-encoding" "deflate"}})
         c-client (client/wrap-decompression client)
         resp (c-client {})]
-    (is (= "barbarbar" (util/utf8-string (:body resp))))))
+    (is (= "barbarbar" (-> resp :body util/force-byte-array util/utf8-string))
+        "string correctly inflated")))
 
 (deftest pass-on-non-compressed
   (let [c-client (client/wrap-decompression (fn [req] {:body "foo"}))
@@ -539,3 +540,18 @@
         all-legal (client/url-encode-illegal-characters all-chars)]
     (is (= all-legal
            (client/url-encode-illegal-characters all-legal)))))
+
+(deftest t-coercion-methods
+  (let [json-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"bar\"}"))
+        auto-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"bar\"}"))
+        edn-body (ByteArrayInputStream. (.getBytes "{:foo \"bar\"}"))
+        json-resp {:body json-body :status 200
+                   :headers {"content-type" "application/json"}}
+        auto-resp {:body auto-body :status 200
+                   :headers {"content-type" "application/json"}}
+        edn-resp {:body edn-body :status 200
+                  :headers {"content-type" "application/edn"}}]
+    (is (= {:foo "bar"}
+           (:body (client/coerce-response-body {:as :json} json-resp))
+           (:body (client/coerce-response-body {:as :clojure} edn-resp))
+           (:body (client/coerce-response-body {:as :auto} auto-resp))))))

@@ -234,16 +234,20 @@
 ;; Multimethods for coercing body type to the :as key
 (defmulti coerce-response-body (fn [req _] (:as req)))
 
-(defmethod coerce-response-body :byte-array [_ resp] resp)
+(defmethod coerce-response-body :byte-array [_ resp]
+  (assoc resp :body (util/force-byte-array (:body resp))))
 
 (defmethod coerce-response-body :stream [_ resp]
-           (let [body (:body resp)]
-             (cond (instance? java.io.InputStream body) resp
-                   (instance? (Class/forName "[B") body) (assoc resp :body (java.io.ByteArrayInputStream. body)))))
+  (let [body (:body resp)]
+    (cond (instance? java.io.InputStream body) resp
+          ;; This shouldn't happen, but we plan for it anyway
+          (instance? (Class/forName "[B") body)
+          (assoc resp :body (java.io.ByteArrayInputStream. body)))))
 
 (defn coerce-json-body
   [{:keys [coerce]} {:keys [body status] :as resp} keyword? & [charset]]
-  (let [^String charset (or charset "UTF-8")]
+  (let [^String charset (or charset "UTF-8")
+        body (util/force-byte-array body)]
     (if json-enabled?
       (cond
        (= coerce :always)
@@ -266,47 +270,45 @@
   (coerce-json-body req resp false))
 
 (defmethod coerce-response-body :clojure [_ {:keys [body] :as resp}]
-  (if edn-enabled?
-    (assoc resp :body (parse-edn (String. #^"[B" body "UTF-8")))
-    (binding [*read-eval* false]
-      (assoc resp :body (read-string (String. #^"[B" body "UTF-8"))))))
+  (let [body (util/force-byte-array body)]
+    (if edn-enabled?
+      (assoc resp :body (parse-edn (String. #^"[B" body "UTF-8")))
+      (binding [*read-eval* false]
+        (assoc resp :body (read-string (String. #^"[B" body "UTF-8")))))))
 
 (defmethod coerce-response-body :auto
-  [req {:keys [body coerce status] :as resp}]
-  (assoc resp
-    :body
-    (let [typestring (get-in resp [:headers "content-type"])]
-      (cond
-       (.startsWith (str typestring) "text/")
+  [req resp]
+  (let [typestring (get-in resp [:headers "content-type"])]
+    (cond
+     (.startsWith (str typestring) "text/")
+     (if-let [charset (second (re-find #"charset=(.*)"
+                                       (str typestring)))]
+       (coerce-response-body {:as charset} resp)
+       (coerce-response-body {:as :default} resp))
+
+     (or (.startsWith (str typestring) "application/clojure")
+         (.startsWith (str typestring) "application/edn"))
+     (let [charset (or (second (re-find #"charset=(.*)" (str typestring)))
+                       "UTF-8")]
+       (coerce-response-body {:as :clojure} resp))
+
+     (and (.startsWith (str typestring) "application/json")
+          json-enabled?)
+     (do
        (if-let [charset (second (re-find #"charset=(.*)"
                                          (str typestring)))]
-         (String. #^"[B" body ^String charset)
-         (String. #^"[B" body "UTF-8"))
+         (coerce-json-body req resp true charset)
+         (coerce-json-body req resp true "UTF-8")))
 
-       (or (.startsWith (str typestring) "application/clojure")
-           (.startsWith (str typestring) "application/edn"))
-       (let [charset (or (second (re-find #"charset=(.*)" (str typestring)))
-                         "UTF-8")]
-         (if edn-enabled?
-           (parse-edn (String. #^"[B" body ^String charset))
-           (binding [*read-eval* false]
-             (read-string (String. #^"[B" body ^String charset)))))
-
-       (and (.startsWith (str typestring) "application/json")
-            json-enabled?)
-       (if-let [charset (second (re-find #"charset=(.*)"
-                                         (str typestring)))]
-         (:body (coerce-json-body req resp true charset))
-         (:body (coerce-json-body req resp true "UTF-8")))
-
-       :else
-       (String. #^"[B" body "UTF-8")))))
+     :else
+     (coerce-response-body {:as :default} resp))))
 
 (defmethod coerce-response-body :default
   [{:keys [as]} {:keys [status body] :as resp}]
-  (cond
-   (string? as)  (assoc resp :body (String. #^"[B" body ^String as))
-   :else (assoc resp :body (String. #^"[B" body "UTF-8"))))
+  (let [body-bytes (util/force-byte-array body)]
+    (cond
+     (string? as)  (assoc resp :body (String. #^"[B" body-bytes ^String as))
+     :else (assoc resp :body (String. #^"[B" body-bytes "UTF-8")))))
 
 (defn wrap-output-coercion
   "Middleware converting a response body from a byte-array to a different

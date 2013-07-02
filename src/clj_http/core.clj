@@ -138,17 +138,16 @@
   stream that closes itself and the connection manager when closed."
   [{:keys [as]} ^HttpEntity http-entity ^ClientConnectionManager conn-mgr]
   (when http-entity
-    (if (= :stream as)
-      (proxy [FilterInputStream]
-          [(.getContent http-entity)]
-        (close []
-          (try
-            (proxy-super close)
-            (finally
-              (when (or (instance? SingleClientConnManager conn-mgr)
-                        (instance? BasicClientConnectionManager conn-mgr))
-                (.shutdown conn-mgr))))))
-      (EntityUtils/toByteArray ^HttpEntity http-entity))))
+    (proxy [FilterInputStream]
+        [(.getContent http-entity)]
+      (close []
+        (try
+          (proxy-super close)
+          (finally
+            (when (or (instance? SingleClientConnManager conn-mgr)
+                      (instance? BasicClientConnectionManager conn-mgr))
+              ;;(println "Shutting down connection manager")
+              (.shutdown conn-mgr))))))))
 
 (defn- print-debug!
   "Print out debugging information to *out* for a given request."
@@ -205,9 +204,9 @@
    the clj-http uses ByteArrays for the bodies."
   [{:keys [request-method scheme server-name server-port uri query-string
            headers body multipart debug debug-body socket-timeout conn-timeout
-           insecure? save-request? proxy-host proxy-port as cookie-store
-           retry-handler response-interceptor digest-auth connection-manager
-           client-params] :as req}]
+           save-request? proxy-host proxy-port as cookie-store retry-handler
+           response-interceptor digest-auth connection-manager client-params]
+    :as req}]
   (let [^ClientConnectionManager conn-mgr
         (or connection-manager
             conn/*connection-manager*
@@ -299,13 +298,5 @@
                 (dissoc :save-request?))
             resp))
         (catch Throwable e
-          (when (and (= :stream as)
-                     (or (instance? SingleClientConnManager conn-mgr)
-                         (instance? BasicClientConnectionManager conn-mgr)))
-            (.shutdown ^ClientConnectionManager conn-mgr))
-          (throw e))
-        (finally
-          (when (and (or (instance? SingleClientConnManager conn-mgr)
-                         (instance? BasicClientConnectionManager conn-mgr))
-                     (not= :stream as))
-            (.shutdown ^ClientConnectionManager conn-mgr)))))))
+          (.shutdown ^ClientConnectionManager conn-mgr)
+          (throw e))))))

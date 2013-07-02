@@ -180,7 +180,7 @@
       (let [resp (request {:request-method :get :uri "/get" :server-port 18082
                            :scheme :https :insecure? true})]
         (is (= 200 (:status resp)))
-        (is (= "get" (slurp-body resp))))
+        (is (= "get" (String. (util/force-byte-array (:body resp))))))
       (finally
         (.stop t)))))
 
@@ -204,7 +204,7 @@
                                     :content "content"
                                     :mime-type "application/text"}]})
         resp-body (apply str (map #(try (char %) (catch Exception _ ""))
-                                  (:body resp)))]
+                                  (util/force-byte-array (:body resp))))]
     (is (= 200 (:status resp)))
     (is (re-find #"testFINDMEtest" resp-body))
     (is (re-find #"application/json" resp-body))
@@ -224,7 +224,7 @@
                        :multipart [{:name "c" :content stream :length 9
                                     :mime-type "application/json"}]})
         resp-body (apply str (map #(try (char %) (catch Exception _ ""))
-                                  (:body resp)))]
+                                  (util/force-byte-array (:body resp))))]
     (is (= 200 (:status resp)))
     (is (re-find #"byte-test" resp-body))))
 
@@ -250,22 +250,22 @@
 
 (deftest parse-headers
   (are [headers expected]
-       (let [iterator (BasicHeaderIterator.
-                       (into-array BasicHeader
-                                   (map (fn [[name value]]
-                                          (BasicHeader. name value))
-                                        headers)) nil)]
-         (is (= (core/parse-headers iterator) expected)))
+    (let [iterator (BasicHeaderIterator.
+                    (into-array BasicHeader
+                                (map (fn [[name value]]
+                                       (BasicHeader. name value))
+                                     headers)) nil)]
+      (is (= (core/parse-headers iterator) expected)))
 
-       [] {}
+    [] {}
 
-       [["Set-Cookie" "one"]] {"set-cookie" "one"}
+    [["Set-Cookie" "one"]] {"set-cookie" "one"}
 
-       [["Set-Cookie" "one"] ["set-COOKIE" "two"]]
-       {"set-cookie" ["one" "two"]}
+    [["Set-Cookie" "one"] ["set-COOKIE" "two"]]
+    {"set-cookie" ["one" "two"]}
 
-       [["Set-Cookie" "one"] ["serVer" "some-server"] ["set-cookie" "two"]]
-       {"set-cookie" ["one" "two"] "server" "some-server"}))
+    [["Set-Cookie" "one"] ["serVer" "some-server"] ["set-cookie" "two"]]
+    {"set-cookie" ["one" "two"] "server" "some-server"}))
 
 (deftest ^{:integration true} t-streaming-response
   (run-server)
@@ -297,7 +297,7 @@
   (let [resp (request {:request-method :get :uri "/get-with-body"
                        :body (.getBytes "foo bar")})]
     (is (= 200 (:status resp)))
-    (is (= "foo bar" (String. (:body resp))))))
+    (is (= "foo bar" (String. (util/force-byte-array (:body resp)))))))
 
 (deftest ^{:integration true} head-with-body
   (run-server)
