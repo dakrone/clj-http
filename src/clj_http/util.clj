@@ -55,18 +55,25 @@
       (.close gos)
       (.toByteArray baos))))
 
-(defn inflate
-  "Returns a zlib inflate'd version of the given byte array."
+(defn- force-byte-array
+  "force b as byte array if it is an InputStream."
   [b]
-  (when b
+  (if (instance? java.io.InputStream b)
+    (IOUtils/toByteArray b)
+    b))
+
+(defn inflate
+  "Returns a zlib inflate'd version of the given byte array or InputStream."
+  [b]
+  (when-let [data-arr (force-byte-array b)]
     (try
-      (IOUtils/toByteArray (InflaterInputStream. (ByteArrayInputStream. b)))
-      ;; broken inflate implementation server-side,
+      (IOUtils/toByteArray (InflaterInputStream. (ByteArrayInputStream. data-arr)))
+      ;; broken inflate implementation server-side
       ;; see [http://stackoverflow.com/questions/3932117/handling-http
       ;; -contentencoding-deflate]
       (catch java.util.zip.ZipException e
         (IOUtils/toByteArray
-         (InflaterInputStream. (ByteArrayInputStream. b)
+         (InflaterInputStream. (ByteArrayInputStream. data-arr)
                                (java.util.zip.Inflater. true)))))))
 
 (defn deflate
