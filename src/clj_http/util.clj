@@ -60,7 +60,7 @@
   "force b as byte array if it is an InputStream."
   [b]
   (if (instance? java.io.InputStream b)
-    (IOUtils/toByteArray b)
+    (IOUtils/toByteArray ^java.io.InputStream b)
     b))
 
 (defn inflate

@@ -304,6 +304,7 @@
      weirdness around body streams and inflation
    - streams everywhere, all bodies coming out of core.clj are now streams, so
      {:as :stream} truly streams the response, keeping it out of memory
+   - remove some more reflection
 ** Released 0.7.3
 ** 2013-06-22
    - correctly close single client connection manager if {:as :stream} is used, fixes #142

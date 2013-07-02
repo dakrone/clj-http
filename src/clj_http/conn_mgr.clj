@@ -4,14 +4,15 @@
   (:import (java.security KeyStore)
            (java.security.cert X509Certificate)
            (javax.net.ssl SSLSession SSLSocket)
+           (org.apache.http.conn ClientConnectionManager)
+           (org.apache.http.conn.params ConnPerRouteBean)
            (org.apache.http.conn.ssl AllowAllHostnameVerifier SSLSocketFactory
                                      TrustStrategy X509HostnameVerifier)
            (org.apache.http.conn.scheme PlainSocketFactory
                                         SchemeRegistry Scheme)
            (org.apache.http.impl.conn BasicClientConnectionManager
                                       SchemeRegistryFactory)
-           (org.apache.http.impl.conn PoolingClientConnectionManager)
-           (org.apache.http.conn.params ConnPerRouteBean)))
+           (org.apache.http.impl.conn PoolingClientConnectionManager)))
 
 (def ^SSLSocketFactory insecure-socket-factory
   (SSLSocketFactory. (reify TrustStrategy
@@ -138,7 +139,7 @@
 
 (defn shutdown-manager
   "Define function to shutdown manager"
-  [manager]
+  [^ClientConnectionManager manager]
   (and manager (.shutdown manager)))
 
 (def ^{:dynamic true

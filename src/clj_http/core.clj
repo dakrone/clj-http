@@ -109,7 +109,7 @@
 
 (defn add-client-params!
   "Add various client params to the http-client object, if needed."
-  [http-client kvs]
+  [^DefaultHttpClient http-client kvs]
   (let [cookie-policy (:cookie-policy kvs)
         cookie-policy-name (str (type cookie-policy))
         kvs (dissoc kvs :cookie-policy)]
