@@ -1,5 +1,11 @@
 * Changelog
   List of user-visible changes that have gone into each release
+** 0.7.4
+   - merged https://github.com/dakrone/clj-http/pull/143 for fixing some
+     weirdness around body streams and inflation
+   - streams everywhere, all bodies coming out of core.clj are now streams, so
+     {:as :stream} truly streams the response, keeping it out of memory
+   - remove some more reflection
 ** 0.7.3
    - correctly close single client connection manager if {:as :stream} is used, fixes #142
    - merged https://github.com/dakrone/clj-http/pull/138 to preserve
