@@ -81,6 +81,16 @@
     (is (= ["http://foo.com" "http://foo.com/bat"] (:trace-redirects resp)))
     (is (= "/bat" (:uri (:req resp))))))
 
+(deftest redirect-without-location-header
+  (let [client (fn [req]
+                 {:status 302 :body "no redirection here"})
+        r-client (-> client client/wrap-url client/wrap-redirects)
+        resp (r-client {:server-name "foo.com" :url "http://foo.com"
+                        :request-method :get})]
+    (is (= 302 (:status resp)))
+    (is (= ["http://foo.com"] (:trace-redirects resp)))
+    (is (= "no redirection here" (:body resp)))))
+
 (deftest redirect-with-query-string
   (let [client (fn [req]
                  (if (= "foo.com" (:server-name req))
