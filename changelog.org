@@ -1,5 +1,8 @@
 * Changelog
   List of user-visible changes that have gone into each release
+** 0.7.5
+   - Only redirect if a "location" header is actually, present, avoiding an
+     NPE in the event it's missing. (fixes #145)
 ** 0.7.4
    - merged https://github.com/dakrone/clj-http/pull/143 for fixing some
      weirdness around body streams and inflation
@@ -305,6 +308,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Released 0.7.5
 ** 2013-07-10
    - Only redirect if a "location" header is actually, present, avoiding an
      NPE in the event it's missing. (fixes #145)
