@@ -426,7 +426,7 @@
 
 (deftest t-add-client-params
   (testing "Using add-client-params!"
-    (let [ps {"http.connection-manager.timeout" 100
+    (let [ps {"http.conn-manager.timeout" 100
               "http.socket.timeout" 250
               "http.protocol.allow-circular-redirects" false
               "http.protocol.version" HttpVersion/HTTP_1_0
