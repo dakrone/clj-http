@@ -308,6 +308,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2013-07-18
+   - merged https://github.com/dakrone/clj-http/pull/146 to correctly
+     reference parameter names
 ** Released 0.7.5
 ** 2013-07-10
    - Only redirect if a "location" header is actually, present, avoiding an

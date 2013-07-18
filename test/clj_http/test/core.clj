@@ -438,13 +438,14 @@
 
 ;; Regression, get notified if something changes
 (deftest ^{:integration true} t-known-client-params-are-unchanged
-  (let [params [
-        "http.socket.timeout"                     CoreConnectionPNames/SO_TIMEOUT
-        "http.connection.timeout"                 CoreConnectionPNames/CONNECTION_TIMEOUT
-        "http.protocol.version"                   CoreProtocolPNames/PROTOCOL_VERSION
-        "http.useragent"                          CoreProtocolPNames/USER_AGENT
-        "http.conn-manager.timeout"               ClientPNames/CONN_MANAGER_TIMEOUT
-        "http.protocol.allow-circular-redirects"  ClientPNames/ALLOW_CIRCULAR_REDIRECTS]]
+  (let [params ["http.socket.timeout" CoreConnectionPNames/SO_TIMEOUT
+                "http.connection.timeout"
+                CoreConnectionPNames/CONNECTION_TIMEOUT
+                "http.protocol.version" CoreProtocolPNames/PROTOCOL_VERSION
+                "http.useragent" CoreProtocolPNames/USER_AGENT
+                "http.conn-manager.timeout" ClientPNames/CONN_MANAGER_TIMEOUT
+                "http.protocol.allow-circular-redirects"
+                ClientPNames/ALLOW_CIRCULAR_REDIRECTS]]
     (doseq [[plaintext constant] (partition 2 params)]
       (is (= plaintext constant)))))
 

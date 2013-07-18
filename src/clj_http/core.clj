@@ -131,8 +131,8 @@
                         k (cond
                            (and (not= ClientPNames/CONN_MANAGER_TIMEOUT k)
                                 (instance? Long v))
-                                      (Integer. ^Long v)
-                            true v)))))
+                           (Integer. ^Long v)
+                           true v)))))
 
 
 (defn- coerce-body-entity
@@ -224,12 +224,13 @@
        (proxy [HttpRequestRetryHandler] []
          (retryRequest [e cnt context]
            (retry-handler e cnt context)))))
-    (add-client-params! http-client
-                        ;; merge in map of specified timeouts, to
-                        ;; support backward compatiblity.
-                        (merge {CoreConnectionPNames/SO_TIMEOUT socket-timeout
-                                CoreConnectionPNames/CONNECTION_TIMEOUT conn-timeout}
-                               client-params))
+    (add-client-params!
+     http-client
+     ;; merge in map of specified timeouts, to
+     ;; support backward compatiblity.
+     (merge {CoreConnectionPNames/SO_TIMEOUT socket-timeout
+             CoreConnectionPNames/CONNECTION_TIMEOUT conn-timeout}
+            client-params))
 
     (when-let [[user pass] digest-auth]
       (.setCredentials
