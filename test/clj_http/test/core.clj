@@ -8,14 +8,17 @@
             [cheshire.core :as json]
             [ring.adapter.jetty :as ring])
   (:import (java.io ByteArrayInputStream)
+           (org.apache.http.params CoreConnectionPNames CoreProtocolPNames)
+           (org.apache.http.conn.params ConnRoutePNames)
            (org.apache.http.message BasicHeader BasicHeaderIterator)
            (org.apache.http.client.methods HttpPost)
+           (org.apache.http.client.params CookiePolicy ClientPNames)
            (org.apache.http HttpResponse HttpConnection HttpVersion)
            (org.apache.http.protocol HttpContext ExecutionContext)
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.cookie CookieSpecFactory)
            (org.apache.http.impl.cookie BrowserCompatSpec)
-           (org.apache.http.client.params CookiePolicy ClientPNames)
+           (org.apache.http.client.params ClientPNames)
            (org.apache.http.cookie.params CookieSpecPNames)))
 
 (defn handler [req]
@@ -423,7 +426,7 @@
 
 (deftest t-add-client-params
   (testing "Using add-client-params!"
-    (let [ps {"http.connection-manager.timeout" 100
+    (let [ps {"http.conn-manager.timeout" 100
               "http.socket.timeout" 250
               "http.protocol.allow-circular-redirects" false
               "http.protocol.version" HttpVersion/HTTP_1_0
@@ -432,6 +435,18 @@
                               (core/add-client-params! ps)))]
       (doseq [[k v] ps]
         (is (= v (.getParameter setps k)))))))
+
+;; Regression, get notified if something changes
+(deftest ^{:integration true} t-known-client-params-are-unchanged
+  (let [params [
+        "http.socket.timeout"                     CoreConnectionPNames/SO_TIMEOUT
+        "http.connection.timeout"                 CoreConnectionPNames/CONNECTION_TIMEOUT
+        "http.protocol.version"                   CoreProtocolPNames/PROTOCOL_VERSION
+        "http.useragent"                          CoreProtocolPNames/USER_AGENT
+        "http.conn-manager.timeout"               ClientPNames/CONN_MANAGER_TIMEOUT
+        "http.protocol.allow-circular-redirects"  ClientPNames/ALLOW_CIRCULAR_REDIRECTS]]
+    (doseq [[plaintext constant] (partition 2 params)]
+      (is (= plaintext constant)))))
 
 ;; If you don't explicitly set a :cookie-policy, use
 ;; CookiePolicy/BROWSER_COMPATIBILITY

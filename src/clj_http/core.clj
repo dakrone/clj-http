@@ -10,6 +10,7 @@
                             HttpResponse Header HttpHost
                             HttpResponseInterceptor)
            (org.apache.http.auth UsernamePasswordCredentials AuthScope)
+           (org.apache.http.params CoreConnectionPNames)
            (org.apache.http.client HttpClient HttpRequestRetryHandler)
            (org.apache.http.client.methods HttpGet HttpHead HttpPatch HttpPut
                                            HttpPost HttpDelete HttpOptions
@@ -128,9 +129,10 @@
     (doseq [[k v] kvs]
       (set-client-param http-client
                         k (cond
-                           (and (not= "http.connection-manager.timeout" k)
-                                (instance? Long v)) (Integer. ^Long v)
-                                true v)))))
+                           (and (not= ClientPNames/CONN_MANAGER_TIMEOUT k)
+                                (instance? Long v))
+                                      (Integer. ^Long v)
+                            true v)))))
 
 
 (defn- coerce-body-entity
@@ -139,7 +141,7 @@
   [{:keys [as]} ^HttpEntity http-entity ^ClientConnectionManager conn-mgr]
   (when http-entity
     (proxy [FilterInputStream]
-        [(.getContent http-entity)]
+        [^InputStream (.getContent http-entity)]
       (close []
         (try
           (proxy-super close)
@@ -225,8 +227,8 @@
     (add-client-params! http-client
                         ;; merge in map of specified timeouts, to
                         ;; support backward compatiblity.
-                        (merge {"http.socket.timeout" socket-timeout
-                                "http.connection.timeout" conn-timeout}
+                        (merge {CoreConnectionPNames/SO_TIMEOUT socket-timeout
+                                CoreConnectionPNames/CONNECTION_TIMEOUT conn-timeout}
                                client-params))
 
     (when-let [[user pass] digest-auth]
