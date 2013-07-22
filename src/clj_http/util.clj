@@ -57,10 +57,11 @@
       (.toByteArray baos))))
 
 (defn force-byte-array
-  "force b as byte array if it is an InputStream."
+  "force b as byte array if it is an InputStream, also close the stream"
   [b]
   (if (instance? java.io.InputStream b)
-    (IOUtils/toByteArray ^java.io.InputStream b)
+    (try (IOUtils/toByteArray ^java.io.InputStream b)
+         (finally (.close ^java.io.InputStream b)))
     b))
 
 (defn inflate
