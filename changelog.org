@@ -308,6 +308,8 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2013-07-23
+   - add logging config for local testing only
 ** 2013-07-22
    - merged https://github.com/dakrone/clj-http/pull/149 to fix
      closing the stream when coerced to byte array

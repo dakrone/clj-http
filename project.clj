@@ -17,6 +17,8 @@
                  [org.clojure/tools.reader "0.7.4"
                   :exclusions [org.clojure/clojure]]]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.5.1"]
+                                  [org.clojure/tools.logging "0.2.6"]
+                                  [log4j "1.2.17"]
                                   [ring/ring-jetty-adapter "1.1.8"]
                                   [ring/ring-devel "1.1.8"]]}
              :1.2 {:dependencies [[org.clojure/clojure "1.2.1"]]}
