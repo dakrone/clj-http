@@ -1,5 +1,14 @@
 * Changelog
   List of user-visible changes that have gone into each release
+** 0.7.6
+   - add logging config for local testing only
+   - remove "content-encoding" header if the body is automatically
+     decompressed to allow for pass-through. If header is removed,
+     assoc :orig-content-encoding to response map.
+   - merged https://github.com/dakrone/clj-http/pull/149 to fix
+     closing the stream when coerced to byte array
+   - merged https://github.com/dakrone/clj-http/pull/146 to correctly
+     reference parameter names
 ** 0.7.5
    - Only redirect if a "location" header is actually, present, avoiding an
      NPE in the event it's missing. (fixes #145)
@@ -308,6 +317,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Released 0.7.6
 ** 2013-07-23
    - add logging config for local testing only
    - remove "content-encoding" header if the body is automatically
