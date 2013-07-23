@@ -217,7 +217,9 @@
                   :headers {"content-encoding" "gzip"}})
         c-client (client/wrap-decompression client)
         resp (c-client {})]
-    (is (= "foofoofoo" (util/utf8-string (:body resp))))))
+    (is (= "foofoofoo" (util/utf8-string (:body resp))))
+    (is (= "gzip" (:orig-content-encoding resp)))
+    (is (= nil (get-in resp [:headers "content-encoding"])))))
 
 (deftest apply-on-deflated
   (let [client (fn [req]
@@ -228,7 +230,35 @@
         c-client (client/wrap-decompression client)
         resp (c-client {})]
     (is (= "barbarbar" (-> resp :body util/force-byte-array util/utf8-string))
-        "string correctly inflated")))
+        "string correctly inflated")
+    (is (= "deflate" (:orig-content-encoding resp)))
+    (is (= nil (get-in resp [:headers "content-encoding"])))))
+
+(deftest t-disabled-body-decompression
+  (let [client (fn [req]
+                 (is (not= "gzip, deflate"
+                           (get-in req [:headers "accept-encoding"])))
+                 {:body (util/deflate (util/utf8-bytes "barbarbar"))
+                  :headers {"content-encoding" "deflate"}})
+        c-client (client/wrap-decompression client)
+        resp (c-client {:decompress-body false})]
+    (is (= (slurp (util/inflate (util/deflate (util/utf8-bytes "barbarbar"))))
+           (slurp (util/inflate (-> resp :body util/force-byte-array))))
+        "string not inflated")
+    (is (= nil (:orig-content-encoding resp)))
+    (is (= "deflate" (get-in resp [:headers "content-encoding"])))))
+
+(deftest t-weird-non-known-compression
+  (let [client (fn [req]
+                 (is (= "gzip, deflate"
+                        (get-in req [:headers "accept-encoding"])))
+                 {:body (util/utf8-bytes "foofoofoo")
+                  :headers {"content-encoding" "pig-latin"}})
+        c-client (client/wrap-decompression client)
+        resp (c-client {})]
+    (is (= "foofoofoo" (util/utf8-string (:body resp))))
+    (is (= "pig-latin" (:orig-content-encoding resp)))
+    (is (= "pig-latin" (get-in resp [:headers "content-encoding"])))))
 
 (deftest pass-on-non-compressed
   (let [c-client (client/wrap-decompression (fn [req] {:body "foo"}))

@@ -310,6 +310,9 @@
   the changelog for the next release
 ** 2013-07-23
    - add logging config for local testing only
+   - remove "content-encoding" header if the body is automatically
+     decompressed to allow for pass-through. If header is removed,
+     assoc :orig-content-encoding to response map.
 ** 2013-07-22
    - merged https://github.com/dakrone/clj-http/pull/149 to fix
      closing the stream when coerced to byte array

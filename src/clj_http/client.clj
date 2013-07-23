@@ -68,6 +68,20 @@
 (defn when-pos [v]
   (when (and v (pos? v)) v))
 
+(defn dissoc-in
+  "Dissociates an entry from a nested associative structure returning a new
+  nested structure. keys is a sequence of keys. Any empty maps that result
+  will not be present in the new structure."
+  [m [k & ks :as keys]]
+  (if ks
+    (if-let [nextmap (clojure.core/get m k)]
+      (let [newmap (dissoc-in nextmap ks)]
+        (if (seq newmap)
+          (assoc m k newmap)
+          (dissoc m k)))
+      m)
+    (dissoc m k)))
+
 (defn url-encode-illegal-characters
   "Takes a raw url path or query and url-encodes any illegal characters.
    Minimizes ambiguity by encoding space to %20."
@@ -215,13 +229,22 @@
 
 (defmethod decompress-body "gzip"
   [resp]
-  (update resp :body util/gunzip))
+  (-> resp
+      (update :body util/gunzip)
+      (assoc :orig-content-encoding (get-in resp [:headers "content-encoding"]))
+      (dissoc-in [:headers "content-encoding"])))
 
 (defmethod decompress-body "deflate"
   [resp]
-  (update resp :body util/inflate))
+  (-> resp
+      (update :body util/inflate)
+      (assoc :orig-content-encoding (get-in resp [:headers "content-encoding"]))
+      (dissoc-in [:headers "content-encoding"])))
 
-(defmethod decompress-body :default [resp] resp)
+(defmethod decompress-body :default [resp]
+  (assoc resp
+    :orig-content-encoding
+    (get-in resp [:headers "content-encoding"])))
 
 (defn wrap-decompression
   "Middleware handling automatic decompression of responses from web servers. If

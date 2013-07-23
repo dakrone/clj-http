@@ -247,20 +247,21 @@ can be specified:
 ;; Auto-decompression used: (google requires a user-agent to send gzip data)
 (def h {"User-Agent" "Mozilla/5.0 (Windows NT 6.1;) Gecko/20100101 Firefox/13.0.1"})
 (def resp (client/get "http://google.com" {:headers h}))
-(:headers resp)
-=> {"server" "gws",
-    "content-encoding" "gzip", ;; <= google sent response gzipped
-    "content-type" "text/html; charset=UTF-8",
-    "content-length" "26538",
-    "connection" "close"}
+(:orig-content-encoding resp)
+=> "gzip" ;; <= google sent response gzipped
 
 ;; and without decompression:
 (def resp2 (client/get "http://google.com" {:headers h :decompress-body false})
-(:headers resp2)
-=> {"server" "gws",
-    "content-type" "text/html; charset=UTF-8"
-    "connection" "close"}
+(:orig-content-encoding resp2)
+=> nil
 ```
+
+If clj-http decompresses something, the "content-encoding" header is
+removed from the headers (because the encoding is no longer
+true). This allows clj-http to be used as a pass-through proxy with
+ring. The original content-encoding is available as
+`:orig-content-encoding` in the response map if Auto-decompression is
+enabled.
 
 #### HTML Meta tag headers
 HTML 4.01 allows using the tag `<meta http-equiv="..." />` and HTML 5
