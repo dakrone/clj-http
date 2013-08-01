@@ -11,8 +11,10 @@
            (org.apache.http.conn.scheme PlainSocketFactory
                                         SchemeRegistry Scheme)
            (org.apache.http.impl.conn BasicClientConnectionManager
-                                      SchemeRegistryFactory)
-           (org.apache.http.impl.conn PoolingClientConnectionManager)))
+                                      PoolingClientConnectionManager
+                                      ProxySelectorRoutePlanner
+                                      SchemeRegistryFactory
+                                      SingleClientConnManager)))
 
 (def ^SSLSocketFactory insecure-socket-factory
   (SSLSocketFactory. (reify TrustStrategy
@@ -101,6 +103,10 @@
      registry timeout java.util.concurrent.TimeUnit/SECONDS)))
 
 (def dmcpr ConnPerRouteBean/DEFAULT_MAX_CONNECTIONS_PER_ROUTE)
+
+(defn reusable? [^ClientConnectionManager conn-mgr]
+  (not (or (instance? SingleClientConnManager conn-mgr)
+           (instance? BasicClientConnectionManager conn-mgr))))
 
 (defn make-reusable-conn-manager
   "Creates a default pooling connection manager with the specified options.
