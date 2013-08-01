@@ -24,9 +24,7 @@
            (org.apache.http.entity ByteArrayEntity StringEntity)
 
            (org.apache.http.impl.client DefaultHttpClient)
-           (org.apache.http.impl.conn BasicClientConnectionManager
-                                      SingleClientConnManager
-                                      ProxySelectorRoutePlanner)
+           (org.apache.http.impl.conn ProxySelectorRoutePlanner)
            (org.apache.http.impl.cookie BrowserCompatSpec)
            (org.apache.http.util EntityUtils)))
 
@@ -134,7 +132,6 @@
                            (Integer. ^Long v)
                            true v)))))
 
-
 (defn- coerce-body-entity
   "Coerce the http-entity from an HttpResponse to either a byte-array, or a
   stream that closes itself and the connection manager when closed."
@@ -146,9 +143,7 @@
         (try
           (proxy-super close)
           (finally
-            (when (or (instance? SingleClientConnManager conn-mgr)
-                      (instance? BasicClientConnectionManager conn-mgr))
-              ;;(println "Shutting down connection manager")
+            (when-not (conn/reusable? conn-mgr)
               (.shutdown conn-mgr))))))))
 
 (defn- print-debug!
@@ -254,8 +249,7 @@
          (proxy [HttpResponseInterceptor] []
            (process [resp ctx]
              (response-interceptor resp ctx)))))
-      (when (or (instance? SingleClientConnManager conn-mgr)
-                (instance? BasicClientConnectionManager conn-mgr))
+      (when-not (conn/reusable? conn-mgr)
         (.addHeader http-req "Connection" "close"))
       (doseq [[header-n header-v] headers]
         (if (coll? header-v)
@@ -301,5 +295,6 @@
                 (dissoc :save-request?))
             resp))
         (catch Throwable e
-          (.shutdown ^ClientConnectionManager conn-mgr)
+          (when-not (conn/reusable? conn-mgr)
+            (.shutdown ^ClientConnectionManager conn-mgr))
           (throw e))))))
