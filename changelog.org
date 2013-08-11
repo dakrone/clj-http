@@ -317,6 +317,10 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2013-08-10
+   - bump main deps
+   - merged https://github.com/dakrone/clj-http/pull/151 to prevent
+     shutting down a reusable connection manager when an error occurs
 ** Released 0.7.6
 ** 2013-07-23
    - add logging config for local testing only
