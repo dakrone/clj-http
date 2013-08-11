@@ -9,18 +9,18 @@
   :dependencies [[org.apache.httpcomponents/httpcore "4.2.4"]
                  [org.apache.httpcomponents/httpclient "4.2.5"]
                  [org.apache.httpcomponents/httpmime "4.2.5"]
-                 [commons-codec "1.7"]
+                 [commons-codec "1.8"]
                  [commons-io "2.4"]
                  [slingshot "0.10.3" :exclusions [org.clojure/clojure]]
                  [cheshire "5.2.0"]
                  [crouton "0.1.1" :exclusions [org.clojure/clojure]]
-                 [org.clojure/tools.reader "0.7.4"
+                 [org.clojure/tools.reader "0.7.5"
                   :exclusions [org.clojure/clojure]]]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.5.1"]
                                   [org.clojure/tools.logging "0.2.6"]
                                   [log4j "1.2.17"]
-                                  [ring/ring-jetty-adapter "1.1.8"]
-                                  [ring/ring-devel "1.1.8"]]}
+                                  [ring/ring-jetty-adapter "1.2.0"]
+                                  [ring/ring-devel "1.2.0"]]}
              :1.2 {:dependencies [[org.clojure/clojure "1.2.1"]]}
              :1.3 {:dependencies [[org.clojure/clojure "1.3.0"]]}
              :1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}}
