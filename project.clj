@@ -6,7 +6,7 @@
             :distribution :repo}
   :global-vars {*warn-on-reflection* true}
   :min-lein-version "2.0.0"
-  :dependencies [[org.apache.httpcomponents/httpcore "4.2.4"]
+  :dependencies [[org.apache.httpcomponents/httpcore "4.3"]
                  [org.apache.httpcomponents/httpclient "4.2.5"]
                  [org.apache.httpcomponents/httpmime "4.2.5"]
                  [commons-codec "1.8"]
