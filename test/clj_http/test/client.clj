@@ -344,7 +344,11 @@
 (deftest apply-on-query-params
   (is-applied client/wrap-query-params
               {:query-params {"foo" "bar" "dir" "<<"}}
-              {:query-string "foo=bar&dir=%3C%3C"}))
+              {:query-string "foo=bar&dir=%3C%3C"})
+  (is-applied client/wrap-query-params
+              {:query-string "foo=1"
+               :query-params {"foo" ["2" "3"]}}
+              {:query-string "foo=1&foo=2&foo=3"}))
 
 (deftest pass-on-no-query-params
   (is-passed client/wrap-query-params
