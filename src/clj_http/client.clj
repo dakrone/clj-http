@@ -497,8 +497,12 @@
   (fn [{:keys [query-params] :as req}]
     (if query-params
       (client (-> req (dissoc :query-params)
-                  (assoc :query-string
-                    (generate-query-string query-params))))
+                  (update-in [:query-string]
+                             (fn [old-query-string new-query-string]
+                               (if-not (empty? old-query-string)
+                                 (str old-query-string "&" new-query-string)
+                                 new-query-string))
+                             (generate-query-string query-params))))
       (client req))))
 
 (defn basic-auth-value [basic-auth]
