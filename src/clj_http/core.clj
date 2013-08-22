@@ -36,16 +36,16 @@
    will be a vector containing the values in the order they appeared
    in the headers."
   ([#^HeaderIterator headers]
-      (parse-headers headers #(.toLowerCase %)))
+     (parse-headers headers #(.toLowerCase %)))
   ([#^HeaderIterator headers name-transform]
-      (->> (iterator-seq headers)
-           (map (fn [#^Header h] [(name-transform (.getName h)) (.getValue h)]))
-           (group-by first)
-           (map (fn [[name headers]]
-                  (let [values (map second headers)]
-                    [name (let [[value & tail] values]
-                            (if tail values value))])))
-           (into {}))))
+     (->> (iterator-seq headers)
+          (map (fn [#^Header h] [(name-transform (.getName h)) (.getValue h)]))
+          (group-by first)
+          (map (fn [[name headers]]
+                 (let [values (map second headers)]
+                   [name (let [[value & tail] values]
+                           (if tail values value))])))
+          (into {}))))
 
 (defn set-client-param [#^HttpClient client key val]
   (when-not (nil? val)
@@ -276,7 +276,10 @@
               resp (merge {:status (.getStatusCode (.getStatusLine http-resp))
                            :headers (parse-headers (.headerIterator http-resp))
                            :body (coerce-body-entity req http-entity conn-mgr)}
-                          (if raw-headers {:raw-headers (parse-headers (.headerIterator http-resp) identity)}))]
+                          (when raw-headers
+                            {:raw-headers
+                             (parse-headers (.headerIterator http-resp)
+                                            identity)}))]
           (if save-request?
             (-> resp
                 (assoc :request req)
