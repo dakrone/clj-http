@@ -35,15 +35,17 @@
    If a name appears more than once (like `set-cookie`) then the value
    will be a vector containing the values in the order they appeared
    in the headers."
-  [#^HeaderIterator headers]
-  (->> (iterator-seq headers)
-       (map (fn [#^Header h] [(.toLowerCase (.getName h)) (.getValue h)]))
-       (group-by first)
-       (map (fn [[name headers]]
-              (let [values (map second headers)]
-                [name (let [[value & tail] values]
-                        (if tail values value))])))
-       (into {})))
+  ([#^HeaderIterator headers]
+      (parse-headers headers #(.toLowerCase %)))
+  ([#^HeaderIterator headers name-transform]
+      (->> (iterator-seq headers)
+           (map (fn [#^Header h] [(name-transform (.getName h)) (.getValue h)]))
+           (group-by first)
+           (map (fn [[name headers]]
+                  (let [values (map second headers)]
+                    [name (let [[value & tail] values]
+                            (if tail values value))])))
+           (into {}))))
 
 (defn set-client-param [#^HttpClient client key val]
   (when-not (nil? val)
@@ -202,7 +204,8 @@
   [{:keys [request-method scheme server-name server-port uri query-string
            headers body multipart debug debug-body socket-timeout conn-timeout
            save-request? proxy-host proxy-port as cookie-store retry-handler
-           response-interceptor digest-auth connection-manager client-params]
+           response-interceptor digest-auth connection-manager client-params
+           raw-headers]
     :as req}]
   (let [^ClientConnectionManager conn-mgr
         (or connection-manager
@@ -270,9 +273,10 @@
       (try
         (let [http-resp (.execute http-client http-req)
               http-entity (.getEntity http-resp)
-              resp {:status (.getStatusCode (.getStatusLine http-resp))
-                    :headers (parse-headers (.headerIterator http-resp))
-                    :body (coerce-body-entity req http-entity conn-mgr)}]
+              resp (merge {:status (.getStatusCode (.getStatusLine http-resp))
+                           :headers (parse-headers (.headerIterator http-resp))
+                           :body (coerce-body-entity req http-entity conn-mgr)}
+                          (if raw-headers {:raw-headers (parse-headers (.headerIterator http-resp) identity)}))]
           (if save-request?
             (-> resp
                 (assoc :request req)

@@ -466,6 +466,28 @@ response map. This is particularly useful for paging RESTful APIs:
     :last {:href "https://api.github.com/gists?page=22884"}}
 ```
 
+### Raw headers
+By default clj-http forces lowercase header names when parsing the
+response. If you want to preserve the exact response headers (with their
+original casing), you can use the `:raw-headers` option on your request.
+When you add this option you'll receive both the usual downcased headers
+_and_ an additional map of raw headers in your response.
+
+```clojure
+(client/get "http://google.com" {:raw-headers true})
+=> {:status 200
+    :headers {"date" "Sun, 01 Aug 2010 07:03:49 GMT"
+              "cache-control" "private, max-age=0"
+              "content-type" "text/html; charset=ISO-8859-1"
+              ...}
+    :raw-headers {"Date" "Sun, 01 Aug 2010 07:03:49 GMT"
+                  "Cache-Control" "private, max-age=0"
+                  "Content-Type" "text/html; charset=ISO-8859-1"
+                  ...}
+    ...
+
+```
+
 ### Using persistent connections
 clj-http can use persistent connections to speed up connections if
 multiple connections are being used:

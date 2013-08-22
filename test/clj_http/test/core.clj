@@ -144,7 +144,13 @@
 (deftest ^{:integration true} returns-arbitrary-headers
   (run-server)
   (let [resp (request {:request-method :get :uri "/get"})]
-    (is (string? (get-in resp [:headers "date"])))))
+    (is (string? (get-in resp [:headers "date"])))
+    (is (nil? (get-in resp [:headers "Date"])))))
+
+(deftest ^{:integration true} returns-raw-headers
+  (run-server)
+  (let [resp (request {:request-method :get :uri "/get" :raw-headers true})]
+    (is (string? (get-in resp [:raw-headers "Date"])))))
 
 (deftest ^{:integration true} returns-status-on-exceptional-responses
   (run-server)
