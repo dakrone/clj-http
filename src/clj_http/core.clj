@@ -89,6 +89,11 @@
         (set-client-param client ConnRoutePNames/FORCED_ROUTE route)))
     request))
 
+(defn set-up-proxy-auth! [^DefaultHttpClient client ^String user ^String pass]
+  (let [authscope (AuthScope. "localhost" 8080)
+        creds (UsernamePasswordCredentials. user pass)]
+    (.setCredentials (.getCredentialsProvider client) authscope creds)))
+
 (defn cookie-spec
   "Create an instance of a
   org.apache.http.impl.cookie.BrowserCompatSpec with a validate
@@ -203,9 +208,9 @@
    the clj-http uses ByteArrays for the bodies."
   [{:keys [request-method scheme server-name server-port uri query-string
            headers body multipart debug debug-body socket-timeout conn-timeout
-           save-request? proxy-host proxy-port as cookie-store retry-handler
-           response-interceptor digest-auth connection-manager client-params
-           raw-headers]
+           save-request? proxy-host proxy-port proxy-user proxy-pass as
+           cookie-store retry-handler response-interceptor digest-auth
+           connection-manager client-params raw-headers]
     :as req}]
   (let [^ClientConnectionManager conn-mgr
         (or connection-manager
@@ -246,6 +251,8 @@
                                                     http-url body)
                                   proxy-host
                                   proxy-port)]
+      (when proxy-user
+        (set-up-proxy-auth! http-client proxy-user proxy-pass))
       (when response-interceptor
         (.addResponseInterceptor
          http-client
