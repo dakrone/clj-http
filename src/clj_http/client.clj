@@ -255,8 +255,13 @@
     (if (= false (:decompress-body req))
       (client req)
       (let [req-c (update req :headers assoc "accept-encoding" "gzip, deflate")
-            resp-c (client req-c)]
-        (decompress-body resp-c)))))
+            resp-c (-> (client req-c)
+                       (decompress-body))]
+        (if-let [len (get-in resp-c [:headers "content-length"])]
+          (-> resp-c
+              (assoc :orig-content-length len)
+              (assoc-in [:headers "content-length"] (count (:body resp-c))))
+          resp-c)))))
 
 ;; Multimethods for coercing body type to the :as key
 (defmulti coerce-response-body (fn [req _] (:as req)))

@@ -214,12 +214,15 @@
                  (is (= "gzip, deflate"
                         (get-in req [:headers "accept-encoding"])))
                  {:body (util/gzip (util/utf8-bytes "foofoofoo"))
-                  :headers {"content-encoding" "gzip"}})
+                  :headers {"content-encoding" "gzip"
+                            "content-length" 9999}})
         c-client (client/wrap-decompression client)
         resp (c-client {})]
     (is (= "foofoofoo" (util/utf8-string (:body resp))))
     (is (= "gzip" (:orig-content-encoding resp)))
-    (is (= nil (get-in resp [:headers "content-encoding"])))))
+    (is (= nil (get-in resp [:headers "content-encoding"])))
+    (is (= 9999 (:orig-content-length resp)))
+    (is (= (count "foofoofoo") (get-in resp [:headers "content-length"])))))
 
 (deftest apply-on-deflated
   (let [client (fn [req]
