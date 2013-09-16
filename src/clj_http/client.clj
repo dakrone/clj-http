@@ -556,7 +556,7 @@
 (defn wrap-form-params
   "Middleware wrapping the submission or form parameters."
   [client]
-  (fn [{:keys [form-params content-type request-method]
+  (fn [{:keys [form-params content-type request-method json-opts]
         :or {content-type :x-www-form-urlencoded}
         :as req}]
     (if (and form-params (#{:post :put} request-method))
@@ -564,7 +564,7 @@
                   (dissoc :form-params)
                   (assoc :content-type (content-type-value content-type)
                          :body (if (and (= content-type :json) json-enabled?)
-                                 (json-encode form-params)
+                                 (json-encode form-params json-opts)
                                  (generate-query-string form-params)))))
       (client req))))
 
