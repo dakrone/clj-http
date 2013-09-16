@@ -440,6 +440,15 @@
                               :form-params params})]
       (is (= (json/encode params) (:body resp)))
       (is (= "application/json" (:content-type resp)))
+      (is (not (contains? resp :form-params))))
+    (let [param-client (client/wrap-form-params identity)
+          params {:param1 (java.util.Date. (long 0))}
+          resp (param-client {:request-method :put
+                              :content-type :json
+                              :form-params params
+                              :json-opts {:date-format "yyyy-MM-dd"}})]
+      (is (= (json/encode params {:date-format "yyyy-MM-dd"}) (:body resp)))
+      (is (= "application/json" (:content-type resp)))
       (is (not (contains? resp :form-params)))))
   (testing "Ensure it does not affect GET requests"
     (let [param-client (client/wrap-form-params identity)
