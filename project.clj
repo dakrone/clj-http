@@ -7,14 +7,14 @@
   :global-vars {*warn-on-reflection* true}
   :min-lein-version "2.0.0"
   :dependencies [[org.apache.httpcomponents/httpcore "4.3"]
-                 [org.apache.httpcomponents/httpclient "4.2.5"]
-                 [org.apache.httpcomponents/httpmime "4.2.5"]
+                 [org.apache.httpcomponents/httpclient "4.3"]
+                 [org.apache.httpcomponents/httpmime "4.3"]
                  [commons-codec "1.8"]
                  [commons-io "2.4"]
                  [slingshot "0.10.3" :exclusions [org.clojure/clojure]]
                  [cheshire "5.2.0"]
                  [crouton "0.1.1" :exclusions [org.clojure/clojure]]
-                 [org.clojure/tools.reader "0.7.5"
+                 [org.clojure/tools.reader "0.7.7"
                   :exclusions [org.clojure/clojure]]]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.5.1"]
                                   [org.clojure/tools.logging "0.2.6"]

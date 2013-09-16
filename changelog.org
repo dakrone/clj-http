@@ -320,6 +320,7 @@
 ** 2013-09-16
    - merged https://github.com/dakrone/clj-http/pull/162 to pass
      through json opts for form-param encoding
+   - bumped dependencies
 ** 2013-08-22
    - merged https://github.com/dakrone/clj-http/pull/156 to add
      `:raw-headers` option to return an additional

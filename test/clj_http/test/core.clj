@@ -181,7 +181,7 @@
     ;; wait for jetty to start up completely
     (Thread/sleep 3000)
     (try
-      (is (thrown? javax.net.ssl.SSLPeerUnverifiedException
+      (is (thrown? sun.security.provider.certpath.SunCertPathBuilderException
                    (client/request {:scheme :https
                                     :server-name "localhost"
                                     :server-port 18082
@@ -481,8 +481,7 @@
   (run-server)
   (try
     (is (thrown? org.apache.http.conn.ConnectTimeoutException
-                 (client/request {:scheme :https
-                                  :insecure? true
+                 (client/request {:scheme :http
                                   :server-name "www.writequit.org"
                                   :server-port 80
                                   :request-method :get :uri "/"
