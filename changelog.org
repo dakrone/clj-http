@@ -317,6 +317,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2013-09-16
+   - merged https://github.com/dakrone/clj-http/pull/162 to pass
+     through json opts for form-param encoding
 ** 2013-08-22
    - merged https://github.com/dakrone/clj-http/pull/156 to add
      `:raw-headers` option to return an additional
