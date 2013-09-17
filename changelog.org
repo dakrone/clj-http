@@ -1,5 +1,19 @@
 * Changelog
   List of user-visible changes that have gone into each release
+** 0.7.7
+   - merged https://github.com/dakrone/clj-http/pull/162 to pass
+     through json opts for form-param encoding
+   - bumped dependencies
+   - fix #159 - issue with :decode-body-headers introduced with
+     streaming bodies
+   - merged https://github.com/dakrone/clj-http/pull/156 to add
+     `:raw-headers` option to return an additional
+     untouched :raw-headers map
+   - merged https://github.com/dakrone/clj-http/pull/154 to handle
+     query-params not clobbering query-params in the URL string
+   - bump main deps
+   - merged https://github.com/dakrone/clj-http/pull/151 to prevent
+     shutting down a reusable connection manager when an error occurs
 ** 0.7.6
    - add logging config for local testing only
    - remove "content-encoding" header if the body is automatically
@@ -317,6 +331,7 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** Relesead 0.7.7
 ** 2013-09-16
    - merged https://github.com/dakrone/clj-http/pull/162 to pass
      through json opts for form-param encoding
@@ -785,4 +800,3 @@
 
 * TODO
 ** Allow header names as keywords
-** Handler HTML 5 body charset header
