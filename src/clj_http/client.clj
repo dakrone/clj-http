@@ -427,11 +427,24 @@
     (if (:decode-body-headers req)
       (if crouton-enabled?
         (let [resp (client req)
-              b (:body resp)
-              body-map (parse-html b)
-              additional-headers (get-headers-from-body body-map)]
-          (assoc resp :headers (merge (:headers resp)
-                                      additional-headers)))
+              ^String orig-body (slurp (:body resp))
+              body-stream1 (java.io.ByteArrayInputStream.
+                            (.getBytes orig-body "UTF-8"))
+              body-map (parse-html body-stream1)
+              additional-headers (get-headers-from-body body-map)
+              typestring (get-in resp [:headers "content-type"])
+              charset-str (clojure.core/get additional-headers
+                                            "content-type" "")
+              charset (if-let [charset (->> charset-str
+                                            (re-find #"charset=(.*)")
+                                            second)]
+                        charset
+                        "UTF-8")
+              body-stream2 (java.io.ByteArrayInputStream.
+                            (.getBytes orig-body charset))]
+          (assoc resp
+            :headers (merge (:headers resp) additional-headers)
+            :body body-stream2))
         (client req))
       (client req))))
 
