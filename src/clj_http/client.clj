@@ -380,7 +380,7 @@
        (instance? InputStream body)
        (client (-> req (assoc :body
                          (if length
-                           (InputStreamEntity. ^InputStream body ^long length)
+                           (InputStreamEntity. ^InputStream body length)
                            (maybe-wrap-entity
                             req
                             (InputStreamEntity. ^InputStream body -1))))))
