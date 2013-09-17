@@ -380,9 +380,10 @@
        (instance? InputStream body)
        (client (-> req (assoc :body
                          (if length
-                           (InputStreamEntity. body length)
+                           (InputStreamEntity. ^InputStream body ^long length)
                            (maybe-wrap-entity
-                            req (InputStreamEntity. body -1))))))
+                            req
+                            (InputStreamEntity. ^InputStream body -1))))))
 
        (instance? (Class/forName "[B") body)
        (client (-> req (assoc :body (maybe-wrap-entity
@@ -441,7 +442,7 @@
                         charset
                         "UTF-8")
               body-stream2 (java.io.ByteArrayInputStream.
-                            (.getBytes orig-body charset))]
+                            (.getBytes ^String orig-body ^String charset))]
           (assoc resp
             :headers (merge (:headers resp) additional-headers)
             :body body-stream2))

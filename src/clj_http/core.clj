@@ -36,7 +36,7 @@
    will be a vector containing the values in the order they appeared
    in the headers."
   ([#^HeaderIterator headers]
-     (parse-headers headers #(.toLowerCase %)))
+     (parse-headers headers #(.toLowerCase ^String %)))
   ([#^HeaderIterator headers name-transform]
      (->> (iterator-seq headers)
           (map (fn [#^Header h] [(name-transform (.getName h)) (.getValue h)]))
