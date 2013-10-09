@@ -80,13 +80,13 @@
 (defn maybe-force-proxy [^DefaultHttpClient client
                          ^HttpEntityEnclosingRequestBase request
                          proxy-host proxy-port]
-  (let [uri (.getURI request)]
-    (when (and (nil? (#{"localhost" "127.0.0.1"} (.getHost uri))) proxy-host)
-      (let [target (HttpHost. (.getHost uri) (.getPort uri) (.getScheme uri))
-            route (HttpRoute. target nil (HttpHost. proxy-host proxy-port)
-                              (.. client getConnectionManager getSchemeRegistry
-                                  (getScheme target) isLayered))]
-        (set-client-param client ConnRoutePNames/FORCED_ROUTE route)))
+  (when proxy-host
+    (let [uri (.getURI request)
+          target (HttpHost. (.getHost uri) (.getPort uri) (.getScheme uri))
+          route (HttpRoute. target nil (HttpHost. proxy-host proxy-port)
+                            (.. client getConnectionManager getSchemeRegistry
+                                (getScheme target) isLayered))]
+      (set-client-param client ConnRoutePNames/FORCED_ROUTE route))
     request))
 
 (defn cookie-spec
