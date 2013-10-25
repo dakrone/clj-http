@@ -154,11 +154,11 @@
   request."
   [client {:keys [uri url scheme server-name server-port] :as req}
    {:keys [trace-redirects body] :as resp}]
-  (try (.close body) (catch Exception _))
   (let [url (or url (str (name scheme) "://" server-name
                          (when server-port (str ":" server-port)) uri))]
     (if-let [raw-redirect (get-in resp [:headers "location"])]
       (let [redirect (str (URL. (URL. url) raw-redirect))]
+        (try (.close body) (catch Exception _))
         ((wrap-redirects client) (-> req
                                      (merge (parse-url redirect))
                                      (dissoc :query-params)
