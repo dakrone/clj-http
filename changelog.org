@@ -331,6 +331,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2013-10-25
+   - Close the body of a response in wrap-redirects since all bodies
+     are streams now. Otherwise, the body is kept open indefinitely.
 ** Relesead 0.7.7
 ** 2013-09-16
    - merged https://github.com/dakrone/clj-http/pull/162 to pass

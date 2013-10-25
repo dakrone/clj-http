@@ -153,7 +153,8 @@
   header exists (bad server!), returns the response without following the
   request."
   [client {:keys [uri url scheme server-name server-port] :as req}
-   {:keys [trace-redirects] :as resp}]
+   {:keys [trace-redirects body] :as resp}]
+  (try (.close body) (catch Exception _))
   (let [url (or url (str (name scheme) "://" server-name
                          (when server-port (str ":" server-port)) uri))]
     (if-let [raw-redirect (get-in resp [:headers "location"])]
