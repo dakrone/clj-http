@@ -5,16 +5,18 @@
             [clj-http.multipart :as mp])
   (:import (java.io ByteArrayOutputStream File FilterInputStream InputStream)
            (java.net URI)
-           (org.apache.http HeaderIterator HttpRequest HttpEntity
+           (org.apache.http HeaderIterator HttpEntity
                             HttpEntityEnclosingRequest
                             HttpResponse Header HttpHost
                             HttpResponseInterceptor)
            (org.apache.http.auth UsernamePasswordCredentials AuthScope)
            (org.apache.http.params CoreConnectionPNames)
            (org.apache.http.client HttpClient HttpRequestRetryHandler)
-           (org.apache.http.client.methods HttpGet HttpHead HttpPatch HttpPut
-                                           HttpPost HttpDelete HttpOptions
-                                           HttpEntityEnclosingRequestBase)
+           (org.apache.http.client.methods HttpDelete
+                                           HttpEntityEnclosingRequestBase
+                                           HttpGet HttpHead HttpOptions
+                                           HttpPatch HttpPost HttpPut
+                                           HttpUriRequest)
            (org.apache.http.client.params CookiePolicy ClientPNames)
            (org.apache.http.conn ClientConnectionManager)
            (org.apache.http.conn.routing HttpRoute)
@@ -239,12 +241,12 @@
                         uri
                         (when query-string (str "?" query-string)))
           req (assoc req :http-url http-url)
-          #^HttpRequest http-req (maybe-force-proxy
-                                  http-client
-                                  (http-request-for request-method
-                                                    http-url body)
-                                  proxy-host
-                                  proxy-port)]
+          #^HttpUriRequest http-req (maybe-force-proxy
+                                     http-client
+                                     (http-request-for request-method
+                                                       http-url body)
+                                     proxy-host
+                                     proxy-port)]
       (when response-interceptor
         (.addResponseInterceptor
          http-client
