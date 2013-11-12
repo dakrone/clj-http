@@ -28,7 +28,6 @@
            (org.apache.http.impl.cookie BrowserCompatSpec)
            (org.apache.http.util EntityUtils)))
 
-
 (defn parse-headers
   "Takes a HeaderIterator and returns a map of names to values.
 

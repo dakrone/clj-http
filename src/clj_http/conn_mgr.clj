@@ -72,7 +72,6 @@
     (doto (SchemeRegistryFactory/createDefault)
       (.register (Scheme. "https" 443 factory)))))
 
-
 (defn ^BasicClientConnectionManager make-regular-conn-manager
   [{:keys [insecure? keystore trust-store] :as req}]
   (cond
@@ -82,7 +81,6 @@
    insecure? (BasicClientConnectionManager. insecure-scheme-registry)
 
    :else (BasicClientConnectionManager.)))
-
 
 ;; need the fully qualified class name because this fn is later used in a
 ;; macro from a different ns
