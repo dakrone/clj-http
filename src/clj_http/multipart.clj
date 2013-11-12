@@ -30,7 +30,6 @@
    :else
    (throw (Exception. "Multipart file body must contain at least :content"))))
 
-
 (defn make-input-stream-body
   "Create an InputStreamBody object from the given map, requiring at least
   :content and :name. If no :length is specified, clj-http will use
@@ -57,7 +56,6 @@
    (throw (Exception. (str "Multipart input stream body must contain "
                            "at least :content and :name")))))
 
-
 (defn make-byte-array-body
   "Create a ByteArrayBody object from the given map, requiring at least :content
   and :name."
@@ -72,7 +70,6 @@
    :else
    (throw (Exception. (str "Multipart byte array body must contain "
                            "at least :content and :name")))))
-
 
 (defn make-string-body
   "Create a StringBody object from the given map, requiring at least :content.
@@ -92,7 +89,6 @@
    :else
    (throw (Exception. (str "Multipart string body must contain "
                            "at least :content")))))
-
 
 (defn create-multipart-entity
   "Takes a multipart vector of maps and creates a MultipartEntity with each

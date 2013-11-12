@@ -42,11 +42,11 @@
     [:get "/json-bad"]
     {:status 400 :body "{\"foo\":\"bar\"}"}
     [:get "/redirect"]
-    {:status 302 :headers
-     {"location" "http://localhost:18080/redirect"}}
+    {:status 302
+     :headers {"location" "http://localhost:18080/redirect"}}
     [:get "/redirect-to-get"]
-    {:status 302 :headers
-     {"location" "http://localhost:18080/get"}}
+    {:status 302
+     :headers {"location" "http://localhost:18080/get"}}
     [:head "/head"]
     {:status 200}
     [:get "/content-type"]
