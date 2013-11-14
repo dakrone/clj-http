@@ -40,7 +40,6 @@
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
                         (client/delete nil))))
 
-
 (defn is-passed [middleware req]
   (let [client (middleware identity)]
     (is (= req (client req)))))
@@ -374,7 +373,6 @@
   (is-passed client/wrap-oauth
              {:uri "/foo"}))
 
-
 (deftest apply-on-method
   (let [m-client (client/wrap-method identity)
         echo (m-client {:key :val :method :post})]
@@ -458,7 +456,6 @@
                                             :param2 "value2"}})]
       (is (= "untouched" (:body resp)))
       (is (not (contains? resp :content-type)))))
-
   (testing "with no form params"
     (let [param-client (client/wrap-form-params identity)
           resp (param-client {:body "untouched"})]
