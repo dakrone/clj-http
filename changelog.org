@@ -331,6 +331,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2013-12-01
+   - Added the `proxy-ignore-hosts` option to allow specifying a list
+     of hosts where a proxy should be ignored
 ** 2013-11-14
    - merged https://github.com/dakrone/clj-http/pull/166 to fix some
      small whitespace and reflection stuff

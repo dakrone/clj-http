@@ -80,9 +80,9 @@
 
 (defn maybe-force-proxy [^DefaultHttpClient client
                          ^HttpEntityEnclosingRequestBase request
-                         proxy-host proxy-port]
+                         proxy-host proxy-port proxy-ignore-hosts]
   (let [uri (.getURI request)]
-    (when (and (nil? (#{"localhost" "127.0.0.1"} (.getHost uri))) proxy-host)
+    (when (and (nil? ((set proxy-ignore-hosts) (.getHost uri))) proxy-host)
       (let [target (HttpHost. (.getHost uri) (.getPort uri) (.getScheme uri))
             route (HttpRoute. target nil (HttpHost. proxy-host proxy-port)
                               (.. client getConnectionManager getSchemeRegistry
@@ -204,9 +204,9 @@
    the clj-http uses ByteArrays for the bodies."
   [{:keys [request-method scheme server-name server-port uri query-string
            headers body multipart debug debug-body socket-timeout conn-timeout
-           save-request? proxy-host proxy-port as cookie-store retry-handler
-           response-interceptor digest-auth connection-manager client-params
-           raw-headers]
+           save-request? proxy-host proxy-ignore-hosts proxy-port as
+           cookie-store retry-handler response-interceptor digest-auth
+           connection-manager client-params raw-headers]
     :as req}]
   (let [^ClientConnectionManager conn-mgr
         (or connection-manager
@@ -241,12 +241,15 @@
                         uri
                         (when query-string (str "?" query-string)))
           req (assoc req :http-url http-url)
+          proxy-ignore-hosts (or proxy-ignore-hosts
+                                 #{"localhost" "127.0.0.1"})
           #^HttpUriRequest http-req (maybe-force-proxy
                                      http-client
                                      (http-request-for request-method
                                                        http-url body)
                                      proxy-host
-                                     proxy-port)]
+                                     proxy-port
+                                     proxy-ignore-hosts)]
       (when response-interceptor
         (.addResponseInterceptor
          http-client

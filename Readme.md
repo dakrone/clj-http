@@ -386,6 +386,10 @@ per-request proxies can be specified with the `proxy-host` and
 (client/get "http://foo.com" {:proxy-host "127.0.0.1" :proxy-port 8118})
 ```
 
+You can also specify the `proxy-ignore-hosts` parameter with a list of
+hosts where the proxy should be ignored. By default this list is
+`#{"localhost" "127.0.0.1"}`.
+
 ### Keystores and Trust-stores
 
 When sending a request, you can specify your own keystore/trust-store
