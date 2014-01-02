@@ -1,13 +1,15 @@
 (ns clj-http.conn-mgr
   "Utility methods for Scheme registries and HTTP connection managers"
   (:require [clojure.java.io :as io])
-  (:import (java.security KeyStore)
+  (:import (java.net Socket Proxy Proxy$Type InetSocketAddress)
+           (java.security KeyStore)
            (java.security.cert X509Certificate)
            (javax.net.ssl SSLSession SSLSocket)
            (org.apache.http.conn ClientConnectionManager)
            (org.apache.http.conn.params ConnPerRouteBean)
-           (org.apache.http.conn.ssl AllowAllHostnameVerifier SSLSocketFactory
-                                     TrustStrategy X509HostnameVerifier)
+           (org.apache.http.conn.ssl AllowAllHostnameVerifier SSLSocketFactory 
+                                     TrustStrategy X509HostnameVerifier
+                                     SSLContexts)
            (org.apache.http.conn.scheme PlainSocketFactory
                                         SchemeRegistry Scheme)
            (org.apache.http.impl.conn BasicClientConnectionManager
@@ -41,6 +43,39 @@
                          nil)
                        (^boolean verify [_ ^String _ ^SSLSession _]
                          true))))
+
+;; New Generic Socket Factories that can support socks proxy
+(defn SSLGenericSocketFactory
+  "Given a function that returns a new socket, create an SSLSocketFactory the will use that socket"
+  (^SSLSocketFactory [socket-factory]
+    (proxy
+      [SSLSocketFactory] [(SSLContexts/createDefault)]
+      (connectSocket [socket remoteAddress localAddress params]
+        (let [^SSLSocketFactory this this] ; avoid reflection
+         (proxy-super connectSocket (socket-factory) remoteAddress localAddress params))))))
+
+(defn PlainGenericSocketFactory
+  "Given a Function that returns a new socket, create a PlainSocketFactory that will use that socket"
+  (^PlainSocketFactory [socket-factory]
+    (proxy
+      [PlainSocketFactory] []
+      (createSocket [params]
+        (socket-factory)))))
+
+(defn socks-proxied-socket
+  "Create a Socket proxied through socks, using the given hostname and port"
+  [^String hostname ^Integer port]
+  (Socket. (Proxy. Proxy$Type/SOCKS (InetSocketAddress. hostname port))))
+
+(defn make-socks-proxied-conn-manager
+  "Given an optional hostname and a port, create a connection manager that's proxied using a SOCKS proxy"
+  [^String hostname ^Integer port]
+  (let [socket-factory #(socks-proxied-socket hostname port)
+        reg (doto
+              (SchemeRegistry.)
+              (.register (Scheme. "https" 443 (SSLGenericSocketFactory socket-factory)))
+              (.register (Scheme. "http" 80 (PlainGenericSocketFactory socket-factory))))]
+  (PoolingClientConnectionManager. reg)))
 
 (def insecure-scheme-registry
   (doto (SchemeRegistry.)

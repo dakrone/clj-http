@@ -390,6 +390,26 @@ You can also specify the `proxy-ignore-hosts` parameter with a list of
 hosts where the proxy should be ignored. By default this list is
 `#{"localhost" "127.0.0.1"}`.
 
+### SOCKS Proxies
+
+A SOCKS proxy can be used by creating a proxied connection manager
+with `clj-http.conn-mgr/make-socks-proxied-conn-manager`. Then using
+that connection manager in the request.
+
+For example if you wanted to connect to a local socks proxy on port `8081` you would:
+
+```clojure
+(ns foo.bar
+  (:require [clj-http.client :as client]
+            [clj-http.conn-mgr :as conn-mgr]))
+
+(client/get
+  "https://google.com"
+  {:connection-manager (conn-mgr/make-socks-proxied-conn-manager "localhost" 8081)})
+```
+
+You can also store the proxied connection manager and reuse it later.
+
 ### Keystores and Trust-stores
 
 When sending a request, you can specify your own keystore/trust-store
