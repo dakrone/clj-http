@@ -16,25 +16,25 @@
 
 (deftest test-compact-map
   (are [map expected]
-       (is (= expected (compact-map map)))
-       {:a nil :b 2 :c 3 :d nil}
-       {:b 2 :c 3}
-       {:comment nil :domain "example.com" :path "/" :ports [80 8080] :value 1}
-       {:domain "example.com" :path "/" :ports [80 8080] :value 1}))
+    (is (= expected (compact-map map)))
+    {:a nil :b 2 :c 3 :d nil}
+    {:b 2 :c 3}
+    {:comment nil :domain "example.com" :path "/" :ports [80 8080] :value 1}
+    {:domain "example.com" :path "/" :ports [80 8080] :value 1}))
 
 (deftest test-decode-cookie
   (are [set-cookie-str expected]
-       (is (= expected (decode-cookie set-cookie-str)))
-       nil nil
-       "" nil
-       "example-cookie=example-value;Path=/"
-       ["example-cookie"
-        {:discard true :path "/" :secure false
-         :value "example-value" :version 0}]
-       "example-cookie=example-value;Domain=.example.com;Path=/"
-       ["example-cookie"
-        {:discard true :domain ".example.com" :secure false :path "/"
-         :value "example-value" :version 0}]))
+    (is (= expected (decode-cookie set-cookie-str)))
+    nil nil
+    "" nil
+    "example-cookie=example-value;Path=/"
+    ["example-cookie"
+     {:discard true :path "/" :secure false
+      :value "example-value" :version 0}]
+    "example-cookie=example-value;Domain=.example.com;Path=/"
+    ["example-cookie"
+     {:discard true :domain ".example.com" :secure false :path "/"
+      :value "example-value" :version 0}]))
 
 (deftest test-decode-cookies-with-seq
   (let [cookies (decode-cookies [(str "ring-session=" session)])]
@@ -61,53 +61,53 @@
 
 (deftest test-decode-cookie-header
   (are [response expected]
-       (is (= expected (decode-cookie-header response)))
-       {:headers {"set-cookie" "a=1"}}
-       {:cookies {"a" {:discard true :path "/" :secure false
-                       :value "1" :version 0}} :headers {}}
-       {:headers {"set-cookie"
-                  (str "ring-session=" session ";Path=/")}}
-       {:cookies {"ring-session"
-                  {:discard true :path "/" :secure false
-                   :value session :version 0}} :headers {}}))
+    (is (= expected (decode-cookie-header response)))
+    {:headers {"set-cookie" "a=1"}}
+    {:cookies {"a" {:discard true :path "/" :secure false
+                    :value "1" :version 0}} :headers {}}
+    {:headers {"set-cookie"
+               (str "ring-session=" session ";Path=/")}}
+    {:cookies {"ring-session"
+               {:discard true :path "/" :secure false
+                :value session :version 0}} :headers {}}))
 
 (deftest test-encode-cookie
   (are [cookie expected]
-       (is (= expected (encode-cookie cookie)))
-       [:a {:value "b"}] "a=b"
-       ["a" {:value "b"}] "a=b"
-       ["example-cookie"
-        {:domain ".example.com" :path "/" :value "example-value"}]
-       "example-cookie=example-value"
-       ["ring-session" {:value session}]
-       (str "ring-session=" session)))
+    (is (= expected (encode-cookie cookie)))
+    [:a {:value "b"}] "a=b"
+    ["a" {:value "b"}] "a=b"
+    ["example-cookie"
+     {:domain ".example.com" :path "/" :value "example-value"}]
+    "example-cookie=example-value"
+    ["ring-session" {:value session}]
+    (str "ring-session=" session)))
 
 (deftest test-encode-cookies
   (are [cookie expected]
-       (is (= expected (encode-cookies cookie)))
-       {:a {:value "b"} :c {:value "d"} :e {:value "f"}}
-       "a=b;c=d;e=f"
-       {"a" {:value "b"} "c" {:value "d"} "e" {:value "f"}}
-       "a=b;c=d;e=f"
-       {"example-cookie"
-        {:domain ".example.com" :path "/" :value "example-value"}}
-       "example-cookie=example-value"
-       {"example-cookie"
-        {:domain ".example.com" :path "/" :value "example-value"
-         :discard true :version 0}}
-       "example-cookie=example-value"
-       {"ring-session" {:value session}}
-       (str "ring-session=" session)))
+    (is (= expected (encode-cookies cookie)))
+    {:a {:value "b"} :c {:value "d"} :e {:value "f"}}
+    "a=b;c=d;e=f"
+    {"a" {:value "b"} "c" {:value "d"} "e" {:value "f"}}
+    "a=b;c=d;e=f"
+    {"example-cookie"
+     {:domain ".example.com" :path "/" :value "example-value"}}
+    "example-cookie=example-value"
+    {"example-cookie"
+     {:domain ".example.com" :path "/" :value "example-value"
+      :discard true :version 0}}
+    "example-cookie=example-value"
+    {"ring-session" {:value session}}
+    (str "ring-session=" session)))
 
 (deftest test-encode-cookie-header
   (are [request expected]
-       (is (= expected (encode-cookie-header request)))
-       {:cookies {"a" {:value "1"}}}
-       {:headers {"Cookie" "a=1"}}
-       {:cookies
-        {"example-cookie" {:domain ".example.com" :path "/"
-                           :value "example-value"}}}
-       {:headers {"Cookie" "example-cookie=example-value"}}))
+    (is (= expected (encode-cookie-header request)))
+    {:cookies {"a" {:value "1"}}}
+    {:headers {"Cookie" "a=1"}}
+    {:cookies
+     {"example-cookie" {:domain ".example.com" :path "/"
+                        :value "example-value"}}}
+    {:headers {"Cookie" "example-cookie=example-value"}}))
 
 (deftest test-to-basic-client-cookie-with-simple-cookie
   (let [cookie (to-basic-client-cookie
