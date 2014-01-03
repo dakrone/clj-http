@@ -1,5 +1,16 @@
+# leiningen .gitignore defaults
+/target
+/classes
+/checkouts
+pom.xml
+pom.xml.asc
+*.jar
+*.class
+/.lein-*
+/.nrepl-port
+
+# custom from here on out
 build
-target
 lib
 *.dot
 
@@ -7,11 +18,8 @@ lib
 syntax: glob
 creds.clj
 Manifest.txt
-pom.xml
 aws.clj
 *.ser
-*.class
-*.jar
 *~
 *.bak
 *.off
@@ -23,10 +31,6 @@ aws.clj
 *.project
 *.settings
 *.pyc
-.lein-failures
-/.lein-deps-sum
-.lein-repl-history
 docs/*
 doc
-pom.xml.asc
 http.log
