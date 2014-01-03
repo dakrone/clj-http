@@ -340,8 +340,9 @@
   the changelog for the next release
 ** 2014-01-03
 - bump dependencies to their latest
-- Merge https://github.com/dakrone/clj-http/pull/172 to update .gitignore file
+- Merged https://github.com/dakrone/clj-http/pull/172 to update .gitignore file
   and clean up whitespace for new clojure-mode
+- Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
 ** Released 0.7.8
 ** 2013-12-07
    - bump dependencies

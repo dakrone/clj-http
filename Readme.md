@@ -403,9 +403,9 @@ For example if you wanted to connect to a local socks proxy on port `8081` you w
   (:require [clj-http.client :as client]
             [clj-http.conn-mgr :as conn-mgr]))
 
-(client/get
-  "https://google.com"
-  {:connection-manager (conn-mgr/make-socks-proxied-conn-manager "localhost" 8081)})
+(client/get "https://google.com"
+            {:connection-manager
+             (conn-mgr/make-socks-proxied-conn-manager "localhost" 8081)})
 ```
 
 You can also store the proxied connection manager and reuse it later.
