@@ -513,7 +513,7 @@
     (is (not (client/conflict? {:status 201})))
     (is (not (client/conflict? {:status 404})))))
 
-(deftest test-wrap-headers
+(deftest test-wrap-lower-case-headers
   (is (= {:status 404} ((client/wrap-lower-case-headers
                          (fn [r] r)) {:status 404})))
   (is (= {:headers {"content-type" "application/json"}}

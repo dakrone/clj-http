@@ -1,6 +1,7 @@
 (ns clj-http.client
   "Batteries-included HTTP client."
   (:use [clj-http.cookies :only [wrap-cookies]]
+        [clj-http.headers :only [wrap-header-map]]
         [clj-http.links :only [wrap-links]]
         [slingshot.slingshot :only [throw+]]
         [clojure.stacktrace :only [root-cause]]
@@ -664,7 +665,7 @@
   requests."}
   default-middleware
   [wrap-request-timing
-   wrap-lower-case-headers
+   wrap-header-map
    wrap-query-params
    wrap-basic-auth
    wrap-oauth

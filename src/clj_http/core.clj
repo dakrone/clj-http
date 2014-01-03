@@ -2,6 +2,7 @@
   "Core HTTP request/response implementation."
   (:require [clojure.pprint]
             [clj-http.conn-mgr :as conn]
+            [clj-http.headers :as headers]
             [clj-http.multipart :as mp])
   (:import (java.io ByteArrayOutputStream File FilterInputStream InputStream)
            (java.net URI)
@@ -36,17 +37,18 @@
    If a name appears more than once (like `set-cookie`) then the value
    will be a vector containing the values in the order they appeared
    in the headers."
-  ([#^HeaderIterator headers]
-     (parse-headers headers #(.toLowerCase ^String %)))
-  ([#^HeaderIterator headers name-transform]
-     (->> (iterator-seq headers)
-          (map (fn [#^Header h] [(name-transform (.getName h)) (.getValue h)]))
-          (group-by first)
-          (map (fn [[name headers]]
-                 (let [values (map second headers)]
-                   [name (let [[value & tail] values]
-                           (if tail values value))])))
-          (into {}))))
+  [#^HeaderIterator headers & [use-header-maps-in-response?]]
+  (if-not use-header-maps-in-response?
+    (->> (headers/header-iterator-seq headers)
+         (map (fn [[k v]]
+                [(.toLowerCase ^String k) v]))
+         (reduce (fn [hs [k v]]
+                   (headers/assoc-join hs k v))
+                 {}))
+    (->> (headers/header-iterator-seq headers)
+         (reduce (fn [hs [k v]]
+                   (headers/assoc-join hs k v))
+                 (headers/header-map)))))
 
 (defn set-client-param [#^HttpClient client key val]
   (when-not (nil? val)
@@ -209,7 +211,7 @@
            headers body multipart debug debug-body socket-timeout conn-timeout
            save-request? proxy-host proxy-ignore-hosts proxy-port as
            cookie-store retry-handler response-interceptor digest-auth
-           connection-manager client-params raw-headers]
+           connection-manager client-params use-header-maps-in-response?]
     :as req}]
   (let [^ClientConnectionManager conn-mgr
         (or connection-manager
@@ -280,13 +282,10 @@
       (try
         (let [http-resp (.execute http-client http-req)
               http-entity (.getEntity http-resp)
-              resp (merge {:status (.getStatusCode (.getStatusLine http-resp))
-                           :headers (parse-headers (.headerIterator http-resp))
-                           :body (coerce-body-entity req http-entity conn-mgr)}
-                          (when raw-headers
-                            {:raw-headers
-                             (parse-headers (.headerIterator http-resp)
-                                            identity)}))]
+              resp {:status (.getStatusCode (.getStatusLine http-resp))
+                    :headers (parse-headers (.headerIterator http-resp)
+                                            use-header-maps-in-response?)
+                    :body (coerce-body-entity req http-entity conn-mgr)}]
           (if save-request?
             (-> resp
                 (assoc :request req)
