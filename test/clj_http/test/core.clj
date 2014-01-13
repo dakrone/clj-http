@@ -39,6 +39,9 @@
     [:get "/json"]
     {:status 200 :body "{\"foo\":\"bar\"}"
      :headers {"content-type" "application/json"}}
+    [:get "/json-array"]
+    {:status 200 :body "[\"foo\", \"bar\"]"
+     :headers {"content-type" "application/json"}}
     [:get "/json-bad"]
     {:status 400 :body "{\"foo\":\"bar\"}"}
     [:get "/redirect"]
@@ -328,6 +331,7 @@
 (deftest ^{:integration true} t-json-output-coercion
   (run-server)
   (let [resp (client/get (localhost "/json") {:as :json})
+        resp-array (client/get (localhost "/json-array") {:as :json-strict})
         resp-str (client/get (localhost "/json")
                              {:as :json :coerce :exceptional})
         resp-auto (client/get (localhost "/json") {:as :auto})
@@ -341,11 +345,18 @@
                                     :coerce :unexceptional})]
     (is (= 200
            (:status resp)
+           (:status resp-array)
            (:status resp-str)
            (:status resp-auto)))
     (is (= {:foo "bar"}
            (:body resp)
            (:body resp-auto)))
+    (is (= ["foo", "bar"]
+           (:body resp-array)))
+    ;; XXX I don't like that explicit typechecking,
+    ;; but ("foo" "bar") and ["foo" "bar"] compare as equal above.
+    (is (= clojure.lang.PersistentVector
+           (type (:body resp-array))))
     (is (= "{\"foo\":\"bar\"}" (:body resp-str)))
     (is (= 400
            (:status bad-resp)
