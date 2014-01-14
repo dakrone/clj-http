@@ -353,10 +353,8 @@
            (:body resp-auto)))
     (is (= ["foo", "bar"]
            (:body resp-array)))
-    ;; XXX I don't like that explicit typechecking,
-    ;; but ("foo" "bar") and ["foo" "bar"] compare as equal above.
-    (is (= clojure.lang.PersistentVector
-           (type (:body resp-array))))
+    ;; '("foo" "bar") and ["foo" "bar"] compare as equal with =.
+    (is (vector? (:body resp-array)))
     (is (= "{\"foo\":\"bar\"}" (:body resp-str)))
     (is (= 400
            (:status bad-resp)
