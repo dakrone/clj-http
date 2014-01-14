@@ -62,6 +62,12 @@
   {:pre [json-enabled?]}
   (apply (ns-resolve (symbol "cheshire.core") (symbol "decode")) args))
 
+(defn ^:dynamic json-decode-strict
+  "Resolve and apply cheshire's json decoding dynamically (with lazy parsing disabled)."
+  [& args]
+  {:pre [json-enabled?]}
+  (apply (ns-resolve (symbol "cheshire.core") (symbol "decode-strict")) args))
+
 (defn update [m k f & args]
   (assoc m k (apply f (m k) args)))
 
@@ -273,29 +279,34 @@
           (assoc resp :body (java.io.ByteArrayInputStream. body)))))
 
 (defn coerce-json-body
-  [{:keys [coerce]} {:keys [body status] :as resp} keyword? & [charset]]
+  [{:keys [coerce]} {:keys [body status] :as resp} keyword? strict? & [charset]]
   (let [^String charset (or charset "UTF-8")
-        body (util/force-byte-array body)]
+        body (util/force-byte-array body)
+        decode-func (if strict? json-decode-strict json-decode)]
     (if json-enabled?
       (cond
        (= coerce :always)
-       (assoc resp :body (json-decode (String. #^"[B" body charset) keyword?))
+       (assoc resp :body (decode-func (String. #^"[B" body charset) keyword?))
 
        (and (unexceptional-status? status)
             (or (nil? coerce) (= coerce :unexceptional)))
-       (assoc resp :body (json-decode (String. #^"[B" body charset) keyword?))
+       (assoc resp :body (decode-func (String. #^"[B" body charset) keyword?))
 
        (and (not (unexceptional-status? status)) (= coerce :exceptional))
-       (assoc resp :body (json-decode (String. #^"[B" body charset) keyword?))
+       (assoc resp :body (decode-func (String. #^"[B" body charset) keyword?))
 
        :else (assoc resp :body (String. #^"[B" body charset)))
       (assoc resp :body (String. #^"[B" body charset)))))
 
 (defmethod coerce-response-body :json [req resp]
-  (coerce-json-body req resp true))
+  (coerce-json-body req resp true false))
+
+;; XXX Will we have a use case where we want strict JSON with string keys?
+(defmethod coerce-response-body :json-strict [req resp]
+  (coerce-json-body req resp true true))
 
 (defmethod coerce-response-body :json-string-keys [req resp]
-  (coerce-json-body req resp false))
+  (coerce-json-body req resp false false))
 
 (defmethod coerce-response-body :clojure [_ {:keys [body] :as resp}]
   (let [body (util/force-byte-array body)]
@@ -325,8 +336,9 @@
      (do
        (if-let [charset (second (re-find #"charset=(.*)"
                                          (str typestring)))]
-         (coerce-json-body req resp true charset)
-         (coerce-json-body req resp true "UTF-8")))
+         ;; Defaulting to lazy parsing w/ symbol keys.
+         (coerce-json-body req resp true false charset)
+         (coerce-json-body req resp true false "UTF-8")))
 
      :else
      (coerce-response-body {:as :default} resp))))

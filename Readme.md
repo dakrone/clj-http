@@ -209,6 +209,7 @@ The client transparently accepts and decompresses the `gzip` and
 
 ;; Coerce as json
 (client/get "http://site.com/foo.json" {:as :json})
+(client/get "http://site.com/foo.json" {:as :json-strict})
 (client/get "http://site.com/foo.json" {:as :json-string-keys})
 
 ;; Coerce as a clojure datastructure

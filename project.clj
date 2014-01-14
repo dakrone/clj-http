@@ -13,7 +13,7 @@
                  [commons-codec "1.9"]
                  [commons-io "2.4"]
                  [slingshot "0.10.3"]
-                 [cheshire "5.3.0"]
+                 [cheshire "5.3.1"]
                  [crouton "0.1.1"]
                  [org.clojure/tools.reader "0.8.3"]]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.5.1"]
