@@ -421,7 +421,7 @@
                                      :http-conn conn})))})]
     (is (= 200 status))
     (is (= 2 (count @saved-ctx)))
-    (is (count trace-redirects) (count @saved-ctx))
+    (is (= (count trace-redirects) (count @saved-ctx)))
     (is (every? #(= 18080 (:remote-port %)) @saved-ctx))
     (is (every? #(instance? HttpConnection (:http-conn %)) @saved-ctx))))
 
