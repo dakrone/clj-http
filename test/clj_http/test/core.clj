@@ -477,7 +477,7 @@
 
 ;; If you set a :cookie-policy, the name of the policy is registered
 ;; as (str (type cookie-policy))
-(deftest t-add-client-params-default-cookie-policy
+(deftest t-add-client-params-cookie-policy
   (testing "Using add-client-params! to get an explicitly set :cookie-policy"
     (let [setps (.getParams (doto (DefaultHttpClient.)
                               (core/add-client-params!
