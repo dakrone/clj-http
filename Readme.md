@@ -7,6 +7,8 @@ This library has taken over from mmcgrana's clj-http. Please send a
 pull request or open an issue if you have any problems
 
 [![Continuous Integration status](https://secure.travis-ci.org/dakrone/clj-http.png)](http://travis-ci.org/dakrone/clj-http)
+[![Dependency Status](https://www.versioneye.com/clojure/clj-http:clj-http/0.7.8/badge.png)](https://www.versioneye.com/clojure/clj-http:clj-http/0.7.8)
+
 
 [Annotated source](http://dakrone.github.com/clj-http/)
 
