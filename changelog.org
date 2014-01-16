@@ -338,6 +338,10 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2014-01-15
+- Merged https://github.com/dakrone/clj-http/pull/175 to add {:as :json-strict}
+  for output coercion
+- Added {:as :json-strict-string-keys} output coercion
 ** 2014-01-03
 - bump dependencies to their latest
 - Merged https://github.com/dakrone/clj-http/pull/172 to update .gitignore file

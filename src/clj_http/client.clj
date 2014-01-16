@@ -301,8 +301,10 @@
 (defmethod coerce-response-body :json [req resp]
   (coerce-json-body req resp true false))
 
-;; XXX Will we have a use case where we want strict JSON with string keys?
 (defmethod coerce-response-body :json-strict [req resp]
+  (coerce-json-body req resp true true))
+
+(defmethod coerce-response-body :json-strict-string-keys [req resp]
   (coerce-json-body req resp true true))
 
 (defmethod coerce-response-body :json-string-keys [req resp]
