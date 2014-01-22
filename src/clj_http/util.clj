@@ -58,7 +58,7 @@
 
 (defn force-byte-array
   "force b as byte array if it is an InputStream, also close the stream"
-  [b]
+  ^bytes [b]
   (if (instance? java.io.InputStream b)
     (try (IOUtils/toByteArray ^java.io.InputStream b)
          (finally (.close ^java.io.InputStream b)))
