@@ -98,7 +98,7 @@
         (.load keystore is (.toCharArray keystore-pass))
         keystore))))
 
-(defn get-keystore-scheme-registry
+(defn ^SchemeRegistry get-keystore-scheme-registry
   [{:keys [keystore keystore-type keystore-pass
            trust-store trust-store-type trust-store-pass insecure?]}]
   (let [ks (get-keystore keystore keystore-type keystore-pass)
@@ -144,7 +144,7 @@
   (not (or (instance? SingleClientConnManager conn-mgr)
            (instance? BasicClientConnectionManager conn-mgr))))
 
-(defn make-reusable-conn-manager
+(defn ^PoolingClientConnectionManager make-reusable-conn-manager
   "Creates a default pooling connection manager with the specified options.
 
   The following options are supported:

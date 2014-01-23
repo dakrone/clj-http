@@ -13,7 +13,8 @@
            (org.apache.http.message BasicHeader BasicHeaderIterator)
            (org.apache.http.client.methods HttpPost)
            (org.apache.http.client.params CookiePolicy ClientPNames)
-           (org.apache.http HttpResponse HttpConnection HttpVersion)
+           (org.apache.http HttpResponse HttpConnection HttpInetConnection
+                            HttpVersion)
            (org.apache.http.protocol HttpContext ExecutionContext)
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.cookie CookieSpecFactory)
@@ -414,7 +415,8 @@
          (localhost "/redirect-to-get")
          {:response-interceptor
           (fn [^HttpResponse resp ^HttpContext ctx]
-            (let [conn (.getAttribute ctx ExecutionContext/HTTP_CONNECTION)]
+            (let [^HttpInetConnection conn (.getAttribute ctx
+                                        ExecutionContext/HTTP_CONNECTION)]
               (swap! saved-ctx conj {:remote-port (.getRemotePort conn)
                                      :http-conn conn})))})]
     (is (= 200 status))
@@ -480,7 +482,7 @@
     (let [setps (.getParams (doto (DefaultHttpClient.)
                               (core/add-client-params!
                                {:cookie-policy (constantly nil)})))]
-      (is (.startsWith (.getParameter setps ClientPNames/COOKIE_POLICY)
+      (is (.startsWith ^String (.getParameter setps ClientPNames/COOKIE_POLICY)
                        "class ")))))
 
 

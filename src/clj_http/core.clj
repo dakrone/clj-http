@@ -84,7 +84,8 @@
   (let [uri (.getURI request)]
     (when (and (nil? ((set proxy-ignore-hosts) (.getHost uri))) proxy-host)
       (let [target (HttpHost. (.getHost uri) (.getPort uri) (.getScheme uri))
-            route (HttpRoute. target nil (HttpHost. proxy-host proxy-port)
+            route (HttpRoute. target nil (HttpHost. ^String proxy-host
+                                                    (int proxy-port))
                               (.. client getConnectionManager getSchemeRegistry
                                   (getScheme target) isLayered))]
         (set-client-param client ConnRoutePNames/FORCED_ROUTE route)))
@@ -144,7 +145,9 @@
         [^InputStream (.getContent http-entity)]
       (close []
         (try
-          (proxy-super close)
+          ; Eliminate the reflection warning from proxy-super
+          (let [^InputStream this this]
+            (proxy-super close))
           (finally
             (when-not (conn/reusable? conn-mgr)
               (.shutdown conn-mgr))))))))

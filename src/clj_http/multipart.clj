@@ -13,7 +13,7 @@
 
 (defn make-file-body
   "Create a FileBody object from the given map, requiring at least :content"
-  [{:keys [name mime-type content encoding]}]
+  [{:keys [name ^String mime-type ^File content ^String encoding]}]
   (cond
    (and name mime-type content encoding)
    (FileBody. content name mime-type encoding)
@@ -35,7 +35,7 @@
   :content and :name. If no :length is specified, clj-http will use
   chunked transfer-encoding, if :length is specified, clj-http will
   workaround things be proxying the InputStreamBody to return a length."
-  [{:keys [name mime-type content length]}]
+  [{:keys [^String name ^String mime-type ^InputStream content length]}]
   (cond
    (and content name length)
    (if mime-type
@@ -59,7 +59,7 @@
 (defn make-byte-array-body
   "Create a ByteArrayBody object from the given map, requiring at least :content
   and :name."
-  [{:keys [name mime-type content]}]
+  [{:keys [^String name ^String mime-type ^bytes content]}]
   (cond
    (and content name mime-type)
    (ByteArrayBody. content mime-type name)
@@ -75,7 +75,7 @@
   "Create a StringBody object from the given map, requiring at least :content.
   If :encoding is specified, it will be created using the Charset for
   that encoding."
-  [{:keys [mime-type content encoding]}]
+  [{:keys [mime-type ^String content encoding]}]
   (cond
    (and content mime-type encoding)
    (StringBody. content mime-type (Charset/forName encoding))
