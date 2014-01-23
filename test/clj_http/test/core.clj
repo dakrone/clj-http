@@ -13,9 +13,9 @@
            (org.apache.http.message BasicHeader BasicHeaderIterator)
            (org.apache.http.client.methods HttpPost)
            (org.apache.http.client.params CookiePolicy ClientPNames)
-           (org.apache.http HttpResponse HttpConnection HttpVersion)
+           (org.apache.http HttpResponse HttpConnection HttpInetConnection
+                            HttpVersion)
            (org.apache.http.protocol HttpContext ExecutionContext)
-           (org.apache.http.impl SocketHttpClientConnection)
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.cookie CookieSpecFactory)
            (org.apache.http.impl.cookie BrowserCompatSpec)
@@ -415,7 +415,7 @@
          (localhost "/redirect-to-get")
          {:response-interceptor
           (fn [^HttpResponse resp ^HttpContext ctx]
-            (let [^SocketHttpClientConnection conn (.getAttribute ctx
+            (let [^HttpInetConnection conn (.getAttribute ctx
                                         ExecutionContext/HTTP_CONNECTION)]
               (swap! saved-ctx conj {:remote-port (.getRemotePort conn)
                                      :http-conn conn})))})]
