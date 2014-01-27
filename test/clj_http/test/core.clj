@@ -415,8 +415,8 @@
          (localhost "/redirect-to-get")
          {:response-interceptor
           (fn [^HttpResponse resp ^HttpContext ctx]
-            (let [^HttpInetConnection conn (.getAttribute ctx
-                                        ExecutionContext/HTTP_CONNECTION)]
+            (let [^HttpInetConnection conn
+                  (.getAttribute ctx ExecutionContext/HTTP_CONNECTION)]
               (swap! saved-ctx conj {:remote-port (.getRemotePort conn)
                                      :http-conn conn})))})]
     (is (= 200 status))
