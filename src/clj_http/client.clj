@@ -63,7 +63,8 @@
   (apply (ns-resolve (symbol "cheshire.core") (symbol "decode")) args))
 
 (defn ^:dynamic json-decode-strict
-  "Resolve and apply cheshire's json decoding dynamically (with lazy parsing disabled)."
+  "Resolve and apply cheshire's json decoding dynamically (with lazy parsing
+  disabled)."
   [& args]
   {:pre [json-enabled?]}
   (apply (ns-resolve (symbol "cheshire.core") (symbol "decode-strict")) args))
