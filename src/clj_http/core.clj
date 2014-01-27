@@ -145,7 +145,7 @@
         [^InputStream (.getContent http-entity)]
       (close []
         (try
-          ; Eliminate the reflection warning from proxy-super
+          ;; Eliminate the reflection warning from proxy-super
           (let [^InputStream this this]
             (proxy-super close))
           (finally
