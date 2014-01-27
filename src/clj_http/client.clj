@@ -159,7 +159,7 @@
   header exists (bad server!), returns the response without following the
   request."
   [client {:keys [uri url scheme server-name server-port] :as req}
-   {:keys [trace-redirects body] :as resp}]
+   {:keys [trace-redirects ^InputStream body] :as resp}]
   (let [url (or url (str (name scheme) "://" server-name
                          (when server-port (str ":" server-port)) uri))]
     (if-let [raw-redirect (get-in resp [:headers "location"])]
@@ -395,7 +395,7 @@
        (instance? InputStream body)
        (client (-> req (assoc :body
                          (if length
-                           (InputStreamEntity. ^InputStream body length)
+                           (InputStreamEntity. ^InputStream body (long length))
                            (maybe-wrap-entity
                             req
                             (InputStreamEntity. ^InputStream body -1))))))

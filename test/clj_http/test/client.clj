@@ -8,7 +8,8 @@
             [cheshire.core :as json])
   (:import (java.net UnknownHostException)
            (java.util Arrays)
-           (java.io ByteArrayInputStream)))
+           (java.io ByteArrayInputStream)
+           (org.apache.http HttpEntity)))
 
 (def base-req
   {:scheme :http
@@ -307,8 +308,8 @@
   (let [i-client (client/wrap-input-coercion identity)
         resp (i-client {:body "foo"})
         resp2 (i-client {:body "foo2" :body-encoding "ASCII"})
-        data (slurp (.getContent (:body resp)))
-        data2 (slurp (.getContent (:body resp2)))]
+        data (slurp (.getContent ^HttpEntity (:body resp)))
+        data2 (slurp (.getContent ^HttpEntity (:body resp2)))]
     (is (= "UTF-8" (:character-encoding resp)))
     (is (= "foo" data))
     (is (= "ASCII" (:character-encoding resp2)))
@@ -322,9 +323,11 @@
   (let [i-client (client/wrap-input-coercion identity)
         resp1 (i-client {:body (ByteArrayInputStream. (util/utf8-bytes "foo"))})
         resp2 (i-client {:body (ByteArrayInputStream. (util/utf8-bytes "foo"))
-                         :length 3})]
-    (is (= -1 (-> resp1 :body .getContentLength)))
-    (is (= 3 (-> resp2 :body .getContentLength)))))
+                         :length 3})
+        ^HttpEntity body1 (:body resp1)
+        ^HttpEntity body2 (:body resp2)]
+    (is (= -1 (.getContentLength body1)))
+    (is (= 3 (.getContentLength body2)))))
 
 (deftest apply-on-content-type
   (is-applied client/wrap-content-type
@@ -524,7 +527,7 @@
                              (fn [r] (Thread/sleep 15) r)) {})))))
 
 (deftest t-wrap-additional-header-parsing
-  (let [text (slurp (resource "header-test.html"))
+  (let [^String text (slurp (resource "header-test.html"))
         client (fn [req] {:body (.getBytes text)})
         new-client (client/wrap-additional-header-parsing client)
         resp (new-client {:decode-body-headers true})
@@ -536,7 +539,7 @@
     (is (nil? (:headers resp2)))))
 
 (deftest t-wrap-additional-header-parsing-html5
-  (let [text (slurp (resource "header-html5-test.html"))
+  (let [^String text (slurp (resource "header-html5-test.html"))
         client (fn [req] {:body (.getBytes text)})
         new-client (client/wrap-additional-header-parsing client)
         resp (new-client {:decode-body-headers true})]
