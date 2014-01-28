@@ -338,6 +338,8 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2014-01-28
+- Merged https://github.com/dakrone/clj-http/pull/181 to fix some tests
 ** 2014-01-27
 - Merged https://github.com/dakrone/clj-http/pull/178 to eliminate test
   reflection
