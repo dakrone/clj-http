@@ -531,3 +531,6 @@
   (run-server)
   (is (thrown? Exception (client/get (localhost "/clojure-bad") {:as :clojure}))
       "Should throw an exception when reading clojure eval components"))
+
+(deftest t-making-request-in-dosync
+  (is (thrown? IllegalStateException (dosync (client/get "http://localhost")))))
