@@ -211,104 +211,105 @@
            cookie-store retry-handler response-interceptor digest-auth
            connection-manager client-params raw-headers]
     :as req}]
-  (let [^ClientConnectionManager conn-mgr
-        (or connection-manager
-            conn/*connection-manager*
-            (conn/make-regular-conn-manager req))
-        ^DefaultHttpClient http-client (set-routing
-                                        (DefaultHttpClient. conn-mgr))
-        scheme (name scheme)]
-    (when-let [cookie-store (or cookie-store *cookie-store*)]
-      (.setCookieStore http-client cookie-store))
-    (when retry-handler
-      (.setHttpRequestRetryHandler
-       http-client
-       (proxy [HttpRequestRetryHandler] []
-         (retryRequest [e cnt context]
-           (retry-handler e cnt context)))))
-    (add-client-params!
-     http-client
-     ;; merge in map of specified timeouts, to
-     ;; support backward compatiblity.
-     (merge {CoreConnectionPNames/SO_TIMEOUT socket-timeout
-             CoreConnectionPNames/CONNECTION_TIMEOUT conn-timeout}
-            client-params))
+  (io!
+   (let [^ClientConnectionManager conn-mgr
+         (or connection-manager
+             conn/*connection-manager*
+             (conn/make-regular-conn-manager req))
+         ^DefaultHttpClient http-client (set-routing
+                                         (DefaultHttpClient. conn-mgr))
+         scheme (name scheme)]
+     (when-let [cookie-store (or cookie-store *cookie-store*)]
+       (.setCookieStore http-client cookie-store))
+     (when retry-handler
+       (.setHttpRequestRetryHandler
+        http-client
+        (proxy [HttpRequestRetryHandler] []
+          (retryRequest [e cnt context]
+            (retry-handler e cnt context)))))
+     (add-client-params!
+      http-client
+      ;; merge in map of specified timeouts, to
+      ;; support backward compatiblity.
+      (merge {CoreConnectionPNames/SO_TIMEOUT socket-timeout
+              CoreConnectionPNames/CONNECTION_TIMEOUT conn-timeout}
+             client-params))
 
-    (when-let [[user pass] digest-auth]
-      (.setCredentials
-       (.getCredentialsProvider http-client)
-       (AuthScope. nil -1 nil)
-       (UsernamePasswordCredentials. user pass)))
-    (let [http-url (str scheme "://" server-name
-                        (when server-port (str ":" server-port))
-                        uri
-                        (when query-string (str "?" query-string)))
-          req (assoc req :http-url http-url)
-          proxy-ignore-hosts (or proxy-ignore-hosts
-                                 #{"localhost" "127.0.0.1"})
-          #^HttpUriRequest http-req (maybe-force-proxy
-                                     http-client
-                                     (http-request-for request-method
-                                                       http-url body)
-                                     proxy-host
-                                     proxy-port
-                                     proxy-ignore-hosts)]
-      (when response-interceptor
-        (.addResponseInterceptor
-         http-client
-         (proxy [HttpResponseInterceptor] []
-           (process [resp ctx]
-             (response-interceptor resp ctx)))))
-      (when-not (conn/reusable? conn-mgr)
-        (.addHeader http-req "Connection" "close"))
-      (doseq [[header-n header-v] headers]
-        (if (coll? header-v)
-          (doseq [header-vth header-v]
-            (.addHeader http-req header-n header-vth))
-          (.addHeader http-req header-n header-v)))
-      (if multipart
-        (.setEntity #^HttpEntityEnclosingRequest http-req
-                    (mp/create-multipart-entity multipart))
-        (when (and body (instance? HttpEntityEnclosingRequest http-req))
-          (if (instance? HttpEntity body)
-            (.setEntity #^HttpEntityEnclosingRequest http-req body)
-            (.setEntity #^HttpEntityEnclosingRequest http-req
-                        (if (string? body)
-                          (StringEntity. ^String body "UTF-8")
-                          (ByteArrayEntity. body))))))
-      (when debug (print-debug! req http-req))
-      (try
-        (let [http-resp (.execute http-client http-req)
-              http-entity (.getEntity http-resp)
-              resp (merge {:status (.getStatusCode (.getStatusLine http-resp))
-                           :headers (parse-headers (.headerIterator http-resp))
-                           :body (coerce-body-entity req http-entity conn-mgr)}
-                          (when raw-headers
-                            {:raw-headers
-                             (parse-headers (.headerIterator http-resp)
-                                            identity)}))]
-          (if save-request?
-            (-> resp
-                (assoc :request req)
-                (assoc-in [:request :body-type] (type body))
-                (update-in [:request]
-                           #(if debug-body
-                              (assoc % :body-content
-                                     (cond
-                                      (isa? (type (:body %)) String)
-                                      (:body %)
+     (when-let [[user pass] digest-auth]
+       (.setCredentials
+        (.getCredentialsProvider http-client)
+        (AuthScope. nil -1 nil)
+        (UsernamePasswordCredentials. user pass)))
+     (let [http-url (str scheme "://" server-name
+                         (when server-port (str ":" server-port))
+                         uri
+                         (when query-string (str "?" query-string)))
+           req (assoc req :http-url http-url)
+           proxy-ignore-hosts (or proxy-ignore-hosts
+                                  #{"localhost" "127.0.0.1"})
+           #^HttpUriRequest http-req (maybe-force-proxy
+                                      http-client
+                                      (http-request-for request-method
+                                                        http-url body)
+                                      proxy-host
+                                      proxy-port
+                                      proxy-ignore-hosts)]
+       (when response-interceptor
+         (.addResponseInterceptor
+          http-client
+          (proxy [HttpResponseInterceptor] []
+            (process [resp ctx]
+              (response-interceptor resp ctx)))))
+       (when-not (conn/reusable? conn-mgr)
+         (.addHeader http-req "Connection" "close"))
+       (doseq [[header-n header-v] headers]
+         (if (coll? header-v)
+           (doseq [header-vth header-v]
+             (.addHeader http-req header-n header-vth))
+           (.addHeader http-req header-n header-v)))
+       (if multipart
+         (.setEntity #^HttpEntityEnclosingRequest http-req
+                     (mp/create-multipart-entity multipart))
+         (when (and body (instance? HttpEntityEnclosingRequest http-req))
+           (if (instance? HttpEntity body)
+             (.setEntity #^HttpEntityEnclosingRequest http-req body)
+             (.setEntity #^HttpEntityEnclosingRequest http-req
+                         (if (string? body)
+                           (StringEntity. ^String body "UTF-8")
+                           (ByteArrayEntity. body))))))
+       (when debug (print-debug! req http-req))
+       (try
+         (let [http-resp (.execute http-client http-req)
+               http-entity (.getEntity http-resp)
+               resp (merge {:status (.getStatusCode (.getStatusLine http-resp))
+                            :headers (parse-headers (.headerIterator http-resp))
+                            :body (coerce-body-entity req http-entity conn-mgr)}
+                           (when raw-headers
+                             {:raw-headers
+                              (parse-headers (.headerIterator http-resp)
+                                             identity)}))]
+           (if save-request?
+             (-> resp
+                 (assoc :request req)
+                 (assoc-in [:request :body-type] (type body))
+                 (update-in [:request]
+                            #(if debug-body
+                               (assoc % :body-content
+                                      (cond
+                                       (isa? (type (:body %)) String)
+                                       (:body %)
 
-                                      (isa? (type (:body %)) HttpEntity)
-                                      (let [baos (ByteArrayOutputStream.)]
-                                        (.writeTo ^HttpEntity (:body %) baos)
-                                        (.toString baos "UTF-8"))
+                                       (isa? (type (:body %)) HttpEntity)
+                                       (let [baos (ByteArrayOutputStream.)]
+                                         (.writeTo ^HttpEntity (:body %) baos)
+                                         (.toString baos "UTF-8"))
 
-                                      :else nil))
-                              %))
-                (assoc-in [:request :http-req] http-req)
-                (dissoc :save-request?))
-            resp))
-        (catch Throwable e
-          (when-not (conn/reusable? conn-mgr)
-            (.shutdown ^ClientConnectionManager conn-mgr))
-          (throw e))))))
+                                       :else nil))
+                               %))
+                 (assoc-in [:request :http-req] http-req)
+                 (dissoc :save-request?))
+             resp))
+         (catch Throwable e
+           (when-not (conn/reusable? conn-mgr)
+             (.shutdown ^ClientConnectionManager conn-mgr))
+           (throw e)))))))
