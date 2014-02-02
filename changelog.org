@@ -338,6 +338,9 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2014-02-01
+- Make :decode-body-headers more reliable by using a byte array instead of
+  slurp.
 ** 2014-01-28
 - Merged https://github.com/dakrone/clj-http/pull/181 to fix some tests
 ** 2014-01-27
