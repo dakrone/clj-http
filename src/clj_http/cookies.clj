@@ -28,7 +28,7 @@
   "Converts a ClientCookie object into a tuple where the first item is
   the name of the cookie and the second item the content of the
   cookie."
-  [#^ClientCookie cookie]
+  [^ClientCookie cookie]
   [(.getName cookie)
    (compact-map
     {:comment (.getComment cookie)

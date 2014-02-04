@@ -12,12 +12,12 @@
 
 (defn utf8-bytes
   "Returns the UTF-8 bytes corresponding to the given string."
-  [#^String s]
+  [^String s]
   (.getBytes s "UTF-8"))
 
 (defn utf8-string
   "Returns the String corresponding to the UTF-8 decoding of the given bytes."
-  [#^"[B" b]
+  [^"[B" b]
   (String. b "UTF-8"))
 
 (defn url-decode

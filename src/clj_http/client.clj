@@ -288,17 +288,17 @@
     (if json-enabled?
       (cond
        (= coerce :always)
-       (assoc resp :body (decode-func (String. #^"[B" body charset) keyword?))
+       (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
 
        (and (unexceptional-status? status)
             (or (nil? coerce) (= coerce :unexceptional)))
-       (assoc resp :body (decode-func (String. #^"[B" body charset) keyword?))
+       (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
 
        (and (not (unexceptional-status? status)) (= coerce :exceptional))
-       (assoc resp :body (decode-func (String. #^"[B" body charset) keyword?))
+       (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
 
-       :else (assoc resp :body (String. #^"[B" body charset)))
-      (assoc resp :body (String. #^"[B" body charset)))))
+       :else (assoc resp :body (String. ^"[B" body charset)))
+      (assoc resp :body (String. ^"[B" body charset)))))
 
 (defmethod coerce-response-body :json [req resp]
   (coerce-json-body req resp true false))
@@ -315,9 +315,9 @@
 (defmethod coerce-response-body :clojure [_ {:keys [body] :as resp}]
   (let [body (util/force-byte-array body)]
     (if edn-enabled?
-      (assoc resp :body (parse-edn (String. #^"[B" body "UTF-8")))
+      (assoc resp :body (parse-edn (String. ^"[B" body "UTF-8")))
       (binding [*read-eval* false]
-        (assoc resp :body (read-string (String. #^"[B" body "UTF-8")))))))
+        (assoc resp :body (read-string (String. ^"[B" body "UTF-8")))))))
 
 (defmethod coerce-response-body :auto
   [req resp]
@@ -351,8 +351,8 @@
   [{:keys [as]} {:keys [status body] :as resp}]
   (let [body-bytes (util/force-byte-array body)]
     (cond
-     (string? as)  (assoc resp :body (String. #^"[B" body-bytes ^String as))
-     :else (assoc resp :body (String. #^"[B" body-bytes "UTF-8")))))
+     (string? as)  (assoc resp :body (String. ^"[B" body-bytes ^String as))
+     :else (assoc resp :body (String. ^"[B" body-bytes "UTF-8")))))
 
 (defn wrap-output-coercion
   "Middleware converting a response body from a byte-array to a different

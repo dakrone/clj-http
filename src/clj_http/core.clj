@@ -37,7 +37,7 @@
    If a name appears more than once (like `set-cookie`) then the value
    will be a vector containing the values in the order they appeared
    in the headers."
-  [#^HeaderIterator headers & [use-header-maps-in-response?]]
+  [^HeaderIterator headers & [use-header-maps-in-response?]]
   (if-not use-header-maps-in-response?
     (->> (headers/header-iterator-seq headers)
          (map (fn [[k v]]
@@ -50,7 +50,7 @@
                    (headers/assoc-join hs k v))
                  (headers/header-map)))))
 
-(defn set-client-param [#^HttpClient client key val]
+(defn set-client-param [^HttpClient client key val]
   (when-not (nil? val)
     (-> client
         (.getParams)
@@ -248,7 +248,7 @@
           req (assoc req :http-url http-url)
           proxy-ignore-hosts (or proxy-ignore-hosts
                                  #{"localhost" "127.0.0.1"})
-          #^HttpUriRequest http-req (maybe-force-proxy
+          ^HttpUriRequest http-req (maybe-force-proxy
                                      http-client
                                      (http-request-for request-method
                                                        http-url body)
@@ -269,12 +269,12 @@
             (.addHeader http-req header-n header-vth))
           (.addHeader http-req header-n header-v)))
       (if multipart
-        (.setEntity #^HttpEntityEnclosingRequest http-req
+        (.setEntity ^HttpEntityEnclosingRequest http-req
                     (mp/create-multipart-entity multipart))
         (when (and body (instance? HttpEntityEnclosingRequest http-req))
           (if (instance? HttpEntity body)
-            (.setEntity #^HttpEntityEnclosingRequest http-req body)
-            (.setEntity #^HttpEntityEnclosingRequest http-req
+            (.setEntity ^HttpEntityEnclosingRequest http-req body)
+            (.setEntity ^HttpEntityEnclosingRequest http-req
                         (if (string? body)
                           (StringEntity. ^String body "UTF-8")
                           (ByteArrayEntity. body))))))
