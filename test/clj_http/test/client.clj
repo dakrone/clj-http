@@ -18,7 +18,6 @@
 
 (deftest ^:integration roundtrip
   (run-server)
-  (Thread/sleep 1000)
   ;; roundtrip with scheme as a keyword
   (let [resp (client/request (merge base-req {:uri "/get" :method :get}))]
     (is (= 200 (:status resp)))
@@ -548,7 +547,6 @@
 
 (deftest ^:integration t-request-without-url-set
   (run-server)
-  (Thread/sleep 1000)
   ;; roundtrip with scheme as a keyword
   (let [resp (client/request (merge base-req {:uri "/redirect-to-get"
                                               :method :get}))]
@@ -558,7 +556,6 @@
 
 (deftest ^:integration t-reusable-conn-mgrs
   (run-server)
-  (Thread/sleep 1000)
   (let [cm (conn/make-reusable-conn-manager {:timeout 10 :insecure? false})
         resp1 (client/request (merge base-req {:uri "/redirect-to-get"
                                                :method :get

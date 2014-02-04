@@ -34,20 +34,22 @@
     (is (instance? SSLSocketFactory socket-factory))))
 
 (deftest ^:integration ssl-client-cert-get
-  (let [t (doto (Thread. #(ring/run-jetty secure-handler
-                                          {:port 18083 :ssl-port 18084
-                                           :ssl? true
-                                           :keystore "test-resources/keystore"
-                                           :key-password "keykey"
-                                           :client-auth :want})) .start)]
-    ;; wait for jetty to start up completely
-    (Thread/sleep 3000)
-    (let [resp (core/request {:request-method :get :uri "/get"
-                              :server-port 18084 :scheme :https
-                              :insecure? true :server-name "localhost"})]
-      (is (= 403 (:status resp))))
-    (let [resp (core/request secure-request)]
-      (is (= 200 (:status resp))))))
+  (let [server (ring/run-jetty secure-handler
+                               {:port 18083 :ssl-port 18084
+                                :ssl? true
+                                :join? false
+                                :keystore "test-resources/keystore"
+                                :key-password "keykey"
+                                :client-auth :want})]
+    (try
+      (let [resp (core/request {:request-method :get :uri "/get"
+                                :server-port 18084 :scheme :https
+                                :insecure? true :server-name "localhost"})]
+        (is (= 403 (:status resp))))
+      (let [resp (core/request secure-request)]
+        (is (= 200 (:status resp))))
+      (finally
+        (.stop server)))))
 
 (deftest ^:integration t-closed-conn-mgr-for-as-stream
   (run-server)

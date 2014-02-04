@@ -173,12 +173,12 @@
     (is (= 200 (:status resp)))))
 
 (deftest ^:integration self-signed-ssl-get
-  (let [t (doto (Thread. #(ring/run-jetty handler
-                                          {:port 8081 :ssl-port 18082 :ssl? true
-                                           :keystore "test-resources/keystore"
-                                           :key-password "keykey"})) .start)]
-    ;; wait for jetty to start up completely
-    (Thread/sleep 3000)
+  (let [server (ring/run-jetty handler
+                               {:port 8081 :ssl-port 18082
+                                :ssl? true
+                                :join? false
+                                :keystore "test-resources/keystore"
+                                :key-password "keykey"})]
     (try
       (is (thrown? sun.security.provider.certpath.SunCertPathBuilderException
                    (client/request {:scheme :https
@@ -190,7 +190,7 @@
         (is (= 200 (:status resp)))
         (is (= "get" (String. (util/force-byte-array (:body resp))))))
       (finally
-        (.stop t)))))
+        (.stop server)))))
 
 (deftest ^:integration multipart-form-uploads
   (run-server)
