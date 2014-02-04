@@ -1,11 +1,11 @@
 (ns clj-http.test.core
-  (:use [clojure.test]
-        [clojure.java.io :only [file]])
-  (:require [clojure.pprint :as pp]
+  (:require [cheshire.core :as json]
             [clj-http.client :as client]
             [clj-http.core :as core]
             [clj-http.util :as util]
-            [cheshire.core :as json]
+            [clojure.java.io :refer [file]]
+            [clojure.pprint :as pp]
+            [clojure.test :refer :all]
             [ring.adapter.jetty :as ring])
   (:import (java.io ByteArrayInputStream)
            (org.apache.http.params CoreConnectionPNames CoreProtocolPNames)

@@ -1,5 +1,5 @@
 (ns clj-http.cookies
-  (:use [clojure.string :only [blank? join lower-case]])
+  (:require [clojure.string :refer [blank? join lower-case]])
   (:import (org.apache.http.client.params ClientPNames CookiePolicy)
            (org.apache.http.cookie ClientCookie CookieOrigin)
            (org.apache.http.params BasicHttpParams)

@@ -1,15 +1,15 @@
 (ns clj-http.client
   "Batteries-included HTTP client."
-  (:use [clj-http.cookies :only [wrap-cookies]]
-        [clj-http.headers :only [wrap-header-map]]
-        [clj-http.links :only [wrap-links]]
-        [slingshot.slingshot :only [throw+]]
-        [clojure.stacktrace :only [root-cause]]
-        [clojure.walk :only [prewalk]])
-  (:require [clojure.string :as str]
-            [clj-http.conn-mgr :as conn]
+  (:require [clj-http.conn-mgr :as conn]
+            [clj-http.cookies :refer [wrap-cookies]]
             [clj-http.core :as core]
-            [clj-http.util :as util])
+            [clj-http.headers :refer [wrap-header-map]]
+            [clj-http.links :refer [wrap-links]]
+            [clj-http.util :as util]
+            [clojure.stacktrace :refer [root-cause]]
+            [clojure.string :as str]
+            [clojure.walk :refer [prewalk]]
+            [slingshot.slingshot :refer [throw+]])
   (:import (java.io InputStream File)
            (java.net URL UnknownHostException)
            (org.apache.http.entity BufferedHttpEntity ByteArrayEntity

@@ -1,7 +1,7 @@
 (ns clj-http.util
   "Helper functions for the HTTP client."
-  (:use [clojure.string :only [lower-case]]
-        [clojure.walk :only [postwalk]])
+  (:require [clojure.string :refer [lower-case]]
+            [clojure.walk :refer [postwalk]])
   (:import (org.apache.commons.codec.binary Base64)
            (org.apache.commons.io IOUtils)
            (java.io BufferedInputStream ByteArrayInputStream

@@ -1,11 +1,11 @@
 (ns clj-http.test.client
-  (:use [clojure.test]
-        [clojure.java.io :only [resource]]
-        [clj-http.test.core :only [run-server]])
-  (:require [clj-http.client :as client]
+  (:require [cheshire.core :as json]
+            [clj-http.client :as client]
             [clj-http.conn-mgr :as conn]
+            [clj-http.test.core :refer [run-server]]
             [clj-http.util :as util]
-            [cheshire.core :as json])
+            [clojure.java.io :refer [resource]]
+            [clojure.test :refer :all])
   (:import (java.net UnknownHostException)
            (java.util Arrays)
            (java.io ByteArrayInputStream)

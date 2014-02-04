@@ -1,9 +1,9 @@
 (ns clj-http.core
   "Core HTTP request/response implementation."
-  (:require [clojure.pprint]
-            [clj-http.conn-mgr :as conn]
+  (:require [clj-http.conn-mgr :as conn]
             [clj-http.headers :as headers]
-            [clj-http.multipart :as mp])
+            [clj-http.multipart :as mp]
+            [clojure.pprint])
   (:import (java.io ByteArrayOutputStream File FilterInputStream InputStream)
            (java.net URI)
            (org.apache.http HeaderIterator HttpEntity

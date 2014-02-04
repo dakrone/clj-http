@@ -1,6 +1,6 @@
 (ns clj-http.test.links
-  (:use clojure.test
-        clj-http.links))
+  (:require [clj-http.links :refer :all]
+            [clojure.test :refer :all]))
 
 (defn- link-handler [link-header]
   (wrap-links (constantly {:headers {"link" link-header}})))

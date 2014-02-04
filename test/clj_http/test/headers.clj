@@ -1,8 +1,8 @@
 (ns clj-http.test.headers
-  (:use [clj-http.headers]
-        [clojure.test]
-        [clj-http.util :only [lower-case-keys]])
-  (:require [clj-http.client :as client])
+  (:require [clj-http.client :as client]
+            [clj-http.headers :refer :all]
+            [clj-http.util :refer [lower-case-keys]]
+            [clojure.test :refer :all])
   (:import (javax.servlet.http HttpServletRequest
                                HttpServletResponse)
            (org.eclipse.jetty.server Request Server)

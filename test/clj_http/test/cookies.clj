@@ -1,7 +1,7 @@
 (ns clj-http.test.cookies
-  (:use [clj-http.cookies]
-        [clj-http.util]
-        [clojure.test])
+  (:require [clj-http.cookies :refer :all]
+            [clj-http.util :refer :all]
+            [clojure.test :refer :all])
   (:import (org.apache.http.impl.cookie BasicClientCookie BasicClientCookie2)))
 
 (defn refer-private [ns]
