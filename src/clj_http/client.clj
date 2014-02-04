@@ -661,9 +661,8 @@
           resp (client req)]
       (assoc resp :request-time (- (System/currentTimeMillis) start)))))
 
-(def ^{:doc "The default list of middleware clj-http uses for wrapping
-  requests."}
-  default-middleware
+(def default-middleware
+  "The default list of middleware clj-http uses for wrapping requests."
   [wrap-request-timing
    wrap-header-map
    wrap-query-params
@@ -689,11 +688,10 @@
    wrap-links
    wrap-unknown-host])
 
-(def ^{:doc
-       "Available at any time to retrieve the middleware being
-used. Automatically bound when `with-middleware` is used."
-       :dynamic true}
+(def ^:dynamic
   *current-middleware*
+  "Available at any time to retrieve the middleware being used.
+  Automatically bound when `with-middleware` is used."
   default-middleware)
 
 (defn wrap-request
@@ -706,9 +704,8 @@ used. Automatically bound when `with-middleware` is used."
           request
           default-middleware))
 
-(def ^{:dynamic true
-       :doc
-       "Executes the HTTP request corresponding to the given map and returns
+(def ^:dynamic request
+  "Executes the HTTP request corresponding to the given map and returns
    the response map for corresponding to the resulting HTTP response.
 
    In addition to the standard Ring request keys, the following keys are also
@@ -726,8 +723,7 @@ used. Automatically bound when `with-middleware` is used."
    * Exceptions are thrown for status codes other than 200-207, 300-303, or 307
    * Gzip and deflate responses are accepted and decompressed
    * Input and output bodies are coerced as required and indicated by the :as
-     option."}
-  request
+     option."
   (wrap-request #'core/request))
 
 ;; Inline function to throw a slightly more readable exception when

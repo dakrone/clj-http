@@ -69,7 +69,7 @@
 (def proxy-move-with-body (make-proxy-method-with-body :move))
 (def proxy-patch-with-body (make-proxy-method-with-body :patch))
 
-(def ^{:dynamic true} *cookie-store* nil)
+(def ^:dynamic *cookie-store* nil)
 
 (defn- set-routing
   "Use ProxySelectorRoutePlanner to choose proxy sensible based on
@@ -249,12 +249,12 @@
           proxy-ignore-hosts (or proxy-ignore-hosts
                                  #{"localhost" "127.0.0.1"})
           ^HttpUriRequest http-req (maybe-force-proxy
-                                     http-client
-                                     (http-request-for request-method
-                                                       http-url body)
-                                     proxy-host
-                                     proxy-port
-                                     proxy-ignore-hosts)]
+                                    http-client
+                                    (http-request-for request-method
+                                                      http-url body)
+                                    proxy-host
+                                    proxy-port
+                                    proxy-ignore-hosts)]
       (when response-interceptor
         (.addResponseInterceptor
          http-client

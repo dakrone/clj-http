@@ -33,7 +33,7 @@
         socket-factory (.getSchemeSocketFactory (.get sr "https"))]
     (is (instance? SSLSocketFactory socket-factory))))
 
-(deftest ^{:integration true} ssl-client-cert-get
+(deftest ^:integration ssl-client-cert-get
   (let [t (doto (Thread. #(ring/run-jetty secure-handler
                                           {:port 18083 :ssl-port 18084
                                            :ssl? true
@@ -49,7 +49,7 @@
     (let [resp (core/request secure-request)]
       (is (= 200 (:status resp))))))
 
-(deftest ^{:integration true} t-closed-conn-mgr-for-as-stream
+(deftest ^:integration t-closed-conn-mgr-for-as-stream
   (run-server)
   (let [shutdown? (atom false)
         cm (proxy [BasicClientConnectionManager] []

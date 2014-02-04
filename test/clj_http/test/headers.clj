@@ -91,7 +91,7 @@
                      (.. response getWriter (print "Echo!")))))
     (.start)))
 
-(deftest ^{:integration true} test-wrap-header-map
+(deftest ^:integration test-wrap-header-map
   (let [server (header-server)]
     (try
       (let [headers {:foo "bar"
@@ -131,7 +131,7 @@
                                   (vec))
      ~@body))
 
-(deftest ^{:integration true} test-dont-wrap-header-map
+(deftest ^:integration test-dont-wrap-header-map
   (let [server (header-server)]
     (try
       (let [headers {"foo" "bar"

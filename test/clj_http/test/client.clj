@@ -16,7 +16,7 @@
    :server-name "localhost"
    :server-port 18080})
 
-(deftest ^{:integration true} roundtrip
+(deftest ^:integration roundtrip
   (run-server)
   (Thread/sleep 1000)
   ;; roundtrip with scheme as a keyword
@@ -31,7 +31,7 @@
     (is (= "close" (get-in resp [:headers "connection"])))
     (is (= "get" (:body resp)))))
 
-(deftest ^{:integration true} nil-input
+(deftest ^:integration nil-input
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
                         (client/get nil)))
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
@@ -546,7 +546,7 @@
     (is (= {"content-type" "text/html; charset=UTF-8"}
            (:headers resp)))))
 
-(deftest ^{:integration true} t-request-without-url-set
+(deftest ^:integration t-request-without-url-set
   (run-server)
   (Thread/sleep 1000)
   ;; roundtrip with scheme as a keyword
@@ -556,7 +556,7 @@
     (is (= "close" (get-in resp [:headers "connection"])))
     (is (= "get" (:body resp)))))
 
-(deftest ^{:integration true} t-reusable-conn-mgrs
+(deftest ^:integration t-reusable-conn-mgrs
   (run-server)
   (Thread/sleep 1000)
   (let [cm (conn/make-reusable-conn-manager {:timeout 10 :insecure? false})
