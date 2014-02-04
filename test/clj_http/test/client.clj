@@ -608,3 +608,22 @@
            (:body (client/coerce-response-body {:as :json} json-resp))
            (:body (client/coerce-response-body {:as :clojure} edn-resp))
            (:body (client/coerce-response-body {:as :auto} auto-resp))))))
+
+(deftest ^:integration t-with-middleware
+  (run-server)
+  (is (:request-time (request {:uri "/get" :method :get})))
+  (is (= client/*current-middleware* client/default-middleware))
+  (client/with-middleware [client/wrap-url
+                           client/wrap-method
+                           #'client/wrap-request-timing]
+    (is (:request-time (request {:uri "/get" :method :get})))
+    (is (= client/*current-middleware* [client/wrap-url
+                                        client/wrap-method
+                                        #'client/wrap-request-timing])))
+  (client/with-middleware (->> client/default-middleware
+                               (remove #{client/wrap-request-timing}))
+    (is (not (:request-time (request {:uri "/get" :method :get}))))
+    (is (not (contains? (set client/*current-middleware*)
+                        client/wrap-request-timing)))
+    (is (contains? (set client/default-middleware)
+                   client/wrap-request-timing))))

@@ -795,10 +795,12 @@
 
   Unless you really know what you are doing."
   [middleware & body]
-  `(binding [*current-middleware* ~middleware
-             clj-http.client/request
-             (reduce #(%2 %1) clj-http.core/request (seq ~middleware))]
-     ~@body))
+  `(let [m# ~middleware]
+     (binding [*current-middleware* m#
+               clj-http.client/request (reduce #(%2 %1)
+                                               clj-http.core/request
+                                               m#)]
+       ~@body)))
 
 (defmacro with-connection-pool
   "Macro to execute the body using a connection manager. Creates a
