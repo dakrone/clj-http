@@ -16,16 +16,19 @@
    :server-name "localhost"
    :server-port 18080})
 
+(defn request [req]
+  (client/request (merge base-req req)))
+
 (deftest ^:integration roundtrip
   (run-server)
   ;; roundtrip with scheme as a keyword
-  (let [resp (client/request (merge base-req {:uri "/get" :method :get}))]
+  (let [resp (request {:uri "/get" :method :get})]
     (is (= 200 (:status resp)))
     (is (= "close" (get-in resp [:headers "connection"])))
     (is (= "get" (:body resp))))
   ;; roundtrip with scheme as a string
-  (let [resp (client/request (merge base-req {:uri "/get" :method :get
-                                              :scheme "http"}))]
+  (let [resp (request {:uri "/get" :method :get
+                       :scheme "http"})]
     (is (= 200 (:status resp)))
     (is (= "close" (get-in resp [:headers "connection"])))
     (is (= "get" (:body resp)))))
@@ -548,8 +551,8 @@
 (deftest ^:integration t-request-without-url-set
   (run-server)
   ;; roundtrip with scheme as a keyword
-  (let [resp (client/request (merge base-req {:uri "/redirect-to-get"
-                                              :method :get}))]
+  (let [resp (request {:uri "/redirect-to-get"
+                       :method :get})]
     (is (= 200 (:status resp)))
     (is (= "close" (get-in resp [:headers "connection"])))
     (is (= "get" (:body resp)))))
@@ -557,11 +560,11 @@
 (deftest ^:integration t-reusable-conn-mgrs
   (run-server)
   (let [cm (conn/make-reusable-conn-manager {:timeout 10 :insecure? false})
-        resp1 (client/request (merge base-req {:uri "/redirect-to-get"
-                                               :method :get
-                                               :connection-manager cm}))
-        resp2 (client/request (merge base-req {:uri "/redirect-to-get"
-                                               :method :get}))]
+        resp1 (request {:uri "/redirect-to-get"
+                        :method :get
+                        :connection-manager cm})
+        resp2 (request {:uri "/redirect-to-get"
+                        :method :get})]
     (is (= 200 (:status resp1) (:status resp2)))
     (is (nil? (get-in resp1 [:headers "connection"]))
         "connection should remain open")
