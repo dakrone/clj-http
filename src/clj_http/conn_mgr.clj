@@ -184,6 +184,6 @@
   [^ClientConnectionManager manager]
   (and manager (.shutdown manager)))
 
-(def ^{:dynamic true
-       :doc "connection manager to be rebound during request execution"}
-  *connection-manager* nil)
+(def ^:dynamic *connection-manager*
+  "connection manager to be rebound during request execution"
+  nil)

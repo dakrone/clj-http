@@ -1,5 +1,5 @@
 (ns clj-http.cookies
-  (:use [clojure.string :only [blank? join lower-case]])
+  (:require [clojure.string :refer [blank? join lower-case]])
   (:import (org.apache.http.client.params ClientPNames CookiePolicy)
            (org.apache.http.cookie ClientCookie CookieOrigin)
            (org.apache.http.params BasicHttpParams)
@@ -28,7 +28,7 @@
   "Converts a ClientCookie object into a tuple where the first item is
   the name of the cookie and the second item the content of the
   cookie."
-  [#^ClientCookie cookie]
+  [^ClientCookie cookie]
   [(.getName cookie)
    (compact-map
     {:comment (.getComment cookie)

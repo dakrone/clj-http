@@ -1,8 +1,8 @@
 (ns clj-http.test.conn-mgr
-  (:use [clojure.test]
-        [clj-http.test.core :only [run-server]])
   (:require [clj-http.conn-mgr :as conn-mgr]
             [clj-http.core :as core]
+            [clj-http.test.core :refer [run-server]]
+            [clojure.test :refer :all]
             [ring.adapter.jetty :as ring])
   (:import (java.security KeyStore)
            (org.apache.http.conn.ssl SSLSocketFactory)
@@ -33,23 +33,25 @@
         socket-factory (.getSchemeSocketFactory (.get sr "https"))]
     (is (instance? SSLSocketFactory socket-factory))))
 
-(deftest ^{:integration true} ssl-client-cert-get
-  (let [t (doto (Thread. #(ring/run-jetty secure-handler
-                                          {:port 18083 :ssl-port 18084
-                                           :ssl? true
-                                           :keystore "test-resources/keystore"
-                                           :key-password "keykey"
-                                           :client-auth :want})) .start)]
-    ;; wait for jetty to start up completely
-    (Thread/sleep 3000)
-    (let [resp (core/request {:request-method :get :uri "/get"
-                              :server-port 18084 :scheme :https
-                              :insecure? true :server-name "localhost"})]
-      (is (= 403 (:status resp))))
-    (let [resp (core/request secure-request)]
-      (is (= 200 (:status resp))))))
+(deftest ^:integration ssl-client-cert-get
+  (let [server (ring/run-jetty secure-handler
+                               {:port 18083 :ssl-port 18084
+                                :ssl? true
+                                :join? false
+                                :keystore "test-resources/keystore"
+                                :key-password "keykey"
+                                :client-auth :want})]
+    (try
+      (let [resp (core/request {:request-method :get :uri "/get"
+                                :server-port 18084 :scheme :https
+                                :insecure? true :server-name "localhost"})]
+        (is (= 403 (:status resp))))
+      (let [resp (core/request secure-request)]
+        (is (= 200 (:status resp))))
+      (finally
+        (.stop server)))))
 
-(deftest ^{:integration true} t-closed-conn-mgr-for-as-stream
+(deftest ^:integration t-closed-conn-mgr-for-as-stream
   (run-server)
   (let [shutdown? (atom false)
         cm (proxy [BasicClientConnectionManager] []

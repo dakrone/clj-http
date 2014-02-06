@@ -1,14 +1,15 @@
 (ns clj-http.client
   "Batteries-included HTTP client."
-  (:use [clj-http.cookies :only [wrap-cookies]]
-        [clj-http.links :only [wrap-links]]
-        [slingshot.slingshot :only [throw+]]
-        [clojure.stacktrace :only [root-cause]]
-        [clojure.walk :only [prewalk]])
-  (:require [clojure.string :as str]
-            [clj-http.conn-mgr :as conn]
+  (:require [clj-http.conn-mgr :as conn]
+            [clj-http.cookies :refer [wrap-cookies]]
             [clj-http.core :as core]
-            [clj-http.util :as util])
+            [clj-http.headers :refer [wrap-header-map]]
+            [clj-http.links :refer [wrap-links]]
+            [clj-http.util :as util]
+            [clojure.stacktrace :refer [root-cause]]
+            [clojure.string :as str]
+            [clojure.walk :refer [prewalk]]
+            [slingshot.slingshot :refer [throw+]])
   (:import (java.io InputStream File)
            (java.net URL UnknownHostException)
            (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
@@ -287,17 +288,17 @@
     (if json-enabled?
       (cond
        (= coerce :always)
-       (assoc resp :body (decode-func (String. #^"[B" body charset) keyword?))
+       (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
 
        (and (unexceptional-status? status)
             (or (nil? coerce) (= coerce :unexceptional)))
-       (assoc resp :body (decode-func (String. #^"[B" body charset) keyword?))
+       (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
 
        (and (not (unexceptional-status? status)) (= coerce :exceptional))
-       (assoc resp :body (decode-func (String. #^"[B" body charset) keyword?))
+       (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
 
-       :else (assoc resp :body (String. #^"[B" body charset)))
-      (assoc resp :body (String. #^"[B" body charset)))))
+       :else (assoc resp :body (String. ^"[B" body charset)))
+      (assoc resp :body (String. ^"[B" body charset)))))
 
 (defmethod coerce-response-body :json [req resp]
   (coerce-json-body req resp true false))
@@ -314,9 +315,9 @@
 (defmethod coerce-response-body :clojure [_ {:keys [body] :as resp}]
   (let [body (util/force-byte-array body)]
     (if edn-enabled?
-      (assoc resp :body (parse-edn (String. #^"[B" body "UTF-8")))
+      (assoc resp :body (parse-edn (String. ^"[B" body "UTF-8")))
       (binding [*read-eval* false]
-        (assoc resp :body (read-string (String. #^"[B" body "UTF-8")))))))
+        (assoc resp :body (read-string (String. ^"[B" body "UTF-8")))))))
 
 (defmethod coerce-response-body :auto
   [req resp]
@@ -350,8 +351,8 @@
   [{:keys [as]} {:keys [status body] :as resp}]
   (let [body-bytes (util/force-byte-array body)]
     (cond
-     (string? as)  (assoc resp :body (String. #^"[B" body-bytes ^String as))
-     :else (assoc resp :body (String. #^"[B" body-bytes "UTF-8")))))
+     (string? as)  (assoc resp :body (String. ^"[B" body-bytes ^String as))
+     :else (assoc resp :body (String. ^"[B" body-bytes "UTF-8")))))
 
 (defn wrap-output-coercion
   "Middleware converting a response body from a byte-array to a different
@@ -660,11 +661,10 @@
           resp (client req)]
       (assoc resp :request-time (- (System/currentTimeMillis) start)))))
 
-(def ^{:doc "The default list of middleware clj-http uses for wrapping
-  requests."}
-  default-middleware
+(def default-middleware
+  "The default list of middleware clj-http uses for wrapping requests."
   [wrap-request-timing
-   wrap-lower-case-headers
+   wrap-header-map
    wrap-query-params
    wrap-basic-auth
    wrap-oauth
@@ -688,11 +688,10 @@
    wrap-links
    wrap-unknown-host])
 
-(def ^{:doc
-       "Available at any time to retrieve the middleware being
-used. Automatically bound when `with-middleware` is used."
-       :dynamic true}
+(def ^:dynamic
   *current-middleware*
+  "Available at any time to retrieve the middleware being used.
+  Automatically bound when `with-middleware` is used."
   default-middleware)
 
 (defn wrap-request
@@ -705,9 +704,8 @@ used. Automatically bound when `with-middleware` is used."
           request
           default-middleware))
 
-(def ^{:dynamic true
-       :doc
-       "Executes the HTTP request corresponding to the given map and returns
+(def ^:dynamic request
+  "Executes the HTTP request corresponding to the given map and returns
    the response map for corresponding to the resulting HTTP response.
 
    In addition to the standard Ring request keys, the following keys are also
@@ -725,8 +723,7 @@ used. Automatically bound when `with-middleware` is used."
    * Exceptions are thrown for status codes other than 200-207, 300-303, or 307
    * Gzip and deflate responses are accepted and decompressed
    * Input and output bodies are coerced as required and indicated by the :as
-     option."}
-  request
+     option."
   (wrap-request #'core/request))
 
 ;; Inline function to throw a slightly more readable exception when
@@ -798,10 +795,12 @@ used. Automatically bound when `with-middleware` is used."
 
   Unless you really know what you are doing."
   [middleware & body]
-  `(binding [*current-middleware* ~middleware
-             clj-http.client/request
-             (reduce #(%2 %1) clj-http.core/request (seq ~middleware))]
-     ~@body))
+  `(let [m# ~middleware]
+     (binding [*current-middleware* m#
+               clj-http.client/request (reduce #(%2 %1)
+                                               clj-http.core/request
+                                               m#)]
+       ~@body)))
 
 (defmacro with-connection-pool
   "Macro to execute the body using a connection manager. Creates a

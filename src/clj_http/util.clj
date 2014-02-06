@@ -1,7 +1,7 @@
 (ns clj-http.util
   "Helper functions for the HTTP client."
-  (:use [clojure.string :only [lower-case]]
-        [clojure.walk :only [postwalk]])
+  (:require [clojure.string :refer [lower-case]]
+            [clojure.walk :refer [postwalk]])
   (:import (org.apache.commons.codec.binary Base64)
            (org.apache.commons.io IOUtils)
            (java.io BufferedInputStream ByteArrayInputStream
@@ -12,12 +12,12 @@
 
 (defn utf8-bytes
   "Returns the UTF-8 bytes corresponding to the given string."
-  [#^String s]
+  [^String s]
   (.getBytes s "UTF-8"))
 
 (defn utf8-string
   "Returns the String corresponding to the UTF-8 decoding of the given bytes."
-  [#^"[B" b]
+  [^"[B" b]
   (String. b "UTF-8"))
 
 (defn url-decode

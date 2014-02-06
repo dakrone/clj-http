@@ -15,16 +15,16 @@
                  [slingshot "0.10.3"]
                  [cheshire "5.3.1"]
                  [crouton "0.1.1"]
-                 [org.clojure/tools.reader "0.8.3"]]
+                 [org.clojure/tools.reader "0.8.3"]
+                 [potemkin "0.3.4"]]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.5.1"]
                                   [org.clojure/tools.logging "0.2.6"]
                                   [log4j "1.2.17"]
                                   [ring/ring-jetty-adapter "1.2.1"]
                                   [ring/ring-devel "1.2.1"]]}
-             :1.2 {:dependencies [[org.clojure/clojure "1.2.1"]]}
-             :1.3 {:dependencies [[org.clojure/clojure "1.3.0"]]}
-             :1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}}
-  :aliases {"all" ["with-profile" "dev,1.3:dev,1.4:dev"]}
+             :1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}
+             :1.6 {:dependencies [[org.clojure/clojure "1.6.0-alpha3"]]}}
+  :aliases {"all" ["with-profile" "dev,1.4:dev,1.6:dev"]}
   :plugins [[codox "0.6.4"]]
   :test-selectors {:default  #(not (:integration %))
                    :integration :integration
