@@ -27,6 +27,12 @@ Previous versions available as
 [clj-http "0.7.6"]
 ```
 
+You can also try out the new header-map implementation by using:
+
+```clojure
+[clj-http "0.9.0-SNAPSHOT"]
+```
+
 ## Usage
 
 The main HTTP client functionality is provided by the
