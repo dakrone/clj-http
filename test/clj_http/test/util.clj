@@ -1,6 +1,6 @@
 (ns clj-http.test.util
-  (:use [clj-http.util]
-        [clojure.test]))
+  (:require [clj-http.util :refer :all]
+            [clojure.test :refer :all]))
 
 (deftest test-lower-case-keys
   (are [map expected]

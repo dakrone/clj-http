@@ -1,11 +1,11 @@
 (ns clj-http.test.client
-  (:use [clojure.test]
-        [clojure.java.io :only [resource]]
-        [clj-http.test.core :only [run-server]])
-  (:require [clj-http.client :as client]
+  (:require [cheshire.core :as json]
+            [clj-http.client :as client]
             [clj-http.conn-mgr :as conn]
+            [clj-http.test.core :refer [run-server]]
             [clj-http.util :as util]
-            [cheshire.core :as json])
+            [clojure.java.io :refer [resource]]
+            [clojure.test :refer :all])
   (:import (java.net UnknownHostException)
            (java.util Arrays)
            (java.io ByteArrayInputStream)
@@ -16,22 +16,24 @@
    :server-name "localhost"
    :server-port 18080})
 
-(deftest ^{:integration true} roundtrip
+(defn request [req]
+  (client/request (merge base-req req)))
+
+(deftest ^:integration roundtrip
   (run-server)
-  (Thread/sleep 1000)
   ;; roundtrip with scheme as a keyword
-  (let [resp (client/request (merge base-req {:uri "/get" :method :get}))]
+  (let [resp (request {:uri "/get" :method :get})]
     (is (= 200 (:status resp)))
     (is (= "close" (get-in resp [:headers "connection"])))
     (is (= "get" (:body resp))))
   ;; roundtrip with scheme as a string
-  (let [resp (client/request (merge base-req {:uri "/get" :method :get
-                                              :scheme "http"}))]
+  (let [resp (request {:uri "/get" :method :get
+                       :scheme "http"})]
     (is (= 200 (:status resp)))
     (is (= "close" (get-in resp [:headers "connection"])))
     (is (= "get" (:body resp)))))
 
-(deftest ^{:integration true} nil-input
+(deftest ^:integration nil-input
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
                         (client/get nil)))
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
@@ -513,7 +515,7 @@
     (is (not (client/conflict? {:status 201})))
     (is (not (client/conflict? {:status 404})))))
 
-(deftest test-wrap-headers
+(deftest test-wrap-lower-case-headers
   (is (= {:status 404} ((client/wrap-lower-case-headers
                          (fn [r] r)) {:status 404})))
   (is (= {:headers {"content-type" "application/json"}}
@@ -546,25 +548,23 @@
     (is (= {"content-type" "text/html; charset=UTF-8"}
            (:headers resp)))))
 
-(deftest ^{:integration true} t-request-without-url-set
+(deftest ^:integration t-request-without-url-set
   (run-server)
-  (Thread/sleep 1000)
   ;; roundtrip with scheme as a keyword
-  (let [resp (client/request (merge base-req {:uri "/redirect-to-get"
-                                              :method :get}))]
+  (let [resp (request {:uri "/redirect-to-get"
+                       :method :get})]
     (is (= 200 (:status resp)))
     (is (= "close" (get-in resp [:headers "connection"])))
     (is (= "get" (:body resp)))))
 
-(deftest ^{:integration true} t-reusable-conn-mgrs
+(deftest ^:integration t-reusable-conn-mgrs
   (run-server)
-  (Thread/sleep 1000)
   (let [cm (conn/make-reusable-conn-manager {:timeout 10 :insecure? false})
-        resp1 (client/request (merge base-req {:uri "/redirect-to-get"
-                                               :method :get
-                                               :connection-manager cm}))
-        resp2 (client/request (merge base-req {:uri "/redirect-to-get"
-                                               :method :get}))]
+        resp1 (request {:uri "/redirect-to-get"
+                        :method :get
+                        :connection-manager cm})
+        resp2 (request {:uri "/redirect-to-get"
+                        :method :get})]
     (is (= 200 (:status resp1) (:status resp2)))
     (is (nil? (get-in resp1 [:headers "connection"]))
         "connection should remain open")
@@ -608,3 +608,22 @@
            (:body (client/coerce-response-body {:as :json} json-resp))
            (:body (client/coerce-response-body {:as :clojure} edn-resp))
            (:body (client/coerce-response-body {:as :auto} auto-resp))))))
+
+(deftest ^:integration t-with-middleware
+  (run-server)
+  (is (:request-time (request {:uri "/get" :method :get})))
+  (is (= client/*current-middleware* client/default-middleware))
+  (client/with-middleware [client/wrap-url
+                           client/wrap-method
+                           #'client/wrap-request-timing]
+    (is (:request-time (request {:uri "/get" :method :get})))
+    (is (= client/*current-middleware* [client/wrap-url
+                                        client/wrap-method
+                                        #'client/wrap-request-timing])))
+  (client/with-middleware (->> client/default-middleware
+                               (remove #{client/wrap-request-timing}))
+    (is (not (:request-time (request {:uri "/get" :method :get}))))
+    (is (not (contains? (set client/*current-middleware*)
+                        client/wrap-request-timing)))
+    (is (contains? (set client/default-middleware)
+                   client/wrap-request-timing))))

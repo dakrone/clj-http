@@ -47,14 +47,14 @@ Require it in your application:
 
 The client supports simple `get`, `head`, `put`, `post`, `delete`,
 `copy`, `move`, `patch` and `options` requests. Responses are returned
-as Ring-style response maps:
+as [Ring-style response maps](https://github.com/ring-clojure/ring/blob/master/SPEC):
 
 ```clojure
 (client/get "http://google.com")
 => {:status 200
-    :headers {"date" "Sun, 01 Aug 2010 07:03:49 GMT"
-              "cache-control" "private, max-age=0"
-              "content-type" "text/html; charset=ISO-8859-1"
+    :headers {"Date" "Sun, 01 Aug 2010 07:03:49 GMT"
+              "Cache-Control" "private, max-age=0"
+              "Content-Type" "text/html; charset=ISO-8859-1"
               ...}
     :body "<!doctype html>..."
     :cookies {"PREF" {:domain ".google.com", :expires #<Date Wed Apr 02 09:10:22 EDT 2014>, :path "/", :value "...", :version 0}}
@@ -82,6 +82,10 @@ More example requests:
 ;; Specifying headers as either a string or collection:
 (client/get "http://example.com"
   {:headers {"foo" ["bar" "baz"], "eggplant" "quux"}})
+
+;; Using either string or keyword header names:
+(client/get "http://example.com"
+  {:headers {:foo ["bar" "baz"], :eggplant "quux"}})
 
 ;; Set any specific client parameters manually:
 (client/post "http://example.com"
@@ -496,27 +500,30 @@ response map. This is particularly useful for paging RESTful APIs:
     :last {:href "https://api.github.com/gists?page=22884"}}
 ```
 
-### Raw headers
-By default clj-http forces lowercase header names when parsing the
-response. If you want to preserve the exact response headers (with their
-original casing), you can use the `:raw-headers` option on your request.
-When you add this option you'll receive both the usual downcased headers
-_and_ an additional map of raw headers in your response.
+### Headers
 
-```clojure
-(client/get "http://google.com" {:raw-headers true})
-=> {:status 200
-    :headers {"date" "Sun, 01 Aug 2010 07:03:49 GMT"
-              "cache-control" "private, max-age=0"
-              "content-type" "text/html; charset=ISO-8859-1"
-              ...}
-    :raw-headers {"Date" "Sun, 01 Aug 2010 07:03:49 GMT"
-                  "Cache-Control" "private, max-age=0"
-                  "Content-Type" "text/html; charset=ISO-8859-1"
-                  ...}
-    ...
+clj-http's treatment of headers is a little more permissive than the
+[Ring Spec](https://github.com/ring-clojure/ring/blob/master/SPEC)
+specifies.
 
-```
+Rather than forcing all request headers to be lowercase strings,
+clj-http allows strings or keywords of any case. Keywords will be
+transformed into their canonical representation, so the :content-md5
+header will be sent to the server as "Content-MD5", for instance.
+String keys in request headers, however, will be sent to the server
+with their casing unchanged.
+
+Response headers can be read as keywords or strings of any case. If
+the server responds with a "Date" header, you could access the value
+of that header as :date, "date", "Date", etc.
+
+If for some reason you require access to the original header name that
+the server specified, it is available by invoking (keys ...) on the
+header map.
+
+This special treatment of headers is implemented in the
+wrap-header-map middleware, which (like any middleware) can be
+disabled by using with-middleware to specify different behavior.
 
 ### Using persistent connections
 clj-http can use persistent connections to speed up connections if
@@ -619,11 +626,12 @@ The design of `clj-http` is inspired by the
 server applications.
 
 The client in `clj-http.core` makes HTTP requests according to a given
-Ring request map and returns Ring response maps corresponding to the
-resulting HTTP response. The function `clj-http.client/request` uses
-Ring-style middleware to layer functionality over the core HTTP
-request/response implementation. Methods like `clj-http.client/get`
-are sugar over this `clj-http.client/request` function.
+Ring request map and returns [Ring response maps](https://github.com/ring-clojure/ring/blob/master/SPEC)
+corresponding to the resulting HTTP response. The function
+`clj-http.client/request` uses Ring-style middleware to layer
+functionality over the core HTTP request/response implementation.
+Methods like `clj-http.client/get` are sugar over this
+`clj-http.client/request` function.
 
 ## Optional dependencies
 

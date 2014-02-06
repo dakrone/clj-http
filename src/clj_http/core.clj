@@ -1,8 +1,9 @@
 (ns clj-http.core
   "Core HTTP request/response implementation."
-  (:require [clojure.pprint]
-            [clj-http.conn-mgr :as conn]
-            [clj-http.multipart :as mp])
+  (:require [clj-http.conn-mgr :as conn]
+            [clj-http.headers :as headers]
+            [clj-http.multipart :as mp]
+            [clojure.pprint])
   (:import (java.io ByteArrayOutputStream File FilterInputStream InputStream)
            (java.net URI)
            (org.apache.http HeaderIterator HttpEntity
@@ -36,19 +37,20 @@
    If a name appears more than once (like `set-cookie`) then the value
    will be a vector containing the values in the order they appeared
    in the headers."
-  ([#^HeaderIterator headers]
-     (parse-headers headers #(.toLowerCase ^String %)))
-  ([#^HeaderIterator headers name-transform]
-     (->> (iterator-seq headers)
-          (map (fn [#^Header h] [(name-transform (.getName h)) (.getValue h)]))
-          (group-by first)
-          (map (fn [[name headers]]
-                 (let [values (map second headers)]
-                   [name (let [[value & tail] values]
-                           (if tail values value))])))
-          (into {}))))
+  [^HeaderIterator headers & [use-header-maps-in-response?]]
+  (if-not use-header-maps-in-response?
+    (->> (headers/header-iterator-seq headers)
+         (map (fn [[k v]]
+                [(.toLowerCase ^String k) v]))
+         (reduce (fn [hs [k v]]
+                   (headers/assoc-join hs k v))
+                 {}))
+    (->> (headers/header-iterator-seq headers)
+         (reduce (fn [hs [k v]]
+                   (headers/assoc-join hs k v))
+                 (headers/header-map)))))
 
-(defn set-client-param [#^HttpClient client key val]
+(defn set-client-param [^HttpClient client key val]
   (when-not (nil? val)
     (-> client
         (.getParams)
@@ -67,7 +69,7 @@
 (def proxy-move-with-body (make-proxy-method-with-body :move))
 (def proxy-patch-with-body (make-proxy-method-with-body :patch))
 
-(def ^{:dynamic true} *cookie-store* nil)
+(def ^:dynamic *cookie-store* nil)
 
 (defn- set-routing
   "Use ProxySelectorRoutePlanner to choose proxy sensible based on
@@ -209,7 +211,7 @@
            headers body multipart debug debug-body socket-timeout conn-timeout
            save-request? proxy-host proxy-ignore-hosts proxy-port as
            cookie-store retry-handler response-interceptor digest-auth
-           connection-manager client-params raw-headers]
+           connection-manager client-params use-header-maps-in-response?]
     :as req}]
   (let [^ClientConnectionManager conn-mgr
         (or connection-manager
@@ -246,13 +248,13 @@
           req (assoc req :http-url http-url)
           proxy-ignore-hosts (or proxy-ignore-hosts
                                  #{"localhost" "127.0.0.1"})
-          #^HttpUriRequest http-req (maybe-force-proxy
-                                     http-client
-                                     (http-request-for request-method
-                                                       http-url body)
-                                     proxy-host
-                                     proxy-port
-                                     proxy-ignore-hosts)]
+          ^HttpUriRequest http-req (maybe-force-proxy
+                                    http-client
+                                    (http-request-for request-method
+                                                      http-url body)
+                                    proxy-host
+                                    proxy-port
+                                    proxy-ignore-hosts)]
       (when response-interceptor
         (.addResponseInterceptor
          http-client
@@ -267,12 +269,12 @@
             (.addHeader http-req header-n header-vth))
           (.addHeader http-req header-n header-v)))
       (if multipart
-        (.setEntity #^HttpEntityEnclosingRequest http-req
+        (.setEntity ^HttpEntityEnclosingRequest http-req
                     (mp/create-multipart-entity multipart))
         (when (and body (instance? HttpEntityEnclosingRequest http-req))
           (if (instance? HttpEntity body)
-            (.setEntity #^HttpEntityEnclosingRequest http-req body)
-            (.setEntity #^HttpEntityEnclosingRequest http-req
+            (.setEntity ^HttpEntityEnclosingRequest http-req body)
+            (.setEntity ^HttpEntityEnclosingRequest http-req
                         (if (string? body)
                           (StringEntity. ^String body "UTF-8")
                           (ByteArrayEntity. body))))))
@@ -280,13 +282,10 @@
       (try
         (let [http-resp (.execute http-client http-req)
               http-entity (.getEntity http-resp)
-              resp (merge {:status (.getStatusCode (.getStatusLine http-resp))
-                           :headers (parse-headers (.headerIterator http-resp))
-                           :body (coerce-body-entity req http-entity conn-mgr)}
-                          (when raw-headers
-                            {:raw-headers
-                             (parse-headers (.headerIterator http-resp)
-                                            identity)}))]
+              resp {:status (.getStatusCode (.getStatusLine http-resp))
+                    :headers (parse-headers (.headerIterator http-resp)
+                                            use-header-maps-in-response?)
+                    :body (coerce-body-entity req http-entity conn-mgr)}]
           (if save-request?
             (-> resp
                 (assoc :request req)
