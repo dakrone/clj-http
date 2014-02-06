@@ -352,6 +352,18 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2014-02-06
+- Merged https://github.com/dakrone/clj-http/pull/184 containing a bevy of
+  changes:
+  - initial header-map implementation, allowing headers to be used case
+    insensitively
+  - drop support for clojure 1.2 and 1.3
+  - add support for clojure 1.6
+  - change all :use statements to :require statements
+  - use better docstring support for defs
+  - remove sleep calls in tests
+  - make Jetty quieter while running tests
+  - newer type hinting syntax
 ** Released 0.7.9
 ** 2014-02-01
 - Make :decode-body-headers more reliable by using a byte array instead of
