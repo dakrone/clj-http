@@ -352,6 +352,8 @@
 * Work log
   Log of merges/issues/work that's gone in so I know what to put in
   the changelog for the next release
+** 2014-02-09
+- Fix :trace-redirects being [nil] when :uri is used
 ** 2014-02-06
 - Merged https://github.com/dakrone/clj-http/pull/184 containing a bevy of
   changes:

@@ -196,7 +196,10 @@
              max-redirects 20}
         :as req}]
     (let [{:keys [status] :as resp} (client req)
-          resp-r (assoc resp :trace-redirects (conj trace-redirects url))]
+          resp-r (assoc resp :trace-redirects
+                        (if url
+                          (conj trace-redirects url)
+                          trace-redirects))]
       (cond
        (= false follow-redirects)
        resp
