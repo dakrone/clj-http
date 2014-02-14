@@ -140,6 +140,16 @@
   [{:keys [status]}]
   (<= 500 status 599))
 
+(defn throws-exceptions?
+  [req]
+  (let [te? (clojure.core/get req :throw-exceptions)]
+    (if (nil? te?)
+      (let [te? (clojure.core/get req :throw-exceptions?)]
+        (if (nil? te?)
+          true
+          te?))
+      te?)))
+
 (defn wrap-exceptions
   "Middleware that throws a slingshot exception if the response is not a
   regular response. If :throw-entire-message? is set to true, the entire
@@ -147,7 +157,7 @@
   [client]
   (fn [req]
     (let [{:keys [status] :as resp} (client req)]
-      (if (or (not (clojure.core/get req :throw-exceptions true))
+      (if (or (not (throws-exceptions? req))
               (unexceptional-status? status))
         resp
         (if (:throw-entire-message? req)
@@ -189,8 +199,7 @@
   :trace-redirects - vector of sites the request was redirected from"
   [client]
   (fn [{:keys [request-method follow-redirects max-redirects
-               redirects-count trace-redirects url force-redirects
-               throw-exceptions]
+               redirects-count trace-redirects url force-redirects]
         :or {redirects-count 1 trace-redirects []
              ;; max-redirects default taken from Firefox
              max-redirects 20}
@@ -206,7 +215,7 @@
        (not (redirect? resp-r))
        resp-r
        (and max-redirects (> redirects-count max-redirects))
-       (if throw-exceptions
+       (if (:throw-exceptions req (:throw-exceptions? req))
          (throw+ resp-r "Too many redirects: %s" redirects-count)
          resp-r)
        (= 303 status)
