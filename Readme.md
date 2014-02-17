@@ -348,6 +348,11 @@ as a primitive for building higher-level interfaces:
     (merge {:method method :url (str "http://site.com/" path)} opts)))
 ```
 
+#### Boolean options
+
+Since 0.9.0, all boolean options can be expressed as either `{:debug true}` or
+`{:debug? true}`, with or without the question mark.
+
 ### Exceptions
 
 The client will throw exceptions on, well, exceptional status codes,

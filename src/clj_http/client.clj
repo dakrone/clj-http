@@ -5,7 +5,7 @@
             [clj-http.core :as core]
             [clj-http.headers :refer [wrap-header-map]]
             [clj-http.links :refer [wrap-links]]
-            [clj-http.util :as util]
+            [clj-http.util :refer [opt] :as util]
             [clojure.stacktrace :refer [root-cause]]
             [clojure.string :as str]
             [clojure.walk :refer [prewalk]]
@@ -147,12 +147,13 @@
   [client]
   (fn [req]
     (let [{:keys [status] :as resp} (client req)]
-      (if (or (not (clojure.core/get req :throw-exceptions true))
-              (unexceptional-status? status))
+      (if (unexceptional-status? status)
         resp
-        (if (:throw-entire-message? req)
-          (throw+ resp "clj-http: status %d %s" (:status %) resp)
-          (throw+ resp "clj-http: status %s" (:status %)))))))
+        (if (false? (opt req :throw-exceptions))
+          resp
+          (if (opt req :throw-entire-message)
+            (throw+ resp "clj-http: status %d %s" (:status %) resp)
+            (throw+ resp "clj-http: status %s" (:status %))))))))
 
 (declare wrap-redirects)
 
@@ -188,9 +189,7 @@
   :redirects-count - number of redirects
   :trace-redirects - vector of sites the request was redirected from"
   [client]
-  (fn [{:keys [request-method follow-redirects max-redirects
-               redirects-count trace-redirects url force-redirects
-               throw-exceptions]
+  (fn [{:keys [request-method max-redirects redirects-count trace-redirects url]
         :or {redirects-count 1 trace-redirects []
              ;; max-redirects default taken from Firefox
              max-redirects 20}
@@ -201,12 +200,12 @@
                           (conj trace-redirects url)
                           trace-redirects))]
       (cond
-       (= false follow-redirects)
+       (false? (opt req :follow-redirects))
        resp
        (not (redirect? resp-r))
        resp-r
        (and max-redirects (> redirects-count max-redirects))
-       (if throw-exceptions
+       (if (opt req :throw-exceptions)
          (throw+ resp-r "Too many redirects: %s" redirects-count)
          resp-r)
        (= 303 status)
@@ -218,7 +217,7 @@
         (#{:get :head} request-method)
         (follow-redirect client (assoc req :redirects-count
                                        (inc redirects-count)) resp-r)
-        force-redirects
+        (opt req :force-redirects)
         (follow-redirect client (assoc req
                                   :request-method :get
                                   :redirects-count (inc redirects-count))
@@ -227,7 +226,7 @@
         resp-r)
        (= 307 status)
        (if (or (#{:get :head} request-method)
-               force-redirects)
+               (opt req :force-redirects))
          (follow-redirect client (assoc req :redirects-count
                                         (inc redirects-count)) resp-r)
          resp-r)
@@ -264,7 +263,7 @@
   header or decompress body."
   [client]
   (fn [req]
-    (if (= false (:decompress-body req))
+    (if (false? (opt req :decompress-body))
       (client req)
       (let [req-c (update req :headers assoc "accept-encoding" "gzip, deflate")
             resp-c (client req-c)]
@@ -445,7 +444,7 @@
   from clj-http's dependencies."
   [client]
   (fn [req]
-    (if (:decode-body-headers req)
+    (if (opt req :decode-body-headers)
       (if crouton-enabled?
         (let [resp (client req)
               body-bytes (util/force-byte-array (:body resp))

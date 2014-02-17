@@ -1,3 +1,12 @@
+#+TITLE:    clj-http changelog
+#+AUTHOR:   Lee Hinman
+#+STARTUP:  align fold nodlcheck lognotestate hideall
+#+OPTIONS:  H:4 num:nil toc:t \n:nil @:t ::t |:t ^:{} -:t f:t *:t
+#+OPTIONS:  skip:nil d:(HIDE) tags:not-in-toc
+#+PROPERTY: header-args :results code :exports both :noweb yes
+#+HTML_HEAD: <style type="text/css"> body {margin-right:15%; margin-left:15%;} </style>
+#+LANGUAGE: en
+
 * Changelog
   List of user-visible changes that have gone into each release
 ** 0.7.9
@@ -350,8 +359,11 @@
    - see: https://github.com/mmcgrana/clj-http
 
 * Work log
-  Log of merges/issues/work that's gone in so I know what to put in
-  the changelog for the next release
+Log of merges/issues/work that's gone in so I know what to put in
+the changelog for the next release
+** 2014-02-16
+- Unify all boolean operators so {:debug true} and {:debug? true} are treated
+  the same
 ** 2014-02-09
 - Fix :trace-redirects being [nil] when :uri is used
 ** 2014-02-06

@@ -3,6 +3,7 @@
   (:require [clj-http.conn-mgr :as conn]
             [clj-http.headers :as headers]
             [clj-http.multipart :as mp]
+            [clj-http.util :refer [opt]]
             [clojure.pprint])
   (:import (java.io ByteArrayOutputStream File FilterInputStream InputStream)
            (java.net URI)
@@ -160,7 +161,7 @@
   (println "Request:" (type body))
   (clojure.pprint/pprint
    (assoc req
-     :body (if debug-body
+     :body (if (opt req :debug-body)
              (cond
               (isa? (type body) String)
               body
@@ -208,10 +209,9 @@
    Note that where Ring uses InputStreams for the request and response bodies,
    the clj-http uses ByteArrays for the bodies."
   [{:keys [request-method scheme server-name server-port uri query-string
-           headers body multipart debug debug-body socket-timeout conn-timeout
-           save-request? proxy-host proxy-ignore-hosts proxy-port as
-           cookie-store retry-handler response-interceptor digest-auth
-           connection-manager client-params use-header-maps-in-response?]
+           headers body multipart socket-timeout conn-timeout proxy-host
+           proxy-ignore-hosts proxy-port as cookie-store retry-handler
+           response-interceptor digest-auth connection-manager client-params]
     :as req}]
   (let [^ClientConnectionManager conn-mgr
         (or connection-manager
@@ -278,20 +278,21 @@
                         (if (string? body)
                           (StringEntity. ^String body "UTF-8")
                           (ByteArrayEntity. body))))))
-      (when debug (print-debug! req http-req))
+      (when (opt req :debug) (print-debug! req http-req))
       (try
         (let [http-resp (.execute http-client http-req)
               http-entity (.getEntity http-resp)
               resp {:status (.getStatusCode (.getStatusLine http-resp))
-                    :headers (parse-headers (.headerIterator http-resp)
-                                            use-header-maps-in-response?)
+                    :headers (parse-headers
+                              (.headerIterator http-resp)
+                              (opt req :use-header-maps-in-response))
                     :body (coerce-body-entity req http-entity conn-mgr)}]
-          (if save-request?
+          (if (opt req :save-request)
             (-> resp
                 (assoc :request req)
                 (assoc-in [:request :body-type] (type body))
                 (update-in [:request]
-                           #(if debug-body
+                           #(if (opt req :debug-body)
                               (assoc % :body-content
                                      (cond
                                       (isa? (type (:body %)) String)

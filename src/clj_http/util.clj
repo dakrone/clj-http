@@ -94,3 +94,19 @@
   [m]
   (let [f (fn [[k v]] (if (string? k) [(lower-case k) v] [k v]))]
     (postwalk (fn [x] (if (map? x) (into {} (map f x)) x)) m)))
+
+(defn opt
+  "Check the request parameters for a keyword  boolean option, with or without
+  the ?
+
+  Returns false if either of the values are false, or the value of
+  (or key1 key2) otherwise (truthy)"
+  [req param]
+  (let [param-? (keyword (str (name param) "?"))
+        v1 (clojure.core/get req param)
+        v2 (clojure.core/get req param-?)]
+    (if (false? v1)
+      false
+      (if (false? v2)
+        false
+        (or v1 v2)))))

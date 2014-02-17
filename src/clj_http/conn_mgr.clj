@@ -1,6 +1,7 @@
 (ns clj-http.conn-mgr
   "Utility methods for Scheme registries and HTTP connection managers"
-  (:require [clojure.java.io :as io])
+  (:require [clj-http.util :refer [opt]]
+            [clojure.java.io :as io])
   (:import (java.net Socket Proxy Proxy$Type InetSocketAddress)
            (java.security KeyStore)
            (java.security.cert X509Certificate)
@@ -100,23 +101,24 @@
 
 (defn ^SchemeRegistry get-keystore-scheme-registry
   [{:keys [keystore keystore-type keystore-pass
-           trust-store trust-store-type trust-store-pass insecure?]}]
+           trust-store trust-store-type trust-store-pass]
+    :as req}]
   (let [ks (get-keystore keystore keystore-type keystore-pass)
         ts (get-keystore trust-store trust-store-type trust-store-pass)
         factory (SSLSocketFactory. ks keystore-pass ts)]
-    (if insecure?
+    (if (opt req :insecure)
       (.setHostnameVerifier factory
                             SSLSocketFactory/ALLOW_ALL_HOSTNAME_VERIFIER))
     (doto (SchemeRegistryFactory/createDefault)
       (.register (Scheme. "https" 443 factory)))))
 
 (defn ^BasicClientConnectionManager make-regular-conn-manager
-  [{:keys [insecure? keystore trust-store] :as req}]
+  [{:keys [keystore trust-store] :as req}]
   (cond
    (or keystore trust-store)
    (BasicClientConnectionManager. (get-keystore-scheme-registry req))
 
-   insecure? (BasicClientConnectionManager. insecure-scheme-registry)
+   (opt req :insecure) (BasicClientConnectionManager. insecure-scheme-registry)
 
    :else (BasicClientConnectionManager.)))
 
@@ -127,9 +129,9 @@
   "Given an timeout and optional insecure? flag, create a
   PoolingClientConnectionManager with <timeout> seconds set as the
   timeout value."
-  [{:keys [timeout insecure? keystore trust-store] :as config}]
+  [{:keys [timeout keystore trust-store] :as config}]
   (let [registry (cond
-                  insecure? insecure-scheme-registry
+                  (opt config :insecure) insecure-scheme-registry
 
                   (or keystore trust-store)
                   (get-keystore-scheme-registry config)
@@ -171,8 +173,8 @@
   (let [timeout (or (:timeout opts) 5)
         threads (or (:threads opts) 4)
         default-per-route (or (:default-per-route opts) dmcpr)
-        insecure? (:insecure? opts)
-        leftovers (dissoc opts :timeout :threads :insecure?)]
+        insecure? (opt opts :insecure)
+        leftovers (dissoc opts :timeout :threads :insecure? :insecure)]
     (doto (make-reusable-conn-manager* (merge {:timeout timeout
                                                :insecure? insecure?}
                                               leftovers))
