@@ -876,6 +876,3 @@ the changelog for the next release
    - updated dependencies
    - merged jou4's branch to allow proxy usage
    - merged zkim's branch for specifying timeouts
-
-* TODO
-** Allow header names as keywords
