@@ -2,6 +2,7 @@
   "Namespace used for clj-http to create multipart entities and bodies."
   (:import (java.io File InputStream)
            (java.nio.charset Charset)
+           (org.apache.http.entity ContentType)
            (org.apache.http.entity.mime MultipartEntity)
            (org.apache.http.entity.mime.content ByteArrayBody
                                                 FileBody
@@ -20,6 +21,9 @@
 
    (and mime-type content encoding)
    (FileBody. content mime-type encoding)
+
+   (and name mime-type content)
+   (FileBody. content (ContentType/create mime-type) name)
 
    (and mime-type content)
    (FileBody. content mime-type)
