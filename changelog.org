@@ -361,6 +361,9 @@
 * Work log
 Log of merges/issues/work that's gone in so I know what to put in
 the changelog for the next release
+** 2014-02-19
+- Merged https://github.com/dakrone/clj-http/pull/190 to support file multiparts
+  with content, mime-type and name
 ** 2014-02-16
 - Unify all boolean operators so {:debug true} and {:debug? true} are treated
   the same
