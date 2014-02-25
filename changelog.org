@@ -9,6 +9,24 @@
 
 * Changelog
   List of user-visible changes that have gone into each release
+** 0.9.0
+- Bumped httpcore to 4.3.2
+- Merged https://github.com/dakrone/clj-http/pull/190 to support file multiparts
+  with content, mime-type and name
+- Unify all boolean operators so {:debug true} and {:debug? true} are treated
+  the same
+- Fix :trace-redirects being [nil] when :uri is used
+- Merged https://github.com/dakrone/clj-http/pull/184 containing a bevy of
+  changes:
+  - initial header-map implementation, allowing headers to be used case
+    insensitively
+  - drop support for clojure 1.2 and 1.3
+  - add support for clojure 1.6
+  - change all :use statements to :require statements
+  - use better docstring support for defs
+  - remove sleep calls in tests
+  - make Jetty quieter while running tests
+  - newer type hinting syntax
 ** 0.7.9
 - Make :decode-body-headers more reliable by using a byte array instead of
   slurp.
@@ -361,6 +379,9 @@
 * Work log
 Log of merges/issues/work that's gone in so I know what to put in
 the changelog for the next release
+** Released 0.9.0
+** 2014-02-25
+- Bumped httpcore to 4.3.2
 ** 2014-02-19
 - Merged https://github.com/dakrone/clj-http/pull/190 to support file multiparts
   with content, mime-type and name

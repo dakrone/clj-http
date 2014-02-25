@@ -16,7 +16,7 @@ pull request or open an issue if you have any problems
 [Clojars](http://clojars.org/clj-http):
 
 ```clojure
-[clj-http "0.7.9"]
+[clj-http "0.9.0"]
 ```
 
 Previous versions available as
@@ -25,12 +25,6 @@ Previous versions available as
 [clj-http "0.7.9"]
 [clj-http "0.7.7"]
 [clj-http "0.7.6"]
-```
-
-You can also try out the new header-map implementation by using:
-
-```clojure
-[clj-http "0.9.0-SNAPSHOT"]
 ```
 
 ## Usage

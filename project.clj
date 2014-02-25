@@ -1,4 +1,4 @@
-(defproject clj-http "0.9.0-SNAPSHOT"
+(defproject clj-http "0.9.0"
   :description "A Clojure HTTP library wrapping the Apache HttpComponents client."
   :url "https://github.com/dakrone/clj-http/"
   :license {:name "The MIT License"
@@ -7,7 +7,7 @@
   :global-vars {*warn-on-reflection* true}
   :min-lein-version "2.0.0"
   :exclusions [org.clojure/clojure]
-  :dependencies [[org.apache.httpcomponents/httpcore "4.3.1"]
+  :dependencies [[org.apache.httpcomponents/httpcore "4.3.2"]
                  [org.apache.httpcomponents/httpclient "4.3.2"]
                  [org.apache.httpcomponents/httpmime "4.3.2"]
                  [commons-codec "1.9"]
