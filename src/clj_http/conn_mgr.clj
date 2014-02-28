@@ -182,7 +182,7 @@
       (.setDefaultMaxPerRoute default-per-route))))
 
 (defn shutdown-manager
-  "Define function to shutdown manager"
+  "Shut down the given connection manager, if it is not nil"
   [^ClientConnectionManager manager]
   (and manager (.shutdown manager)))
 
