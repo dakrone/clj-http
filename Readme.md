@@ -558,6 +558,10 @@ for each request:
 (get "http://aoeu.com/1" {:connection-manager cm2})
 (post "http://aoeu.com/2" {:connection-manager cm})
 (get "http://aoeu.com/3" {:connection-manager cm2})
+
+;; Don't forget to shut it down when you're done!
+(clj-http.conn-mgr/shutdown-manager cm)
+(clj-http.conn-mgr/shutdown-manager cm2)
 ```
 
 See the docstring on `make-reusable-conn-manager` for options and

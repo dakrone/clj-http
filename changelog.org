@@ -8,7 +8,7 @@
 #+LANGUAGE: en
 
 * Changelog
-  List of user-visible changes that have gone into each release
+List of user-visible changes that have gone into each release
 ** 0.9.0
 - Bumped httpcore to 4.3.2
 - Merged https://github.com/dakrone/clj-http/pull/190 to support file multiparts
