@@ -633,12 +633,12 @@
   "Middleware ignoring unknown hosts when the :ignore-unknown-host? option
   is set."
   [client]
-  (fn [{:keys [ignore-unknown-host?] :as req}]
+  (fn [req]
     (try
       (client req)
       (catch Exception e
         (if (= (type (root-cause e)) UnknownHostException)
-          (when-not ignore-unknown-host?
+          (when-not (opt req :ignore-unknown-host)
             (throw (root-cause e)))
           (throw (root-cause e)))))))
 

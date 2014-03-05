@@ -379,6 +379,8 @@ List of user-visible changes that have gone into each release
 * Work log
 Log of merges/issues/work that's gone in so I know what to put in
 the changelog for the next release
+** 2014-03-05
+- fix issue where :ignore-unknown-host wasn't using the =opt= function correctly
 ** Released 0.9.0
 ** 2014-02-25
 - Bumped httpcore to 4.3.2
