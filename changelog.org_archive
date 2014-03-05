@@ -1,0 +1,654 @@
+
+Archived entries from file /Users/hinmanm/src/clj/clj-http/changelog.org
+
+
+* Archived Tasks
+
+** 0.7.8
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - Added the `proxy-ignore-hosts` option to allow specifying a list
+     of hosts where a proxy should be ignored
+   - merged https://github.com/dakrone/clj-http/pull/166 to fix some
+     small whitespace and reflection stuff
+   - Close the body of a response in wrap-redirects since all bodies
+     are streams now. Otherwise, the body is kept open indefinitely.
+
+** 0.7.7
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - merged https://github.com/dakrone/clj-http/pull/162 to pass
+     through json opts for form-param encoding
+   - bumped dependencies
+   - fix #159 - issue with :decode-body-headers introduced with
+     streaming bodies
+   - merged https://github.com/dakrone/clj-http/pull/156 to add
+     `:raw-headers` option to return an additional
+     untouched :raw-headers map
+   - merged https://github.com/dakrone/clj-http/pull/154 to handle
+     query-params not clobbering query-params in the URL string
+   - bump main deps
+   - merged https://github.com/dakrone/clj-http/pull/151 to prevent
+     shutting down a reusable connection manager when an error occurs
+
+** 0.7.6
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - add logging config for local testing only
+   - remove "content-encoding" header if the body is automatically
+     decompressed to allow for pass-through. If header is removed,
+     assoc :orig-content-encoding to response map.
+   - merged https://github.com/dakrone/clj-http/pull/149 to fix
+     closing the stream when coerced to byte array
+   - merged https://github.com/dakrone/clj-http/pull/146 to correctly
+     reference parameter names
+
+** 0.7.5
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - Only redirect if a "location" header is actually, present, avoiding an
+     NPE in the event it's missing. (fixes #145)
+
+** 0.7.4
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - merged https://github.com/dakrone/clj-http/pull/143 for fixing some
+     weirdness around body streams and inflation
+   - streams everywhere, all bodies coming out of core.clj are now streams, so
+     {:as :stream} truly streams the response, keeping it out of memory
+   - remove some more reflection
+
+** 0.7.3
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - correctly close single client connection manager if {:as :stream} is used, fixes #142
+   - merged https://github.com/dakrone/clj-http/pull/138 to preserve
+     http method for 307 redirect
+   - merged in parse-url parameters into follow-redirect so request
+     map is not inconsistent
+   - bumped http* deps to 4.2.5
+   - fixed cookie compact-map not to remove falsey values, only nil
+     ones
+   - merged https://github.com/dakrone/clj-http/pull/135 to fix
+     discard always defaulting to true
+   - add *current-middleware* to see available middleware during a
+     with-middleware request (for nesting)
+
+** 0.7.2
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - merged https://github.com/dakrone/clj-http/pull/127 to allow
+     custom cookie policies
+   - allow specifying :length for mulitpart inputstream bodies to
+     avoid chunked transfer encoding
+   - bumped cheshire to 5.1.1
+   - merged https://github.com/dakrone/clj-http/pull/133 to remove
+     some reflection
+
+** 0.7.1
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - clarify :throw-exceptions in documentation
+   - define default-middleware for use in wrap-request, remove bad
+     all-middleware method
+   - merged https://github.com/dakrone/clj-http/pull/130 to encode
+     query-params
+   - merged https://github.com/dakrone/clj-http/pull/124 to handle
+     URL-encoding invalid characters in the URI
+   - bump cheshire to 5.1.0
+   - Switch from deprecated SingleClientConnManager to BasicClientConnectionManager
+   - merged https://github.com/dakrone/clj-http/pull/126 to bump
+     httpcore version
+   - bump dependencies to latest versions
+
+** 0.7.0
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - merged https://github.com/dakrone/clj-http/pull/122 for
+     using *data-readers* when using tools.reader to parse EDN
+   - fix an issue with 1.3 where *data-readers* is not available
+   - merged https://github.com/dakrone/clj-http/pull/121 to fix
+     auto-coercion with json
+   - support application/edn as an auto-coercion type
+   - add tools.reader as an optional dependency, edn/read will be
+     used if available, otherwise read-string with *read-eval* bound
+     to false is used. See https://github.com/dakrone/clj-http/pull/120
+   - Bump clojure to 1.5.1
+
+** 0.6.5
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - allow json coercion for exception cases based on :coerce setting,
+     can be either :always, :exceptional or :unexceptional
+   - Update clojure to 1.5
+   - Move SingleClientConnManager shutdown into finally block
+   - bind *read-eval* to false when reading for {:as :clojure}
+   - bump cheshire to 5.0.2
+
+** 0.6.4
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - merged https://github.com/dakrone/clj-http/pull/113 to update
+     the connection pooling code
+   - refactor pooled connection managers to allow specifying
+     the :connection-manager option
+   - merged https://github.com/dakrone/clj-http/pull/112 to allow
+     json coercion on error responses when :as :auto is used
+   - allow redirects when :url is not set in the request
+   - merged https://github.com/dakrone/clj-http/pull/110 to handle the
+     case when the server-side uses deflate incorrectly
+   - added `with-middleware` to allow running requests with a custom
+     middleware list
+   - added `all-middleware` var listing all the wrap-* middleware that
+     clj-http knows of
+   - clj-http.client/request is now marked as dynamic for rebinding
+
+** 0.6.3
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - Remove wrap-cookie-store middleware, CookieStore headers are
+     automatically added by Apache
+   - set the SINGLE_COOKIE_HEADER value to true to ensure Apache sends
+     only one "Cookie:" header
+   - Do not add CookieStore or Cookie header if there are no cookies
+     in the cookie jar
+
+** 0.6.2
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - merged https://github.com/dakrone/clj-http/pull/106 to remove
+     query params for redirection.
+   - whitespace fixes; fix test that wasn't working correctly
+
+** 0.6.1
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - bump httpcore to 4.2.3
+   - Fix an issue (#105) related to the "Content-Length" header being
+     automatically added to GET requests
+
+** 0.6.0
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   (bumped to 0.6.0 since Cheshire has changed major versions)
+   - Update Cheshire to 5.0.1
+   - Add type hint for getting headers from body (michaelklishin)
+
+** 0.5.8
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - add buffering for HttpEntity, with ability to turn off if needed,
+     fixes lein issue with repeatable requests
+
+** 0.5.7
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - create a custom X509HostnameVerifier for the :insecure? option
+   - explicitly require httpcore instead of leaving it to a transitive dep
+   - update httpcomponents to 4.2.2
+   - implement HTML5 charset header reading from body
+
+** 0.5.6
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - bump Crouton to 0.1.1 for faster speeds
+   - add feature to decode body headers, merging them into response
+     headers if they are present
+   - merged https://github.com/dakrone/clj-http/pull/98 to add
+     optional :default-per-route to with-connection-pool
+
+** 0.5.5
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - bump cheshire to fix json encoding bug
+
+** 0.5.4
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - merged https://github.com/dakrone/clj-http/pull/95 to add support
+     for setting aribtrary client params to the http client
+   - Merged https://github.com/dakrone/clj-http/pull/94 to remove some
+     reflection
+   - update cheshire dep, make clojure a dev-dependency
+   - allow overriding the multipart part name with :part-name
+
+** 0.5.3
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - merged https://github.com/dakrone/clj-http/pull/91 to add support
+     for :digest-auth
+   - added request timing middleware to add :request-time key for
+     request timing
+   - add wrap-cookie-store to send cookie-store cookies with a request
+     automatically
+   - merged https://github.com/dakrone/clj-http/pull/90 to standardize
+     on lower-case headers for HTTP requests
+
+** 0.5.2
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - merged https://github.com/dakrone/clj-http/pull/88 to add chunked encoding
+     support (=:length= no longer required along with input stream =:body=)
+
+** 0.5.1
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - fix clojure 1.3's exception wrapping for some exceptions
+   - merged https://github.com/dakrone/clj-http/pull/87 to allow using
+     http.nonProxyHosts
+   - mark json-encode and json-decode dynamic, so they could be
+     rebound if desired
+   - update httpclient and httpmime to 4.2.1
+   - update commons-codec to 1.6
+   - update common-io to 2.4
+   - change body decompression to be optional, if desired
+   - make the :content-type and :character-encoding options part of
+     middleware, not the core request
+   - document all the middleware
+   - merged https://github.com/dakrone/clj-http/pull/85 to allow
+     low-level callback for debugging
+
+** 0.5.0
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - rewrite multipart body entity creation to use different map
+     format, allowing :mime-type and :encoding keys in some cases
+
+** 0.4.4
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - bump cheshire to 4.0.1 and slingshot to 0.10.3
+   - fix an issue where cookies were encoded and should not be
+   - merged https://github.com/dakrone/clj-http/pull/80 to allow
+     specifying the keystore type
+   - merged https://github.com/dakrone/clj-http/pull/79 to allow
+     pluggable output coercion (multimethod)
+
+** 0.4.3
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - support custom x509 keystore/trust-stores
+
+** 0.4.2
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - fixed an issue where multiple link headers would cause an
+     exception to be thrown
+
+** 0.4.1
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - added :debug-body that adds plaintext body information to
+     the :debug output
+   - fix json encoded form params with nested maps
+   - fix attempted json coercion when a bad status is received
+   - merged https://github.com/dakrone/clj-http/pull/69 to add support
+     for :oauth-token authentication
+   - merged https://github.com/dakrone/clj-http/pull/70 to save the
+     apache Http object when :save-request? is true
+   - merged https://github.com/dakrone/clj-http/pull/68 to support
+     additional options/delete/copy/move HTTP methods
+   - add support for the :patch method type
+
+** 0.4.0
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - merged https://github.com/dakrone/clj-http/pull/66 to add support
+     for 'Link' header
+   - added ability to specify your own retry-handler for IOExceptions
+     if desired
+   - bumped httpclient and httpmime to 4.1.3
+   - bump to released version of clojure (1.4)
+   - added documentation about ipv6 requests
+   - fixed https://github.com/dakrone/clj-http/issues/57 by have
+     wrap-redirects redirect according to the RFC and adding
+     the :force-redirects option to be more browser-like
+   - merged https://github.com/dakrone/clj-http/pull/61 to add support
+     for nested param maps
+
+** 0.3.6
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - fixed an issue where urls like http://user:pass@foo.com didn't
+     work correctly for basic-auth
+   - added support for cookie stores
+   - added utility methods to retrieve cookies as a map from the
+     cookie store
+   - set the default maximum number of redirects to 20
+
+** 0.3.5
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - same as 0.3.4, but with a newer cheshire that doesn't interfere
+     with clj-json
+
+** 0.3.4
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - improved commit from pull/55 to make the predicate more generalized to
+     any kind of entity request
+   - make Cheshire an optional dependency, only for {:as :json} and
+     json form-params
+   - merged https://github.com/dakrone/clj-http/pull/55 to fix HEAD
+     requests with body contents
+   - merged https://github.com/dakrone/clj-http/pull/53 to add status
+     functions into the clj-http.client namespace
+   - added the ability to specify {:as :clojure} to get back a clojure
+     datastructure, or {:as :auto} with content-type=application/clojure
+   - merged https://github.com/dakrone/clj-http/pull/52 to support
+     json-encoded form params
+   - added a test for json-encoded form params as request body
+
+** 0.3.3
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - merged https://github.com/dakrone/clj-http/pull/51 to
+     allow :form-params on PUT requests
+   - bump Cheshire and slingshot deps
+   - add the :throw-entire-message? option to include resp in
+     Exception message
+   - throw an IllegalArgumentException instead of a regulor Exception
+     on nil urls
+   - add ability to redirect to relative paths (ngrunwald)
+
+** 0.3.2
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - merged https://github.com/dakrone/clj-http/pull/48 to fix :stream
+     bodies (to make sure they are not coerced on output)
+   - merged https://github.com/dakrone/clj-http/pull/49 to check for
+     nil URLs when using client functions
+   - switch from assertions to exceptions for nil URLs
+   - merged https://github.com/dakrone/clj-http/pull/46 to
+     add :trace-redirects to the response map
+   - merged https://github.com/dakrone/clj-http/pull/47 to allow GET
+     requests with a :body set
+   - merged https://github.com/dakrone/clj-http/pull/44 to add ability
+     to specify maximum number of redirects
+   - add tests for max-redirects
+   - merged https://github.com/dakrone/clj-http/pull/42 to allow
+     strings or keywords for :scheme in requests
+   - added test for different :schemes
+
+** 0.3.1
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - merged https://github.com/dakrone/clj-http/pull/40 to allow
+     per-request proxy settings
+   - remove a few more reflections
+   - added ablity to return the body as a stream with {:as :stream}
+   - general code cleanup
+
+** 0.3.0
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - add ability to ignore unknown host if desired ({:ignore-unknown-host? true})
+   - use much better Enitity's for the body, depending on type
+   - bump all dependencies
+   - test re-org to make better sense (and allow C-c t in emacs)
+   - merged https://github.com/dakrone/clj-http/pull/36 to fix
+     url-encoding of multiple query params using the same key
+   - merged https://github.com/dakrone/clj-http/pull/34 to fix
+     decoding cookies that don't follow RFC spec
+   - Add better coercion, adding {:as :json}, {:as :json-string-keys}
+     and {:as :auto}
+
+** 0.2.7
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - merged https://github.com/dakrone/clj-http/pull/31 to remove more
+     reflection warnings
+   - some whitespace changes
+   - merged https://github.com/dakrone/clj-http/pull/30 to remove more
+     reflection warnings
+   - removed swank from dev deps
+   - bump 1.4 to alpha3 in multi deps
+
+** 0.2.6
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - don't use :server-port unless required (fixes problem with some
+     web servers)
+   - smaller error message on exceptions (thrown object is still the same)
+   - added the :save-request? option to return the request object in
+     a :request key in the response map
+   - multiple headers with the same name are now preserved when they
+     have differing cases
+
+** 0.2.5
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - multipart form uploads
+   - bump slingshot to 0.9.0
+
+** 0.2.4
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - Got a functioning reusable connection method,
+     (with-connection-pool ...)
+   - upgrade slingshot to 0.8.0
+   - upgrade commons-io to 2.1
+   - merged https://github.com/dakrone/clj-http/pull/20 to
+     allow :basic-auth as a string
+
+** 0.2.3
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - added :insecure? flag
+   - fix AOT by requiring clojure.pprint
+   - wrap-redirects now handles recursive redirects
+
+** 0.2.2
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - wrap-exceptions now uses Slingshot to throw a much more useful
+     exception when there was a problem with the request
+   - fixed an issue when malformed server responses could NPE the
+     decompression middleware
+   - added a :debug flag to pretty-print the request map and object
+     to stdout before performing the request to aid in debugging
+
+** 0.2.1
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - decode cookies from response into :cookies (thanks r0man)
+   - redone redirects, they can now be toggled with {:follow-redirects
+     false} in the request
+   - decompression of responses has been fixed (thanks senior)
+   - accept Content-Encoding or content-encoding from responses
+     (thanks senior)
+   - added ability to specify sending a url-encoded :body of form
+     params using {:form-params {:key value}} (thanks senior)
+
+** 0.2.0
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - updated dependencies to be the latest versions
+   - added ability to use system proxy for connections (thanks jou4)
+   - added ability to specify socket and connection timeouts in
+     request (thanks zkim)
+
+** 0.1.3
+:PROPERTIES:
+:ARCHIVE_TIME: 2014-03-05 Wed 16:32
+:ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+:ARCHIVE_OLPATH: Changelog
+:ARCHIVE_CATEGORY: changelog
+:END:
+   - see: https://github.com/mmcgrana/clj-http
