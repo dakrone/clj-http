@@ -267,7 +267,7 @@
         (if (coll? header-v)
           (doseq [header-vth header-v]
             (.addHeader http-req header-n header-vth))
-          (.addHeader http-req header-n header-v)))
+          (.addHeader http-req header-n (str header-v))))
       (if multipart
         (.setEntity ^HttpEntityEnclosingRequest http-req
                     (mp/create-multipart-entity multipart))

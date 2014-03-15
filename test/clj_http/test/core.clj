@@ -526,3 +526,7 @@
   (run-server)
   (is (thrown? Exception (client/get (localhost "/clojure-bad") {:as :clojure}))
       "Should throw an exception when reading clojure eval components"))
+
+(deftest ^:integration t-numeric-headers
+  (run-server)
+  (client/request {:method :get :url (localhost "/get") :headers {"foo" 2}}))
