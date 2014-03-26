@@ -85,9 +85,9 @@
 (deftest test-encode-cookies
   (are [cookie expected]
     (is (= expected (encode-cookies cookie)))
-    {:a {:value "b"} :c {:value "d"} :e {:value "f"}}
+    (sorted-map :a {:value "b"} :c {:value "d"} :e {:value "f"})
     "a=b;c=d;e=f"
-    {"a" {:value "b"} "c" {:value "d"} "e" {:value "f"}}
+    (sorted-map "a" {:value "b"} "c" {:value "d"} "e" {:value "f"})
     "a=b;c=d;e=f"
     {"example-cookie"
      {:domain ".example.com" :path "/" :value "example-value"}}
@@ -209,4 +209,4 @@
              {:headers
               {"set-cookie"
                "example-cookie=example-value;Domain=.example.com;Path=/"}}))
-          {:cookies {:a {:value "1"} :b {:value "2"}}}))))
+          {:cookies (sorted-map :a {:value "1"} :b {:value "2"})}))))

@@ -47,6 +47,8 @@ List of user-visible changes that have gone into each release
 * Work log
 Log of merges/issues/work that's gone in so I know what to put in
 the changelog for the next release
+** 2014-03-26
+- Bump dependencies and fix tests for 1.6.0 compatibility
 ** Released 0.9.1
 ** 2014-03-15
 - automatically coerce header values to strings
