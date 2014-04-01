@@ -110,18 +110,18 @@ More example requests:
 
 
 ;; Send form params as a urlencoded body (POST or PUT)
-(client/post "http//site.com" {:form-params {:foo "bar"}})
+(client/post "http://site.com" {:form-params {:foo "bar"}})
 ;; Send form params as a json encoded body (POST or PUT)
-(client/post "http//site.com" {:form-params {:foo "bar"} :content-type :json})
+(client/post "http://site.com" {:form-params {:foo "bar"} :content-type :json})
 ;; Send form params as a json encoded body (POST or PUT) with options
-(client/post "http//site.com" {:form-params {:foo "bar"}
+(client/post "http://site.com" {:form-params {:foo "bar"}
                                :content-type :json
                                :json-opts {:date-format "yyyy-MM-dd"})
 
 ;; Multipart form uploads/posts
 ;; takes a vector of maps, to preserve the order of entities, :name
 ;; will be used as the part name unless :part-name is specified
-(client/post "http//example.org" {:multipart [{:name "title" :content "My Awesome Picture"}
+(client/post "http://example.org" {:multipart [{:name "title" :content "My Awesome Picture"}
                                               {:name "Content/type" :content "image/jpeg"}
                                               {:name "foo.txt" :part-name "eggplant" :content "Eggplants"}
                                               {:name "file" :content (clojure.java.io/file "pic.jpg")}]})
