@@ -110,18 +110,18 @@ More example requests:
 
 
 ;; Send form params as a urlencoded body (POST or PUT)
-(client/post "http//site.com" {:form-params {:foo "bar"}})
+(client/post "http://site.com" {:form-params {:foo "bar"}})
 ;; Send form params as a json encoded body (POST or PUT)
-(client/post "http//site.com" {:form-params {:foo "bar"} :content-type :json})
+(client/post "http://site.com" {:form-params {:foo "bar"} :content-type :json})
 ;; Send form params as a json encoded body (POST or PUT) with options
-(client/post "http//site.com" {:form-params {:foo "bar"}
+(client/post "http://site.com" {:form-params {:foo "bar"}
                                :content-type :json
                                :json-opts {:date-format "yyyy-MM-dd"})
 
 ;; Multipart form uploads/posts
 ;; takes a vector of maps, to preserve the order of entities, :name
 ;; will be used as the part name unless :part-name is specified
-(client/post "http//example.org" {:multipart [{:name "title" :content "My Awesome Picture"}
+(client/post "http://example.org" {:multipart [{:name "title" :content "My Awesome Picture"}
                                               {:name "Content/type" :content "image/jpeg"}
                                               {:name "foo.txt" :part-name "eggplant" :content "Eggplants"}
                                               {:name "file" :content (clojure.java.io/file "pic.jpg")}]})
@@ -283,7 +283,7 @@ body, you can use the `:decode-body-headers` option:
 
 ```clojure
 ;; without decoding body headers (defaults to off):
-(:headers (http/get "http://www.yomiuri.co.jp/"))
+(:headers (client/get "http://www.yomiuri.co.jp/"))
 => {"server" "Apache",
     "content-encoding" "gzip",
     "content-type" "text/html",
@@ -296,7 +296,7 @@ body, you can use the `:decode-body-headers` option:
 
 ;; with decoding body headers, notice the content-type,
 ;; content-style-type and content-script-type headers:
-(:headers (http/get "http://www.yomiuri.co.jp/" {:decode-body-headers true}))
+(:headers (client/get "http://www.yomiuri.co.jp/" {:decode-body-headers true}))
 => {"server" "Apache",
     "content-encoding" "gzip",
     "content-script-type" "text/javascript",
@@ -314,7 +314,7 @@ This can be used to have clj-http correctly interpret the body's
 charset by using:
 
 ```clojure
-(http/get "http://www.yomiuri.co.jp/" {:decode-body-headers true :as :auto})
+(client/get "http://www.yomiuri.co.jp/" {:decode-body-headers true :as :auto})
 => ;; correctly formatted :body (Shift_JIS charset instead of UTF-8)
 ```
 
