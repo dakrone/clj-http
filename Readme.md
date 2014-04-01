@@ -283,7 +283,7 @@ body, you can use the `:decode-body-headers` option:
 
 ```clojure
 ;; without decoding body headers (defaults to off):
-(:headers (http/get "http://www.yomiuri.co.jp/"))
+(:headers (client/get "http://www.yomiuri.co.jp/"))
 => {"server" "Apache",
     "content-encoding" "gzip",
     "content-type" "text/html",
@@ -296,7 +296,7 @@ body, you can use the `:decode-body-headers` option:
 
 ;; with decoding body headers, notice the content-type,
 ;; content-style-type and content-script-type headers:
-(:headers (http/get "http://www.yomiuri.co.jp/" {:decode-body-headers true}))
+(:headers (client/get "http://www.yomiuri.co.jp/" {:decode-body-headers true}))
 => {"server" "Apache",
     "content-encoding" "gzip",
     "content-script-type" "text/javascript",
@@ -314,7 +314,7 @@ This can be used to have clj-http correctly interpret the body's
 charset by using:
 
 ```clojure
-(http/get "http://www.yomiuri.co.jp/" {:decode-body-headers true :as :auto})
+(client/get "http://www.yomiuri.co.jp/" {:decode-body-headers true :as :auto})
 => ;; correctly formatted :body (Shift_JIS charset instead of UTF-8)
 ```
 
