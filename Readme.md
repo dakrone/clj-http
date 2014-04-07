@@ -268,9 +268,11 @@ can be specified:
 
 If clj-http decompresses something, the "content-encoding" header is
 removed from the headers (because the encoding is no longer
-true). This allows clj-http to be used as a pass-through proxy with
-ring. The original content-encoding is available as
-`:orig-content-encoding` in the response map if Auto-decompression is
+true). The "content-length" header, if present, will be updated to
+reflect the size of the decompressed content. This allows clj-http to
+be used as a pass-through proxy with ring. The original "content-encoding"
+and "content-length" headers are available as `:orig-content-encoding` and
+`orig-content-length` in the response map if Auto-decompression is
 enabled.
 
 #### HTML Meta tag headers
