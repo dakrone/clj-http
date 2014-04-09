@@ -585,7 +585,7 @@
   (fn [{:keys [form-params content-type request-method json-opts]
         :or {content-type :x-www-form-urlencoded}
         :as req}]
-    (if (and form-params (#{:post :put} request-method))
+    (if (and form-params (#{:post :put :patch} request-method))
       (client (-> req
                   (dissoc :form-params)
                   (assoc :content-type (content-type-value content-type)
