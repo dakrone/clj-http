@@ -45,8 +45,9 @@ List of user-visible changes that have gone into each release
   and clean up whitespace for new clojure-mode
 - Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
 * Work log
-Log of merges/issues/work that's gone in so I know what to put in
-the changelog for the next release
+** 2014-04-09
+- Merged https://github.com/dakrone/clj-http/pull/199 to add support for form
+  parameters in the PATCH method
 ** 2014-03-26
 - Bump dependencies and fix tests for 1.6.0 compatibility
 ** Released 0.9.1
