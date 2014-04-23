@@ -284,7 +284,7 @@
 
 (defn coerce-json-body
   [{:keys [coerce]} {:keys [body status] :as resp} keyword? strict? & [charset]]
-  (let [^String charset (or charset "UTF-8")
+  (let [^String charset (or charset (-> resp :content-type-params :charset) "UTF-8")
         body (util/force-byte-array body)
         decode-func (if strict? json-decode-strict json-decode)]
     (if json-enabled?
@@ -302,6 +302,36 @@
        :else (assoc resp :body (String. ^"[B" body charset)))
       (assoc resp :body (String. ^"[B" body charset)))))
 
+(defn coerce-clojure-body
+  [request {:keys [body] :as resp}]
+  (let [^String charset (or (-> resp :content-type-params :charset) "UTF-8")
+        body (util/force-byte-array body)]
+    (if edn-enabled?
+      (assoc resp :body (parse-edn (String. ^"[B" body charset)))
+      (binding [*read-eval* false]
+        (assoc resp :body (read-string (String. ^"[B" body charset)))))))
+
+(defmulti coerce-content-type (fn [req resp] (:content-type resp)))
+
+(defmethod coerce-content-type :application/clojure [req resp]
+  (coerce-clojure-body req resp))
+
+(defmethod coerce-content-type :application/edn [req resp]
+  (coerce-clojure-body req resp))
+
+(defmethod coerce-content-type :application/json [req resp]
+  (coerce-json-body req resp true false))
+
+(defmethod coerce-content-type :default [req resp]
+  (if-let [charset (-> resp :content-type-params :charset)]
+    (coerce-response-body {:as charset} resp)
+    (coerce-response-body {:as :default} resp)))
+
+(defmethod coerce-response-body :auto [request resp]
+  (let [header (get-in resp [:headers "content-type"])]
+    (->> (merge resp (util/parse-content-type header))
+         (coerce-content-type request))))
+
 (defmethod coerce-response-body :json [req resp]
   (coerce-json-body req resp true false))
 
@@ -314,40 +344,8 @@
 (defmethod coerce-response-body :json-string-keys [req resp]
   (coerce-json-body req resp false false))
 
-(defmethod coerce-response-body :clojure [_ {:keys [body] :as resp}]
-  (let [body (util/force-byte-array body)]
-    (if edn-enabled?
-      (assoc resp :body (parse-edn (String. ^"[B" body "UTF-8")))
-      (binding [*read-eval* false]
-        (assoc resp :body (read-string (String. ^"[B" body "UTF-8")))))))
-
-(defmethod coerce-response-body :auto
-  [req resp]
-  (let [typestring (get-in resp [:headers "content-type"])]
-    (cond
-     (.startsWith (str typestring) "text/")
-     (if-let [charset (second (re-find #"charset=(.*)"
-                                       (str typestring)))]
-       (coerce-response-body {:as charset} resp)
-       (coerce-response-body {:as :default} resp))
-
-     (or (.startsWith (str typestring) "application/clojure")
-         (.startsWith (str typestring) "application/edn"))
-     (let [charset (or (second (re-find #"charset=(.*)" (str typestring)))
-                       "UTF-8")]
-       (coerce-response-body {:as :clojure} resp))
-
-     (and (.startsWith (str typestring) "application/json")
-          json-enabled?)
-     (do
-       (if-let [charset (second (re-find #"charset=(.*)"
-                                         (str typestring)))]
-         ;; Defaulting to lazy parsing w/ symbol keys.
-         (coerce-json-body req resp true false charset)
-         (coerce-json-body req resp true false "UTF-8")))
-
-     :else
-     (coerce-response-body {:as :default} resp))))
+(defmethod coerce-response-body :clojure [req resp]
+  (coerce-clojure-body req resp))
 
 (defmethod coerce-response-body :default
   [{:keys [as]} {:keys [status body] :as resp}]

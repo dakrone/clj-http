@@ -20,3 +20,24 @@
   (is (= (opt {:thing? nil :thing false} :thing) false))
   (is (= (opt {:thing? nil :thing nil} :thing) nil))
   (is (= (opt {:thing? :a :thing nil} :thing) :a)))
+
+(deftest test-parse-content-type
+  (are [s expected]
+    (is (= expected (parse-content-type s)))
+    nil nil
+    "" nil
+    "application/json"
+    {:content-type :application/json
+     :content-type-params {}}
+    " application/json "
+    {:content-type :application/json
+     :content-type-params {}}
+    "application/json; charset=UTF-8"
+    {:content-type :application/json
+     :content-type-params {:charset "UTF-8"}}
+    " application/json;  charset=UTF-8 "
+    {:content-type :application/json
+     :content-type-params {:charset "UTF-8"}}
+    "text/html; charset=ISO-8859-4"
+    {:content-type :text/html
+     :content-type-params {:charset "ISO-8859-4"}}))

@@ -1,6 +1,6 @@
 (ns clj-http.util
   "Helper functions for the HTTP client."
-  (:require [clojure.string :refer [lower-case]]
+  (:require [clojure.string :refer [blank? lower-case split trim]]
             [clojure.walk :refer [postwalk]])
   (:import (org.apache.commons.codec.binary Base64)
            (org.apache.commons.io IOUtils)
@@ -110,3 +110,16 @@
       (if (false? v2)
         false
         (or v1 v2)))))
+
+(defn parse-content-type
+  "Parse `s` as an RFC 2616 media type."
+  [s]
+  (if-let [m (re-matches #"\s*(([^/]+)/([^ ;]+))\s*(\s*;.*)?" (str s))]
+    {:content-type (keyword (nth m 1))
+     :content-type-params
+     (->> (split (str (nth m 4)) #"\s*;\s*")
+          (identity)
+          (remove blank?)
+          (map #(split % #"="))
+          (mapcat (fn [[k v]] [(keyword (lower-case k)) (trim v)]))
+          (apply hash-map))}))
