@@ -45,6 +45,9 @@ List of user-visible changes that have gone into each release
   and clean up whitespace for new clojure-mode
 - Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
 * Work log
+** 2014-05-14
+- merged https://github.com/dakrone/clj-http/pull/201 to make :auto content type
+  parsing dispatch pluggable
 ** 2014-04-21
 - Bump crouton and tools.reader dependencies
 ** 2014-04-09
