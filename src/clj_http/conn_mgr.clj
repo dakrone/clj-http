@@ -96,7 +96,7 @@
     (let [keystore (KeyStore/getInstance (or keystore-type
                                              (KeyStore/getDefaultType)))]
       (with-open [is (io/input-stream keystore-file)]
-        (.load keystore is (.toCharArray keystore-pass))
+        (.load keystore is (when keystore-pass (.toCharArray keystore-pass)))
         keystore))))
 
 (defn ^SchemeRegistry get-keystore-scheme-registry
