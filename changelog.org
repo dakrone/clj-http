@@ -9,6 +9,15 @@
 
 * Changelog
 List of user-visible changes that have gone into each release
+** 0.9.2
+- merged https://github.com/dakrone/clj-http/pull/206 to handle null passwords
+  for keystores
+- merged https://github.com/dakrone/clj-http/pull/201 to make :auto content type
+  parsing dispatch pluggable
+- Bump crouton and tools.reader dependencies
+- Merged https://github.com/dakrone/clj-http/pull/199 to add support for form
+  parameters in the PATCH method
+- Bump dependencies and fix tests for 1.6.0 compatibility
 ** 0.9.1
 - automatically coerce header values to strings
 - fix issue where :ignore-unknown-host wasn't using the =opt= function correctly
@@ -45,6 +54,10 @@ List of user-visible changes that have gone into each release
   and clean up whitespace for new clojure-mode
 - Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
 * Work log
+** Released 0.9.2
+** 2014-05-27
+- merged https://github.com/dakrone/clj-http/pull/206 to handle null passwords
+  for keystores
 ** 2014-05-14
 - merged https://github.com/dakrone/clj-http/pull/201 to make :auto content type
   parsing dispatch pluggable

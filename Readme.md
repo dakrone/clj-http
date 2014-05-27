@@ -16,15 +16,15 @@ pull request or open an issue if you have any problems
 [Clojars](http://clojars.org/clj-http):
 
 ```clojure
-[clj-http "0.9.1"]
+[clj-http "0.9.2"]
 ```
 
 Previous versions available as
 
 ```clojure
+[clj-http "0.9.1"]
 [clj-http "0.9.0"]
 [clj-http "0.7.9"]
-[clj-http "0.7.7"]
 ```
 
 ## Usage
