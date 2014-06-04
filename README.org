@@ -7,6 +7,33 @@
 #+HTML_HEAD: <style type="text/css"> body {margin-right:15%; margin-left:15%;} </style>
 #+LANGUAGE: en
 
+* Table of Contents                                                     :TOC:
+ - [[#clj-http][clj-http]]
+     - [[#installation][Installation]]
+     - [[#usage][Usage]]
+     - [[#input-coercion][Input coercion]]
+     - [[#output-coercion][Output coercion]]
+     - [[#misc][Misc]]
+     - [[#exceptions][Exceptions]]
+     - [[#proxies][Proxies]]
+     - [[#socks-proxies][SOCKS Proxies]]
+     - [[#keystores-and-trust-stores][Keystores and Trust-stores]]
+     - [[#cookie-stores][Cookie stores]]
+     - [[#link-headers][Link headers]]
+     - [[#headers][Headers]]
+     - [[#using-persistent-connections][Using persistent connections]]
+     - [[#redirects-handling][Redirects handling]]
+     - [[#custom-middleware-lists][Custom middleware lists]]
+ - [[#debugging][Debugging]]
+ - [[#faking-clj-http-responses][Faking clj-http responses]]
+ - [[#design][Design]]
+ - [[#optional-dependenciess][Optional dependenciess]]
+ - [[#known-issues--issues-you-may-run-into][Known issues / Issues you may run into]]
+     - [[#verifyerror-class-orgcodehausjacksonsmilesmileparser-overrides-final-method-getbinaryvalue][VerifyError class org.codehaus.jackson.smile.SmileParser overrides final method getBinaryValue...]]
+ - [[#clj-http-lite][clj-http-lite]]
+ - [[#development][Development]]
+ - [[#license][License]]
+
 * clj-http
 A Clojure HTTP library wrapping the [[http://hc.apache.org/][Apache HttpComponents]] client.
 
