@@ -504,7 +504,7 @@
 (defn detect-charset [content-type]
   (or
    (when-let [found (when content-type
-                            (re-find #"(?i)charset=(.*)" content-type))]
+                            (re-find #"(?i)charset\s*=\s*([^\s]+)" content-type))]
      (second found))
    "UTF-8"))
 
