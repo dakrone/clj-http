@@ -28,8 +28,8 @@
 
 (defn url-encode
   "Returns an UTF-8 URL encoded version of the given string."
-  [unencoded]
-  (URLEncoder/encode unencoded "UTF-8"))
+  [unencoded & [encoding]]
+  (URLEncoder/encode unencoded (or encoding "UTF-8")))
 
 (defn base64-encode
   "Encode an array of bytes into a base64 encoded string."

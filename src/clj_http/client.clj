@@ -501,24 +501,34 @@
                             (accept-encoding-value accept-encoding))))
       (client req))))
 
-(defn generate-query-string [params]
-  (str/join "&"
+(defn detect-charset [content-type]
+  (or
+   (when-let [found (when content-type
+                            (re-find #"(?i)charset\s*=\s*([^\s]+)" content-type))]
+     (second found))
+   "UTF-8"))
+
+(defn generate-query-string [params & [content-type]]
+  (let [encoding (detect-charset content-type)]
+    (str/join "&"
             (mapcat (fn [[k v]]
                       (if (sequential? v)
-                        (map #(str (util/url-encode (name %1))
+                        (map #(str (util/url-encode (name %1) encoding)
                                    "="
-                                   (util/url-encode (str %2)))
+                                   (util/url-encode (str %2) encoding))
                              (repeat k) v)
-                        [(str (util/url-encode (name k))
+                        [(str (util/url-encode (name k) encoding)
                               "="
-                              (util/url-encode (str v)))]))
-                    params)))
+                              (util/url-encode (str v) encoding))]))
+                    params))))
 
 (defn wrap-query-params
   "Middleware converting the :query-params option to a querystring on
   the request."
   [client]
-  (fn [{:keys [query-params] :as req}]
+  (fn [{:keys [query-params content-type]
+         :or {content-type :x-www-form-urlencoded}
+         :as req}]
     (if query-params
       (client (-> req (dissoc :query-params)
                   (update-in [:query-string]
@@ -526,7 +536,8 @@
                                (if-not (empty? old-query-string)
                                  (str old-query-string "&" new-query-string)
                                  new-query-string))
-                             (generate-query-string query-params))))
+                             (generate-query-string query-params
+                                          (content-type-value content-type)))))
       (client req))))
 
 (defn basic-auth-value [basic-auth]
@@ -589,7 +600,8 @@
                   (assoc :content-type (content-type-value content-type)
                          :body (if (and (= content-type :json) json-enabled?)
                                  (json-encode form-params json-opts)
-                                 (generate-query-string form-params)))))
+                                 (generate-query-string form-params
+                                         (content-type-value content-type))))))
       (client req))))
 
 (defn- nest-params
