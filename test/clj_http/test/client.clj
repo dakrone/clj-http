@@ -645,6 +645,7 @@
                         client/wrap-request-timing)))
     (is (contains? (set client/default-middleware)
                    client/wrap-request-timing))))
+
 (deftest t-detect-charset-by-content-type
   (is (= "UTF-8" (client/detect-charset nil)))
   (is (= "UTF-8"(client/detect-charset "application/json")))
