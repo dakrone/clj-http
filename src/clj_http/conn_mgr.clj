@@ -91,7 +91,7 @@
     (.register (Scheme. "http" 80 (PlainSocketFactory/getSocketFactory)))
     (.register (Scheme. "https" 443 (SSLSocketFactory/getSocketFactory)))))
 
-(defn ^KeyStore get-keystore [keystore-file keystore-type ^String keystore-pass]
+(defn ^KeyStore get-keystore* [keystore-file keystore-type ^String keystore-pass]
   (when keystore-file
     (let [keystore (KeyStore/getInstance (or keystore-type
                                              (KeyStore/getDefaultType)))]
@@ -99,8 +99,13 @@
         (.load keystore is (when keystore-pass (.toCharArray keystore-pass)))
         keystore))))
 
+(defn ^KeyStore get-keystore [keystore & args]
+  (if (instance? KeyStore keystore)
+    keystore
+    (apply get-keystore* keystore args)))
+
 (defn ^SchemeRegistry get-keystore-scheme-registry
-  [{:keys [keystore keystore-type keystore-pass
+  [{:keys [keystore keystore-type keystore-pass keystore-instance
            trust-store trust-store-type trust-store-pass]
     :as req}]
   (let [ks (get-keystore keystore keystore-type keystore-pass)

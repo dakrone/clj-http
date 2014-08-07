@@ -833,9 +833,9 @@
   :insecure? - Boolean flag to specify allowing insecure HTTPS connections
     default: false
 
-  :keystore - keystore file to be used for connection manager
+  :keystore - keystore file path or KeyStore instance to be used for connection manager
   :keystore-pass - keystore password
-  :trust-store - trust store file to be used for connection manager
+  :trust-store - trust store file path or KeyStore instance to be used for connection manager
   :trust-store-pass - trust store password
 
   Note that :insecure? and :keystore/:trust-store options are mutually exclusive

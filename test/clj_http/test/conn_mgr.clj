@@ -26,6 +26,12 @@
     (is (instance? KeyStore ks))
     (is (> (.size ks) 0))))
 
+(deftest use-existing-keystore
+  (let [ks (conn-mgr/get-keystore "test-resources/keystore" nil "keykey")
+        ks (conn-mgr/get-keystore ks nil nil)]
+    (is (instance? KeyStore ks))
+    (is (> (.size ks) 0))))
+
 (deftest load-keystore-with-nil-pass
   (let [ks (conn-mgr/get-keystore "test-resources/keystore" nil nil)]
     (is (instance? KeyStore ks))))

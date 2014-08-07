@@ -462,6 +462,9 @@ used:
                                    :trust-store-pass "trustpass"})
 #+END_SRC
 
+The =:keystore/:trust-store= values may be either paths to keystore
+files or =KeyStore= instances.
+
 ** Cookie stores
 
 clj-http can simplify the maintenance of cookies across requests if it is
