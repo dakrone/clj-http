@@ -28,7 +28,7 @@
 
 (deftest use-existing-keystore
   (let [ks (conn-mgr/get-keystore "test-resources/keystore" nil "keykey")
-        ks (conn-mgr/get-keystore ks nil nil)]
+        ks (conn-mgr/get-keystore ks)]
     (is (instance? KeyStore ks))
     (is (> (.size ks) 0))))
 
