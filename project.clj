@@ -8,8 +8,8 @@
   :min-lein-version "2.0.0"
   :exclusions [org.clojure/clojure]
   :dependencies [[org.apache.httpcomponents/httpcore "4.3.2"]
-                 [org.apache.httpcomponents/httpclient "4.3.4"]
-                 [org.apache.httpcomponents/httpmime "4.3.4"]
+                 [org.apache.httpcomponents/httpclient "4.3.5"]
+                 [org.apache.httpcomponents/httpmime "4.3.5"]
                  [commons-codec "1.9"]
                  [commons-io "2.4"]
                  [slingshot "0.10.3"]
