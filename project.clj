@@ -12,6 +12,7 @@
                  [org.apache.httpcomponents/httpmime "4.3.5"]
                  [commons-codec "1.9"]
                  [commons-io "2.4"]
+                 [com.cognitect/transit-clj "0.8.247"]
                  [slingshot "0.10.3"]
                  [cheshire "5.3.1"]
                  [crouton "0.1.2"]

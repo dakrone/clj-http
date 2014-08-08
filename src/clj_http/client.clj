@@ -37,6 +37,13 @@
     true
     (catch Throwable _ false)))
 
+;; Transit is an optional dependency, so check at compile time.
+(def transit-enabled?
+  (try
+    (require 'cognitect.transit)
+    true
+    (catch Throwable _ false)))
+
 (defn ^:dynamic parse-edn
   "Resolve and apply tool.reader's EDN parsing."
   [& args]
@@ -50,6 +57,14 @@
   [& args]
   {:pre [crouton-enabled?]}
   (apply (ns-resolve (symbol "crouton.html") (symbol "parse")) args))
+
+(defn ^:dynamic parse-transit
+  "Resolve and apply Transit's JSON/MessagePack parsing."
+  [& args]
+  {:pre [transit-enabled?]}
+  (let [reader (ns-resolve 'cognitect.transit 'reader)
+        read (ns-resolve 'cognitect.transit 'read)]
+    (read (apply reader args))))
 
 (defn ^:dynamic json-encode
   "Resolve and apply cheshire's json encoding dynamically."
@@ -92,7 +107,7 @@
 
 (defn url-encode-illegal-characters
   "Takes a raw url path or query and url-encodes any illegal characters.
-   Minimizes ambiguity by encoding space to %20."
+  Minimizes ambiguity by encoding space to %20."
   [path-or-query]
   (when path-or-query
     (-> path-or-query
@@ -311,6 +326,12 @@
       (binding [*read-eval* false]
         (assoc resp :body (read-string (String. ^"[B" body charset)))))))
 
+(defn coerce-transit-body
+  [{:keys [transit-opts] :as request} {:keys [body] :as resp} type]
+  (if transit-enabled?
+    (assoc resp :body (parse-transit body type transit-opts))
+    resp))
+
 (defmulti coerce-content-type (fn [req resp] (:content-type resp)))
 
 (defmethod coerce-content-type :application/clojure [req resp]
@@ -321,6 +342,12 @@
 
 (defmethod coerce-content-type :application/json [req resp]
   (coerce-json-body req resp true false))
+
+(defmethod coerce-content-type :application/transit+json [req resp]
+  (coerce-transit-body req resp :json))
+
+(defmethod coerce-content-type :application/transit+msgpack [req resp]
+  (coerce-transit-body req resp :msgpack))
 
 (defmethod coerce-content-type :default [req resp]
   (if-let [charset (-> resp :content-type-params :charset)]
@@ -346,6 +373,12 @@
 
 (defmethod coerce-response-body :clojure [req resp]
   (coerce-clojure-body req resp))
+
+(defmethod coerce-response-body :transit+json [req resp]
+  (coerce-transit-body req resp :json))
+
+(defmethod coerce-response-body :transit+msgpack [req resp]
+  (coerce-transit-body req resp :msgpack))
 
 (defmethod coerce-response-body :default
   [{:keys [as]} {:keys [status body] :as resp}]
@@ -590,6 +623,49 @@
                   (assoc :request-method m)))
       (client req))))
 
+(defmulti coerce-form-params
+  (fn [req] (keyword (content-type-value (:content-type req)))))
+
+(defmethod coerce-form-params :application/edn
+  [{:keys [form-params]}]
+  (pr-str form-params))
+
+(defn-  coerce-transit-form-params [type {:keys [form-params transit-opts]}]
+  (when-not transit-enabled?
+    (throw (ex-info (format (str "Can't encode form params as \"application/transit+%s\". "
+                                 "Transit dependency not loaded.")
+                            (name type))
+                    {:type :transit-not-loaded
+                     :form-params form-params
+                     :transit-opts transit-opts
+                     :transit-type type})))
+  (let [output (java.io.ByteArrayOutputStream.)
+        writer (ns-resolve 'cognitect.transit 'writer)
+        write (ns-resolve 'cognitect.transit 'write)
+        _ (write (writer output type transit-opts) form-params)
+        bytes (.toByteArray output)]
+    (.reset output)
+    bytes))
+
+(defmethod coerce-form-params :application/transit+json [req]
+  (coerce-transit-form-params :json req))
+
+(defmethod coerce-form-params :application/transit+msgpack [req]
+  (coerce-transit-form-params :msgpack req))
+
+(defmethod coerce-form-params :application/json
+  [{:keys [form-params json-opts]}]
+  (when-not json-enabled?
+    (throw (ex-info (str "Can't encode form params as \"application/json\". "
+                         "Cheshire dependency not loaded.")
+                    {:type :cheshire-not-loaded
+                     :form-params form-params
+                     :json-opts json-opts})))
+  (json-encode form-params json-opts))
+
+(defmethod coerce-form-params :default [{:keys [content-type form-params]}]
+  (generate-query-string form-params (content-type-value content-type)))
+
 (defn wrap-form-params
   "Middleware wrapping the submission or form parameters."
   [client]
@@ -600,10 +676,7 @@
       (client (-> req
                   (dissoc :form-params)
                   (assoc :content-type (content-type-value content-type)
-                         :body (if (and (= content-type :json) json-enabled?)
-                                 (json-encode form-params json-opts)
-                                 (generate-query-string form-params
-                                                        (content-type-value content-type))))))
+                         :body (coerce-form-params req))))
       (client req))))
 
 (defn- nest-params

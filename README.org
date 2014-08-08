@@ -149,6 +149,16 @@ More example requests:
                                :content-type :json
                                :json-opts {:date-format "yyyy-MM-dd"})
 
+;; Send form params as a Transit encoded JSON body (POST or PUT) with options
+(client/post "http://site.com" {:form-params {:foo "bar"}
+                                :content-type :transit+json
+                                :transit-opts {:handlers {}}})
+
+;; Send form params as a Transit encoded MessagePack body (POST or PUT) with options
+(client/post "http://site.com" {:form-params {:foo "bar"}
+                                :content-type :transit+msgpack
+                                :transit-opts {:handlers {}}})
+
 ;; Multipart form uploads/posts
 ;; takes a vector of maps, to preserve the order of entities, :name
 ;; will be used as the part name unless :part-name is specified
@@ -246,6 +256,10 @@ content encodings.
 (client/get "http://site.com/foo.json" {:as :json-strict})
 (client/get "http://site.com/foo.json" {:as :json-string-keys})
 (client/get "http://site.com/foo.json" {:as :json-strict-string-keys})
+
+;; Coerce as Transit encoded JSON or MessagePack
+(client/get "http://site.com/foo" {:as :transit+json})
+(client/get "http://site.com/foo" {:as :transit+msgpack})
 
 ;; Coerce as a clojure datastructure
 (client/get "http://site.com/foo.clj" {:as :clojure})
