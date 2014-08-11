@@ -23,10 +23,9 @@
                                   [log4j "1.2.17"]
                                   [ring/ring-jetty-adapter "1.3.0"]
                                   [ring/ring-devel "1.3.0"]]}
-             :1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}
              :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}
              :1.7 {:dependencies [[org.clojure/clojure "1.7.0-alpha1"]]}}
-  :aliases {"all" ["with-profile" "dev,1.4:dev,1.5:dev:dev,1.7"]}
+  :aliases {"all" ["with-profile" "dev,1.5:dev:dev,1.7"]}
   :plugins [[codox "0.6.4"]]
   :test-selectors {:default  #(not (:integration %))
                    :integration :integration
