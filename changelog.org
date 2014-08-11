@@ -9,6 +9,13 @@
 
 * Changelog
 List of user-visible changes that have gone into each release
+** 1.0.0
+- merged https://github.com/dakrone/clj-http/pull/215 to add transit support
+- drop support for clojure 1.4.0, start testing 1.7.0
+- merged https://github.com/dakrone/clj-http/pull/213 to allow passing in an
+  already existing keystore, not just a path
+- merged https://github.com/dakrone/clj-http/pull/211 to detect charset encoding
+  for url-encode
 ** 0.9.2
 - merged https://github.com/dakrone/clj-http/pull/206 to handle null passwords
   for keystores
@@ -54,6 +61,7 @@ List of user-visible changes that have gone into each release
   and clean up whitespace for new clojure-mode
 - Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
 * Work log
+** Released 1.0.0
 ** 2014-08-11
 - merged https://github.com/dakrone/clj-http/pull/215 to add transit support
 - drop support for clojure 1.4.0, start testing 1.7.0
