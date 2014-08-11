@@ -280,7 +280,13 @@
 (deftest apply-on-accept
   (is-applied client/wrap-accept
               {:accept :json}
-              {:headers {"accept" "application/json"}}))
+              {:headers {"accept" "application/json"}})
+  (is-applied client/wrap-accept
+              {:accept :transit+json}
+              {:headers {"accept" "application/transit+json"}})
+  (is-applied client/wrap-accept
+              {:accept :transit+msgpack}
+              {:headers {"accept" "application/transit+msgpack"}}))
 
 (deftest pass-on-no-accept
   (is-passed client/wrap-accept
@@ -349,7 +355,15 @@
   (is-applied client/wrap-content-type
               {:content-type :json :character-encoding "UTF-8"}
               {:headers {"content-type" "application/json; charset=UTF-8"}
-               :content-type :json :character-encoding "UTF-8"}))
+               :content-type :json :character-encoding "UTF-8"})
+  (is-applied client/wrap-content-type
+              {:content-type :transit+json}
+              {:headers {"content-type" "application/transit+json"}
+               :content-type :transit+json})
+  (is-applied client/wrap-content-type
+              {:content-type :transit+msgpack}
+              {:headers {"content-type" "application/transit+msgpack"}
+               :content-type :transit+msgpack}))
 
 (deftest pass-on-no-content-type
   (is-passed client/wrap-content-type
@@ -437,6 +451,7 @@
       (is (= "param1=value1&param2=value2" (:body resp)))
       (is (= "application/x-www-form-urlencoded" (:content-type resp)))
       (is (not (contains? resp :form-params)))))
+
   (testing "With json form params"
     (let [param-client (client/wrap-form-params identity)
           params {:param1 "value1" :param2 "value2"}
@@ -471,6 +486,40 @@
       (is (= (json/encode params {:date-format "yyyy-MM-dd"}) (:body resp)))
       (is (= "application/json" (:content-type resp)))
       (is (not (contains? resp :form-params)))))
+
+  (testing "With EDN form params"
+    (doseq [method [:post :put :patch]]
+      (let [param-client (client/wrap-form-params identity)
+            params {:param1 "value1" :param2 "value2"}
+            resp (param-client {:request-method method
+                                :content-type :edn
+                                :form-params params})]
+        (is (= (pr-str params) (:body resp)))
+        (is (= "application/edn" (:content-type resp)))
+        (is (not (contains? resp :form-params))))))
+
+  (testing "With Transit/JSON form params"
+    (doseq [method [:post :put :patch]]
+      (let [param-client (client/wrap-form-params identity)
+            params {:param1 "value1" :param2 "value2"}
+            resp (param-client {:request-method method
+                                :content-type :transit+json
+                                :form-params params})]
+        (is (= params (client/parse-transit (ByteArrayInputStream. (:body resp)) :json)))
+        (is (= "application/transit+json" (:content-type resp)))
+        (is (not (contains? resp :form-params))))))
+
+  (testing "With Transit/MessagePack form params"
+    (doseq [method [:post :put :patch]]
+      (let [param-client (client/wrap-form-params identity)
+            params {:param1 "value1" :param2 "value2"}
+            resp (param-client {:request-method method
+                                :content-type :transit+msgpack
+                                :form-params params})]
+        (is (= params (client/parse-transit (ByteArrayInputStream. (:body resp)) :msgpack)))
+        (is (= "application/transit+msgpack" (:content-type resp)))
+        (is (not (contains? resp :form-params))))))
+
   (testing "Ensure it does not affect GET requests"
     (let [param-client (client/wrap-form-params identity)
           resp (param-client {:request-method :get
@@ -479,6 +528,7 @@
                                             :param2 "value2"}})]
       (is (= "untouched" (:body resp)))
       (is (not (contains? resp :content-type)))))
+
   (testing "with no form params"
     (let [param-client (client/wrap-form-params identity)
           resp (param-client {:body "untouched"})]
@@ -616,16 +666,26 @@
   (let [json-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"bar\"}"))
         auto-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"bar\"}"))
         edn-body (ByteArrayInputStream. (.getBytes "{:foo \"bar\"}"))
+        transit-json-body (ByteArrayInputStream. (.getBytes "[\"^ \",\"~:foo\",\"bar\"]"))
+        transit-msgpack-body (->> (map byte [-127 -91 126 58 102 111 111 -93 98 97 114])
+                                  (byte-array 11)
+                                  (ByteArrayInputStream.))
         json-resp {:body json-body :status 200
                    :headers {"content-type" "application/json"}}
         auto-resp {:body auto-body :status 200
                    :headers {"content-type" "application/json"}}
         edn-resp {:body edn-body :status 200
-                  :headers {"content-type" "application/edn"}}]
+                  :headers {"content-type" "application/edn"}}
+        transit-json-resp {:body transit-json-body :status 200
+                           :headers {"content-type" "application/transit-json"}}
+        transit-msgpack-resp {:body transit-msgpack-body :status 200
+                              :headers {"content-type" "application/transit-msgpack"}}]
     (is (= {:foo "bar"}
            (:body (client/coerce-response-body {:as :json} json-resp))
            (:body (client/coerce-response-body {:as :clojure} edn-resp))
-           (:body (client/coerce-response-body {:as :auto} auto-resp))))))
+           (:body (client/coerce-response-body {:as :auto} auto-resp))
+           (:body (client/coerce-response-body {:as :transit+json} transit-json-resp))
+           (:body (client/coerce-response-body {:as :transit+msgpack} transit-msgpack-resp))))))
 
 (deftest ^:integration t-with-middleware
   (run-server)

@@ -51,6 +51,18 @@
     [:get "/redirect-to-get"]
     {:status 302
      :headers {"location" "http://localhost:18080/get"}}
+    [:get "/transit-json"]
+    {:status 200 :body "[\"^ \",\"~:eggplant\",[\"^ \",\"~:quux\",[\"~#set\",[1,3,2]]],\"~:baz\",\"~f7\",\"~:foo\",\"bar\"]"
+     :headers {"content-type" "application/transit+json"}}
+    [:get "/transit-msgpack"]
+    {:status 200
+     :body (->> [-125 -86 126 58 101 103 103 112 108 97 110 116 -127 -90 126 58 113 117
+                 117 120 -110 -91 126 35 115 101 116 -109 1 3 2 -91 126 58 98 97 122 -93
+                 126 102 55 -91 126 58 102 111 111 -93 98 97 114]
+                (map byte)
+                (byte-array)
+                (ByteArrayInputStream.))
+     :headers {"content-type" "application/transit+msgpack"}}
     [:head "/head"]
     {:status 200}
     [:get "/content-type"]
@@ -323,6 +335,17 @@
     (is (= {:foo "bar" :baz 7M :eggplant {:quux #{1 2 3}}}
            (:body clj-resp)
            (:body edn-resp)))))
+
+(deftest ^:integration t-transit-output-coercion
+  (run-server)
+  (let [transit-json-resp (client/get (localhost "/transit-json") {:as :auto})
+        transit-msgpack-resp (client/get (localhost "/transit-msgpack") {:as :auto})]
+    (is (= 200
+           (:status transit-json-resp)
+           (:status transit-msgpack-resp)))
+    (is (= {:foo "bar" :baz 7M :eggplant {:quux #{1 2 3}}}
+           (:body transit-json-resp)
+           (:body transit-msgpack-resp)))))
 
 (deftest ^:integration t-json-output-coercion
   (run-server)
