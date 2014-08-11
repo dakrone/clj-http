@@ -58,6 +58,8 @@ Previous versions available as
 [clj-http "0.7.9"]
 #+END_SRC
 
+clj-http supports clojure 1.5.0 and higher
+
 ** Usage
 
 The main HTTP client functionality is provided by the =clj-http.client= namespace.

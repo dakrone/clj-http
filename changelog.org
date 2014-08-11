@@ -56,6 +56,7 @@ List of user-visible changes that have gone into each release
 * Work log
 ** 2014-08-11
 - merged https://github.com/dakrone/clj-http/pull/215 to add transit support
+- drop support for clojure 1.4.0, start testing 1.7.0
 ** 2014-08-07
 - merged https://github.com/dakrone/clj-http/pull/213 to allow passing in an
   already existing keystore, not just a path
