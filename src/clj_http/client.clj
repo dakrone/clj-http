@@ -299,7 +299,8 @@
 
 (defn coerce-json-body
   [{:keys [coerce]} {:keys [body status] :as resp} keyword? strict? & [charset]]
-  (let [^String charset (or charset (-> resp :content-type-params :charset) "UTF-8")
+  (let [^String charset (or charset (-> resp :content-type-params :charset)
+                            "UTF-8")
         body (util/force-byte-array body)
         decode-func (if strict? json-decode-strict json-decode)]
     (if json-enabled?
@@ -571,8 +572,9 @@
                                (if-not (empty? old-query-string)
                                  (str old-query-string "&" new-query-string)
                                  new-query-string))
-                             (generate-query-string query-params
-                                                    (content-type-value content-type)))))
+                             (generate-query-string
+                              query-params
+                              (content-type-value content-type)))))
       (client req))))
 
 (defn basic-auth-value [basic-auth]
@@ -630,9 +632,10 @@
   [{:keys [form-params]}]
   (pr-str form-params))
 
-(defn-  coerce-transit-form-params [type {:keys [form-params transit-opts]}]
+(defn- coerce-transit-form-params [type {:keys [form-params transit-opts]}]
   (when-not transit-enabled?
-    (throw (ex-info (format (str "Can't encode form params as \"application/transit+%s\". "
+    (throw (ex-info (format (str "Can't encode form params as "
+                                 "\"application/transit+%s\". "
                                  "Transit dependency not loaded.")
                             (name type))
                     {:type :transit-not-loaded
@@ -898,17 +901,19 @@
   The following options are supported:
 
   :timeout - Time that connections are left open before automatically closing
-    default: 5
+  default: 5
   :threads - Maximum number of threads that will be used for connecting
-    default: 4
+  default: 4
   :default-per-route - Maximum number of simultaneous connections per host
-    default: 2
+  default: 2
   :insecure? - Boolean flag to specify allowing insecure HTTPS connections
-    default: false
+  default: false
 
-  :keystore - keystore file path or KeyStore instance to be used for connection manager
+  :keystore - keystore file path or KeyStore instance to be used for
+  connection manager
   :keystore-pass - keystore password
-  :trust-store - trust store file path or KeyStore instance to be used for connection manager
+  :trust-store - trust store file path or KeyStore instance to be used for
+  connection manager
   :trust-store-pass - trust store password
 
   Note that :insecure? and :keystore/:trust-store options are mutually exclusive

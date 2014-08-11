@@ -54,6 +54,8 @@ List of user-visible changes that have gone into each release
   and clean up whitespace for new clojure-mode
 - Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
 * Work log
+** 2014-08-11
+- merged https://github.com/dakrone/clj-http/pull/215 to add transit support
 ** 2014-08-07
 - merged https://github.com/dakrone/clj-http/pull/213 to allow passing in an
   already existing keystore, not just a path

@@ -505,7 +505,8 @@
             resp (param-client {:request-method method
                                 :content-type :transit+json
                                 :form-params params})]
-        (is (= params (client/parse-transit (ByteArrayInputStream. (:body resp)) :json)))
+        (is (= params (client/parse-transit
+                       (ByteArrayInputStream. (:body resp)) :json)))
         (is (= "application/transit+json" (:content-type resp)))
         (is (not (contains? resp :form-params))))))
 
@@ -516,7 +517,8 @@
             resp (param-client {:request-method method
                                 :content-type :transit+msgpack
                                 :form-params params})]
-        (is (= params (client/parse-transit (ByteArrayInputStream. (:body resp)) :msgpack)))
+        (is (= params (client/parse-transit
+                       (ByteArrayInputStream. (:body resp)) :msgpack)))
         (is (= "application/transit+msgpack" (:content-type resp)))
         (is (not (contains? resp :form-params))))))
 
@@ -666,8 +668,10 @@
   (let [json-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"bar\"}"))
         auto-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"bar\"}"))
         edn-body (ByteArrayInputStream. (.getBytes "{:foo \"bar\"}"))
-        transit-json-body (ByteArrayInputStream. (.getBytes "[\"^ \",\"~:foo\",\"bar\"]"))
-        transit-msgpack-body (->> (map byte [-127 -91 126 58 102 111 111 -93 98 97 114])
+        transit-json-body (ByteArrayInputStream.
+                           (.getBytes "[\"^ \",\"~:foo\",\"bar\"]"))
+        transit-msgpack-body (->> (map byte [-127 -91 126 58 102 111
+                                             111 -93 98 97 114])
                                   (byte-array 11)
                                   (ByteArrayInputStream.))
         json-resp {:body json-body :status 200
@@ -679,13 +683,16 @@
         transit-json-resp {:body transit-json-body :status 200
                            :headers {"content-type" "application/transit-json"}}
         transit-msgpack-resp {:body transit-msgpack-body :status 200
-                              :headers {"content-type" "application/transit-msgpack"}}]
+                              :headers {"content-type"
+                                        "application/transit-msgpack"}}]
     (is (= {:foo "bar"}
            (:body (client/coerce-response-body {:as :json} json-resp))
            (:body (client/coerce-response-body {:as :clojure} edn-resp))
            (:body (client/coerce-response-body {:as :auto} auto-resp))
-           (:body (client/coerce-response-body {:as :transit+json} transit-json-resp))
-           (:body (client/coerce-response-body {:as :transit+msgpack} transit-msgpack-resp))))))
+           (:body (client/coerce-response-body {:as :transit+json}
+                                               transit-json-resp))
+           (:body (client/coerce-response-body {:as :transit+msgpack}
+                                               transit-msgpack-resp))))))
 
 (deftest ^:integration t-with-middleware
   (run-server)
@@ -711,6 +718,8 @@
   (is (= "UTF-8"(client/detect-charset "application/json")))
   (is (= "UTF-8"(client/detect-charset "text/html")))
   (is (= "GBK"(client/detect-charset "application/json; charset=GBK")))
-  (is (= "ISO-8859-1" (client/detect-charset "application/json; charset=ISO-8859-1")))
-  (is (= "ISO-8859-1" (client/detect-charset "application/json; charset =  ISO-8859-1")))
+  (is (= "ISO-8859-1" (client/detect-charset
+                       "application/json; charset=ISO-8859-1")))
+  (is (= "ISO-8859-1" (client/detect-charset
+                       "application/json; charset =  ISO-8859-1")))
   (is (= "GB2312" (client/detect-charset "text/html; Charset=GB2312"))))
