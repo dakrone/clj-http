@@ -61,6 +61,9 @@ List of user-visible changes that have gone into each release
   and clean up whitespace for new clojure-mode
 - Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
 * Work log
+** 2014-08-15
+- added =:decode-cookies= option to allow skipping cookie header decode (if the
+  server sends incorrectly formatted cookies for some reason)
 ** Released 1.0.0
 ** 2014-08-11
 - merged https://github.com/dakrone/clj-http/pull/215 to add transit support

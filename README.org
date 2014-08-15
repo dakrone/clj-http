@@ -206,6 +206,9 @@ More example requests:
 (client/get "http://site.com"
   {:cookies {"ring-session" {:discard true, :path "/", :value "", :version 0}}})
 
+;; Tell clj-http not to decode cookies from the response header
+(client/get "http://example.com" {:decode-cookies false})
+
 ;; Support for IPv6!
 (client/get "http://[2001:62f5:9006:e472:cabd:c8ff:fee3:8ddf]")
 #+END_SRC

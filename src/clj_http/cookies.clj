@@ -1,5 +1,6 @@
 (ns clj-http.cookies
-  (:require [clojure.string :refer [blank? join lower-case]])
+  (:require [clj-http.util :refer [opt]]
+            [clojure.string :refer [blank? join lower-case]])
   (:import (org.apache.http.client.params ClientPNames CookiePolicy)
            (org.apache.http.cookie ClientCookie CookieOrigin)
            (org.apache.http.params BasicHttpParams)
@@ -119,11 +120,13 @@
   [client]
   (fn [request]
     (let [response (client (encode-cookie-header request))]
-      (decode-cookie-header response))))
+      (if (= false (opt request :decode-cookies))
+        response
+        (decode-cookie-header response)))))
 
 (defn cookie-store
   "Returns a new, empty instance of the default implementation of the
-   org.apache.http.client.CookieStore interface."
+  org.apache.http.client.CookieStore interface."
   []
   (org.apache.http.impl.client.BasicCookieStore.))
 

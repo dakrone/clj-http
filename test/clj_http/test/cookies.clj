@@ -209,4 +209,14 @@
              {:headers
               {"set-cookie"
                "example-cookie=example-value;Domain=.example.com;Path=/"}}))
-          {:cookies (sorted-map :a {:value "1"} :b {:value "2"})}))))
+          {:cookies (sorted-map :a {:value "1"} :b {:value "2"})})))
+  (is (= {:headers {"set-cookie"
+                    "example-cookie=example-value;Domain=.example.com;Path=/"}}
+         ((wrap-cookies
+           (fn [request]
+             (is (= (get (:headers request) "Cookie") "a=1;b=2"))
+             {:headers
+              {"set-cookie"
+               "example-cookie=example-value;Domain=.example.com;Path=/"}}))
+          {:cookies (sorted-map :a {:value "1"} :b {:value "2"})
+           :decode-cookies false}))))
