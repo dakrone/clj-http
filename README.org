@@ -68,7 +68,7 @@ The main HTTP client functionality is provided by the =clj-http.client= namespac
 First, require it in the REPL:
 
 #+BEGIN_SRC clojure
-(require '[clj-http.client :as client]')
+(require '[clj-http.client :as client])
 #+END_SRC
 
 Or in your application:
