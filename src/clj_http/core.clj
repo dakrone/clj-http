@@ -35,9 +35,9 @@
 (defn parse-headers
   "Takes a HeaderIterator and returns a map of names to values.
 
-   If a name appears more than once (like `set-cookie`) then the value
-   will be a vector containing the values in the order they appeared
-   in the headers."
+  If a name appears more than once (like `set-cookie`) then the value
+  will be a vector containing the values in the order they appeared
+  in the headers."
   [^HeaderIterator headers & [use-header-maps-in-response?]]
   (if-not use-header-maps-in-response?
     (->> (headers/header-iterator-seq headers)
@@ -204,14 +204,15 @@
 
 (defn request
   "Executes the HTTP request corresponding to the given Ring request map and
-   returns the Ring response map corresponding to the resulting HTTP response.
+  returns the Ring response map corresponding to the resulting HTTP response.
 
-   Note that where Ring uses InputStreams for the request and response bodies,
-   the clj-http uses ByteArrays for the bodies."
+  Note that where Ring uses InputStreams for the request and response bodies,
+  the clj-http uses ByteArrays for the bodies."
   [{:keys [request-method scheme server-name server-port uri query-string
            headers body multipart socket-timeout conn-timeout proxy-host
-           proxy-ignore-hosts proxy-port as cookie-store retry-handler
-           response-interceptor digest-auth connection-manager client-params]
+           proxy-ignore-hosts proxy-port proxy-user proxy-pass as cookie-store
+           retry-handler response-interceptor digest-auth connection-manager
+           client-params]
     :as req}]
   (let [^ClientConnectionManager conn-mgr
         (or connection-manager
@@ -241,6 +242,11 @@
        (.getCredentialsProvider http-client)
        (AuthScope. nil -1 nil)
        (UsernamePasswordCredentials. user pass)))
+    (when (and proxy-user proxy-pass)
+      (let [authscope (AuthScope. proxy-host proxy-port)
+            creds (UsernamePasswordCredentials. proxy-user proxy-pass)]
+        (.setCredentials (.getCredentialsProvider http-client)
+                         authscope creds)))
     (let [http-url (str scheme "://" server-name
                         (when server-port (str ":" server-port))
                         uri
