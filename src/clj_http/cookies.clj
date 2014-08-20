@@ -136,22 +136,14 @@
   (when cookie-store
     (into {} (map to-cookie (.getCookies cookie-store)))))
 
-<<<<<<< HEAD
 (defn add-cookie
-=======
-(defn add-cookie-to-cookie-store
->>>>>>> 4104028ab6c0893879ea93358c8c4a34b9aa55be
   "Add a ClientCookie to a cookie-store"
   [^CookieStore cookie-store ^ClientCookie cookie]
   (.addCookie cookie-store cookie)
   )
 
-<<<<<<< HEAD
 (defn clear-cookies
-=======
-(defn clear-cookies-from-cookie-store
->>>>>>> 4104028ab6c0893879ea93358c8c4a34b9aa55be
-  "Clears all cookies from cookie-store"
+ "Clears all cookies from cookie-store"
   [^CookieStore cookie-store]
   (.clear cookie-store)
   )
