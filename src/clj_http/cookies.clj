@@ -135,3 +135,15 @@
   [^CookieStore cookie-store]
   (when cookie-store
     (into {} (map to-cookie (.getCookies cookie-store)))))
+
+(defn add-cookie
+  "Add a ClientCookie to a cookie-store"
+  [^CookieStore cookie-store ^ClientCookie cookie]
+  (.addCookie cookie-store cookie)
+  )
+
+(defn clear-cookies
+  "Clears all cookies from cookie-store"
+  [^CookieStore cookie-store]
+  (.clear cookie-store)
+  )
