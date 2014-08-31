@@ -26,19 +26,19 @@
        (print (str "[" (render-bar) "] "
                    progress "/?"))))))
 
-(defn conj-at [v idx val]
+(defn insert-at [v idx val]
   "Addes value into a vector at an specific index."
   (-> (subvec v 0 idx)
       (conj val)
       (concat (subvec v idx))))
 
-(defn conj-after [v needle val]
+(defn insert-after [v needle val]
   "Finds an item into a vector and adds val just after it.
    If needle is not found, the input vector will be returned."
   (let [index (.indexOf v needle)]
     (if (neg? index)
       v
-      (conj-at v (inc index) val))))
+      (insert-at v (inc index) val))))
 
 (defn wrap-downloaded-bytes-counter
   "Middleware that provides an CountingInputStream wrapping the stream output"
@@ -52,7 +52,7 @@
 (defn download-with-progress [url target]
   (http/with-middleware
     (-> http/default-middleware
-        (conj-after http/wrap-redirects wrap-downloaded-bytes-counter)
+        (insert-after http/wrap-redirects wrap-downloaded-bytes-counter)
         (conj http/wrap-lower-case-headers))
     (let [request (http/get url {:as :stream})
           length (Integer. (get-in request [:headers "content-length"] 0))
