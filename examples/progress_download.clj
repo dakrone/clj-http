@@ -1,6 +1,3 @@
-;; extra required dependencies for this example:
-;; :dependencies [[commons-io "2.4"]]
-
 (ns clj-http.examples.progress-download
   (:require [clj-http.client :as http]
             [clojure.java.io :refer [output-stream]])
