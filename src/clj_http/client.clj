@@ -14,7 +14,7 @@
            (java.net URL UnknownHostException)
            (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
                                    InputStreamEntity FileEntity StringEntity))
-  (:refer-clojure :exclude (get)))
+  (:refer-clojure :exclude (get update)))
 
 ;; Cheshire is an optional dependency, so we check for it at compile time.
 (def json-enabled?
