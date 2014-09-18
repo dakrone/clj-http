@@ -822,59 +822,28 @@
   `(when (nil? ~url)
      (throw (IllegalArgumentException. "Host URL cannot be nil"))))
 
-(defn get
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :get :url url})))
+(defmacro def-http-method [method]
+  `(defn ~method
+     "Like #'request, but sets the :method and :url as appropriate."
+     [~'url & [~'req]]
+     (check-url! ~'url)
+     (request (merge ~'req {:method ~(keyword (name method)) :url ~'url}))))
 
-(defn head
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :head :url url})))
+(defmacro def-http-methods [& methods]
+  `(do
+     ~@(for [method methods]
+         `(def-http-method ~method))))
 
-(defn post
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :post :url url})))
-
-(defn put
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :put :url url})))
-
-(defn delete
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :delete :url url})))
-
-(defn options
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :options :url url})))
-
-(defn copy
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :copy :url url})))
-
-(defn move
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :move :url url})))
-
-(defn patch
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :patch :url url})))
+(def-http-methods
+  get
+  head
+  post
+  put
+  delete
+  options
+  copy
+  move
+  patch)
 
 (defmacro with-middleware
   "Perform the body of the macro with a custom middleware list.
