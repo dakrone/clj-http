@@ -7,11 +7,14 @@
             [clojure.pprint])
   (:import (java.io ByteArrayOutputStream File FilterInputStream InputStream)
            (java.net URI)
+           (javax.net.ssl SSLContext)
            (org.apache.http HttpHost)
            (org.apache.http.client.methods HttpGet)
            (org.apache.http.client.protocol HttpClientContext)
            (org.apache.http.config RegistryBuilder)
            (org.apache.http.conn.routing HttpRoute)
+           (org.apache.http.conn.ssl BrowserCompatHostnameVerifier
+                                     SSLConnectionSocketFactory SSLContexts)
            (org.apache.http.conn.socket PlainConnectionSocketFactory)
            (org.apache.http.impl.client HttpClients)
            (org.apache.http.impl.conn PoolingHttpClientConnectionManager)))
@@ -20,9 +23,17 @@
   ;; TODO add proxy support
   (HttpRoute. (HttpHost. "www.google.com" 80 "https")))
 
+(defn ssl-context []
+  (SSLContexts/createSystemDefault))
+
+(defn hostname-verifier []
+  (BrowserCompatHostnameVerifier.))
+
 (defn registry-builder []
   (-> (RegistryBuilder/create)
       (.register "http" PlainConnectionSocketFactory/INSTANCE)
+      (.register "https" (SSLConnectionSocketFactory.
+                          (ssl-context) (hostname-verifier)))
       (.build)))
 
 (defn pooling-conn-mgr []
@@ -34,18 +45,19 @@
       (.build)))
 
 (defn http-get []
-  (HttpGet. "http://www.google.com"))
+  (HttpGet. "https://www.google.com"))
 
 (defn http-context []
   (HttpClientContext/create))
 
-(defn request [{:keys [] :as req}]
+(defn request [{:keys [cookie-store] :as req}]
   (let [conn-mgr (pooling-conn-mgr)
         client (http-client conn-mgr)
         context (http-context)
         get-req (http-get)
         response (.execute client get-req context)
         entity (.getEntity response)]
+    ;; TODO response, conn-mgr, and client needs to be closed
     {:body (.getContent entity)
      :length (.getContentLength entity)
      :chunked? (.isChunked entity)
