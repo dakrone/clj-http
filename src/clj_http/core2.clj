@@ -5,9 +5,7 @@
             [clj-http.multipart :as mp]
             [clj-http.util :refer [opt]]
             [clojure.pprint])
-  (:import (java.io ByteArrayOutputStream File FilterInputStream InputStream)
-           (java.net URI)
-           (javax.net.ssl SSLContext)
+  (:import (java.io FilterInputStream InputStream)
            (org.apache.http HttpHost)
            (org.apache.http.client.methods HttpGet)
            (org.apache.http.client.protocol HttpClientContext)
