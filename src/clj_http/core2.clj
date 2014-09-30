@@ -12,6 +12,7 @@
            (org.apache.http.client.methods HttpGet)
            (org.apache.http.client.protocol HttpClientContext)
            (org.apache.http.config RegistryBuilder)
+           (org.apache.http.conn HttpClientConnectionManager)
            (org.apache.http.conn.routing HttpRoute)
            (org.apache.http.conn.ssl BrowserCompatHostnameVerifier
                                      SSLConnectionSocketFactory SSLContexts)
@@ -53,6 +54,22 @@
 (defn credentials-provider []
   (BasicCredentialsProvider.))
 
+(defn- coerce-body-entity
+  "Coerce the http-entity from an HttpResponse to a stream that closes itself
+  and the connection manager when closed."
+  [^HttpEntity http-entity ^HttpClientConnectionManager conn-mgr response]
+  (when http-entity
+    (proxy [FilterInputStream]
+        [^InputStream (.getContent http-entity)]
+      (close []
+        (try
+          ;; Eliminate the reflection warning from proxy-super
+          (let [^InputStream this this]
+            (proxy-super close))
+          (finally
+            (.close response)
+            (.shutdown conn-mgr)))))))
+
 (defn request [{:keys [cookie-store] :as req}]
   (let [conn-mgr (pooling-conn-mgr)
         client (http-client conn-mgr)
@@ -63,8 +80,7 @@
         status (.getStatusLine response)]
     (when cookie-store
       (.setCookieStore context cookie-store))
-    ;; TODO response, conn-mgr, and client needs to be closed
-    {:body (.getContent entity)
+    {:body (coerce-body-entity entity conn-mgr response)
      :length (.getContentLength entity)
      :chunked? (.isChunked entity)
      :repeatable? (.isRepeatable entity)
