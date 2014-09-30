@@ -4,7 +4,7 @@
   :license {:name "The MIT License"
             :url "http://opensource.org/licenses/mit-license.php"
             :distribution :repo}
-  :global-vars {*warn-on-reflection* true}
+  :global-vars {*warn-on-reflection* false}
   :min-lein-version "2.0.0"
   :exclusions [org.clojure/clojure]
   :dependencies [[org.apache.httpcomponents/httpcore "4.4"]
