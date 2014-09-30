@@ -6,6 +6,8 @@
             [clj-http.util :refer [opt]]
             [clojure.pprint])
   (:import (java.io FilterInputStream InputStream)
+           (java.net URI)
+           (java.util Locale)
            (org.apache.http HttpHost)
            (org.apache.http.client.methods HttpGet)
            (org.apache.http.client.protocol HttpClientContext)
@@ -46,6 +48,41 @@
 (defn http-get []
   (HttpGet. "https://www.google.com"))
 
+(defn make-proxy-method-with-body
+  [method]
+  (fn [url]
+    (doto (proxy [HttpEntityEnclosingRequestBase] []
+            (getMethod [] (.toUpperCase (name method) Locale/ROOT)))
+      (.setURI (URI. url)))))
+
+(def proxy-delete-with-body (make-proxy-method-with-body :delete))
+(def proxy-get-with-body (make-proxy-method-with-body :get))
+(def proxy-copy-with-body (make-proxy-method-with-body :copy))
+(def proxy-move-with-body (make-proxy-method-with-body :move))
+(def proxy-patch-with-body (make-proxy-method-with-body :patch))
+
+(defn http-request-for
+  "Provides the HttpRequest object for a particular request-method and url"
+  [request-method ^String http-url body]
+  (case request-method
+    :get     (if body
+               (proxy-get-with-body http-url)
+               (HttpGet. http-url))
+    :head    (HttpHead. http-url)
+    :put     (HttpPut. http-url)
+    :post    (HttpPost. http-url)
+    :options (HttpOptions. http-url)
+    :delete  (if body
+               (proxy-delete-with-body http-url)
+               (HttpDelete. http-url))
+    :copy    (proxy-copy-with-body http-url)
+    :move    (proxy-move-with-body http-url)
+    :patch   (if body
+               (proxy-patch-with-body http-url)
+               (HttpPatch. http-url))
+    (throw (IllegalArgumentException.
+            (str "Invalid request method " request-method)))))
+
 (defn http-context []
   (HttpClientContext/create))
 
@@ -68,19 +105,45 @@
             (.close response)
             (.shutdown conn-mgr)))))))
 
-(defn request [{:keys [cookie-store] :as req}]
-  (let [conn-mgr (pooling-conn-mgr)
+(defn request
+  [{:keys [body
+           cookie-store
+           multipart
+           request-method
+           scheme
+           server-name
+           server-port
+           request-method
+           query-string
+           uri]
+    :as req}]
+  (let [scheme (name scheme)
+        http-url (str scheme "://" server-name
+                      (when server-port (str ":" server-port))
+                      uri
+                      (when query-string (str "?" query-string)))
+        conn-mgr (pooling-conn-mgr)
         client (http-client conn-mgr)
         context (http-context)
-        get-req (http-get)
-        response (.execute client get-req context)
-        entity (.getEntity response)
-        status (.getStatusLine response)]
+        http-req (http-request-for request-method http-url body)]
     (when cookie-store
       (.setCookieStore context cookie-store))
-    {:body (coerce-body-entity entity conn-mgr response)
-     :length (.getContentLength entity)
-     :chunked? (.isChunked entity)
-     :repeatable? (.isRepeatable entity)
-     :streaming? (.isStreaming entity)
-     :status (.getStatusCode status)}))
+    (if multipart
+      (.setEntity ^HttpEntityEnclosingRequest http-req
+                  (mp/create-multipart-entity multipart))
+      (when (and body (instance? HttpEntityEnclosingRequest http-req))
+        (if (instance? HttpEntity body)
+          (.setEntity ^HttpEntityEnclosingRequest http-req body)
+          (.setEntity ^HttpEntityEnclosingRequest http-req
+                      (if (string? body)
+                        (StringEntity. ^String body "UTF-8")
+                        (ByteArrayEntity. body))))))
+    (let [response (.execute client http-req context)
+          entity (.getEntity response)
+          status (.getStatusLine response)]
+      {:body (coerce-body-entity entity conn-mgr response)
+       :length (.getContentLength entity)
+       :chunked? (.isChunked entity)
+       :repeatable? (.isRepeatable entity)
+       :streaming? (.isStreaming entity)
+       :status (.getStatusCode status)})))
