@@ -8,7 +8,7 @@
   (:import (java.io FilterInputStream InputStream)
            (java.net URI)
            (java.util Locale)
-           (org.apache.http HttpHost)
+           (org.apache.http HttpHost HttpRequest)
            (org.apache.http.client.methods HttpGet)
            (org.apache.http.client.protocol HttpClientContext)
            (org.apache.http.config RegistryBuilder)
@@ -17,7 +17,8 @@
            (org.apache.http.conn.ssl BrowserCompatHostnameVerifier
                                      SSLConnectionSocketFactory SSLContexts)
            (org.apache.http.conn.socket PlainConnectionSocketFactory)
-           (org.apache.http.impl.client BasicCredentialsProvider HttpClients)
+           (org.apache.http.impl.client BasicCredentialsProvider
+                                        CloseableHttpClient HttpClients)
            (org.apache.http.impl.conn PoolingHttpClientConnectionManager)))
 
 (defn http-route []
@@ -123,9 +124,9 @@
                       uri
                       (when query-string (str "?" query-string)))
         conn-mgr (pooling-conn-mgr)
-        client (http-client conn-mgr)
-        context (http-context)
-        http-req (http-request-for request-method http-url body)]
+        ^CloseableHttpClient client (http-client conn-mgr)
+        ^HttpClientContext context (http-context)
+        ^HttpRequest http-req (http-request-for request-method http-url body)]
     (when cookie-store
       (.setCookieStore context cookie-store))
     (if multipart
@@ -138,8 +139,8 @@
                       (if (string? body)
                         (StringEntity. ^String body "UTF-8")
                         (ByteArrayEntity. body))))))
-    (let [response (.execute client http-req context)
-          entity (.getEntity response)
+    (let [^HttpResponse response (.execute client http-req context)
+          ^HttpEntity entity (.getEntity response)
           status (.getStatusLine response)]
       {:body (coerce-body-entity entity conn-mgr response)
        :length (.getContentLength entity)
