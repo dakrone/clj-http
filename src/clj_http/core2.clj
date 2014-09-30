@@ -16,7 +16,7 @@
            (org.apache.http.conn.ssl BrowserCompatHostnameVerifier
                                      SSLConnectionSocketFactory SSLContexts)
            (org.apache.http.conn.socket PlainConnectionSocketFactory)
-           (org.apache.http.impl.client HttpClients)
+           (org.apache.http.impl.client BasicCredentialsProvider HttpClients)
            (org.apache.http.impl.conn PoolingHttpClientConnectionManager)))
 
 (defn http-route []
@@ -50,17 +50,23 @@
 (defn http-context []
   (HttpClientContext/create))
 
+(defn credentials-provider []
+  (BasicCredentialsProvider.))
+
 (defn request [{:keys [cookie-store] :as req}]
   (let [conn-mgr (pooling-conn-mgr)
         client (http-client conn-mgr)
         context (http-context)
         get-req (http-get)
         response (.execute client get-req context)
-        entity (.getEntity response)]
+        entity (.getEntity response)
+        status (.getStatusLine response)]
+    (when cookie-store
+      (.setCookieStore context cookie-store))
     ;; TODO response, conn-mgr, and client needs to be closed
     {:body (.getContent entity)
      :length (.getContentLength entity)
      :chunked? (.isChunked entity)
      :repeatable? (.isRepeatable entity)
      :streaming? (.isStreaming entity)
-     :status 200}))
+     :status (.getStatusCode status)}))
