@@ -357,6 +357,8 @@
         resp-array (client/get (localhost "/json-array") {:as :json-strict})
         resp-str (client/get (localhost "/json")
                              {:as :json :coerce :exceptional})
+        resp-str-keys (client/get (localhost "/json") {:as :json-string-keys})
+        resp-strict-str-keys (client/get (localhost "/json") {:as :json-strict-string-keys})
         resp-auto (client/get (localhost "/json") {:as :auto})
         bad-resp (client/get (localhost "/json-bad")
                              {:throw-exceptions false :as :json})
@@ -370,12 +372,17 @@
            (:status resp)
            (:status resp-array)
            (:status resp-str)
+           (:status resp-str-keys)
+           (:status resp-strict-str-keys)
            (:status resp-auto)))
     (is (= {:foo "bar"}
            (:body resp)
            (:body resp-auto)))
     (is (= ["foo", "bar"]
            (:body resp-array)))
+    (is (= {"foo" "bar"}
+           (:body resp-strict-str-keys)
+           (:body resp-str-keys)))
     ;; '("foo" "bar") and ["foo" "bar"] compare as equal with =.
     (is (vector? (:body resp-array)))
     (is (= "{\"foo\":\"bar\"}" (:body resp-str)))
