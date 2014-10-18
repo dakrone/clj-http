@@ -367,7 +367,7 @@
   (coerce-json-body req resp true true))
 
 (defmethod coerce-response-body :json-strict-string-keys [req resp]
-  (coerce-json-body req resp true true))
+  (coerce-json-body req resp false true))
 
 (defmethod coerce-response-body :json-string-keys [req resp]
   (coerce-json-body req resp false false))
