@@ -113,6 +113,9 @@ More example requests:
    :conn-timeout 1000    ;; in milliseconds
    :accept :json})
 
+;; Using a PUT request
+(client/put "http://example.com/api" {:body "my PUT body"})
+
 ;; Specifying headers as either a string or collection:
 (client/get "http://example.com"
   {:headers {"foo" ["bar" "baz"], "eggplant" "quux"}})
