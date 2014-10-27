@@ -8,8 +8,9 @@
   (:import (java.io FilterInputStream InputStream)
            (java.net URI)
            (java.util Locale)
-           (org.apache.http HttpHost HttpRequest)
-           (org.apache.http.client.methods HttpGet)
+           (org.apache.http HttpEntity HttpHost HttpRequest HttpEntityEnclosingRequest HttpResponse)
+           (org.apache.http.client.methods HttpDelete HttpGet HttpPost HttpPut HttpOptions HttpPatch
+                                           HttpHead HttpEntityEnclosingRequestBase)
            (org.apache.http.client.protocol HttpClientContext)
            (org.apache.http.config RegistryBuilder)
            (org.apache.http.conn HttpClientConnectionManager)
@@ -17,6 +18,7 @@
            (org.apache.http.conn.ssl BrowserCompatHostnameVerifier
                                      SSLConnectionSocketFactory SSLContexts)
            (org.apache.http.conn.socket PlainConnectionSocketFactory)
+           (org.apache.http.entity ByteArrayEntity StringEntity)
            (org.apache.http.impl.client BasicCredentialsProvider
                                         CloseableHttpClient HttpClients)
            (org.apache.http.impl.conn PoolingHttpClientConnectionManager)))
