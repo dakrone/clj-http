@@ -66,6 +66,12 @@
     (is (= "baz" (:foo (merge (header-map :foo "bar")
                               {"Foo" "baz"}))))))
 
+(deftest test-empty
+  (testing "an empty header-map is a header-map"
+    (let [m (header-map :foo :bar)]
+      (is (= (class m)
+             (class (empty m)))))))
+
 (defn ^Server header-server
   "fixture server that copies all request headers into the response as
   response headers"

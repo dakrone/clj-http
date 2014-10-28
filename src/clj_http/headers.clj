@@ -116,7 +116,9 @@
     (map first (vals m)))
   clojure.lang.Associative
   (containsKey [_ k]
-    (contains? m (normalize k))))
+    (contains? m (normalize k)))
+  (empty [_]
+    (HeaderMap. {})))
 
 (defn header-map
   "Returns a new header map with supplied mappings."
