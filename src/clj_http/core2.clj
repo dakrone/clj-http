@@ -8,9 +8,12 @@
   (:import (java.io FilterInputStream InputStream)
            (java.net URI)
            (java.util Locale)
-           (org.apache.http HttpEntity HttpHost HttpRequest HttpEntityEnclosingRequest HttpResponse)
-           (org.apache.http.client.methods HttpDelete HttpGet HttpPost HttpPut HttpOptions HttpPatch
-                                           HttpHead HttpEntityEnclosingRequestBase)
+           (org.apache.http HttpEntity HeaderIterator HttpHost HttpRequest
+                            HttpEntityEnclosingRequest HttpResponse)
+           (org.apache.http.client.methods HttpDelete HttpGet HttpPost HttpPut
+                                           HttpOptions HttpPatch
+                                           HttpHead
+                                           HttpEntityEnclosingRequestBase)
            (org.apache.http.client.protocol HttpClientContext)
            (org.apache.http.config RegistryBuilder)
            (org.apache.http.conn HttpClientConnectionManager)
@@ -21,7 +24,27 @@
            (org.apache.http.entity ByteArrayEntity StringEntity)
            (org.apache.http.impl.client BasicCredentialsProvider
                                         CloseableHttpClient HttpClients)
-           (org.apache.http.impl.conn PoolingHttpClientConnectionManager)))
+           (org.apache.http.impl.conn BasicHttpClientConnectionManager
+                                      PoolingHttpClientConnectionManager)))
+
+(defn parse-headers
+  "Takes a HeaderIterator and returns a map of names to values.
+
+  If a name appears more than once (like `set-cookie`) then the value
+  will be a vector containing the values in the order they appeared
+  in the headers."
+  [^HeaderIterator headers & [use-header-maps-in-response?]]
+  (if-not use-header-maps-in-response?
+    (->> (headers/header-iterator-seq headers)
+         (map (fn [[k v]]
+                [(.toLowerCase ^String k) v]))
+         (reduce (fn [hs [k v]]
+                   (headers/assoc-join hs k v))
+                 {}))
+    (->> (headers/header-iterator-seq headers)
+         (reduce (fn [hs [k v]]
+                   (headers/assoc-join hs k v))
+                 (headers/header-map)))))
 
 (defn http-route []
   ;; TODO add proxy support
@@ -42,6 +65,12 @@
 
 (defn pooling-conn-mgr []
   (PoolingHttpClientConnectionManager. (registry-builder)))
+
+(defn basic-conn-mgr []
+  (BasicHttpClientConnectionManager. (registry-builder)))
+
+(defn reusable? [^HttpClientConnectionManager conn-mgr]
+  (instance? PoolingHttpClientConnectionManager conn-mgr))
 
 (defn http-client [conn-mgr]
   (-> (HttpClients/custom)
@@ -118,6 +147,7 @@
            server-port
            request-method
            query-string
+           conn-mgr
            uri]
     :as req}]
   (let [scheme (name scheme)
@@ -125,10 +155,12 @@
                       (when server-port (str ":" server-port))
                       uri
                       (when query-string (str "?" query-string)))
-        conn-mgr (pooling-conn-mgr)
+        conn-mgr (or conn-mgr (basic-conn-mgr))
         ^CloseableHttpClient client (http-client conn-mgr)
         ^HttpClientContext context (http-context)
         ^HttpRequest http-req (http-request-for request-method http-url body)]
+    (when-not (reusable? conn-mgr)
+      (.addHeader http-req "Connection" "close"))
     (when cookie-store
       (.setCookieStore context cookie-store))
     (if multipart
@@ -145,6 +177,9 @@
           ^HttpEntity entity (.getEntity response)
           status (.getStatusLine response)]
       {:body (coerce-body-entity entity conn-mgr response)
+       :headers (parse-headers
+                 (.headerIterator response)
+                 (opt req :use-header-maps-in-response))
        :length (.getContentLength entity)
        :chunked? (.isChunked entity)
        :repeatable? (.isRepeatable entity)
