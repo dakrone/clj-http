@@ -126,7 +126,7 @@
 
    (opt req :insecure) (BasicClientConnectionManager. insecure-scheme-registry)
 
-   :else (BasicClientConnectionManager.)))
+   :else (BasicClientConnectionManager. regular-scheme-registry)))
 
 ;; need the fully qualified class name because this fn is later used in a
 ;; macro from a different ns
