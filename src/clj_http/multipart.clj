@@ -14,19 +14,19 @@
 
 (defn make-file-body
   "Create a FileBody object from the given map, requiring at least :content"
-  [{:keys [name ^String mime-type ^File content ^String encoding]}]
+  [{:keys [^String name ^String mime-type ^File content ^String encoding]}]
   (cond
    (and name mime-type content encoding)
-   (FileBody. content name mime-type encoding)
+   (FileBody. content (ContentType/create mime-type encoding) name)
 
    (and mime-type content encoding)
-   (FileBody. content mime-type encoding)
+   (FileBody. content (ContentType/create mime-type encoding))
 
    (and name mime-type content)
    (FileBody. content (ContentType/create mime-type) name)
 
    (and mime-type content)
-   (FileBody. content mime-type)
+   (FileBody. content (ContentType/create mime-type))
 
    content
    (FileBody. content)
