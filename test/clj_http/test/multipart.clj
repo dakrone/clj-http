@@ -34,7 +34,7 @@
                                      :encoding "utf-8"})]
       (is (= (.getFile ^FileBody file-body) testfile))))
 
-  (testing "can create FileBody with content and mime-type and encoding and name"
+  (testing "can create FileBody with content, mime-type, encoding, and name"
     (let [testfile (File. "testfile")
           file-body (make-file-body {:content (File. "testfile")
                                      :mime-type "application/octet-stream"
