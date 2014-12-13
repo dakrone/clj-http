@@ -59,12 +59,22 @@
   (apply (ns-resolve (symbol "crouton.html") (symbol "parse")) args))
 
 (defn ^:dynamic parse-transit
-  "Resolve and apply Transit's JSON/MessagePack parsing."
-  [& args]
+  "Resolve and apply Transit's JSON/MessagePack decoding."
+  [in type & [opts]]
   {:pre [transit-enabled?]}
   (let [reader (ns-resolve 'cognitect.transit 'reader)
         read (ns-resolve 'cognitect.transit 'read)]
-    (read (apply reader args))))
+    (read (reader in type opts))))
+
+(defn ^:dynamic transit-encode
+  "Resolve and apply Transit's JSON/MessagePack encoding."
+  [out type & [opts]]
+  {:pre [transit-enabled?]}
+  (let [output (java.io.ByteArrayOutputStream.)
+        writer (ns-resolve 'cognitect.transit 'writer)
+        write (ns-resolve 'cognitect.transit 'write)]
+    (write (writer output type opts) out)
+    (.toByteArray output)))
 
 (defn ^:dynamic json-encode
   "Resolve and apply cheshire's json encoding dynamically."
@@ -642,13 +652,7 @@
                      :form-params form-params
                      :transit-opts transit-opts
                      :transit-type type})))
-  (let [output (java.io.ByteArrayOutputStream.)
-        writer (ns-resolve 'cognitect.transit 'writer)
-        write (ns-resolve 'cognitect.transit 'write)
-        _ (write (writer output type transit-opts) form-params)
-        bytes (.toByteArray output)]
-    (.reset output)
-    bytes))
+  (transit-encode form-params type transit-opts))
 
 (defmethod coerce-form-params :application/transit+json [req]
   (coerce-transit-form-params :json req))
@@ -701,13 +705,15 @@
 (defn wrap-nested-params
   "Middleware wrapping nested parameters for query strings."
   [client]
-  (fn [{:keys [query-params form-params content-type] :as req}]
-    (if (= :json content-type)
-      (client req)
+  (fn [{:keys [query-params form-params content-type]
+        :as req}]
+    (if (or (nil? content-type)
+            (= content-type :x-www-form-urlencoded))
       (client (reduce
                nest-params
                req
-               [:query-params :form-params])))))
+               [:query-params :form-params]))
+      (client req))))
 
 (defn wrap-url
   "Middleware wrapping request URL parsing."

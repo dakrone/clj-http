@@ -73,7 +73,7 @@
     [:get "/header"]
     {:status 200 :body (get-in req [:headers "x-my-header"])}
     [:post "/post"]
-    {:status 200 :body (slurp (:body req))}
+    {:status 200 :body (:body req)}
     [:get "/error"]
     {:status 500 :body "o noes"}
     [:get "/timeout"]
@@ -100,7 +100,7 @@
 (defn run-server
   []
   (defonce server
-    (ring/run-jetty handler {:port 18080 :join? false})))
+    (ring/run-jetty #'handler {:port 18080 :join? false})))
 
 (defn localhost [path]
   (str "http://localhost:18080" path))

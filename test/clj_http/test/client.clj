@@ -4,8 +4,11 @@
             [clj-http.conn-mgr :as conn]
             [clj-http.test.core :refer [run-server]]
             [clj-http.util :as util]
+            [clojure.string :as str]
             [clojure.java.io :refer [resource]]
-            [clojure.test :refer :all])
+            [clojure.test :refer :all]
+            [ring.util.codec :refer [form-decode-str]]
+            [ring.middleware.nested-params :refer [parse-nested-keys]])
   (:import (java.net UnknownHostException)
            (java.util Arrays)
            (java.io ByteArrayInputStream)
@@ -19,6 +22,15 @@
 (defn request [req]
   (client/request (merge base-req req)))
 
+(defn parse-form-params [s]
+  (->> (str/split (form-decode-str s) #"&")
+       (map #(str/split % #"="))
+       (map #(vector
+              (map keyword (parse-nested-keys (first %)))
+              (second %)))
+       (reduce (fn [m [ks v]]
+                 (assoc-in m ks v)) {})))
+
 (deftest ^:integration roundtrip
   (run-server)
   ;; roundtrip with scheme as a keyword
@@ -31,7 +43,22 @@
                        :scheme "http"})]
     (is (= 200 (:status resp)))
     (is (= "close" (get-in resp [:headers "connection"])))
-    (is (= "get" (:body resp)))))
+    (is (= "get" (:body resp))))
+  (let [params {:a "1" :b {:c "2"}}]
+    (doseq [[content-type read-fn]
+            [[nil (comp parse-form-params slurp)]
+             [:x-www-form-urlencoded (comp parse-form-params slurp)]
+             [:edn (comp read-string slurp)]
+             [:transit+json #(client/parse-transit % :json)]
+             [:transit+msgpack #(client/parse-transit % :msgpack)]]]
+      (let [resp (request {:uri "/post"
+                           :as :stream
+                           :method :post
+                           :content-type content-type
+                           :form-params params})]
+        (is (= 200 (:status resp)))
+        (is (= "close" (get-in resp [:headers "connection"])))
+        (is (= params (read-fn (:body resp))))))))
 
 (deftest ^:integration nil-input
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
