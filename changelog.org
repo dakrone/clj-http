@@ -9,6 +9,13 @@
 
 * Changelog
 List of user-visible changes that have gone into each release
+** 1.0.1
+- merged https://github.com/dakrone/clj-http/pull/232 to fix =empty= on
+  header-map
+- fix :json-strict-string-keys
+- exclude clojure.core/update from client ns
+- added =:decode-cookies= option to allow skipping cookie header decode (if the
+  server sends incorrectly formatted cookies for some reason)
 ** 1.0.0
 - merged https://github.com/dakrone/clj-http/pull/215 to add transit support
 - drop support for clojure 1.4.0, start testing 1.7.0
@@ -61,6 +68,22 @@ List of user-visible changes that have gone into each release
   and clean up whitespace for new clojure-mode
 - Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
 * Work log
+** 2014-12-13
+- merged https://github.com/dakrone/clj-http/pull/235 to fix wrap-nested-params
+** 2014-12-12
+- merged https://github.com/dakrone/clj-http/pull/236 to clean up multipart
+  constructors and reflection
+** 2014-12-02
+- merged https://github.com/dakrone/clj-http/pull/234 to allow scheme
+  customization in default connection
+** Released 1.0.1
+** 2014-10-28
+- merged https://github.com/dakrone/clj-http/pull/232 to fix =empty= on
+  header-map
+** 2014-10-17
+- fix :json-strict-string-keys
+** 2014-09-08
+- exclude clojure.core/update from client ns
 ** 2014-08-15
 - added =:decode-cookies= option to allow skipping cookie header decode (if the
   server sends incorrectly formatted cookies for some reason)
