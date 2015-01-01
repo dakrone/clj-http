@@ -434,6 +434,23 @@ HTTP responses other than =#{200 201 202 203 204 205 206 207 300 301 302 303
 
 (spacing added by me to be human readable)
 
+How to use with Slingshot:
+
+#+BEGIN_SRC
+; Response map is thrown as exception obj.
+; We filter out by status codes
+(try+
+  (client/get "http://some-site.com/broken")
+  (catch [:status 403] {:keys [request-time headers body]}
+    (log/warn "403" request-time headers))
+  (catch [:status 404] {:keys [request-time headers body]}
+    (log/warn "NOT Found 404" request-time headers body))
+  (catch Object _
+    (log/error (:throwable &throw-context) "unexpected error")
+    (throw+)))
+#+END_SRC
+
+
 ** Proxies
 
 A proxy can be specified by setting the Java properties: =<scheme>.proxyHost=
