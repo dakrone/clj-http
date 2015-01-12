@@ -102,28 +102,33 @@
 ;; other operations using the normalized -- this allows a value to be
 ;; looked up by many similar keys, and not just the exact precise key
 ;; it was originally stored with.
-(potemkin/def-map-type HeaderMap [m]
+(potemkin/def-map-type HeaderMap [m mta]
   (get [_ k v]
     (second (get m (normalize k) [nil v])))
   (assoc [_ k v]
     (HeaderMap. (assoc m (normalize k) [(if (keyword? k)
                                           (canonicalize k)
                                           k)
-                                        v])))
+                                        v])
+                mta))
   (dissoc [_ k]
-    (HeaderMap. (dissoc m (normalize k))))
+    (HeaderMap. (dissoc m (normalize k)) mta))
   (keys [_]
     (map first (vals m)))
+  (meta [_]
+    mta)
+  (with-meta [_ mta]
+    (HeaderMap. m mta))
   clojure.lang.Associative
   (containsKey [_ k]
     (contains? m (normalize k)))
   (empty [_]
-    (HeaderMap. {})))
+    (HeaderMap. {} nil)))
 
 (defn header-map
   "Returns a new header map with supplied mappings."
   [& keyvals]
-  (into (HeaderMap. {})
+  (into (HeaderMap. {} nil)
         (apply array-map keyvals)))
 
 (defn wrap-header-map
