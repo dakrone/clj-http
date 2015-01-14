@@ -64,7 +64,9 @@
     (is (= "eggs" (m2 "ham")))
     (is (= "nope" (get m2 "absent" "nope")))
     (is (= "baz" (:foo (merge (header-map :foo "bar")
-                              {"Foo" "baz"}))))))
+                              {"Foo" "baz"}))))
+    (let [m-with-meta (with-meta m {:withmeta-test true})]
+      (is (= (:withmeta-test (meta m-with-meta)) true)))))
 
 (deftest test-empty
   (testing "an empty header-map is a header-map"
