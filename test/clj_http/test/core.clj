@@ -51,6 +51,8 @@
     [:get "/redirect-to-get"]
     {:status 302
      :headers {"location" "http://localhost:18080/get"}}
+    [:get "/unmodified-resource"]
+    {:status 304}
     [:get "/transit-json"]
     {:status 200 :body (str "[\"^ \",\"~:eggplant\",[\"^ \",\"~:quux\","
                             "[\"~#set\",[1,3,2]]],\"~:baz\",\"~f7\","
