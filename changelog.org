@@ -68,6 +68,12 @@ List of user-visible changes that have gone into each release
   and clean up whitespace for new clojure-mode
 - Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
 * Work log
+** 2015-01-15
+- merged https://github.com/dakrone/clj-http/pull/240 to implement
+  meta/with-meta for the header map
+- merged https://github.com/dakrone/clj-http/pull/242 fixing a connection leak
+  when http-entity is null
+- bumped all dependencies to latest versions
 ** 2014-12-13
 - merged https://github.com/dakrone/clj-http/pull/235 to fix wrap-nested-params
 ** 2014-12-12
