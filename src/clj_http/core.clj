@@ -143,7 +143,7 @@
   "Coerce the http-entity from an HttpResponse to either a byte-array, or a
   stream that closes itself and the connection manager when closed."
   [{:keys [as]} ^HttpEntity http-entity ^ClientConnectionManager conn-mgr]
-  (when http-entity
+  (if http-entity
     (proxy [FilterInputStream]
         [^InputStream (.getContent http-entity)]
       (close []
@@ -153,7 +153,9 @@
             (proxy-super close))
           (finally
             (when-not (conn/reusable? conn-mgr)
-              (.shutdown conn-mgr))))))))
+              (conn/shutdown-manager conn-mgr))))))
+    (when-not (conn/reusable? conn-mgr)
+      (conn/shutdown-manager conn-mgr))))
 
 (defn- print-debug!
   "Print out debugging information to *out* for a given request."
@@ -316,5 +318,5 @@
             resp))
         (catch Throwable e
           (when-not (conn/reusable? conn-mgr)
-            (.shutdown ^ClientConnectionManager conn-mgr))
+            (conn/shutdown-manager conn-mgr))
           (throw e))))))
