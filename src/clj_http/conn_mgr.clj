@@ -8,14 +8,12 @@
            (javax.net.ssl SSLSession SSLSocket)
            (org.apache.http.conn ClientConnectionManager)
            (org.apache.http.conn.params ConnPerRouteBean)
-           (org.apache.http.conn.ssl AllowAllHostnameVerifier SSLSocketFactory
-                                     TrustStrategy X509HostnameVerifier
-                                     SSLContexts)
+           (org.apache.http.conn.ssl SSLSocketFactory TrustStrategy
+                                     X509HostnameVerifier SSLContexts)
            (org.apache.http.conn.scheme PlainSocketFactory
                                         SchemeRegistry Scheme)
            (org.apache.http.impl.conn BasicClientConnectionManager
                                       PoolingClientConnectionManager
-                                      ProxySelectorRoutePlanner
                                       SchemeRegistryFactory
                                       SingleClientConnManager)))
 

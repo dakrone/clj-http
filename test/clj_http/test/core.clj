@@ -9,7 +9,6 @@
             [ring.adapter.jetty :as ring])
   (:import (java.io ByteArrayInputStream)
            (org.apache.http.params CoreConnectionPNames CoreProtocolPNames)
-           (org.apache.http.conn.params ConnRoutePNames)
            (org.apache.http.message BasicHeader BasicHeaderIterator)
            (org.apache.http.client.methods HttpPost)
            (org.apache.http.client.params CookiePolicy ClientPNames)
@@ -17,14 +16,11 @@
                             HttpVersion)
            (org.apache.http.protocol HttpContext ExecutionContext)
            (org.apache.http.impl.client DefaultHttpClient)
-           (org.apache.http.cookie CookieSpecFactory)
-           (org.apache.http.impl.cookie BrowserCompatSpec)
            (org.apache.http.client.params ClientPNames)
-           (org.apache.http.cookie.params CookieSpecPNames)))
+           (java.net SocketTimeoutException)
+           (sun.security.provider.certpath SunCertPathBuilderException)))
 
 (defn handler [req]
-  ;;(pp/pprint req)
-  ;;(println) (println)
   (condp = [(:request-method req) (:uri req)]
     [:get "/get"]
     {:status 200 :body "get"}
@@ -176,7 +172,7 @@
 (deftest ^:integration sets-socket-timeout
   (run-server)
   (try
-    (is (thrown? java.net.SocketTimeoutException
+    (is (thrown? SocketTimeoutException
                  (client/request {:scheme :http
                                   :server-name "localhost"
                                   :server-port 18080
@@ -197,7 +193,7 @@
                                 :keystore "test-resources/keystore"
                                 :key-password "keykey"})]
     (try
-      (is (thrown? sun.security.provider.certpath.SunCertPathBuilderException
+      (is (thrown? SunCertPathBuilderException
                    (client/request {:scheme :https
                                     :server-name "localhost"
                                     :server-port 18082

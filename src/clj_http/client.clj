@@ -10,11 +10,12 @@
             [clojure.string :as str]
             [clojure.walk :refer [prewalk]]
             [slingshot.slingshot :refer [throw+]])
-  (:import (java.io InputStream File)
+  (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream)
            (java.net URL UnknownHostException)
            (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
-                                   InputStreamEntity FileEntity StringEntity))
-  (:refer-clojure :exclude (get update)))
+                                   InputStreamEntity FileEntity StringEntity)
+           (org.apache.http.impl.conn PoolingClientConnectionManager))
+  (:refer-clojure :exclude [get]))
 
 ;; Cheshire is an optional dependency, so we check for it at compile time.
 (def json-enabled?
@@ -70,7 +71,7 @@
   "Resolve and apply Transit's JSON/MessagePack encoding."
   [out type & [opts]]
   {:pre [transit-enabled?]}
-  (let [output (java.io.ByteArrayOutputStream.)
+  (let [output (ByteArrayOutputStream.)
         writer (ns-resolve 'cognitect.transit 'writer)
         write (ns-resolve 'cognitect.transit 'write)]
     (write (writer output type opts) out)
@@ -302,10 +303,10 @@
 
 (defmethod coerce-response-body :stream [_ resp]
   (let [body (:body resp)]
-    (cond (instance? java.io.InputStream body) resp
+    (cond (instance? InputStream body) resp
           ;; This shouldn't happen, but we plan for it anyway
           (instance? (Class/forName "[B") body)
-          (assoc resp :body (java.io.ByteArrayInputStream. body)))))
+          (assoc resp :body (ByteArrayInputStream. body)))))
 
 (defn coerce-json-body
   [{:keys [coerce]} {:keys [body status] :as resp} keyword? strict? & [charset]]
@@ -392,7 +393,7 @@
   (coerce-transit-body req resp :msgpack))
 
 (defmethod coerce-response-body :default
-  [{:keys [as]} {:keys [status body] :as resp}]
+  [{:keys [as]} {:keys [body] :as resp}]
   (let [body-bytes (util/force-byte-array body)]
     (cond
      (string? as)  (assoc resp :body (String. ^"[B" body-bytes ^String as))
@@ -493,9 +494,6 @@
               body-stream1 (java.io.ByteArrayInputStream. body-bytes)
               body-map (parse-html body-stream1)
               additional-headers (get-headers-from-body body-map)
-              typestring (get-in resp [:headers "content-type"])
-              charset-str (clojure.core/get additional-headers
-                                            "content-type" "")
               body-stream2 (java.io.ByteArrayInputStream. body-bytes)]
           (assoc resp
             :headers (merge (:headers resp) additional-headers)
@@ -676,7 +674,7 @@
 (defn wrap-form-params
   "Middleware wrapping the submission or form parameters."
   [client]
-  (fn [{:keys [form-params content-type request-method json-opts]
+  (fn [{:keys [form-params content-type request-method]
         :or {content-type :x-www-form-urlencoded}
         :as req}]
     (if (and form-params (#{:post :put :patch} request-method))
@@ -705,7 +703,7 @@
 (defn wrap-nested-params
   "Middleware wrapping nested parameters for query strings."
   [client]
-  (fn [{:keys [query-params form-params content-type]
+  (fn [{:keys [content-type]
         :as req}]
     (if (or (nil? content-type)
             (= content-type :x-www-form-urlencoded))
@@ -936,5 +934,5 @@
          ~@body
          (finally
            (.shutdown
-            ^org.apache.http.impl.conn.PoolingClientConnectionManager
+            ^PoolingClientConnectionManager
             conn/*connection-manager*))))))
