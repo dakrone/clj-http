@@ -71,6 +71,8 @@ List of user-visible changes that have gone into each release
 ** 2015-01-19
 - merged https://github.com/dakrone/clj-http/pull/248 to removed deprecated
   cookie APIs from cookie.clj
+- merged https://github.com/dakrone/clj-http/pull/245 to do some cleanups and
+  small import fixes
 ** 2015-01-15
 - merged https://github.com/dakrone/clj-http/pull/240 to implement
   meta/with-meta for the header map
