@@ -1,20 +1,19 @@
 (ns clj-http.cookies
   (:require [clj-http.util :refer [opt]]
             [clojure.string :refer [blank? join lower-case]])
-  (:import (org.apache.http.client.params ClientPNames CookiePolicy)
-           (org.apache.http.cookie ClientCookie CookieOrigin)
-           (org.apache.http.params BasicHttpParams)
+  (:import (org.apache.http.cookie ClientCookie CookieOrigin CookieSpec)
            (org.apache.http.impl.cookie BasicClientCookie2)
            (org.apache.http.impl.cookie BrowserCompatSpecFactory)
            (org.apache.http.message BasicHeader)
-           org.apache.http.client.CookieStore))
+           org.apache.http.client.CookieStore
+           (org.apache.http.impl.client BasicCookieStore)
+           (org.apache.http Header)
+           (org.apache.http.protocol BasicHttpContext)))
 
-(defn cookie-spec ^org.apache.http.cookie.CookieSpec []
-  (.newInstance
+(defn cookie-spec ^CookieSpec []
+  (.create
    (BrowserCompatSpecFactory.)
-   (doto (BasicHttpParams.)
-     (.setParameter ClientPNames/COOKIE_POLICY
-                    CookiePolicy/BROWSER_COMPATIBILITY))))
+   (BasicHttpContext.)))
 
 (defn compact-map
   "Removes all map entries where value is nil."
@@ -43,7 +42,7 @@
      :value (.getValue cookie)
      :version (.getVersion cookie)})])
 
-(defn ^org.apache.http.impl.cookie.BasicClientCookie2
+(defn ^BasicClientCookie2
   to-basic-client-cookie
   "Converts a cookie seq into a BasicClientCookie2."
   [[cookie-name cookie-content]]
@@ -98,7 +97,7 @@
   (when-let [header (-> (cookie-spec)
                         (.formatCookies [(to-basic-client-cookie cookie)])
                         first)]
-    (.getValue ^org.apache.http.Header header)))
+    (.getValue ^Header header)))
 
 (defn encode-cookies
   "Encode the cookie map into a string."
@@ -128,7 +127,7 @@
   "Returns a new, empty instance of the default implementation of the
   org.apache.http.client.CookieStore interface."
   []
-  (org.apache.http.impl.client.BasicCookieStore.))
+  (BasicCookieStore.))
 
 (defn get-cookies
   "Given a cookie-store, return a map of cookie name to a map of cookie values."
