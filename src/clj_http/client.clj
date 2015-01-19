@@ -15,7 +15,7 @@
            (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
                                    InputStreamEntity FileEntity StringEntity)
            (org.apache.http.impl.conn PoolingClientConnectionManager))
-  (:refer-clojure :exclude [get]))
+  (:refer-clojure :exclude [get update]))
 
 ;; Cheshire is an optional dependency, so we check for it at compile time.
 (def json-enabled?
