@@ -5,8 +5,8 @@
             [clj-http.multipart :as mp]
             [clj-http.util :refer [opt]]
             [clojure.pprint])
-  (:import (java.io ByteArrayOutputStream File FilterInputStream InputStream)
-           (java.net URI)
+  (:import (java.io ByteArrayOutputStream FilterInputStream InputStream)
+
            (org.apache.http HeaderIterator HttpEntity
                             HttpEntityEnclosingRequest
                             HttpResponse Header HttpHost
@@ -30,7 +30,7 @@
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.impl.conn ProxySelectorRoutePlanner)
            (org.apache.http.impl.cookie BrowserCompatSpec)
-           (org.apache.http.util EntityUtils)))
+           (java.net URI)))
 
 (defn parse-headers
   "Takes a HeaderIterator and returns a map of names to values.

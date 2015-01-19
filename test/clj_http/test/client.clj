@@ -10,7 +10,6 @@
             [ring.util.codec :refer [form-decode-str]]
             [ring.middleware.nested-params :refer [parse-nested-keys]])
   (:import (java.net UnknownHostException)
-           (java.util Arrays)
            (java.io ByteArrayInputStream)
            (org.apache.http HttpEntity)))
 
