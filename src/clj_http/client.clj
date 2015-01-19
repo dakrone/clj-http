@@ -828,59 +828,29 @@
   `(when (nil? ~url)
      (throw (IllegalArgumentException. "Host URL cannot be nil"))))
 
-(defn get
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :get :url url})))
+(defmacro defrequesthelper
+  "Defines a helper function that wraps #'request but sets the appopriate method
+   and URL.
 
-(defn head
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :head :url url})))
+   E.g. (defrequesthelper :post) will allow one to call (post url), which (under
+   the hood) will call (request {:method :post :url url))."
+  [request-method]
+  `(defn ~(-> request-method
+              name
+              symbol)
+     [url# & [req#]]
+     (check-url! url#)
+     (request (merge req# {:method ~request-method :url url#}))))
 
-(defn post
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :post :url url})))
+(defmacro defrequesthelpers
+  "Defines multiple request helpers so we don't have to write out defrequesthelper
+  for each method."
+  [& args]
+  `(do
+     ~@(for [resource-method args]
+         `(defrequesthelper ~resource-method))))
 
-(defn put
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :put :url url})))
-
-(defn delete
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :delete :url url})))
-
-(defn options
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :options :url url})))
-
-(defn copy
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :copy :url url})))
-
-(defn move
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :move :url url})))
-
-(defn patch
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
-  (check-url! url)
-  (request (merge req {:method :patch :url url})))
+(defrequesthelpers :head :get :post :put :delete :options :copy :move :patch)
 
 (defmacro with-middleware
   "Perform the body of the macro with a custom middleware list.
