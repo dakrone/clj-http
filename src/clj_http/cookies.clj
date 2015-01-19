@@ -87,8 +87,8 @@
   [response]
   (if-let [cookies (get (:headers response) "set-cookie")]
     (assoc response
-      :cookies (decode-cookies cookies)
-      :headers (dissoc (:headers response) "set-cookie"))
+           :cookies (decode-cookies cookies)
+           :headers (dissoc (:headers response) "set-cookie"))
     response))
 
 (defn encode-cookie
