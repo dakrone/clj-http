@@ -33,7 +33,7 @@
       :value "example-value" :version 0}]
     "example-cookie=example-value;Domain=.example.com;Path=/"
     ["example-cookie"
-     {:discard true :domain ".example.com" :secure false :path "/"
+     {:discard true :domain "example.com" :secure false :path "/"
       :value "example-value" :version 0}]))
 
 (deftest test-decode-cookies-with-seq
@@ -200,7 +200,7 @@
     (is (= "example-value" (:value content)))))
 
 (deftest test-wrap-cookies
-  (is (= {:cookies {"example-cookie" {:discard true :domain ".example.com"
+  (is (= {:cookies {"example-cookie" {:discard true :domain "example.com"
                                       :path "/" :value "example-value"
                                       :version 0 :secure false}} :headers {}}
          ((wrap-cookies
