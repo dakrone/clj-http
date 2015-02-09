@@ -43,8 +43,8 @@
   URI is placed under the 'href' key, to mimic the HTML link element.
 
   e.g. Link: <http://example.com/page2.html>; rel=next; title=\"Page 2\"
-       => {:links {:next {:href \"http://example.com/page2.html\"
-                          :title \"Page 2\"}}}"
+  => {:links {:next {:href \"http://example.com/page2.html\"
+  :title \"Page 2\"}}}"
   [client]
   (fn [request]
     (let [response (client request)]
@@ -53,7 +53,7 @@
                              link-headers
                              [link-headers])]
           (assoc response
-            :links
-            (apply merge (for [link-header link-headers]
-                           (read-link-headers link-header)))))
+                 :links
+                 (apply merge (for [link-header link-headers]
+                                (read-link-headers link-header)))))
         response))))

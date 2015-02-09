@@ -134,10 +134,10 @@
     (doseq [[k v] kvs]
       (set-client-param http-client
                         k (cond
-                           (and (not= ClientPNames/CONN_MANAGER_TIMEOUT k)
-                                (instance? Long v))
-                           (Integer. ^Long v)
-                           true v)))))
+                            (and (not= ClientPNames/CONN_MANAGER_TIMEOUT k)
+                                 (instance? Long v))
+                            (Integer. ^Long v)
+                            true v)))))
 
 (defn- coerce-body-entity
   "Coerce the http-entity from an HttpResponse to either a byte-array, or a
@@ -163,22 +163,22 @@
   (println "Request:" (type body))
   (clojure.pprint/pprint
    (assoc req
-     :body (if (opt req :debug-body)
-             (cond
-              (isa? (type body) String)
-              body
+          :body (if (opt req :debug-body)
+                  (cond
+                    (isa? (type body) String)
+                    body
 
-              (isa? (type body) HttpEntity)
-              (let [baos (ByteArrayOutputStream.)]
-                (.writeTo ^HttpEntity body baos)
-                (.toString baos "UTF-8"))
+                    (isa? (type body) HttpEntity)
+                    (let [baos (ByteArrayOutputStream.)]
+                      (.writeTo ^HttpEntity body baos)
+                      (.toString baos "UTF-8"))
 
-              :else nil)
-             (if (isa? (type body) String)
-               (format "... %s bytes ..."
-                       (count body))
-               (and body (bean body))))
-     :body-type (type body)))
+                    :else nil)
+                  (if (isa? (type body) String)
+                    (format "... %s bytes ..."
+                            (count body))
+                    (and body (bean body))))
+          :body-type (type body)))
   (println "HttpRequest:")
   (clojure.pprint/pprint (bean http-req)))
 
@@ -303,15 +303,15 @@
                            #(if (opt req :debug-body)
                               (assoc % :body-content
                                      (cond
-                                      (isa? (type (:body %)) String)
-                                      (:body %)
+                                       (isa? (type (:body %)) String)
+                                       (:body %)
 
-                                      (isa? (type (:body %)) HttpEntity)
-                                      (let [baos (ByteArrayOutputStream.)]
-                                        (.writeTo ^HttpEntity (:body %) baos)
-                                        (.toString baos "UTF-8"))
+                                       (isa? (type (:body %)) HttpEntity)
+                                       (let [baos (ByteArrayOutputStream.)]
+                                         (.writeTo ^HttpEntity (:body %) baos)
+                                         (.toString baos "UTF-8"))
 
-                                      :else nil))
+                                       :else nil))
                               %))
                 (assoc-in [:request :http-req] http-req)
                 (dissoc :save-request?))

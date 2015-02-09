@@ -216,48 +216,48 @@
   :trace-redirects - vector of sites the request was redirected from"
   [client]
   (fn [{:keys [request-method max-redirects redirects-count trace-redirects url]
-        :or {redirects-count 1 trace-redirects []
-             ;; max-redirects default taken from Firefox
-             max-redirects 20}
-        :as req}]
+       :or {redirects-count 1 trace-redirects []
+            ;; max-redirects default taken from Firefox
+            max-redirects 20}
+       :as req}]
     (let [{:keys [status] :as resp} (client req)
           resp-r (assoc resp :trace-redirects
                         (if url
                           (conj trace-redirects url)
                           trace-redirects))]
       (cond
-       (false? (opt req :follow-redirects))
-       resp
-       (not (redirect? resp-r))
-       resp-r
-       (and max-redirects (> redirects-count max-redirects))
-       (if (opt req :throw-exceptions)
-         (throw+ resp-r "Too many redirects: %s" redirects-count)
-         resp-r)
-       (= 303 status)
-       (follow-redirect client (assoc req :request-method :get
-                                      :redirects-count (inc redirects-count))
-                        resp-r)
-       (#{301 302} status)
-       (cond
-        (#{:get :head} request-method)
-        (follow-redirect client (assoc req :redirects-count
-                                       (inc redirects-count)) resp-r)
-        (opt req :force-redirects)
-        (follow-redirect client (assoc req
-                                  :request-method :get
-                                  :redirects-count (inc redirects-count))
+        (false? (opt req :follow-redirects))
+        resp
+        (not (redirect? resp-r))
+        resp-r
+        (and max-redirects (> redirects-count max-redirects))
+        (if (opt req :throw-exceptions)
+          (throw+ resp-r "Too many redirects: %s" redirects-count)
+          resp-r)
+        (= 303 status)
+        (follow-redirect client (assoc req :request-method :get
+                                       :redirects-count (inc redirects-count))
                          resp-r)
+        (#{301 302} status)
+        (cond
+          (#{:get :head} request-method)
+          (follow-redirect client (assoc req :redirects-count
+                                         (inc redirects-count)) resp-r)
+          (opt req :force-redirects)
+          (follow-redirect client (assoc req
+                                         :request-method :get
+                                         :redirects-count (inc redirects-count))
+                           resp-r)
+          :else
+          resp-r)
+        (= 307 status)
+        (if (or (#{:get :head} request-method)
+                (opt req :force-redirects))
+          (follow-redirect client (assoc req :redirects-count
+                                         (inc redirects-count)) resp-r)
+          resp-r)
         :else
-        resp-r)
-       (= 307 status)
-       (if (or (#{:get :head} request-method)
-               (opt req :force-redirects))
-         (follow-redirect client (assoc req :redirects-count
-                                        (inc redirects-count)) resp-r)
-         resp-r)
-       :else
-       resp-r))))
+        resp-r))))
 
 ;; Multimethods for Content-Encoding dispatch automatically
 ;; decompressing response bodies
@@ -280,8 +280,8 @@
 
 (defmethod decompress-body :default [resp]
   (assoc resp
-    :orig-content-encoding
-    (get-in resp [:headers "content-encoding"])))
+         :orig-content-encoding
+         (get-in resp [:headers "content-encoding"])))
 
 (defn wrap-decompression
   "Middleware handling automatic decompression of responses from web servers. If
@@ -316,17 +316,17 @@
         decode-func (if strict? json-decode-strict json-decode)]
     (if json-enabled?
       (cond
-       (= coerce :always)
-       (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
+        (= coerce :always)
+        (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
 
-       (and (unexceptional-status? status)
-            (or (nil? coerce) (= coerce :unexceptional)))
-       (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
+        (and (unexceptional-status? status)
+             (or (nil? coerce) (= coerce :unexceptional)))
+        (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
 
-       (and (not (unexceptional-status? status)) (= coerce :exceptional))
-       (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
+        (and (not (unexceptional-status? status)) (= coerce :exceptional))
+        (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
 
-       :else (assoc resp :body (String. ^"[B" body charset)))
+        :else (assoc resp :body (String. ^"[B" body charset)))
       (assoc resp :body (String. ^"[B" body charset)))))
 
 (defn coerce-clojure-body
@@ -396,8 +396,8 @@
   [{:keys [as]} {:keys [body] :as resp}]
   (let [body-bytes (util/force-byte-array body)]
     (cond
-     (string? as)  (assoc resp :body (String. ^"[B" body-bytes ^String as))
-     :else (assoc resp :body (String. ^"[B" body-bytes "UTF-8")))))
+      (string? as)  (assoc resp :body (String. ^"[B" body-bytes ^String as))
+      :else (assoc resp :body (String. ^"[B" body-bytes "UTF-8")))))
 
 (defn wrap-output-coercion
   "Middleware converting a response body from a byte-array to a different
@@ -424,35 +424,38 @@
   and byte-arrays."
   [client]
   (fn [{:keys [body body-encoding length]
-        :or {^String body-encoding "UTF-8"} :as req}]
+       :or {^String body-encoding "UTF-8"} :as req}]
     (if body
       (cond
-       (string? body)
-       (client (-> req (assoc :body (maybe-wrap-entity
-                                     req (StringEntity. ^String body
-                                                        ^String body-encoding))
-                              :character-encoding (or body-encoding
-                                                      "UTF-8"))))
-       (instance? File body)
-       (client (-> req (assoc :body (maybe-wrap-entity
-                                     req (FileEntity. ^File body
-                                                      ^String body-encoding)))))
+        (string? body)
+        (client (-> req (assoc :body (maybe-wrap-entity
+                                      req (StringEntity. ^String body
+                                                         ^String body-encoding))
+                               :character-encoding (or body-encoding
+                                                       "UTF-8"))))
+        (instance? File body)
+        (client (-> req (assoc :body
+                               (maybe-wrap-entity
+                                req (FileEntity. ^File body
+                                                 ^String body-encoding)))))
 
-       ;; A length of -1 instructs HttpClient to use chunked encoding.
-       (instance? InputStream body)
-       (client (-> req (assoc :body
-                         (if length
-                           (InputStreamEntity. ^InputStream body (long length))
-                           (maybe-wrap-entity
-                            req
-                            (InputStreamEntity. ^InputStream body -1))))))
+        ;; A length of -1 instructs HttpClient to use chunked encoding.
+        (instance? InputStream body)
+        (client (-> req
+                    (assoc :body
+                           (if length
+                             (InputStreamEntity.
+                              ^InputStream body (long length))
+                             (maybe-wrap-entity
+                              req
+                              (InputStreamEntity. ^InputStream body -1))))))
 
-       (instance? (Class/forName "[B") body)
-       (client (-> req (assoc :body (maybe-wrap-entity
-                                     req (ByteArrayEntity. body)))))
+        (instance? (Class/forName "[B") body)
+        (client (-> req (assoc :body (maybe-wrap-entity
+                                      req (ByteArrayEntity. body)))))
 
-       :else
-       (client req))
+        :else
+        (client req))
       (client req))))
 
 (defn get-headers-from-body
@@ -496,8 +499,8 @@
               additional-headers (get-headers-from-body body-map)
               body-stream2 (java.io.ByteArrayInputStream. body-bytes)]
           (assoc resp
-            :headers (merge (:headers resp) additional-headers)
-            :body body-stream2))
+                 :headers (merge (:headers resp) additional-headers)
+                 :body body-stream2))
         (client req))
       (client req))))
 
@@ -574,8 +577,8 @@
   the request."
   [client]
   (fn [{:keys [query-params content-type]
-        :or {content-type :x-www-form-urlencoded}
-        :as req}]
+       :or {content-type :x-www-form-urlencoded}
+       :as req}]
     (if query-params
       (client (-> req (dissoc :query-params)
                   (update-in [:query-string]
@@ -681,8 +684,8 @@
   "Middleware wrapping the submission or form parameters."
   [client]
   (fn [{:keys [form-params content-type request-method]
-        :or {content-type :x-www-form-urlencoded}
-        :as req}]
+       :or {content-type :x-www-form-urlencoded}
+       :as req}]
     (if (and form-params (#{:post :put :patch} request-method))
       (client (-> req
                   (dissoc :form-params)
@@ -710,7 +713,7 @@
   "Middleware wrapping nested parameters for query strings."
   [client]
   (fn [{:keys [content-type]
-        :as req}]
+       :as req}]
     (if (or (nil? content-type)
             (= content-type :x-www-form-urlencoded))
       (client (reduce
@@ -806,24 +809,24 @@
 
 (def ^:dynamic request
   "Executes the HTTP request corresponding to the given map and returns
-   the response map for corresponding to the resulting HTTP response.
+  the response map for corresponding to the resulting HTTP response.
 
-   In addition to the standard Ring request keys, the following keys are also
-   recognized:
-   * :url
-   * :method
-   * :query-params
-   * :basic-auth
-   * :content-type
-   * :accept
-   * :accept-encoding
-   * :as
+  In addition to the standard Ring request keys, the following keys are also
+  recognized:
+  * :url
+  * :method
+  * :query-params
+  * :basic-auth
+  * :content-type
+  * :accept
+  * :accept-encoding
+  * :as
 
   The following additional behaviors over also automatically enabled:
-   * Exceptions are thrown for status codes other than 200-207, 300-303, or 307
-   * Gzip and deflate responses are accepted and decompressed
-   * Input and output bodies are coerced as required and indicated by the :as
-     option."
+  * Exceptions are thrown for status codes other than 200-207, 300-303, or 307
+  * Gzip and deflate responses are accepted and decompressed
+  * Input and output bodies are coerced as required and indicated by the :as
+  option."
   (wrap-request #'core/request))
 
 ;; Inline function to throw a slightly more readable exception when

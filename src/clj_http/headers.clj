@@ -104,26 +104,26 @@
 ;; it was originally stored with.
 (potemkin/def-map-type HeaderMap [m mta]
   (get [_ k v]
-    (second (get m (normalize k) [nil v])))
+       (second (get m (normalize k) [nil v])))
   (assoc [_ k v]
-    (HeaderMap. (assoc m (normalize k) [(if (keyword? k)
-                                          (canonicalize k)
-                                          k)
-                                        v])
-                mta))
+         (HeaderMap. (assoc m (normalize k) [(if (keyword? k)
+                                               (canonicalize k)
+                                               k)
+                                             v])
+                     mta))
   (dissoc [_ k]
-    (HeaderMap. (dissoc m (normalize k)) mta))
+          (HeaderMap. (dissoc m (normalize k)) mta))
   (keys [_]
-    (map first (vals m)))
+        (map first (vals m)))
   (meta [_]
-    mta)
+        mta)
   (with-meta [_ mta]
     (HeaderMap. m mta))
   clojure.lang.Associative
   (containsKey [_ k]
-    (contains? m (normalize k)))
+               (contains? m (normalize k)))
   (empty [_]
-    (HeaderMap. {} nil)))
+         (HeaderMap. {} nil)))
 
 (defn header-map
   "Returns a new header map with supplied mappings."
