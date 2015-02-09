@@ -896,6 +896,15 @@
                                                m#)]
        ~@body)))
 
+(defmacro with-additional-middleware
+  "Perform the body of the macro with a list of additional middleware.
+
+  The given `middleware-seq' is concatenated to the beginning of the
+  `*current-middleware*' sequence."
+  [middleware-seq & body]
+  `(with-middleware (concat ~middleware-seq *current-middleware*)
+     ~@body))
+
 (defmacro with-connection-pool
   "Macro to execute the body using a connection manager. Creates a
   PoolingClientConnectionManager to use for all requests within the body of

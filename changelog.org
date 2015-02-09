@@ -68,6 +68,8 @@ List of user-visible changes that have gone into each release
   and clean up whitespace for new clojure-mode
 - Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
 * Work log
+** 2015-02-08
+- Add the `with-additional-middleware` macro
 ** 2015-01-19
 - merged https://github.com/dakrone/clj-http/pull/248 to removed deprecated
   cookie APIs from cookie.clj
