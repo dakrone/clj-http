@@ -156,6 +156,10 @@ More example requests:
                                :content-type :json
                                :json-opts {:date-format "yyyy-MM-dd"})
 
+;; You can also specify the encoding of form parameters
+(client/post "http://site.com" {:form-params {:foo "bar"}
+                                :form-param-encoding "ISO-8859-1"})
+
 ;; Send form params as a Transit encoded JSON body (POST or PUT) with options
 (client/post "http://site.com" {:form-params {:foo "bar"}
                                 :content-type :transit+json

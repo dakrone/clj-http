@@ -11,14 +11,16 @@
                           GZIPInputStream GZIPOutputStream)))
 
 (defn utf8-bytes
-  "Returns the UTF-8 bytes corresponding to the given string."
-  [^String s]
-  (.getBytes s "UTF-8"))
+  "Returns the encoding's bytes corresponding to the given string. If no
+  encoding is specified, UTF-8 is used."
+  [^String s & [^String encoding]]
+  (.getBytes s (or encoding "UTF-8")))
 
 (defn utf8-string
-  "Returns the String corresponding to the UTF-8 decoding of the given bytes."
-  [^"[B" b]
-  (String. b "UTF-8"))
+  "Returns the String corresponding to the given encoding's decoding of the
+  given bytes. If no encoding is specified, UTF-8 is used."
+  [^"[B" b & [^String encoding]]
+  (String. b (or encoding "UTF-8")))
 
 (defn url-decode
   "Returns the form-url-decoded version of the given string, using either a
@@ -41,10 +43,10 @@
   [b]
   (when b
     (cond
-     (instance? java.io.InputStream b)
-     (GZIPInputStream. b)
-     :else
-     (IOUtils/toByteArray (GZIPInputStream. (ByteArrayInputStream. b))))))
+      (instance? java.io.InputStream b)
+      (GZIPInputStream. b)
+      :else
+      (IOUtils/toByteArray (GZIPInputStream. (ByteArrayInputStream. b))))))
 
 (defn gzip
   "Returns a gzip'd version of the given byte array."

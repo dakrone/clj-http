@@ -552,19 +552,22 @@
      (second found))
    "UTF-8"))
 
+(defn generate-query-string-with-encoding [params encoding]
+  (str/join "&"
+            (mapcat (fn [[k v]]
+                      (if (sequential? v)
+                        (map #(str (util/url-encode (name %1) encoding)
+                                   "="
+                                   (util/url-encode (str %2) encoding))
+                             (repeat k) v)
+                        [(str (util/url-encode (name k) encoding)
+                              "="
+                              (util/url-encode (str v) encoding))]))
+                    params)))
+
 (defn generate-query-string [params & [content-type]]
   (let [encoding (detect-charset content-type)]
-    (str/join "&"
-              (mapcat (fn [[k v]]
-                        (if (sequential? v)
-                          (map #(str (util/url-encode (name %1) encoding)
-                                     "="
-                                     (util/url-encode (str %2) encoding))
-                               (repeat k) v)
-                          [(str (util/url-encode (name k) encoding)
-                                "="
-                                (util/url-encode (str v) encoding))]))
-                      params))))
+    (generate-query-string-with-encoding params encoding)))
 
 (defn wrap-query-params
   "Middleware converting the :query-params option to a querystring on
@@ -668,8 +671,11 @@
                      :json-opts json-opts})))
   (json-encode form-params json-opts))
 
-(defmethod coerce-form-params :default [{:keys [content-type form-params]}]
-  (generate-query-string form-params (content-type-value content-type)))
+(defmethod coerce-form-params :default [{:keys [content-type form-params
+                                                form-param-encoding]}]
+  (if encoding
+    (generate-query-string-with-encoding form-params form-param-encoding)
+    (generate-query-string form-params (content-type-value content-type))))
 
 (defn wrap-form-params
   "Middleware wrapping the submission or form parameters."

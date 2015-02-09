@@ -70,6 +70,7 @@ List of user-visible changes that have gone into each release
 * Work log
 ** 2015-02-08
 - Add the `with-additional-middleware` macro
+- Add the ability to specify form-param-encoding for encoding form parameters
 ** 2015-01-19
 - merged https://github.com/dakrone/clj-http/pull/248 to removed deprecated
   cookie APIs from cookie.clj
