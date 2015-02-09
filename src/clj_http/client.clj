@@ -676,7 +676,7 @@
 
 (defmethod coerce-form-params :default [{:keys [content-type form-params
                                                 form-param-encoding]}]
-  (if encoding
+  (if form-param-encoding
     (generate-query-string-with-encoding form-params form-param-encoding)
     (generate-query-string form-params (content-type-value content-type))))
 
