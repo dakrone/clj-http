@@ -54,6 +54,5 @@
                              [link-headers])]
           (assoc response
                  :links
-                 (apply merge (for [link-header link-headers]
-                                (read-link-headers link-header)))))
+                 (into {} (map read-link-headers link-headers))))
         response))))
