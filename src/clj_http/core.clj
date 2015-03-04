@@ -11,7 +11,7 @@
                             HttpEntityEnclosingRequest
                             HttpResponse Header HttpHost
                             HttpResponseInterceptor)
-           (org.apache.http.auth UsernamePasswordCredentials AuthScope)
+           (org.apache.http.auth UsernamePasswordCredentials AuthScope NTCredentials)
            (org.apache.http.params CoreConnectionPNames)
            (org.apache.http.client HttpClient HttpRequestRetryHandler)
            (org.apache.http.client.methods HttpDelete
@@ -213,7 +213,7 @@
   [{:keys [request-method scheme server-name server-port uri query-string
            headers body multipart socket-timeout conn-timeout proxy-host
            proxy-ignore-hosts proxy-port proxy-user proxy-pass as cookie-store
-           retry-handler response-interceptor digest-auth connection-manager
+           retry-handler response-interceptor digest-auth ntlm-auth connection-manager
            client-params]
     :as req}]
   (let [^ClientConnectionManager conn-mgr
@@ -244,6 +244,12 @@
        (.getCredentialsProvider http-client)
        (AuthScope. nil -1 nil)
        (UsernamePasswordCredentials. user pass)))
+    (when-let [[user password host domain] ntlm-auth]
+      (.setCredentials
+       (.getCredentialsProvider http-client)
+       (AuthScope. nil -1 nil)
+       (NTCredentials. user password host domain)))
+
     (when (and proxy-user proxy-pass)
       (let [authscope (AuthScope. proxy-host proxy-port)
             creds (UsernamePasswordCredentials. proxy-user proxy-pass)]
