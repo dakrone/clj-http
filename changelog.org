@@ -9,6 +9,25 @@
 
 * Changelog
 List of user-visible changes that have gone into each release
+** 1.1.0
+- merged https://github.com/dakrone/clj-http/pull/255 to add support for Windows
+  NTLM authentication
+- Add the `with-additional-middleware` macro
+- Add the ability to specify form-param-encoding for encoding form parameters
+- merged https://github.com/dakrone/clj-http/pull/248 to removed deprecated
+  cookie APIs from cookie.clj
+- merged https://github.com/dakrone/clj-http/pull/245 to do some cleanups and
+  small import fixes
+- merged https://github.com/dakrone/clj-http/pull/240 to implement
+  meta/with-meta for the header map
+- merged https://github.com/dakrone/clj-http/pull/242 fixing a connection leak
+  when http-entity is null
+- bumped all dependencies to latest versions
+- merged https://github.com/dakrone/clj-http/pull/235 to fix wrap-nested-params
+- merged https://github.com/dakrone/clj-http/pull/236 to clean up multipart
+  constructors and reflection
+- merged https://github.com/dakrone/clj-http/pull/234 to allow scheme
+  customization in default connection
 ** 1.0.1
 - merged https://github.com/dakrone/clj-http/pull/232 to fix =empty= on
   header-map
