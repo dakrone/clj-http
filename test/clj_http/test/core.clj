@@ -24,6 +24,8 @@
   (condp = [(:request-method req) (:uri req)]
     [:get "/get"]
     {:status 200 :body "get"}
+    [:get "/empty"]
+    {:status 200 :body nil}
     [:get "/clojure"]
     {:status 200 :body "{:foo \"bar\" :baz 7M :eggplant {:quux #{1 2 3}}}"
      :headers {"content-type" "application/clojure"}}
@@ -563,3 +565,9 @@
 (deftest ^:integration t-numeric-headers
   (run-server)
   (client/request {:method :get :url (localhost "/get") :headers {"foo" 2}}))
+
+;; Currently failing, see: https://github.com/dakrone/clj-http/issues/257
+;; (deftest ^:integration t-empty-response-coercion
+;;   (run-server)
+;;   (let [resp (client/get (localhost "/empty") {:as :clojure})]
+;;     (is (= (:body resp) ""))))
