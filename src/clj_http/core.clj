@@ -59,7 +59,7 @@
 
 (defn make-proxy-method-with-body
   [method]
-  (fn [url]
+  (fn [^String url]
     (doto (proxy [HttpEntityEnclosingRequestBase] []
             (getMethod [] (.toUpperCase (name method))))
       (.setURI (URI. url)))))
