@@ -87,6 +87,8 @@ List of user-visible changes that have gone into each release
   and clean up whitespace for new clojure-mode
 - Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
 * Work log
+** 2015-04-05
+- add =304= (not modified) to the list of unexceptional responses, see #259
 ** 2015-03-03
 - merged https://github.com/dakrone/clj-http/pull/255 to add support for Windows
   NTLM authentication
