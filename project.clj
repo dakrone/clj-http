@@ -16,7 +16,7 @@
                  [slingshot "0.12.2"]
                  [cheshire "5.4.0"]
                  [crouton "0.1.2"]
-                 [org.clojure/tools.reader "0.8.16"]
+                 [org.clojure/tools.reader "0.9.0"]
                  [potemkin "0.3.13"]]
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.6.0"]
                                   [org.clojure/tools.logging "0.3.1"]
