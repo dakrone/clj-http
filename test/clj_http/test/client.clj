@@ -461,6 +461,12 @@
   (is (= nil  (-> "https://example.com/" client/parse-url :server-port)))
   (is (= 8443 (-> "https://example.com:8443/" client/parse-url :server-port))))
 
+(deftest decode-credentials-from-url
+  (is (= "fred's diner:fred's password"
+         (-> "http://fred%27s%20diner:fred%27s%20password@example.com/foo"
+             client/parse-url
+             :user-info))))
+
 (deftest apply-on-form-params
   (testing "With form params"
     (let [param-client (client/wrap-form-params identity)

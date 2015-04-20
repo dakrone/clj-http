@@ -134,7 +134,8 @@
      :server-name (.getHost url-parsed)
      :server-port (when-pos (.getPort url-parsed))
      :uri (url-encode-illegal-characters (.getPath url-parsed))
-     :user-info (.getUserInfo url-parsed)
+     :user-info (if-let [user-info (.getUserInfo url-parsed)]
+                  (util/url-decode user-info))
      :query-string (url-encode-illegal-characters (.getQuery url-parsed))}))
 
 ;; Statuses for which clj-http will not throw an exception
