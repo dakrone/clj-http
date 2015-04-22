@@ -488,22 +488,20 @@
   web page, adding them into the headers map of the response if any
   are found. Only looks at the body if the :decode-body-headers option
   is set to a truthy value. Will be silently disabled if crouton is excluded
-  from clj-http's dependencies."
+  from clj-http's dependencies. Will do nothing if no body is returned, e.g. HEAD requests"
   [client]
   (fn [req]
-    (if (opt req :decode-body-headers)
-      (if crouton-enabled?
-        (let [resp (client req)
-              body-bytes (util/force-byte-array (:body resp))
+    (let [resp (client req)]
+      (if (and (opt req :decode-body-headers) crouton-enabled? (:body resp))
+        (let [body-bytes (util/force-byte-array (:body resp))
               body-stream1 (java.io.ByteArrayInputStream. body-bytes)
               body-map (parse-html body-stream1)
               additional-headers (get-headers-from-body body-map)
               body-stream2 (java.io.ByteArrayInputStream. body-bytes)]
           (assoc resp
-                 :headers (merge (:headers resp) additional-headers)
-                 :body body-stream2))
-        (client req))
-      (client req))))
+            :headers (merge (:headers resp) additional-headers)
+            :body body-stream2))
+        resp))))
 
 (defn content-type-value [type]
   (if (keyword? type)

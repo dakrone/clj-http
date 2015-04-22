@@ -387,6 +387,8 @@ from clj-http's dependencies without causing any problems like so:
                  [clj-http "0.6.0" :exclusions [crouton]]])
 #+END_SRC
 
+Note also that HEAD requests will not return a body, in which case this setting will have no effect.
+
 clj-http will automatically disable the =:decode-body-headers= option.
 
 ** Misc
