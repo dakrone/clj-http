@@ -1,6 +1,6 @@
 #+TITLE:    clj-http changelog
 #+AUTHOR:   Lee Hinman
-#+STARTUP:  align fold nodlcheck lognotestate hideall
+#+STARTUP:  fold nodlcheck lognotestate hideall
 #+OPTIONS:  H:4 num:nil toc:t \n:nil @:t ::t |:t ^:{} -:t f:t *:t
 #+OPTIONS:  skip:nil d:(HIDE) tags:not-in-toc
 #+PROPERTY: header-args :results code :exports both :noweb yes
@@ -87,6 +87,16 @@ List of user-visible changes that have gone into each release
   and clean up whitespace for new clojure-mode
 - Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
 * Work log
+
+** 2015-04-22
+   - merge https://github.com/dakrone/clj-http/pull/262 to prevent
+     NullPointerException when decoding body headers with HEAD requests
+** 2015-04-20
+   - merge https://github.com/dakrone/clj-http/pull/261 to decode user info from
+     URL if provided
+** 2015-04-14
+   - merge https://github.com/dakrone/clj-http/pull/260 to upgrade tools.reader
+     for better cljs compatibility
 ** 2015-04-05
 - add =304= (not modified) to the list of unexceptional responses, see #259
 ** 2015-03-03
@@ -181,20 +191,3 @@ List of user-visible changes that have gone into each release
 ** 2014-02-01
 - Make :decode-body-headers more reliable by using a byte array instead of
   slurp.
-** 2014-01-28
-- Merged https://github.com/dakrone/clj-http/pull/181 to fix some tests
-** 2014-01-27
-- Merged https://github.com/dakrone/clj-http/pull/178 to eliminate test
-  reflection
-** 2014-01-21
-- Merged https://github.com/dakrone/clj-http/pull/177 to update apache HTTP deps
-** 2014-01-15
-- Merged https://github.com/dakrone/clj-http/pull/175 to add {:as :json-strict}
-  for output coercion
-- Added {:as :json-strict-string-keys} output coercion
-** 2014-01-03
-- bump dependencies to their latest
-- Merged https://github.com/dakrone/clj-http/pull/172 to update .gitignore file
-  and clean up whitespace for new clojure-mode
-- Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
-** Released 0.7.8

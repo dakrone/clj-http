@@ -652,3 +652,62 @@ Archived entries from file /Users/hinmanm/src/clj/clj-http/changelog.org
 :ARCHIVE_CATEGORY: changelog
 :END:
    - see: https://github.com/mmcgrana/clj-http
+
+** Released 0.7.8
+   :PROPERTIES:
+   :ARCHIVE_TIME: 2015-04-22 Wed 23:13
+   :ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+   :ARCHIVE_OLPATH: Work log
+   :ARCHIVE_CATEGORY: changelog
+   :END:
+
+** 2014-01-03
+   :PROPERTIES:
+   :ARCHIVE_TIME: 2015-04-22 Wed 23:13
+   :ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+   :ARCHIVE_OLPATH: Work log
+   :ARCHIVE_CATEGORY: changelog
+   :END:
+- bump dependencies to their latest
+- Merged https://github.com/dakrone/clj-http/pull/172 to update .gitignore file
+  and clean up whitespace for new clojure-mode
+- Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
+
+** 2014-01-15
+   :PROPERTIES:
+   :ARCHIVE_TIME: 2015-04-22 Wed 23:13
+   :ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+   :ARCHIVE_OLPATH: Work log
+   :ARCHIVE_CATEGORY: changelog
+   :END:
+- Merged https://github.com/dakrone/clj-http/pull/175 to add {:as :json-strict}
+  for output coercion
+- Added {:as :json-strict-string-keys} output coercion
+
+** 2014-01-21
+   :PROPERTIES:
+   :ARCHIVE_TIME: 2015-04-22 Wed 23:13
+   :ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+   :ARCHIVE_OLPATH: Work log
+   :ARCHIVE_CATEGORY: changelog
+   :END:
+- Merged https://github.com/dakrone/clj-http/pull/177 to update apache HTTP deps
+
+** 2014-01-27
+   :PROPERTIES:
+   :ARCHIVE_TIME: 2015-04-22 Wed 23:13
+   :ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+   :ARCHIVE_OLPATH: Work log
+   :ARCHIVE_CATEGORY: changelog
+   :END:
+- Merged https://github.com/dakrone/clj-http/pull/178 to eliminate test
+  reflection
+
+** 2014-01-28
+   :PROPERTIES:
+   :ARCHIVE_TIME: 2015-04-22 Wed 23:13
+   :ARCHIVE_FILE: ~/src/clj/clj-http/changelog.org
+   :ARCHIVE_OLPATH: Work log
+   :ARCHIVE_CATEGORY: changelog
+   :END:
+- Merged https://github.com/dakrone/clj-http/pull/181 to fix some tests
