@@ -636,7 +636,8 @@
         new-client (client/wrap-additional-header-parsing client)
         resp (new-client {:decode-body-headers true})
         resp2 (new-client {:decode-body-headers false})
-        resp3 ((client/wrap-additional-header-parsing (fn [req] {:body nil})) {:decode-body-headers true})]
+        resp3 ((client/wrap-additional-header-parsing
+                (fn [req] {:body nil})) {:decode-body-headers true})]
     (is (= {"content-type" "text/html; charset=Shift_JIS"
             "content-style-type" "text/css"
             "content-script-type" "text/javascript"}

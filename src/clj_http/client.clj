@@ -484,11 +484,11 @@
     headers))
 
 (defn wrap-additional-header-parsing
-  "Middleware that parses additional http headers from the body of a
-  web page, adding them into the headers map of the response if any
-  are found. Only looks at the body if the :decode-body-headers option
-  is set to a truthy value. Will be silently disabled if crouton is excluded
-  from clj-http's dependencies. Will do nothing if no body is returned, e.g. HEAD requests"
+  "Middleware that parses additional http headers from the body of a web page,
+  adding them into the headers map of the response if any are found. Only looks
+  at the body if the :decode-body-headers option is set to a truthy value. Will
+  be silently disabled if crouton is excluded from clj-http's dependencies. Will
+  do nothing if no body is returned, e.g. HEAD requests"
   [client]
   (fn [req]
     (let [resp (client req)]

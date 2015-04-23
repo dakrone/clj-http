@@ -1,4 +1,5 @@
-(ns clj-http.links)
+(ns clj-http.links
+  "Namespace dealing with HTTP link headers")
 
 (def ^:private quoted-string
   #"\"((?:[^\"]|\\\")*)\"")
