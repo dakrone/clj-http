@@ -9,6 +9,14 @@
 
 * Changelog
 List of user-visible changes that have gone into each release
+** 1.1.1
+- merge https://github.com/dakrone/clj-http/pull/262 to prevent
+  NullPointerException when decoding body headers with HEAD requests
+- merge https://github.com/dakrone/clj-http/pull/261 to decode user info from
+  URL if provided
+- merge https://github.com/dakrone/clj-http/pull/260 to upgrade tools.reader
+  for better cljs compatibility
+- add =304= (not modified) to the list of unexceptional responses, see #259
 ** 1.1.0
 - merged https://github.com/dakrone/clj-http/pull/255 to add support for Windows
   NTLM authentication
@@ -87,18 +95,22 @@ List of user-visible changes that have gone into each release
   and clean up whitespace for new clojure-mode
 - Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
 * Work log
-
+** 2015-04-24
+- merge https://github.com/dakrone/clj-http/pull/263 to only decode body headers
+  when the content-type is either missing or starts with "text"
+** Released 1.1.1
 ** 2015-04-22
-   - merge https://github.com/dakrone/clj-http/pull/262 to prevent
-     NullPointerException when decoding body headers with HEAD requests
+- merge https://github.com/dakrone/clj-http/pull/262 to prevent
+  NullPointerException when decoding body headers with HEAD requests
 ** 2015-04-20
-   - merge https://github.com/dakrone/clj-http/pull/261 to decode user info from
-     URL if provided
+- merge https://github.com/dakrone/clj-http/pull/261 to decode user info from
+  URL if provided
 ** 2015-04-14
-   - merge https://github.com/dakrone/clj-http/pull/260 to upgrade tools.reader
-     for better cljs compatibility
+- merge https://github.com/dakrone/clj-http/pull/260 to upgrade tools.reader
+  for better cljs compatibility
 ** 2015-04-05
 - add =304= (not modified) to the list of unexceptional responses, see #259
+** Released 1.1.0 
 ** 2015-03-03
 - merged https://github.com/dakrone/clj-http/pull/255 to add support for Windows
   NTLM authentication
