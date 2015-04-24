@@ -637,13 +637,18 @@
         resp (new-client {:decode-body-headers true})
         resp2 (new-client {:decode-body-headers false})
         resp3 ((client/wrap-additional-header-parsing
-                (fn [req] {:body nil})) {:decode-body-headers true})]
+                (fn [req] {:body nil})) {:decode-body-headers true})
+        resp4 ((client/wrap-additional-header-parsing
+                (fn [req] {:headers {"content-type" "application/pdf"}
+                           :body (.getBytes text)}))
+               {:decode-body-headers true})]
     (is (= {"content-type" "text/html; charset=Shift_JIS"
             "content-style-type" "text/css"
             "content-script-type" "text/javascript"}
            (:headers resp)))
     (is (nil? (:headers resp2)))
-    (is (nil? (:headers resp3)))))
+    (is (nil? (:headers resp3)))
+    (is (= {"content-type" "application/pdf"} (:headers resp4)))))
 
 (deftest t-wrap-additional-header-parsing-html5
   (let [^String text (slurp (resource "header-html5-test.html"))
