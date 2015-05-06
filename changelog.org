@@ -9,6 +9,11 @@
 
 * Changelog
 List of user-visible changes that have gone into each release
+
+** 1.1.2
+- bumped dependencies for transit-clj and tools.reader
+- merge https://github.com/dakrone/clj-http/pull/263 to only decode body headers
+  when the content-type is either missing or starts with "text"
 ** 1.1.1
 - merge https://github.com/dakrone/clj-http/pull/262 to prevent
   NullPointerException when decoding body headers with HEAD requests
@@ -95,6 +100,9 @@ List of user-visible changes that have gone into each release
   and clean up whitespace for new clojure-mode
 - Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
 * Work log
+** Released 1.1.2
+** 2015-05-06
+- bumped dependencies for transit-clj and tools.reader
 ** 2015-04-24
 - merge https://github.com/dakrone/clj-http/pull/263 to only decode body headers
   when the content-type is either missing or starts with "text"
