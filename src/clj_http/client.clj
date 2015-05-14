@@ -8,7 +8,8 @@
             [clj-http.util :refer [opt] :as util]
             [clojure.stacktrace :refer [root-cause]]
             [clojure.string :as str]
-            [clojure.walk :refer [prewalk]]
+            [clojure.walk :refer [keywordize-keys prewalk]]
+            [ring.util.codec :refer [form-decode]]
             [slingshot.slingshot :refer [throw+]])
   (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream)
            (java.net URL UnknownHostException)
@@ -345,6 +346,12 @@
     (assoc resp :body (parse-transit body type transit-opts))
     resp))
 
+(defn coerce-form-urlencoded-body
+  [request {:keys [body] :as resp}]
+  (let [^String charset (or (-> resp :content-type-params :charset) "UTF-8")
+        body-bytes (util/force-byte-array body)]
+    (assoc resp :body (-> (String. ^"[B" body-bytes charset) form-decode keywordize-keys))))
+
 (defmulti coerce-content-type (fn [req resp] (:content-type resp)))
 
 (defmethod coerce-content-type :application/clojure [req resp]
@@ -361,6 +368,9 @@
 
 (defmethod coerce-content-type :application/transit+msgpack [req resp]
   (coerce-transit-body req resp :msgpack))
+
+(defmethod coerce-content-type :application/x-www-form-urlencoded [req resp]
+  (coerce-form-urlencoded-body req resp))
 
 (defmethod coerce-content-type :default [req resp]
   (if-let [charset (-> resp :content-type-params :charset)]
@@ -392,6 +402,9 @@
 
 (defmethod coerce-response-body :transit+msgpack [req resp]
   (coerce-transit-body req resp :msgpack))
+
+(defmethod coerce-response-body :x-www-form-urlencoded [req resp]
+  (coerce-form-urlencoded-body req resp))
 
 (defmethod coerce-response-body :default
   [{:keys [as]} {:keys [body] :as resp}]

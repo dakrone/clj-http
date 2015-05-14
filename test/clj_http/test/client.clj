@@ -714,6 +714,8 @@
                                              111 -93 98 97 114])
                                   (byte-array 11)
                                   (ByteArrayInputStream.))
+        www-form-urlencoded-body (ByteArrayInputStream. (.getBytes "foo=bar"))
+        auto-www-form-urlencoded-body (ByteArrayInputStream. (.getBytes "foo=bar"))
         json-resp {:body json-body :status 200
                    :headers {"content-type" "application/json"}}
         auto-resp {:body auto-body :status 200
@@ -724,7 +726,13 @@
                            :headers {"content-type" "application/transit-json"}}
         transit-msgpack-resp {:body transit-msgpack-body :status 200
                               :headers {"content-type"
-                                        "application/transit-msgpack"}}]
+                                        "application/transit-msgpack"}}
+        www-form-urlencoded-resp {:body www-form-urlencoded-body :status 200
+                                  :headers {"content-type"
+                                            "application/x-www-form-urlencoded"}}
+        auto-www-form-urlencoded-resp {:body auto-www-form-urlencoded-body :status 200
+                                       :headers {"content-type"
+                                                 "application/x-www-form-urlencoded"}}]
     (is (= {:foo "bar"}
            (:body (client/coerce-response-body {:as :json} json-resp))
            (:body (client/coerce-response-body {:as :clojure} edn-resp))
@@ -732,7 +740,11 @@
            (:body (client/coerce-response-body {:as :transit+json}
                                                transit-json-resp))
            (:body (client/coerce-response-body {:as :transit+msgpack}
-                                               transit-msgpack-resp))))))
+                                               transit-msgpack-resp))
+           (:body (client/coerce-response-body {:as :auto}
+                                               auto-www-form-urlencoded-resp))
+           (:body (client/coerce-response-body {:as :x-www-form-urlencoded}
+                                               www-form-urlencoded-resp))))))
 
 (deftest ^:integration t-with-middleware
   (run-server)
