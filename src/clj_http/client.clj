@@ -360,11 +360,11 @@
 
 (defn coerce-form-urlencoded-body
   [request {:keys [body] :as resp}]
-  (if ring-codec-enabled?
-    (let [^String charset (or (-> resp :content-type-params :charset) "UTF-8")
-          body-bytes (util/force-byte-array body)]
-      (assoc resp :body (-> (String. ^"[B" body-bytes charset) form-decode keywordize-keys)))
-    resp))
+  (let [^String charset (or (-> resp :content-type-params :charset) "UTF-8")
+        body-bytes (util/force-byte-array body)]
+    (if ring-codec-enabled?
+      (assoc resp :body (-> (String. ^"[B" body-bytes charset) form-decode keywordize-keys))
+      (assoc resp :body (String. ^"[B" body-bytes charset)))))
 
 (defmulti coerce-content-type (fn [req resp] (:content-type resp)))
 
