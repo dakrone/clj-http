@@ -9,7 +9,6 @@
             [clojure.stacktrace :refer [root-cause]]
             [clojure.string :as str]
             [clojure.walk :refer [keywordize-keys prewalk]]
-            [ring.util.codec :refer [form-decode]]
             [slingshot.slingshot :refer [throw+]])
   (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream)
            (java.net URL UnknownHostException)
@@ -43,6 +42,13 @@
 (def transit-enabled?
   (try
     (require 'cognitect.transit)
+    true
+    (catch Throwable _ false)))
+
+;; ring-codec is an optional dependency, so we check for it at compile time.
+(def ring-codec-enabled?
+  (try
+    (require 'ring.util.codec)
     true
     (catch Throwable _ false)))
 
@@ -96,6 +102,12 @@
   [& args]
   {:pre [json-enabled?]}
   (apply (ns-resolve (symbol "cheshire.core") (symbol "decode-strict")) args))
+
+(defn ^:dynamic form-decode
+  "Resolve and apply ring-codec's form decoding dynamically."
+  [& args]
+  {:pre [ring-codec-enabled?]}
+  (apply (ns-resolve (symbol "ring.util.codec") (symbol "form-decode")) args))
 
 (defn update [m k f & args]
   (assoc m k (apply f (m k) args)))
@@ -348,9 +360,11 @@
 
 (defn coerce-form-urlencoded-body
   [request {:keys [body] :as resp}]
-  (let [^String charset (or (-> resp :content-type-params :charset) "UTF-8")
-        body-bytes (util/force-byte-array body)]
-    (assoc resp :body (-> (String. ^"[B" body-bytes charset) form-decode keywordize-keys))))
+  (if ring-codec-enabled?
+    (let [^String charset (or (-> resp :content-type-params :charset) "UTF-8")
+          body-bytes (util/force-byte-array body)]
+      (assoc resp :body (-> (String. ^"[B" body-bytes charset) form-decode keywordize-keys)))
+    resp))
 
 (defmulti coerce-content-type (fn [req resp] (:content-type resp)))
 

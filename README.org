@@ -719,15 +719,16 @@ function.
 
 * Optional dependenciess
 
-clj-http currently has three optional dependencies, =cheshire=, =crouton= and
-=tools.reader=. Any number of them may be removed by excluding them from the
-clj-http dependency in your project.clj:
+clj-http currently has four optional dependencies, =cheshire=, =crouton=,
+=tools.reader= and =ring/ring-codec=. Any number of them may be removed by
+excluding them from the clj-http dependency in your project.clj:
 
 #+BEGIN_SRC clojure
 (defproject foo "0.1.0-SNAPSHOT"
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [clj-http "0.3.4" :exclusions [cheshire crouton
-                                                org.clojure/tools.reader]]])
+                                                org.clojure/tools.reader
+                                                ring/ring-codec]]])
 #+END_SRC
 
 * Known issues / Issues you may run into
