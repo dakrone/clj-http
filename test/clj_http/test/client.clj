@@ -190,7 +190,7 @@
   (doseq [method [:put :post :delete]
           status [301 302 307]]
     (let [client (fn [req] {:status status :body (:body req)
-                            :headers {"location" "http://foo.com/bat"}})
+                           :headers {"location" "http://foo.com/bat"}})
           r-client (client/wrap-redirects client)
           resp (r-client {:body "ok" :url "http://foo.com"
                           :request-method method})]
@@ -640,7 +640,7 @@
                 (fn [req] {:body nil})) {:decode-body-headers true})
         resp4 ((client/wrap-additional-header-parsing
                 (fn [req] {:headers {"content-type" "application/pdf"}
-                           :body (.getBytes text)}))
+                          :body (.getBytes text)}))
                {:decode-body-headers true})]
     (is (= {"content-type" "text/html; charset=Shift_JIS"
             "content-style-type" "text/css"
@@ -715,7 +715,8 @@
                                   (byte-array 11)
                                   (ByteArrayInputStream.))
         www-form-urlencoded-body (ByteArrayInputStream. (.getBytes "foo=bar"))
-        auto-www-form-urlencoded-body (ByteArrayInputStream. (.getBytes "foo=bar"))
+        auto-www-form-urlencoded-body
+        (ByteArrayInputStream. (.getBytes "foo=bar"))
         json-resp {:body json-body :status 200
                    :headers {"content-type" "application/json"}}
         auto-resp {:body auto-body :status 200
@@ -727,12 +728,14 @@
         transit-msgpack-resp {:body transit-msgpack-body :status 200
                               :headers {"content-type"
                                         "application/transit-msgpack"}}
-        www-form-urlencoded-resp {:body www-form-urlencoded-body :status 200
-                                  :headers {"content-type"
-                                            "application/x-www-form-urlencoded"}}
-        auto-www-form-urlencoded-resp {:body auto-www-form-urlencoded-body :status 200
-                                       :headers {"content-type"
-                                                 "application/x-www-form-urlencoded"}}]
+        www-form-urlencoded-resp
+        {:body www-form-urlencoded-body :status 200
+         :headers {"content-type"
+                   "application/x-www-form-urlencoded"}}
+        auto-www-form-urlencoded-resp
+        {:body auto-www-form-urlencoded-body :status 200
+         :headers {"content-type"
+                   "application/x-www-form-urlencoded"}}]
     (is (= {:foo "bar"}
            (:body (client/coerce-response-body {:as :json} json-resp))
            (:body (client/coerce-response-body {:as :clojure} edn-resp))

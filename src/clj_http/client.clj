@@ -363,7 +363,8 @@
   (let [^String charset (or (-> resp :content-type-params :charset) "UTF-8")
         body-bytes (util/force-byte-array body)]
     (if ring-codec-enabled?
-      (assoc resp :body (-> (String. ^"[B" body-bytes charset) form-decode keywordize-keys))
+      (assoc resp :body (-> (String. ^"[B" body-bytes charset)
+                            form-decode keywordize-keys))
       (assoc resp :body (String. ^"[B" body-bytes charset)))))
 
 (defmulti coerce-content-type (fn [req resp] (:content-type resp)))
@@ -523,7 +524,8 @@
                crouton-enabled?
                (:body resp)
                (let [content-type (get-in resp [:headers "content-type"])]
-                 (or (str/blank? content-type) (.startsWith content-type "text"))))
+                 (or (str/blank? content-type)
+                     (.startsWith content-type "text"))))
         (let [body-bytes (util/force-byte-array (:body resp))
               body-stream1 (java.io.ByteArrayInputStream. body-bytes)
               body-map (parse-html body-stream1)
