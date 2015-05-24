@@ -103,6 +103,7 @@ List of user-visible changes that have gone into each release
 ** 2015-05-23
 - merged https://github.com/dakrone/clj-http/pull/264 to add support for
   coercion of urlencoded data
+- make ALL optional dependencies opt-in, rather than opt-out
 ** Released 1.1.2
 ** 2015-05-06
 - bumped dependencies for transit-clj and tools.reader
