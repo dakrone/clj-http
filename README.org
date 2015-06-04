@@ -735,7 +735,7 @@ adding them with the clj-http dependency in your project.clj:
                  [ring/ring-codec]]]]) ;; for :as :x-www-form-urlencoded
 #+END_SRC
 
-* Known issues / Issues you may run into
+* Known issues / Troubleshooting
 
 ** VerifyError class org.codehaus.jackson.smile.SmileParser overrides final method getBinaryValue...
 
@@ -757,6 +757,15 @@ for your own encoding/decoding.
 As of clj-http 0.3.5, you should no longer see this, as Cheshire 3.1.0
 and clj-json can now live together without causing problems.
 
+** NoHttpResponseException ... due to stale connections**
+
+Persistent connections kept alive by the connection manager become stale: the
+target server shuts down the connection on its end without HttpClient being able
+to react to that event, while the connection is being idle, thus rendering the
+connection half-closed or 'stale'. 
+
+This can be solved by using (with-connection-pool) as described in the
+'Using Persistent Connection' section above.
 
 * clj-http-lite
 
