@@ -1,4 +1,4 @@
-#+TITLE:    clj-http readme
+#+TITLE:    clj-http documentation
 #+AUTHOR:   Lee Hinman
 #+STARTUP:  align fold nodlcheck lognotestate showall
 #+OPTIONS:  H:4 num:nil toc:t \n:nil @:t ::t |:t ^:{} -:t f:t *:t
@@ -34,7 +34,10 @@
  - [[#development][Development]]
  - [[#license][License]]
 
-* clj-http
+* Introduction
+
+** Overview
+
 A Clojure HTTP library wrapping the [[http://hc.apache.org/][Apache HttpComponents]] client.
 
 This library has taken over from mmcgrana's clj-http. Please send a pull request
@@ -42,7 +45,19 @@ or open an issue if you have any problems.
 
 [[https://secure.travis-ci.org/dakrone/clj-http.png]]
 
-** Installation
+** Philosophy 
+
+The design of =clj-http= is inspired by the [[http://github.com/mmcgrana/ring][Ring]] protocol for Clojure HTTP
+ server applications.
+
+The client in =clj-http.core= makes HTTP requests according to a given Ring
+request map and returns [[https://github.com/ring-clojure/ring/blob/master/SPEC][Ring response maps]] corresponding to the resulting HTTP
+response. The function =clj-http.client/request= uses Ring-style middleware to
+layer functionality over the core HTTP request/response implementation. Methods
+like =clj-http.client/get= are sugar over this =clj-http.client/request=
+function.
+
+* Installation
 
 =clj-http= is available as a Maven artifact from [[http://clojars.org/clj-http][Clojars]]:
 
@@ -63,9 +78,9 @@ Previous versions available as
 [clj-http "0.7.9"]
 #+END_SRC
 
-clj-http supports clojure 1.5.0 and higher
+clj-http supports clojure 1.5.0 and higher.
 
-** Usage
+* Quickstart
 
 The main HTTP client functionality is provided by the =clj-http.client= namespace.
 
@@ -86,39 +101,22 @@ The client supports simple =get=, =head=, =put=, =post=, =delete=, =copy=,
 =move=, =patch=, and =options= requests. Response are returned as [[https://github.com/ring-clojure/ring/blob/master/SPEC][Ring-style
 response maps]]:
 
+** HEAD
+
 #+BEGIN_SRC clojure
-(client/get "http://google.com")
-=> {:status 200
-    :headers {"Date" "Sun, 01 Aug 2010 07:03:49 GMT"
-              "Cache-Control" "private, max-age=0"
-              "Content-Type" "text/html; charset=ISO-8859-1"
-              ...}
-    :body "<!doctype html>..."
-    :cookies {"PREF" {:domain ".google.com", :expires #<Date Wed Apr 02 09:10:22 EDT 2014>, :path "/", :value "...", :version 0}}
-    :trace-redirects ["http://google.com" "http://www.google.com/" "http://www.google.fr/"]}
+
+
 #+END_SRC
 
-=:trace-redirects= will contain the chain of the redirections followed.
+** GET
 
-More example requests:
+Example requests:
 
 #+BEGIN_SRC clojure
+
 (client/get "http://site.com/resources/id")
 
 (client/get "http://site.com/resources/3" {:accept :json})
-
-;; Various options:
-(client/post "http://site.com/api"
-  {:basic-auth ["user" "pass"]
-   :body "{\"json\": \"input\"}"
-   :headers {"X-Api-Version" "2"}
-   :content-type :json
-   :socket-timeout 1000  ;; in milliseconds
-   :conn-timeout 1000    ;; in milliseconds
-   :accept :json})
-
-;; Using a PUT request
-(client/put "http://example.com/api" {:body "my PUT body"})
 
 ;; Specifying headers as either a string or collection:
 (client/get "http://example.com"
@@ -149,11 +147,61 @@ More example requests:
 ;; Throw an exception if the get takes too long. Timeouts in milliseconds.
 (client/get "http://site.come/redirects-somewhere" {:socket-timeout 1000 :conn-timeout 1000})
 
+;; Query parameters
+(client/get "http://site.com/search" {:query-params {"q" "foo, bar"}})
+
+;; "Nested" query parameters
+;; (this yields a query string of `a[e][f]=6&a[b][c]=5`)
+(client/get "http://site.com/search" {:query-params {:a {:b {:c 5} :e {:f 6})
+
+;; Provide cookies — uses same schema as :cookies returned in responses
+;; (see the cookie store option for easy cross-request maintenance of cookies)
+(client/get "http://site.com"
+  {:cookies {"ring-session" {:discard true, :path "/", :value "", :version 0}}})
+
+;; Tell clj-http not to decode cookies from the response header
+(client/get "http://example.com" {:decode-cookies false})
+
+;; Support for IPv6!
+(client/get "http://[2001:62f5:9006:e472:cabd:c8ff:fee3:8ddf]")
+#+END_SRC
+
+The client will also follow redirects on the appropriate =30*= status codes.
+
+The client transparently accepts and decompresses the =gzip= and =deflate=
+content encodings.
+
+=:trace-redirects= will contain the chain of the redirections followed.
+
+
+** PUT
+
+#+BEGIN_SRC clojure
+
+(client/put "http://example.com/api" {:body "my PUT body"})
+
+#+END_SRC
+   
+** POST
+
+#+BEGIN_SRC clojure
+
+;; Various options:
+(client/post "http://site.com/api"
+  {:basic-auth ["user" "pass"]
+   :body "{\"json\": \"input\"}"
+   :headers {"X-Api-Version" "2"}
+   :content-type :json
+   :socket-timeout 1000  ;; in milliseconds
+   :conn-timeout 1000    ;; in milliseconds
+   :accept :json})
 
 ;; Send form params as a urlencoded body (POST or PUT)
 (client/post "http://site.com" {:form-params {:foo "bar"}})
+
 ;; Send form params as a json encoded body (POST or PUT)
 (client/post "http://site.com" {:form-params {:foo "bar"} :content-type :json})
+
 ;; Send form params as a json encoded body (POST or PUT) with options
 (client/post "http://site.com" {:form-params {:foo "bar"}
                                :content-type :json
@@ -180,6 +228,7 @@ More example requests:
                                               {:name "Content/type" :content "image/jpeg"}
                                               {:name "foo.txt" :part-name "eggplant" :content "Eggplants"}
                                               {:name "file" :content (clojure.java.io/file "pic.jpg")}]})
+
 ;; Multipart :content values can be one of the following:
 ;; String, InputStream, File, or a byte-array
 ;; Some Multipart bodies can also support more keys (like :encoding
@@ -195,41 +244,17 @@ More example requests:
                                                     (println "Got:" ex)
                                                     (if (> try-count 4) false true))})
 
-;; Basic authentication
-(client/get "http://site.com/protected" {:basic-auth ["user" "pass"]})
-(client/get "http://site.com/protected" {:basic-auth "user:pass"})
-
-;; Digest authentication
-(client/get "http://site.com/protected" {:digest-auth ["user" "pass"]})
-
-;; OAuth 2
-(client/get "http://site.com/protected" {:oauth-token "secret-token"})
-
-;; Query parameters
-(client/get "http://site.com/search" {:query-params {"q" "foo, bar"}})
-
-;; "Nested" query parameters
-;; (this yields a query string of `a[e][f]=6&a[b][c]=5`)
-(client/get "http://site.com/search" {:query-params {:a {:b {:c 5} :e {:f 6})
-
-;; Provide cookies — uses same schema as :cookies returned in responses
-;; (see the cookie store option for easy cross-request maintenance of cookies)
-(client/get "http://site.com"
-  {:cookies {"ring-session" {:discard true, :path "/", :value "", :version 0}}})
-
-;; Tell clj-http not to decode cookies from the response header
-(client/get "http://example.com" {:decode-cookies false})
-
-;; Support for IPv6!
-(client/get "http://[2001:62f5:9006:e472:cabd:c8ff:fee3:8ddf]")
 #+END_SRC
 
-The client will also follow redirects on the appropriate =30*= status codes.
+** DELETE
 
-The client transparently accepts and decompresses the =gzip= and =deflate=
-content encodings.
+#+BEGIN_SRC clojure
 
-** Input coercion
+
+#+END_SRC
+
+** Coercions
+*** Input coercion
 
 #+BEGIN_SRC clojure
 ;; body as a byte-array
@@ -256,7 +281,7 @@ content encodings.
              {:body (clojure.java.io/input-stream "/tmp/foo") :length 1000})
 #+END_SRC
 
-** Output coercion
+*** Output coercion
 
 #+BEGIN_SRC clojure
 ;; The default output is a string body
@@ -310,33 +335,31 @@ to:
 
 The =:coerce= setting defaults to =:unexceptional=.
 
-*** Body decompression
+** Headers
 
-By default, clj-http will add the ={"Accept-Encoding" "gzip, deflate"}= header
-to requests, and automatically decompress the resulting gzip or deflate stream
-if the =Content-Encoding= header is found on the response. If this is undesired,
-the ={:decompress-body false}= option can be specified:
+clj-http's treatment of headers is a little more permissive than the [[https://github.com/ring-clojure/ring/blob/master/SPEC][ring spec]]
+specifies.
 
-#+BEGIN_SRC clojure
-;; Auto-decompression used: (google requires a user-agent to send gzip data)
-(def h {"User-Agent" "Mozilla/5.0 (Windows NT 6.1;) Gecko/20100101 Firefox/13.0.1"})
-(def resp (client/get "http://google.com" {:headers h}))
-(:orig-content-encoding resp)
-=> "gzip" ;; <= google sent response gzipped
+Rather than forcing all request headers to be lowercase strings,
+clj-http allows strings or keywords of any case. Keywords will be
+transformed into their canonical representation, so the :content-md5
+header will be sent to the server as "Content-MD5", for instance.
+String keys in request headers, however, will be sent to the server
+with their casing unchanged.
 
-;; and without decompression:
-(def resp2 (client/get "http://google.com" {:headers h :decompress-body false})
-(:orig-content-encoding resp2)
-=> nil
-#+END_SRC
+Response headers can be read as keywords or strings of any case. If
+the server responds with a "Date" header, you could access the value
+of that header as :date, "date", "Date", etc.
 
-If clj-http decompresses something, the "content-encoding" header is removed
-from the headers (because the encoding is no longer true). This allows clj-http
-to be used as a pass-through proxy with ring. The original content-encoding is
-available as =:orig-content-encoding= in the response map if auto-decompression
-is enabled.
+If for some reason you require access to the original header name that
+the server specified, it is available by invoking (keys ...) on the
+header map.
 
-*** HTML Meta tag headers
+This special treatment of headers is implemented in the
+wrap-header-map middleware, which (like any middleware) can be
+disabled by using with-middleware to specify different behavior.
+
+** Meta Tag Headers
 
 HTML 4.01 allows using the tag ~<meta http-equiv="..." />~ and HTML 5 allows
 using the tag ~<meta charset="..." />~ to specify a header that should be
@@ -397,129 +420,31 @@ Note also that HEAD requests will not return a body, in which case this setting 
 
 clj-http will automatically disable the =:decode-body-headers= option.
 
-** Misc
+** Link Headers
 
-A more general =request= function is also available, which is useful as a
-primitive for building higher-level interfaces:
-
-#+BEGIN_SRC clojure
-(defn api-action [method path & [opts]]
-  (client/request
-    (merge {:method method :url (str "http://site.com/" path)} opts)))
-#+END_SRC
-
-*** Boolean options
-
-Since 0.9.0, all boolean options can be expressed as either ={:debug true}= or
-={:debug? true}=, with or without the question mark.
-
-** Exceptions
-
-The client will throw exceptions on, well, exceptional status codes, meaning all
-HTTP responses other than =#{200 201 202 203 204 205 206 207 300 301 302 303
-307}=. clj-http will throw a [[http://github.com/scgilardi/slingshot][Slingshot]] Stone that can be caught by a regular
-=(catch Exception e ...)= or in Slingshot's =try+= block:
+clj-http parses any [[http://tools.ietf.org/html/rfc5988][link headers]] returned in the response, and adds them to the
+=:links= key on the response map. This is particularly useful for paging RESTful
+APIs:
 
 #+BEGIN_SRC clojure
-(client/get "http://site.com/broken")
-=> ExceptionInfo clj-http: status 404  clj-http.client/wrap-exceptions/fn--583 (client.clj:41)
-;; Or, if you would like the Exception message to contain the entire response:
-(client/get "http://site.com/broken" {:throw-entire-message? true})
-=> ExceptionInfo clj-http: status 404 {:status 404,
-                                       :headers {"server" "nginx/1.0.4",
-                                                 "x-runtime" "12ms",
-                                                 "content-encoding" "gzip",
-                                                 "content-type" "text/html; charset=utf-8",
-                                                 "date" "Mon, 17 Oct 2011 23:15 :36 GMT",
-                                                 "cache-control" "no-cache",
-                                                 "status" "404 Not Found",
-                                                 "transfer-encoding" "chunked",
-                                                 "connection" "close"},
-                                       :body "...body here..."}
-   clj-http.client/wrap-exceptions/fn--584 (client.clj:42
-
-;; You can also ignore HTTP-status-code exceptions and handle them yourself:
-(client/get "http://site.com/broken" {:throw-exceptions false})
-;; Or ignore an unknown host (methods return 'nil' if this is set to
-;; true and the host does not exist:
-(client/get "http://aoeuntahuf89o.com" {:ignore-unknown-host? true})
+(:links (client/get "https://api.github.com/gists"))
+=> {:next {:href "https://api.github.com/gists?page=2"}
+    :last {:href "https://api.github.com/gists?page=22884"}}
 #+END_SRC
 
-(spacing added by me to be human readable)
+** Redirects 
 
-How to use with Slingshot:
+clj-http conforms its behaviour regarding automatic redirects to the [[https://tools.ietf.org/html/rfc2616#section-10.3][RFC]]. 
 
-#+BEGIN_SRC
-; Response map is thrown as exception obj.
-; We filter out by status codes
-(try+
-  (client/get "http://some-site.com/broken")
-  (catch [:status 403] {:keys [request-time headers body]}
-    (log/warn "403" request-time headers))
-  (catch [:status 404] {:keys [request-time headers body]}
-    (log/warn "NOT Found 404" request-time headers body))
-  (catch Object _
-    (log/error (:throwable &throw-context) "unexpected error")
-    (throw+)))
-#+END_SRC
+It means that redirects on status =301=, =302= and =307= are not redirected on
+methods other than =GET= and =HEAD=. If you want a behaviour closer to what most
+browser have, you can set =:force-redirects= to =true= in your request to have
+automatic redirection work on all methods by transforming the method of the
+request to =GET=.
 
+** Cookies
 
-** Proxies
-
-A proxy can be specified by setting the Java properties: =<scheme>.proxyHost=
-and =<scheme>.proxyPort= where =<scheme>= is the client scheme used (normally
-'http' or 'https'). =http.nonProxyHosts= allows you to specify a pattern for
-hostnames which do not require proxy routing - this is shared for all schemes.
-Additionally, per-request proxies can be specified with the =proxy-host= and
-=proxy-port= options (this overrides =http.nonProxyHosts= too):
-
-#+BEGIN_SRC clojure
-(client/get "http://foo.com" {:proxy-host "127.0.0.1" :proxy-port 8118})
-#+END_SRC
-
-You can also specify the =proxy-ignore-hosts= parameter with a list of
-hosts where the proxy should be ignored. By default this list is
-=#{"localhost" "127.0.0.1"}=.
-
-** SOCKS Proxies
-
-A SOCKS proxy can be used by creating a proxied connection manager with
-=clj-http.conn-mgr/make-socks-proxied-conn-manager=. Then using that connection
-manager in the request.
-
-For example if you wanted to connect to a local socks proxy on port =8081= you
-would:
-
-#+BEGIN_SRC clojure
-(ns foo.bar
-  (:require [clj-http.client :as client]
-            [clj-http.conn-mgr :as conn-mgr]))
-
-(client/get "https://google.com"
-            {:connection-manager
-             (conn-mgr/make-socks-proxied-conn-manager "localhost" 8081)})
-#+END_SRC
-
-You can also store the proxied connection manager and reuse it later.
-
-** Keystores and Trust-stores
-
-When sending a request, you can specify your own keystore/trust-store to be
-used:
-
-#+BEGIN_SRC clojure
-(client/get "https://example.com" {:keystore "/path/to/keystore.ks"
-                                   :keystore-type "jks" ; default: jks
-                                   :keystore-pass "secretpass"
-                                   :trust-store "/path/to/trust-store.ks"
-                                   :trust-store-type "jks" ; default jks
-                                   :trust-store-pass "trustpass"})
-#+END_SRC
-
-The =:keystore/:trust-store= values may be either paths to keystore
-files or =KeyStore= instances.
-
-** Cookie stores
+*** Cookiestores
 
 clj-http can simplify the maintenance of cookies across requests if it is
 provided with a _cookie store_.
@@ -575,43 +500,171 @@ from a cookie store:
   :version 0}}
 #+END_SRC
 
-** Link headers
+*** Keystores, Trust-stores
 
-clj-http parses any [[http://tools.ietf.org/html/rfc5988][link headers]] returned in the response, and adds them to the
-=:links= key on the response map. This is particularly useful for paging RESTful
-APIs:
+You can also specify your own keystore/trust-store to be used:
 
 #+BEGIN_SRC clojure
-(:links (client/get "https://api.github.com/gists"))
-=> {:next {:href "https://api.github.com/gists?page=2"}
-    :last {:href "https://api.github.com/gists?page=22884"}}
+(client/get "https://example.com" {:keystore "/path/to/keystore.ks"
+                                   :keystore-type "jks" ; default: jks
+                                   :keystore-pass "secretpass"
+                                   :trust-store "/path/to/trust-store.ks"
+                                   :trust-store-type "jks" ; default jks
+                                   :trust-store-pass "trustpass"})
 #+END_SRC
 
-** Headers
+The =:keystore/:trust-store= values may be either paths to keystore
+files or =KeyStore= instances.
 
-clj-http's treatment of headers is a little more permissive than the [[https://github.com/ring-clojure/ring/blob/master/SPEC][ring spec]]
-specifies.
+** Exceptions
 
-Rather than forcing all request headers to be lowercase strings,
-clj-http allows strings or keywords of any case. Keywords will be
-transformed into their canonical representation, so the :content-md5
-header will be sent to the server as "Content-MD5", for instance.
-String keys in request headers, however, will be sent to the server
-with their casing unchanged.
+The client will throw exceptions on, well, exceptional status codes, meaning all
+HTTP responses other than =#{200 201 202 203 204 205 206 207 300 301 302 303
+307}=. clj-http will throw a [[http://github.com/scgilardi/slingshot][Slingshot]] Stone that can be caught by a regular
+=(catch Exception e ...)= or in Slingshot's =try+= block:
 
-Response headers can be read as keywords or strings of any case. If
-the server responds with a "Date" header, you could access the value
-of that header as :date, "date", "Date", etc.
+#+BEGIN_SRC clojure
+(client/get "http://site.com/broken")
+=> ExceptionInfo clj-http: status 404  clj-http.client/wrap-exceptions/fn--583 (client.clj:41)
+;; Or, if you would like the Exception message to contain the entire response:
+(client/get "http://site.com/broken" {:throw-entire-message? true})
+=> ExceptionInfo clj-http: status 404 {:status 404,
+                                       :headers {"server" "nginx/1.0.4",
+                                                 "x-runtime" "12ms",
+                                                 "content-encoding" "gzip",
+                                                 "content-type" "text/html; charset=utf-8",
+                                                 "date" "Mon, 17 Oct 2011 23:15 :36 GMT",
+                                                 "cache-control" "no-cache",
+                                                 "status" "404 Not Found",
+                                                 "transfer-encoding" "chunked",
+                                                 "connection" "close"},
+                                       :body "...body here..."}
+   clj-http.client/wrap-exceptions/fn--584 (client.clj:42
 
-If for some reason you require access to the original header name that
-the server specified, it is available by invoking (keys ...) on the
-header map.
+;; You can also ignore HTTP-status-code exceptions and handle them yourself:
+(client/get "http://site.com/broken" {:throw-exceptions false})
+;; Or ignore an unknown host (methods return 'nil' if this is set to
+;; true and the host does not exist:
+(client/get "http://aoeuntahuf89o.com" {:ignore-unknown-host? true})
+#+END_SRC
 
-This special treatment of headers is implemented in the
-wrap-header-map middleware, which (like any middleware) can be
-disabled by using with-middleware to specify different behavior.
+(spacing added by me to be human readable)
 
-** Using persistent connections
+How to use with Slingshot:
+
+#+BEGIN_SRC
+; Response map is thrown as exception obj.
+; We filter out by status codes
+(try+
+  (client/get "http://some-site.com/broken")
+  (catch [:status 403] {:keys [request-time headers body]}
+    (log/warn "403" request-time headers))
+  (catch [:status 404] {:keys [request-time headers body]}
+    (log/warn "NOT Found 404" request-time headers body))
+  (catch Object _
+    (log/error (:throwable &throw-context) "unexpected error")
+    (throw+)))
+#+END_SRC
+
+** Decompression
+
+By default, clj-http will add the ={"Accept-Encoding" "gzip, deflate"}= header
+to requests, and automatically decompress the resulting gzip or deflate stream
+if the =Content-Encoding= header is found on the response. If this is undesired,
+the ={:decompress-body false}= option can be specified:
+
+#+BEGIN_SRC clojure
+;; Auto-decompression used: (google requires a user-agent to send gzip data)
+(def h {"User-Agent" "Mozilla/5.0 (Windows NT 6.1;) Gecko/20100101 Firefox/13.0.1"})
+(def resp (client/get "http://google.com" {:headers h}))
+(:orig-content-encoding resp)
+=> "gzip" ;; <= google sent response gzipped
+
+;; and without decompression:
+(def resp2 (client/get "http://google.com" {:headers h :decompress-body false})
+(:orig-content-encoding resp2)
+=> nil
+#+END_SRC
+
+If clj-http decompresses something, the "content-encoding" header is removed
+from the headers (because the encoding is no longer true). This allows clj-http
+to be used as a pass-through proxy with ring. The original content-encoding is
+available as =:orig-content-encoding= in the response map if auto-decompression
+is enabled.
+
+** Debugging
+
+There are four debugging methods you can use:
+
+#+BEGIN_SRC clojure
+;; print request info to *out*:
+(client/get "http://example.org" {:debug true})
+
+;; print request info to *out*, including request body:
+(client/post "http://example.org" {:debug true :debug-body true :body "..."})
+
+;; save the request that was sent in a :request key in the response:
+(client/get "http://example.org" {:save-request? true})
+
+;; save the request that was sent in a :request key in the response,
+;; including the body content:
+(client/get "http://example.org" {:save-request? true :debug-body true})
+
+;; add an HttpResponseInterceptor to the request. This callback
+;; is called for each redirects with the following args:
+;; ^HttpResponse resp, HttpContext^ ctx
+;; this allows low level debugging + access to socket.
+;; see http://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/org/apache/http/HttpResponseInterceptor.html
+(client/get "http://example.org" {:response-interceptor (fn [resp ctx] (println ctx))})
+#+END_SRC
+
+* Authentication
+
+** Basic Auth
+
+#+BEGIN_SRC
+
+(client/get "http://site.com/protected" {:basic-auth ["user" "pass"]})
+(client/get "http://site.com/protected" {:basic-auth "user:pass"})
+
+#+END_SRC
+
+** Digest Auth
+
+#+BEGIN_SRC
+
+(client/get "http://site.com/protected" {:digest-auth ["user" "pass"]})
+
+#+END_SRC
+
+** oAuth2
+
+#+BEGIN_SRC
+
+;; OAuth 2
+(client/get "http://site.com/protected" {:oauth-token "secret-token"})
+
+#+END_SRC
+
+* Advanced Usage
+
+** Raw Request
+
+A more general =request= function is also available, which is useful as a
+primitive for building higher-level interfaces:
+
+#+BEGIN_SRC clojure
+(defn api-action [method path & [opts]]
+  (client/request
+    (merge {:method method :url (str "http://site.com/" path)} opts)))
+#+END_SRC
+
+*** Boolean options
+
+Since 0.9.0, all boolean options can be expressed as either ={:debug true}= or
+={:debug? true}=, with or without the question mark.
+
+** Persistent Connections
 
 clj-http can use persistent connections to speed up connections if multiple
 connections are being used:
@@ -648,16 +701,43 @@ create a connection manager yourself and specify it for each request:
 See the docstring on =make-reusable-conn-manager= for options and default
 values.
 
-** Redirects handling
+** Proxies
 
-clj-http conforms its behaviour regarding automatic redirects to the [[https://tools.ietf.org/html/rfc2616#section-10.3][RFC]]. It
-means that redirects on status =301=, =302= and =307= are not redirected on
-methods other than =GET= and =HEAD=. If you want a behaviour closer to what most
-browser have, you can set =:force-redirects= to =true= in your request to have
-automatic redirection work on all methods by transforming the method of the
-request to =GET=.
+A proxy can be specified by setting the Java properties: =<scheme>.proxyHost=
+and =<scheme>.proxyPort= where =<scheme>= is the client scheme used (normally
+'http' or 'https'). =http.nonProxyHosts= allows you to specify a pattern for
+hostnames which do not require proxy routing - this is shared for all schemes.
+Additionally, per-request proxies can be specified with the =proxy-host= and
+=proxy-port= options (this overrides =http.nonProxyHosts= too):
 
-** Custom middleware lists
+#+BEGIN_SRC clojure
+(client/get "http://foo.com" {:proxy-host "127.0.0.1" :proxy-port 8118})
+#+END_SRC
+
+You can also specify the =proxy-ignore-hosts= parameter with a list of
+hosts where the proxy should be ignored. By default this list is
+=#{"localhost" "127.0.0.1"}=.
+
+A SOCKS proxy can be used by creating a proxied connection manager with
+=clj-http.conn-mgr/make-socks-proxied-conn-manager=. Then using that connection
+manager in the request.
+
+For example if you wanted to connect to a local socks proxy on port =8081= you
+would:
+
+#+BEGIN_SRC clojure
+(ns foo.bar
+  (:require [clj-http.client :as client]
+            [clj-http.conn-mgr :as conn-mgr]))
+
+(client/get "https://google.com"
+            {:connection-manager
+             (conn-mgr/make-socks-proxied-conn-manager "localhost" 8081)})
+#+END_SRC
+
+You can also store the proxied connection manager and reuse it later.
+
+** Custom Middleware
 
 Sometime it is desirable to run a request with some middleware enabled and some
 left out, the =with-middleware= method provides this functionality:
@@ -675,50 +755,14 @@ which is a vector of the default middleware that clj-http uses.
 =clj-http.client/*current-middleware*= is bound to the current list of
 middleware during request time.
 
-* Debugging
+* Development
 
-There are four debugging methods you can use:
-
-#+BEGIN_SRC clojure
-;; print request info to *out*:
-(client/get "http://example.org" {:debug true})
-
-;; print request info to *out*, including request body:
-(client/post "http://example.org" {:debug true :debug-body true :body "..."})
-
-;; save the request that was sent in a :request key in the response:
-(client/get "http://example.org" {:save-request? true})
-
-;; save the request that was sent in a :request key in the response,
-;; including the body content:
-(client/get "http://example.org" {:save-request? true :debug-body true})
-
-;; add an HttpResponseInterceptor to the request. This callback
-;; is called for each redirects with the following args:
-;; ^HttpResponse resp, HttpContext^ ctx
-;; this allows low level debugging + access to socket.
-;; see http://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/org/apache/http/HttpResponseInterceptor.html
-(client/get "http://example.org" {:response-interceptor (fn [resp ctx] (println ctx))})
-#+END_SRC
-
-* Faking clj-http responses
+** Faking Responses
 
 If you need to fake clj-http responses (for things like testing and such), check
 out the [[https://github.com/myfreeweb/clj-http-fake][clj-http-fake]] library.
 
-* Design
-
-The design of =clj-http= is inspired by the [[http://github.com/mmcgrana/ring][Ring]] protocol for Clojure HTTP
- server applications.
-
-The client in =clj-http.core= makes HTTP requests according to a given Ring
-request map and returns [[https://github.com/ring-clojure/ring/blob/master/SPEC][Ring response maps]] corresponding to the resulting HTTP
-response. The function =clj-http.client/request= uses Ring-style middleware to
-layer functionality over the core HTTP request/response implementation. Methods
-like =clj-http.client/get= are sugar over this =clj-http.client/request=
-function.
-
-* Optional dependenciess
+** Optional Dependencies
 
 clj-http currently has four optional dependencies, =cheshire=, =crouton=,
 =tools.reader= and =ring/ring-codec=. Any number of them may be included by
@@ -735,9 +779,14 @@ adding them with the clj-http dependency in your project.clj:
                  [ring/ring-codec]]]]) ;; for :as :x-www-form-urlencoded
 #+END_SRC
 
-* Known issues / Troubleshooting
+** clj-http-lite
 
-** VerifyError class org.codehaus.jackson.smile.SmileParser overrides final method getBinaryValue...
+Like clj-http but need something more lightweight without as many external
+dependencies? Check out [[https://github.com/hiredman/clj-http-lite][clj-http-lite]] for a project that can be used as a
+drop-in replacement for clj-http.
+
+** Troubleshooting
+*** VerifyError class org.codehaus.jackson.smile.SmileParser overrides final method getBinaryValue...
 
 This is actually caused by your project attempting to use [[https://github.com/mmcgrana/clj-json/][clj-json]] and [[https://github.com/dakrone/cheshire][cheshire]]
 in the same classloader. You can fix the issue by either not using clj-json (and
@@ -757,7 +806,7 @@ for your own encoding/decoding.
 As of clj-http 0.3.5, you should no longer see this, as Cheshire 3.1.0
 and clj-json can now live together without causing problems.
 
-** NoHttpResponseException ... due to stale connections**
+*** NoHttpResponseException ... due to stale connections**
 
 Persistent connections kept alive by the connection manager become stale: the
 target server shuts down the connection on its end without HttpClient being able
@@ -767,13 +816,7 @@ connection half-closed or 'stale'.
 This can be solved by using (with-connection-pool) as described in the
 'Using Persistent Connection' section above.
 
-* clj-http-lite
-
-Like clj-http but need something more lightweight without as many external
-dependencies? Check out [[https://github.com/hiredman/clj-http-lite][clj-http-lite]] for a project that can be used as a
-drop-in replacement for clj-http.
-
-* Development
+* Tests
 
 To run the tests:
 
