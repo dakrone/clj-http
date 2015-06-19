@@ -130,6 +130,14 @@ More example requests:
   {:client-params {"http.protocol.allow-circular-redirects" false
                    "http.protocol.version" HttpVersion/HTTP_1_0
                    "http.useragent" "clj-http"}})
+                   
+;; Set your own cookie policy
+(client/post "http://example.com"
+  {:client-params {:cookie-policy (fn [cookie origin] (your-validation cookie origin))}})
+  
+;; Completely ignore cookies:
+(client/post "http://example.com"
+  {:client-params {:cookie-policy (constantly nil)}})
 
 ;; Need to contact a server with an untrusted SSL cert?
 (client/get "https://alioth.debian.org" {:insecure? true})
