@@ -8,17 +8,17 @@
   :min-lein-version "2.0.0"
   :exclusions [org.clojure/clojure]
   :dependencies [[org.apache.httpcomponents/httpcore "4.4.1"]
-                 [org.apache.httpcomponents/httpclient "4.4.1"]
-                 [org.apache.httpcomponents/httpmime "4.4.1"]
+                 [org.apache.httpcomponents/httpclient "4.5"]
+                 [org.apache.httpcomponents/httpmime "4.5"]
                  [commons-codec "1.10"]
                  [commons-io "2.4"]
                  [slingshot "0.12.2"]
                  [potemkin "0.3.13"]]
   :profiles {:dev {:dependencies [;; optional deps
-                                  [cheshire "5.4.0"]
+                                  [cheshire "5.5.0"]
                                   [crouton "0.1.2"]
                                   [org.clojure/tools.reader "0.9.2"]
-                                  [com.cognitect/transit-clj "0.8.271"]
+                                  [com.cognitect/transit-clj "0.8.275"]
                                   [ring/ring-codec "1.0.0"]
                                   ;; other (testing) deps
                                   [org.clojure/clojure "1.6.0"]
