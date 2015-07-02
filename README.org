@@ -203,7 +203,7 @@ content encodings.
 ;; Send form params as a json encoded body (POST or PUT) with options
 (client/post "http://site.com" {:form-params {:foo "bar"}
                                :content-type :json
-                               :json-opts {:date-format "yyyy-MM-dd"})
+                               :json-opts {:date-format "yyyy-MM-dd"}})
 
 ;; You can also specify the encoding of form parameters
 (client/post "http://site.com" {:form-params {:foo "bar"}
