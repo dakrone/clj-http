@@ -13,7 +13,7 @@
                  [commons-codec "1.10"]
                  [commons-io "2.4"]
                  [slingshot "0.12.2"]
-                 [potemkin "0.3.13"]]
+                 [potemkin "0.4.1"]]
   :profiles {:dev {:dependencies [;; optional deps
                                   [cheshire "5.5.0"]
                                   [crouton "0.1.2"]
