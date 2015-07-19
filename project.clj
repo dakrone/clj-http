@@ -21,14 +21,14 @@
                                   [com.cognitect/transit-clj "0.8.275"]
                                   [ring/ring-codec "1.0.0"]
                                   ;; other (testing) deps
-                                  [org.clojure/clojure "1.6.0"]
+                                  [org.clojure/clojure "1.7.0"]
                                   [org.clojure/tools.logging "0.3.1"]
                                   [log4j "1.2.17"]
-                                  [ring/ring-jetty-adapter "1.3.2"]
-                                  [ring/ring-devel "1.3.2"]]}
+                                  [ring/ring-jetty-adapter "1.4.0"]
+                                  [ring/ring-devel "1.4.0"]]}
              :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}
-             :1.7 {:dependencies [[org.clojure/clojure "1.7.0-alpha6"]]}}
-  :aliases {"all" ["with-profile" "dev,1.5:dev:dev,1.7"]}
+             :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}}
+  :aliases {"all" ["with-profile" "dev,1.5:dev,1.6:dev"]}
   :plugins [[codox "0.6.4"]]
   :test-selectors {:default  #(not (:integration %))
                    :integration :integration
