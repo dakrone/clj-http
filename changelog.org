@@ -100,6 +100,9 @@ List of user-visible changes that have gone into each release
   and clean up whitespace for new clojure-mode
 - Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
 * Work log
+** 2015-07-18
+- merged https://github.com/dakrone/clj-http/pull/274 to update Potemkin so it
+  supports Clojure 1.7.0 correctly
 ** 2015-05-23
 - merged https://github.com/dakrone/clj-http/pull/264 to add support for
   coercion of urlencoded data
