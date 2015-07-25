@@ -669,7 +669,7 @@
 
 (deftest ^:integration t-reusable-conn-mgrs
   (run-server)
-  (let [cm (conn/make-reusable-conn-manager {:timeout 10 :insecure? false})
+  (let [cm (conn/pooling-conn-mgr)
         resp1 (request {:uri "/redirect-to-get"
                         :method :get
                         :connection-manager cm})

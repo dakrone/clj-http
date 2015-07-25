@@ -47,32 +47,6 @@
                    (headers/assoc-join hs k v))
                  (headers/header-map)))))
 
-(defn http-route []
-  ;; TODO add proxy support
-  (HttpRoute. (HttpHost. "www.google.com" 80 "https")))
-
-(defn ssl-context []
-  (SSLContexts/createSystemDefault))
-
-(defn hostname-verifier []
-  (BrowserCompatHostnameVerifier.))
-
-(defn registry-builder []
-  (-> (RegistryBuilder/create)
-      (.register "http" PlainConnectionSocketFactory/INSTANCE)
-      (.register "https" (SSLConnectionSocketFactory.
-                          (ssl-context) (hostname-verifier)))
-      (.build)))
-
-(defn pooling-conn-mgr []
-  (PoolingHttpClientConnectionManager. (registry-builder)))
-
-(defn basic-conn-mgr []
-  (BasicHttpClientConnectionManager. (registry-builder)))
-
-(defn reusable? [^HttpClientConnectionManager conn-mgr]
-  (instance? PoolingHttpClientConnectionManager conn-mgr))
-
 (defn http-client [conn-mgr]
   (-> (HttpClients/custom)
       (.setConnectionManager conn-mgr)
@@ -140,7 +114,7 @@
 
 (defn request
   [{:keys [body
-           conn-mgr
+           connection-manager
            cookie-store
            headers
            multipart
@@ -157,11 +131,11 @@
                       (when server-port (str ":" server-port))
                       uri
                       (when query-string (str "?" query-string)))
-        conn-mgr (or conn-mgr (basic-conn-mgr))
+        conn-mgr (or connection-manager (conn/basic-conn-mgr))
         ^CloseableHttpClient client (http-client conn-mgr)
         ^HttpClientContext context (http-context)
         ^HttpRequest http-req (http-request-for request-method http-url body)]
-    (when-not (reusable? conn-mgr)
+    (when-not (conn/reusable? conn-mgr)
       (.addHeader http-req "Connection" "close"))
     (when cookie-store
       (.setCookieStore context cookie-store))

@@ -6,16 +6,23 @@
            (java.security KeyStore)
            (java.security.cert X509Certificate)
            (javax.net.ssl SSLSession SSLSocket)
+           (org.apache.http.config RegistryBuilder)
            (org.apache.http.conn ClientConnectionManager)
            (org.apache.http.conn.params ConnPerRouteBean)
+           (org.apache.http.conn HttpClientConnectionManager)
            (org.apache.http.conn.ssl SSLSocketFactory TrustStrategy
                                      X509HostnameVerifier SSLContexts)
            (org.apache.http.conn.scheme PlainSocketFactory
                                         SchemeRegistry Scheme)
+           (org.apache.http.conn.ssl BrowserCompatHostnameVerifier
+                                     SSLConnectionSocketFactory SSLContexts)
+           (org.apache.http.conn.socket PlainConnectionSocketFactory)
            (org.apache.http.impl.conn BasicClientConnectionManager
                                       PoolingClientConnectionManager
                                       SchemeRegistryFactory
-                                      SingleClientConnManager)))
+                                      SingleClientConnManager)
+           (org.apache.http.impl.conn BasicHttpClientConnectionManager
+                                      PoolingHttpClientConnectionManager)))
 
 (def ^SSLSocketFactory insecure-socket-factory
   (SSLSocketFactory. (reify TrustStrategy
@@ -119,12 +126,12 @@
 (defn ^BasicClientConnectionManager make-regular-conn-manager
   [{:keys [keystore trust-store] :as req}]
   (cond
-   (or keystore trust-store)
-   (BasicClientConnectionManager. (get-keystore-scheme-registry req))
+    (or keystore trust-store)
+    (BasicClientConnectionManager. (get-keystore-scheme-registry req))
 
-   (opt req :insecure) (BasicClientConnectionManager. insecure-scheme-registry)
+    (opt req :insecure) (BasicClientConnectionManager. insecure-scheme-registry)
 
-   :else (BasicClientConnectionManager. regular-scheme-registry)))
+    :else (BasicClientConnectionManager. regular-scheme-registry)))
 
 ;; need the fully qualified class name because this fn is later used in a
 ;; macro from a different ns
@@ -135,12 +142,12 @@
   timeout value."
   [{:keys [timeout keystore trust-store] :as config}]
   (let [registry (cond
-                  (opt config :insecure) insecure-scheme-registry
+                   (opt config :insecure) insecure-scheme-registry
 
-                  (or keystore trust-store)
-                  (get-keystore-scheme-registry config)
+                   (or keystore trust-store)
+                   (get-keystore-scheme-registry config)
 
-                  :else regular-scheme-registry)]
+                   :else regular-scheme-registry)]
     (PoolingClientConnectionManager.
      registry timeout java.util.concurrent.TimeUnit/SECONDS)))
 
@@ -184,6 +191,29 @@
                                               leftovers))
       (.setMaxTotal threads)
       (.setDefaultMaxPerRoute default-per-route))))
+
+(defn ssl-context []
+  (SSLContexts/createSystemDefault))
+
+(defn hostname-verifier []
+  (BrowserCompatHostnameVerifier.))
+
+(defn registry-builder []
+  (-> (RegistryBuilder/create)
+      (.register "http" PlainConnectionSocketFactory/INSTANCE)
+      (.register "https" (SSLConnectionSocketFactory.
+                          (ssl-context)
+                          (hostname-verifier)))
+      (.build)))
+
+(defn pooling-conn-mgr []
+  (PoolingHttpClientConnectionManager. (registry-builder)))
+
+(defn basic-conn-mgr []
+  (BasicHttpClientConnectionManager. (registry-builder)))
+
+(defn reusable? [^HttpClientConnectionManager conn-mgr]
+  (instance? PoolingHttpClientConnectionManager conn-mgr))
 
 (defn shutdown-manager
   "Shut down the given connection manager, if it is not nil"
