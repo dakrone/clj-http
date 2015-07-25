@@ -2,7 +2,7 @@
   "Batteries-included HTTP client."
   (:require [clj-http.conn-mgr :as conn]
             [clj-http.cookies :refer [wrap-cookies]]
-            [clj-http.core :as core]
+            [clj-http.core2 :as core]
             [clj-http.headers :refer [wrap-header-map]]
             [clj-http.links :refer [wrap-links]]
             [clj-http.util :refer [opt] :as util]
