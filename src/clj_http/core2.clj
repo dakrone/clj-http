@@ -10,6 +10,7 @@
            (java.util Locale)
            (org.apache.http HttpEntity HeaderIterator HttpHost HttpRequest
                             HttpEntityEnclosingRequest HttpResponse)
+           (org.apache.http.client HttpRequestRetryHandler)
            (org.apache.http.client.methods HttpDelete HttpGet HttpPost HttpPut
                                            HttpOptions HttpPatch
                                            HttpHead
@@ -139,15 +140,15 @@
 
 (defn request
   [{:keys [body
+           conn-mgr
            cookie-store
            multipart
+           query-string
+           retry-handler
            request-method
            scheme
            server-name
            server-port
-           request-method
-           query-string
-           conn-mgr
            uri]
     :as req}]
   (let [scheme (name scheme)
@@ -163,6 +164,11 @@
       (.addHeader http-req "Connection" "close"))
     (when cookie-store
       (.setCookieStore context cookie-store))
+    (when retry-handler
+      (.setRetryHandler client
+                        (proxy [HttpRequestRetryHandler] []
+                          (retryRequest [e cnt context]
+                            (retry-handler e cnt context)))))
     (if multipart
       (.setEntity ^HttpEntityEnclosingRequest http-req
                   (mp/create-multipart-entity multipart))
