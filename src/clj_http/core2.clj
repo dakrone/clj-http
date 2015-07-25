@@ -142,6 +142,7 @@
   [{:keys [body
            conn-mgr
            cookie-store
+           headers
            multipart
            query-string
            retry-handler
@@ -179,6 +180,11 @@
                       (if (string? body)
                         (StringEntity. ^String body "UTF-8")
                         (ByteArrayEntity. body))))))
+    (doseq [[header-n header-v] headers]
+      (if (coll? header-v)
+        (doseq [header-vth header-v]
+          (.addHeader http-req header-n header-vth))
+        (.addHeader http-req header-n (str header-v))))
     (let [^HttpResponse response (.execute client http-req context)
           ^HttpEntity entity (.getEntity response)
           status (.getStatusLine response)]
