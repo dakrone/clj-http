@@ -61,7 +61,6 @@
     (DefaultRedirectStrategy/INSTANCE)))
 
 (defn http-client [conn-mgr redirect-strategy]
-  (println :RS (get-redirect-strategy redirect-strategy))
   (-> (HttpClients/custom)
       (.setConnectionManager conn-mgr)
       (.setRedirectStrategy (get-redirect-strategy redirect-strategy))
