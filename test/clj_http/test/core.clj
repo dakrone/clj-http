@@ -516,17 +516,17 @@
 ;;                        "class ")))))
 
 
-;; This relies on connections to writequit.org being slower than 1ms, if this
+;; This relies on connections to writequit.org being slower than 10ms, if this
 ;; fails, you must have very nice internet.
 (deftest ^:integration sets-conn-timeout
   (run-server)
   (try
-    (is (thrown? org.apache.http.conn.ConnectTimeoutException
+    (is (thrown? SocketTimeoutException
                  (client/request {:scheme :http
                                   :server-name "www.writequit.org"
                                   :server-port 80
                                   :request-method :get :uri "/"
-                                  :conn-timeout 1})))))
+                                  :conn-timeout 10})))))
 
 (deftest ^:integration connection-pool-timeout
   (run-server)

@@ -11,6 +11,7 @@
            (org.apache.http HttpEntity HeaderIterator HttpHost HttpRequest
                             HttpEntityEnclosingRequest HttpResponse)
            (org.apache.http.client HttpRequestRetryHandler)
+           (org.apache.http.client.config RequestConfig)
            (org.apache.http.client.methods HttpDelete HttpGet HttpPost HttpPut
                                            HttpOptions HttpPatch
                                            HttpHead
@@ -90,8 +91,9 @@
     (throw (IllegalArgumentException.
             (str "Invalid request method " request-method)))))
 
-(defn http-context []
-  (HttpClientContext/create))
+(defn http-context [request-config]
+  (doto (HttpClientContext/create)
+    (.setRequestConfig request-config)))
 
 (defn credentials-provider []
   (BasicCredentialsProvider.))
@@ -114,6 +116,7 @@
 
 (defn request
   [{:keys [body
+           conn-timeout
            connection-manager
            cookie-store
            headers
@@ -124,6 +127,7 @@
            scheme
            server-name
            server-port
+           socket-timeout
            uri]
     :as req}]
   (let [scheme (name scheme)
@@ -132,8 +136,12 @@
                       uri
                       (when query-string (str "?" query-string)))
         conn-mgr (or connection-manager (conn/basic-conn-mgr))
+        ^RequestConfig request-config (-> (RequestConfig/custom)
+                                          (.setConnectTimeout (or conn-timeout -1))
+                                          (.setSocketTimeout (or socket-timeout -1))
+                                          (.build))
         ^CloseableHttpClient client (http-client conn-mgr)
-        ^HttpClientContext context (http-context)
+        ^HttpClientContext context (http-context request-config)
         ^HttpRequest http-req (http-request-for request-method http-url body)]
     (when-not (conn/reusable? conn-mgr)
       (.addHeader http-req "Connection" "close"))
