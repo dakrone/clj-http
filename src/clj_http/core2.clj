@@ -52,9 +52,9 @@
 
 (defn get-redirect-strategy [redirect-strategy]
   (case redirect-strategy
-    :none (proxy [RedirectStrategy] []
-            (getRedirect [request response context] nil)
-            (isRedirected [request response context] false))
+    :none (reify RedirectStrategy
+            (getRedirect [this request response context] nil)
+            (isRedirected [this request response context] false))
     :default (DefaultRedirectStrategy/INSTANCE)
     :lax (LaxRedirectStrategy.)
     nil (DefaultRedirectStrategy/INSTANCE)
