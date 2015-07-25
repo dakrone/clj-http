@@ -106,6 +106,9 @@ List of user-visible changes that have gone into each release
   and clean up whitespace for new clojure-mode
 - Merged https://github.com/dakrone/clj-http/pull/171 to support SOCKS proxies
 * Work log
+** 2015-07-24
+- branched master to create 2.x
+- start major rewrite on master branch for non-deprecated Apache usage
 ** Released 2.0.0
 ** 2015-07-18
 - merged https://github.com/dakrone/clj-http/pull/274 to update Potemkin so it
