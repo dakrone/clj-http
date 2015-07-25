@@ -166,8 +166,8 @@
        :headers (parse-headers
                  (.headerIterator response)
                  (opt req :use-header-maps-in-response))
-       :length (.getContentLength entity)
-       :chunked? (.isChunked entity)
-       :repeatable? (.isRepeatable entity)
-       :streaming? (.isStreaming entity)
+       :length (if (nil? entity) 0 (.getContentLength entity))
+       :chunked? (if (nil? entity) false (.isChunked entity))
+       :repeatable? (if (nil? entity) false (.isRepeatable entity))
+       :streaming? (if (nil? entity) false (.isStreaming entity))
        :status (.getStatusCode status)})))
