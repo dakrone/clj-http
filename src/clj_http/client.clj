@@ -933,7 +933,7 @@
   `(let [m# ~middleware]
      (binding [*current-middleware* m#
                clj-http.client/request (reduce #(%2 %1)
-                                               clj-http.core/request
+                                               clj-http.core2/request
                                                m#)]
        ~@body)))
 

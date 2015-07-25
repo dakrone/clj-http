@@ -1,7 +1,7 @@
 (ns clj-http.test.core
   (:require [cheshire.core :as json]
             [clj-http.client :as client]
-            [clj-http.core :as core]
+            [clj-http.core2 :as core]
             [clj-http.util :as util]
             [clojure.java.io :refer [file]]
             [clojure.pprint :as pp]
@@ -471,17 +471,17 @@
     (is (= b2 "foo"))
     (is (= b3 "ap"))))
 
-(deftest t-add-client-params
-  (testing "Using add-client-params!"
-    (let [ps {"http.conn-manager.timeout" 100
-              "http.socket.timeout" 250
-              "http.protocol.allow-circular-redirects" false
-              "http.protocol.version" HttpVersion/HTTP_1_0
-              "http.useragent" "clj-http"}
-          setps (.getParams (doto (DefaultHttpClient.)
-                              (core/add-client-params! ps)))]
-      (doseq [[k v] ps]
-        (is (= v (.getParameter setps k)))))))
+;; (deftest t-add-client-params
+;;   (testing "Using add-client-params!"
+;;     (let [ps {"http.conn-manager.timeout" 100
+;;               "http.socket.timeout" 250
+;;               "http.protocol.allow-circular-redirects" false
+;;               "http.protocol.version" HttpVersion/HTTP_1_0
+;;               "http.useragent" "clj-http"}
+;;           setps (.getParams (doto (DefaultHttpClient.)
+;;                               (core/add-client-params! ps)))]
+;;       (doseq [[k v] ps]
+;;         (is (= v (.getParameter setps k)))))))
 
 ;; Regression, get notified if something changes
 (deftest ^:integration t-known-client-params-are-unchanged
@@ -498,22 +498,22 @@
 
 ;; If you don't explicitly set a :cookie-policy, use
 ;; CookiePolicy/BROWSER_COMPATIBILITY
-(deftest t-add-client-params-default-cookie-policy
-  (testing "Using add-client-params! to get a default cookie policy"
-    (let [setps (.getParams (doto (DefaultHttpClient.)
-                              (core/add-client-params! {})))]
-      (is (= CookiePolicy/BROWSER_COMPATIBILITY
-             (.getParameter setps ClientPNames/COOKIE_POLICY))))))
+;; (deftest t-add-client-params-default-cookie-policy
+;;   (testing "Using add-client-params! to get a default cookie policy"
+;;     (let [setps (.getParams (doto (DefaultHttpClient.)
+;;                               (core/add-client-params! {})))]
+;;       (is (= CookiePolicy/BROWSER_COMPATIBILITY
+;;              (.getParameter setps ClientPNames/COOKIE_POLICY))))))
 
 ;; If you set a :cookie-policy, the name of the policy is registered
 ;; as (str (type cookie-policy))
-(deftest t-add-client-params-cookie-policy
-  (testing "Using add-client-params! to get an explicitly set :cookie-policy"
-    (let [setps (.getParams (doto (DefaultHttpClient.)
-                              (core/add-client-params!
-                               {:cookie-policy (constantly nil)})))]
-      (is (.startsWith ^String (.getParameter setps ClientPNames/COOKIE_POLICY)
-                       "class ")))))
+;; (deftest t-add-client-params-cookie-policy
+;;   (testing "Using add-client-params! to get an explicitly set :cookie-policy"
+;;     (let [setps (.getParams (doto (DefaultHttpClient.)
+;;                               (core/add-client-params!
+;;                                {:cookie-policy (constantly nil)})))]
+;;       (is (.startsWith ^String (.getParameter setps ClientPNames/COOKIE_POLICY)
+;;                        "class ")))))
 
 
 ;; This relies on connections to writequit.org being slower than 1ms, if this
