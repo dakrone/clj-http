@@ -10,7 +10,7 @@
            (java.util Locale)
            (org.apache.http HttpEntity HeaderIterator HttpHost HttpRequest
                             HttpEntityEnclosingRequest HttpResponse)
-           (org.apache.http.client HttpRequestRetryHandler)
+           (org.apache.http.client HttpRequestRetryHandler RedirectStrategy)
            (org.apache.http.client.config RequestConfig)
            (org.apache.http.client.methods HttpDelete HttpGet HttpPost HttpPut
                                            HttpOptions HttpPatch
@@ -25,7 +25,9 @@
            (org.apache.http.conn.socket PlainConnectionSocketFactory)
            (org.apache.http.entity ByteArrayEntity StringEntity)
            (org.apache.http.impl.client BasicCredentialsProvider
-                                        CloseableHttpClient HttpClients)
+                                        CloseableHttpClient HttpClients
+                                        DefaultRedirectStrategy
+                                        LaxRedirectStrategy)
            (org.apache.http.impl.conn BasicHttpClientConnectionManager
                                       PoolingHttpClientConnectionManager)))
 
@@ -48,9 +50,21 @@
                    (headers/assoc-join hs k v))
                  (headers/header-map)))))
 
-(defn http-client [conn-mgr]
+(defn get-redirect-strategy [redirect-strategy]
+  (case redirect-strategy
+    :none (proxy [RedirectStrategy] []
+            (getRedirect [request response context] nil)
+            (isRedirected [request response context] false))
+    :default (DefaultRedirectStrategy/INSTANCE)
+    :lax (LaxRedirectStrategy.)
+    nil (DefaultRedirectStrategy/INSTANCE)
+    (DefaultRedirectStrategy/INSTANCE)))
+
+(defn http-client [conn-mgr redirect-strategy]
+  (println :RS (get-redirect-strategy redirect-strategy))
   (-> (HttpClients/custom)
       (.setConnectionManager conn-mgr)
+      (.setRedirectStrategy (get-redirect-strategy redirect-strategy))
       (.build)))
 
 (defn http-get []
@@ -122,6 +136,7 @@
            headers
            multipart
            query-string
+           redirect-strategy
            retry-handler
            request-method
            scheme
@@ -140,7 +155,7 @@
                                           (.setConnectTimeout (or conn-timeout -1))
                                           (.setSocketTimeout (or socket-timeout -1))
                                           (.build))
-        ^CloseableHttpClient client (http-client conn-mgr)
+        ^CloseableHttpClient client (http-client conn-mgr redirect-strategy)
         ^HttpClientContext context (http-context request-config)
         ^HttpRequest http-req (http-request-for request-method http-url body)]
     (when-not (conn/reusable? conn-mgr)

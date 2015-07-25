@@ -304,7 +304,8 @@
 (deftest ^:integration throw-on-too-many-redirects
   (run-server)
   (let [resp (client/get (localhost "/redirect")
-                         {:max-redirects 2 :throw-exceptions false})]
+                         {:max-redirects 2 :throw-exceptions false
+                          :redirect-strategy :none})]
     (is (= 302 (:status resp)))
     (is (= (apply vector (repeat 3 "http://localhost:18080/redirect"))
            (:trace-redirects resp))))
