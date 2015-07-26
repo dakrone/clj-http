@@ -60,10 +60,20 @@
     nil (DefaultRedirectStrategy/INSTANCE)
     (DefaultRedirectStrategy/INSTANCE)))
 
-(defn http-client [conn-mgr redirect-strategy]
+(defn add-retry-handler [builder handler]
+  (when handler
+    (.setRetryHandler
+     builder
+     (proxy [HttpRequestRetryHandler] []
+       (retryRequest [e cnt context]
+         (handler e cnt context)))))
+  builder)
+
+(defn http-client [conn-mgr redirect-strategy retry-handler]
   (-> (HttpClients/custom)
       (.setConnectionManager conn-mgr)
       (.setRedirectStrategy (get-redirect-strategy redirect-strategy))
+      (add-retry-handler retry-handler)
       (.build)))
 
 (defn http-get []
@@ -154,18 +164,15 @@
                                           (.setConnectTimeout (or conn-timeout -1))
                                           (.setSocketTimeout (or socket-timeout -1))
                                           (.build))
-        ^CloseableHttpClient client (http-client conn-mgr redirect-strategy)
+        ^CloseableHttpClient client (http-client conn-mgr
+                                                 redirect-strategy
+                                                 retry-handler)
         ^HttpClientContext context (http-context request-config)
         ^HttpRequest http-req (http-request-for request-method http-url body)]
     (when-not (conn/reusable? conn-mgr)
       (.addHeader http-req "Connection" "close"))
     (when cookie-store
       (.setCookieStore context cookie-store))
-    (when retry-handler
-      (.setRetryHandler client
-                        (proxy [HttpRequestRetryHandler] []
-                          (retryRequest [e cnt context]
-                            (retry-handler e cnt context)))))
     (if multipart
       (.setEntity ^HttpEntityEnclosingRequest http-req
                   (mp/create-multipart-entity multipart))
