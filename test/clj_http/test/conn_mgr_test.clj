@@ -1,7 +1,7 @@
-(ns clj-http.test.conn-mgr
+(ns clj-http.test.conn-mgr-test
   (:require [clj-http.conn-mgr :as conn-mgr]
             [clj-http.core :as core]
-            [clj-http.test.core :refer [run-server]]
+            [clj-http.test.core-test :refer [run-server]]
             [clojure.test :refer :all]
             [ring.adapter.jetty :as ring])
   (:import (java.security KeyStore)

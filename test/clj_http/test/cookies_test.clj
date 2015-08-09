@@ -1,4 +1,4 @@
-(ns clj-http.test.cookies
+(ns clj-http.test.cookies-test
   (:require [clj-http.cookies :refer :all]
             [clj-http.util :refer :all]
             [clojure.test :refer :all])

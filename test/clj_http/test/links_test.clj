@@ -1,4 +1,4 @@
-(ns clj-http.test.links
+(ns clj-http.test.links-test
   (:require [clj-http.links :refer :all]
             [clojure.test :refer :all]))
 

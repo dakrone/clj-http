@@ -1,7 +1,7 @@
-(ns clj-http.test.core
+(ns clj-http.test.core-test
   (:require [cheshire.core :as json]
             [clj-http.client :as client]
-            [clj-http.core2 :as core]
+            [clj-http.core :as core]
             [clj-http.util :as util]
             [clojure.java.io :refer [file]]
             [clojure.pprint :as pp]

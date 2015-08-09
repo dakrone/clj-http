@@ -1,4 +1,4 @@
-(ns clj-http.test.headers
+(ns clj-http.test.headers-test
   (:require [clj-http.client :as client]
             [clj-http.headers :refer :all]
             [clj-http.util :refer [lower-case-keys]]

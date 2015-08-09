@@ -1,4 +1,4 @@
-(ns clj-http.test.multipart
+(ns clj-http.test.multipart-test
   (:require [clj-http.multipart :refer :all]
             [clojure.test :refer :all])
   (:import (java.io File)
