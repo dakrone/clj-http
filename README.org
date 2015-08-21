@@ -845,20 +845,20 @@ $ lein all test :all
 
 * Testimonials
 
-With close to a [million](https://clojars.org/clj-http) downloads, clj-http is a
+With close to a [[https://clojars.org/clj-http][million]] downloads, clj-http is a
 widely used, battle-tested clojure library. It is also included in other
 libraries (like database clients) as a low-level http wrapper.
 
 Libraries using clj-http:
 
-- [[https://github.com/mattrepl/clj-oauth] [clj-oauth]]
-- [[[[https://github.com/clojurewerkz/elastisch]]] [elasticsearch]]
-- [[https://github.com/olauzon/capacitor] [influxdb]]
+- [[https://github.com/mattrepl/clj-oauth][clj-oauth]]
+- [[https://github.com/clojurewerkz/elastisch][elasticsearch]]
+- [[https://github.com/olauzon/capacitor][influxdb]]
 
 Libraries inspired by clj-http:
 
-- [[https://github.com/mpenet/jet] [jet]]
-- [[https://github.com/hiredman/clj-http-lite] [clj-http-lite]]
+- [[https://github.com/mpenet/jet][jet]]
+- [[https://github.com/hiredman/clj-http-lite][clj-http-lite]]
 
 * License
 
