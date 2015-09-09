@@ -10,7 +10,7 @@
 * Table of Contents                                                     :TOC:
  - [[#clj-http][clj-http]]
      - [[#installation][Installation]]
-     - [[#usage][Usage]]
+     - [[#quickstart][Quickstart]]
      - [[#input-coercion][Input coercion]]
      - [[#output-coercion][Output coercion]]
      - [[#misc][Misc]]
