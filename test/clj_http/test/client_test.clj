@@ -574,6 +574,8 @@
     (are [in out] (is-applied client/wrap-nested-params
                               {:query-params in :form-params in}
                               {:query-params out :form-params out})
+         {"x" ["0" "1"]} {"x[0]" "0" "x[1]" "1"}
+         {"x" [{"y" "a" "z" "b"} {"w" "c"}]} {"x[0][y]" "a" "x[0][z]" "b" "x[1][w]" "c"}
          {"foo" "bar"} {"foo" "bar"}
          {"x" {"y" "z"}} {"x[y]" "z"}
          {"a" {"b" {"c" "d"}}} {"a[b][c]" "d"}
