@@ -94,26 +94,37 @@
     (throw (Exception. (str "Multipart string body must contain "
                             "at least :content")))))
 
+(defn make-multipart-body
+  "Create a body object from the given map, dispatching on the type
+  of its content. Requires the content to be of type File, InputStream,
+  ByteArray, or String."
+  [multipart]
+  (let [klass (type (:content multipart))]
+    ;; TODO: replace with multimethod? actually helpful?
+    (cond
+      (isa? klass File)
+      (make-file-body multipart)
+
+      (isa? klass InputStream)
+      (make-input-stream-body multipart)
+
+      (= klass byte-array-type)
+      (make-byte-array-body multipart)
+
+      (= klass String)
+      (make-string-body multipart)
+
+      :else
+      (throw (Exception. (str "Multipart content must be of type File, "
+                              "InputStream, ByteArray, or String."))))))
+
 (defn create-multipart-entity
   "Takes a multipart vector of maps and creates a MultipartEntity with each
   map added as a part, depending on the type of content."
   [multipart]
   (let [mp-entity (MultipartEntity.)]
     (doseq [m multipart]
-      (let [klass (type (:content m))
-            name (or (:part-name m) (:name m))
-            ;; TODO: replace with multimethod? actually helpful?
-            part (cond
-                   (isa? klass File)
-                   (make-file-body m)
-
-                   (isa? klass InputStream)
-                   (make-input-stream-body m)
-
-                   (= klass byte-array-type)
-                   (make-byte-array-body m)
-
-                   (= klass String)
-                   (make-string-body m))]
+      (let [name (or (:part-name m) (:name m))
+            part (make-multipart-body m)]
         (.addPart mp-entity name part)))
     mp-entity))
