@@ -29,26 +29,26 @@
                        (isTrusted [_ _ _] true))
                      (reify X509HostnameVerifier
                        (^void verify [this ^String host ^SSLSocket sock]
-                         ;; for some strange reason, only TLSv1 really
-                         ;; works here, if you know why, tell me.
-                         (.setEnabledProtocols
-                          sock (into-array String ["TLSv1"]))
-                         (.setWantClientAuth sock false)
-                         (let [session (.getSession sock)]
-                           (when-not session
-                             (.startHandshake sock))
-                           (aget (.getPeerCertificates session) 0)
-                           ;; normally you'd want to verify the cert
-                           ;; here, but since this is an insecure
-                           ;; socketfactory, we don't
-                           nil))
+                        ;; for some strange reason, only TLSv1 really
+                        ;; works here, if you know why, tell me.
+                        (.setEnabledProtocols
+                         sock (into-array String ["TLSv1"]))
+                        (.setWantClientAuth sock false)
+                        (let [session (.getSession sock)]
+                          (when-not session
+                            (.startHandshake sock))
+                          (aget (.getPeerCertificates session) 0)
+                          ;; normally you'd want to verify the cert
+                          ;; here, but since this is an insecure
+                          ;; socketfactory, we don't
+                          nil))
                        (^void verify [_ ^String _ ^X509Certificate _]
-                         nil)
+                        nil)
                        (^void verify [_ ^String _ ^"[Ljava.lang.String;" _
                                       ^"[Ljava.lang.String;" _]
-                         nil)
+                        nil)
                        (^boolean verify [_ ^String _ ^SSLSession _]
-                         true))))
+                        true))))
 
 ;; New Generic Socket Factories that can support socks proxy
 (defn ^SSLSocketFactory SSLGenericSocketFactory
