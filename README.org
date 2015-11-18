@@ -86,6 +86,26 @@ Previous versions available as:
 
 clj-http supports clojure 1.5.0 and higher.
 
+* Towards a 3.0.0 release (NEW)
+So there is a 2.0 branch which is based on the latest released version of
+clj-http. Master, on the other hand, is a rewrite of the =core.clj= for the new
+Apache changes (starting with 4.0 I believe) to use non-deprecated methods.
+There are a number of things that need to be accomplished in order for it to be
+releasable in a non-snapshot version (3.0.0-SNAPSHOT is already on Clojars)
+
+Here are the tests that need to pass:
+
+- [X] =lein test clj-http.test.client-test :all=
+- [ ] =lein test clj-http.test.conn-mgr-test :all=
+- [X] =lein test clj-http.test.cookies-test :all=
+- [ ] =lein test clj-http.test.core-test :all=
+- [X] =lein test clj-http.test.headers-test :all=
+- [X] =lein test clj-http.test.links-test :all=
+- [X] =lein test clj-http.test.multipart-test :all=
+- [X] =lein test clj-http.test.util-test :all=
+
+Any help or PRs is greatly appreciated.
+
 * Quickstart
 
 The main HTTP client functionality is provided by the =clj-http.client= namespace.
