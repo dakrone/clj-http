@@ -5,7 +5,7 @@
             [clj-http.multipart :as mp]
             [clj-http.util :refer [opt]]
             [clojure.pprint])
-  (:import (java.io FilterInputStream InputStream)
+  (:import (java.io ByteArrayOutputStream FilterInputStream InputStream)
            (java.net URI)
            (java.util Locale)
            (org.apache.http HttpEntity HeaderIterator HttpHost HttpRequest
@@ -135,7 +135,33 @@
             (proxy-super close))
           (finally
             (.close response)
-            (.shutdown conn-mgr)))))))
+            (when-not (conn/reusable? conn-mgr)
+              (.shutdown conn-mgr))))))))
+
+(defn- print-debug!
+  "Print out debugging information to *out* for a given request."
+  [{:keys [debug-body body] :as req} http-req]
+  (println "Request:" (type body))
+  (clojure.pprint/pprint
+   (assoc req
+          :body (if (opt req :debug-body)
+                  (cond
+                    (isa? (type body) String)
+                    body
+
+                    (isa? (type body) HttpEntity)
+                    (let [baos (ByteArrayOutputStream.)]
+                      (.writeTo ^HttpEntity body baos)
+                      (.toString baos "UTF-8"))
+
+                    :else nil)
+                  (if (isa? (type body) String)
+                    (format "... %s bytes ..."
+                            (count body))
+                    (and body (bean body))))
+          :body-type (type body)))
+  (println "HttpRequest:")
+  (clojure.pprint/pprint (bean http-req)))
 
 (defn request
   [{:keys [body
@@ -188,6 +214,7 @@
         (doseq [header-vth header-v]
           (.addHeader http-req header-n header-vth))
         (.addHeader http-req header-n (str header-v))))
+    (when (opt req :debug) (print-debug! req http-req))
     (let [^HttpResponse response (.execute client http-req context)
           ^HttpEntity entity (.getEntity response)
           status (.getStatusLine response)]
