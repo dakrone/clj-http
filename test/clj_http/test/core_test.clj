@@ -251,26 +251,6 @@
     (is (= 200 (:status resp)))
     (is (re-find #"byte-test" resp-body))))
 
-(deftest ^:integration t-save-request-obj
-  (run-server)
-  (let [resp (request {:request-method :post :uri "/post"
-                       :body "foo bar"
-                       :save-request? true
-                       :debug-body true})]
-    (is (= 200 (:status resp)))
-    (is (= {:scheme :http
-            :http-url (localhost "/post")
-            :request-method :post
-            :save-request? true
-            :debug-body true
-            :uri "/post"
-            :server-name "localhost"
-            :server-port 18080
-            :body-content "foo bar"
-            :body-type String}
-           (dissoc (:request resp) :body :http-req)))
-    (is (instance? HttpPost (-> resp :request :http-req)))))
-
 (deftest parse-headers
   (are [headers expected]
     (let [iterator (BasicHeaderIterator.
