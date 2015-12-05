@@ -6,7 +6,7 @@
             [ring.adapter.jetty :as ring])
   (:import (java.security KeyStore)
            (org.apache.http.conn.ssl SSLSocketFactory)
-           (org.apache.http.impl.conn BasicClientConnectionManager)))
+           (org.apache.http.impl.conn BasicHttpClientConnectionManager)))
 
 (def client-ks "test-resources/client-keystore")
 (def client-ks-pass "keykey")
@@ -64,7 +64,7 @@
 (deftest ^:integration t-closed-conn-mgr-for-as-stream
   (run-server)
   (let [shutdown? (atom false)
-        cm (proxy [BasicClientConnectionManager] []
+        cm (proxy [BasicHttpClientConnectionManager] []
              (shutdown []
                (reset! shutdown? true)))]
     (try
@@ -83,7 +83,7 @@
 (deftest ^:integration t-closed-conn-mgr-for-empty-body
   (run-server)
   (let [shutdown? (atom false)
-        cm (proxy [BasicClientConnectionManager] []
+        cm (proxy [BasicHttpClientConnectionManager] []
              (shutdown []
                (reset! shutdown? true)))
         response (core/request {:request-method :get :uri "/unmodified-resource"
