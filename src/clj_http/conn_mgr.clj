@@ -192,13 +192,13 @@
       (.setMaxTotal threads)
       (.setDefaultMaxPerRoute default-per-route))))
 
-(defn ssl-context []
+(defn ^javax.net.ssl.SSLContext ssl-context []
   (SSLContexts/createSystemDefault))
 
-(defn hostname-verifier []
+(defn ^javax.net.ssl.HostnameVerifier hostname-verifier []
   (BrowserCompatHostnameVerifier.))
 
-(defn registry-builder []
+(defn ^org.apache.http.config.Registry registry-builder []
   (-> (RegistryBuilder/create)
       (.register "http" PlainConnectionSocketFactory/INSTANCE)
       (.register "https" (SSLConnectionSocketFactory.

@@ -523,7 +523,7 @@
       (if (and (opt req :decode-body-headers)
                crouton-enabled?
                (:body resp)
-               (let [content-type (get-in resp [:headers "content-type"])]
+               (let [^String content-type (get-in resp [:headers "content-type"])]
                  (or (str/blank? content-type)
                      (.startsWith content-type "text"))))
         (let [body-bytes (util/force-byte-array (:body resp))

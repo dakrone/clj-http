@@ -15,7 +15,7 @@
            (org.apache.http.client.methods HttpDelete HttpGet HttpPost HttpPut
                                            HttpOptions HttpPatch
                                            HttpHead
-                                           HttpEntityEnclosingRequestBase)
+                                           HttpEntityEnclosingRequestBase CloseableHttpResponse HttpUriRequest)
            (org.apache.http.client.protocol HttpClientContext)
            (org.apache.http.config RegistryBuilder)
            (org.apache.http.conn HttpClientConnectionManager)
@@ -27,7 +27,7 @@
            (org.apache.http.impl.client BasicCredentialsProvider
                                         CloseableHttpClient HttpClients
                                         DefaultRedirectStrategy
-                                        LaxRedirectStrategy)
+                                        LaxRedirectStrategy HttpClientBuilder)
            (org.apache.http.impl.conn BasicHttpClientConnectionManager
                                       PoolingHttpClientConnectionManager)))
 
@@ -60,7 +60,7 @@
     nil (DefaultRedirectStrategy/INSTANCE)
     (DefaultRedirectStrategy/INSTANCE)))
 
-(defn add-retry-handler [builder handler]
+(defn add-retry-handler [^HttpClientBuilder builder handler]
   (when handler
     (.setRetryHandler
      builder
@@ -70,11 +70,13 @@
   builder)
 
 (defn http-client [conn-mgr redirect-strategy retry-handler]
-  (-> (HttpClients/custom)
-      (.setConnectionManager conn-mgr)
-      (.setRedirectStrategy (get-redirect-strategy redirect-strategy))
-      (add-retry-handler retry-handler)
-      (.build)))
+  ; have to let first, otherwise we get a reflection warning on (.build)
+  (let [^HttpClientBuilder builder (-> (HttpClients/custom)
+                                       (.setConnectionManager conn-mgr)
+                                       (.setRedirectStrategy
+                                         (get-redirect-strategy redirect-strategy))
+                                       (add-retry-handler retry-handler))]
+    (.build builder)))
 
 (defn http-get []
   (HttpGet. "https://www.google.com"))
@@ -124,7 +126,7 @@
 (defn- coerce-body-entity
   "Coerce the http-entity from an HttpResponse to a stream that closes itself
   and the connection manager when closed."
-  [^HttpEntity http-entity ^HttpClientConnectionManager conn-mgr response]
+  [^HttpEntity http-entity ^HttpClientConnectionManager conn-mgr ^CloseableHttpResponse response]
   (when http-entity
     (proxy [FilterInputStream]
         [^InputStream (.getContent http-entity)]
@@ -194,7 +196,7 @@
                                                  redirect-strategy
                                                  retry-handler)
         ^HttpClientContext context (http-context request-config)
-        ^HttpRequest http-req (http-request-for request-method http-url body)]
+        ^HttpUriRequest http-req (http-request-for request-method http-url body)]
     (when-not (conn/reusable? conn-mgr)
       (.addHeader http-req "Connection" "close"))
     (when cookie-store
@@ -215,7 +217,7 @@
           (.addHeader http-req header-n header-vth))
         (.addHeader http-req header-n (str header-v))))
     (when (opt req :debug) (print-debug! req http-req))
-    (let [^HttpResponse response (.execute client http-req context)
+    (let [^CloseableHttpResponse response (.execute client http-req context)
           ^HttpEntity entity (.getEntity response)
           status (.getStatusLine response)]
       {:body (coerce-body-entity entity conn-mgr response)
