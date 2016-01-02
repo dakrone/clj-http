@@ -217,15 +217,20 @@
           (.addHeader http-req header-n header-vth))
         (.addHeader http-req header-n (str header-v))))
     (when (opt req :debug) (print-debug! req http-req))
-    (let [^HttpResponse response (.execute client http-req context)
-          ^HttpEntity entity (.getEntity response)
-          status (.getStatusLine response)]
-      {:body (coerce-body-entity entity conn-mgr response)
-       :headers (parse-headers
-                 (.headerIterator response)
-                 (opt req :use-header-maps-in-response))
-       :length (if (nil? entity) 0 (.getContentLength entity))
-       :chunked? (if (nil? entity) false (.isChunked entity))
-       :repeatable? (if (nil? entity) false (.isRepeatable entity))
-       :streaming? (if (nil? entity) false (.isStreaming entity))
-       :status (.getStatusCode status)})))
+    (try
+      (let [^HttpResponse response (.execute client http-req context)
+            ^HttpEntity entity (.getEntity response)
+            status (.getStatusLine response)]
+        {:body (coerce-body-entity entity conn-mgr response)
+         :headers (parse-headers
+                   (.headerIterator response)
+                   (opt req :use-header-maps-in-response))
+         :length (if (nil? entity) 0 (.getContentLength entity))
+         :chunked? (if (nil? entity) false (.isChunked entity))
+         :repeatable? (if (nil? entity) false (.isRepeatable entity))
+         :streaming? (if (nil? entity) false (.isStreaming entity))
+         :status (.getStatusCode status)})
+      (catch Throwable t
+        (when-not (conn/reusable? conn-mgr)
+          (.shutdown conn-mgr))
+        (throw t)))))
