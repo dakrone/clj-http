@@ -125,7 +125,7 @@
   "Coerce the http-entity from an HttpResponse to a stream that closes itself
   and the connection manager when closed."
   [^HttpEntity http-entity ^HttpClientConnectionManager conn-mgr response]
-  (when http-entity
+  (if http-entity
     (proxy [FilterInputStream]
         [^InputStream (.getContent http-entity)]
       (close []
@@ -136,7 +136,9 @@
           (finally
             (.close response)
             (when-not (conn/reusable? conn-mgr)
-              (.shutdown conn-mgr))))))))
+              (.shutdown conn-mgr))))))
+    (when-not (conn/reusable? conn-mgr)
+      (.shutdown conn-mgr))))
 
 (defn- print-debug!
   "Print out debugging information to *out* for a given request."

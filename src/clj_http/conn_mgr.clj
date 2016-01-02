@@ -198,19 +198,29 @@
 (defn hostname-verifier []
   (BrowserCompatHostnameVerifier.))
 
-(defn registry-builder []
+(defn insecure-registry-builder []
   (-> (RegistryBuilder/create)
       (.register "http" PlainConnectionSocketFactory/INSTANCE)
-      (.register "https" (SSLConnectionSocketFactory.
-                          (ssl-context)
-                          (hostname-verifier)))
+      (.register "https" insecure-socket-factory)
+      (.build)))
+
+(defn registry-builder [{:keys [insecure?] :as opts}]
+  (-> (RegistryBuilder/create)
+      (.register "http" PlainConnectionSocketFactory/INSTANCE)
+      (.register "https"
+                 (cond
+                   insecure? insecure-socket-factory
+                   :default
+                   (SSLConnectionSocketFactory.
+                    (ssl-context)
+                    (hostname-verifier))))
       (.build)))
 
 (defn pooling-conn-mgr []
-  (PoolingHttpClientConnectionManager. (registry-builder)))
+  (PoolingHttpClientConnectionManager. (registry-builder {})))
 
 (defn basic-conn-mgr []
-  (BasicHttpClientConnectionManager. (registry-builder)))
+  (BasicHttpClientConnectionManager. (registry-builder {})))
 
 (defn reusable? [^HttpClientConnectionManager conn-mgr]
   (instance? PoolingHttpClientConnectionManager conn-mgr))
