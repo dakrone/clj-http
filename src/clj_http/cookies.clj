@@ -3,7 +3,8 @@
   (:require [clj-http.util :refer [opt]]
             [clojure.string :refer [blank? join lower-case]])
   (:import (org.apache.http.client.params ClientPNames CookiePolicy)
-           (org.apache.http.cookie ClientCookie CookieOrigin CookieSpec)
+           (org.apache.http.cookie ClientCookie CookieOrigin
+                                   CookieSpec CookieSpecProvider)
            (org.apache.http.params BasicHttpParams)
            (org.apache.http.impl.cookie BasicClientCookie2)
            (org.apache.http.impl.cookie BrowserCompatSpecFactory)
@@ -24,7 +25,13 @@
   (if (nil? validate-fn)
     (default-cookie-spec)
     (proxy [DefaultCookieSpec] []
+      (match [cookie origin] true)
       (validate [cookie origin] (validate-fn cookie origin)))))
+
+(defn cookie-spec-provider ^CookieSpecProvider
+  [validate-fn]
+  (proxy [Object CookieSpecProvider] []
+    (create [context] (cookie-spec validate-fn))))
 
 (defn compact-map
   "Removes all map entries where value is nil."
