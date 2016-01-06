@@ -2,7 +2,8 @@
   (:require [clj-http.cookies :refer :all]
             [clj-http.util :refer :all]
             [clojure.test :refer :all])
-  (:import (org.apache.http.impl.cookie BasicClientCookie BasicClientCookie2)))
+  (:import (org.apache.http.impl.cookie BasicClientCookie BasicClientCookie2)
+           (org.apache.http.cookie MalformedCookieException)))
 
 (defn refer-private [ns]
   (doseq [[symbol var] (ns-interns ns)]
@@ -24,7 +25,7 @@
 
 (deftest test-decode-cookie
   (are [set-cookie-str expected]
-    (is (= expected (decode-cookie set-cookie-str)))
+    (is (= expected (decode-cookie (default-cookie-spec) set-cookie-str)))
     nil nil
     "" nil
     "example-cookie=example-value;Path=/"
@@ -37,7 +38,7 @@
       :value "example-value" :version 0}]))
 
 (deftest test-decode-cookies-with-seq
-  (let [cookies (decode-cookies [(str "ring-session=" session)])]
+  (let [cookies (decode-cookies (default-cookie-spec) [(str "ring-session=" session)])]
     (is (map? cookies))
     (is (= 1 (count cookies)))
     (let [cookie (get cookies "ring-session")]
@@ -49,6 +50,7 @@
 
 (deftest test-decode-cookies-with-string
   (let [cookies (decode-cookies
+                 (default-cookie-spec)
                  (str "ring-session=" session ";Path=/"))]
     (is (map? cookies))
     (is (= 1 (count cookies)))
@@ -61,7 +63,7 @@
 
 (deftest test-decode-cookie-header
   (are [response expected]
-    (is (= expected (decode-cookie-header response)))
+    (is (= expected (decode-cookie-header (default-cookie-spec) response)))
     {:headers {"set-cookie" "a=1"}}
     {:cookies {"a" {:discard true :path "/" :secure false
                     :value "1" :version 0}} :headers {}}
@@ -219,4 +221,28 @@
               {"set-cookie"
                "example-cookie=example-value;Domain=.example.com;Path=/"}}))
           {:cookies (sorted-map :a {:value "1"} :b {:value "2"})
-           :decode-cookies false}))))
+           :decode-cookies false})))
+  (is (= {:cookies {"test-1" {:discard true :domain "example.com"
+                              :path "/" :value "test-1"
+                              :version 0 :secure false}
+                    "test-2" {:discard true :domain "example.com"
+                              :path "/" :value "test-2"
+                              :version 0 :secure false}} :headers {}}
+         ((wrap-cookies
+           (fn [request]
+             (is (= (get (:headers request) "Cookie") "a=1;b=2"))
+             {:headers
+              {"set-cookie"
+               ["test-1=test-1;Domain=.example.com;Path=/"
+                "test-2=test-2;Domain=.example.com;Path=/;Max-Age=-9999"]}}))
+          {:cookies (sorted-map :a {:value "1"} :b {:value "2"})
+           :cookie-validation (fn [cookie origin])})))
+  (is (thrown? MalformedCookieException
+               ((wrap-cookies
+                 (fn [request]
+                   (is (= (get (:headers request) "Cookie") "a=1;b=2"))
+                   {:headers
+                    {"set-cookie"
+                     "example-cookie=example-value;Max-Age=-9999"}}))
+                {:cookies (sorted-map :a {:value "1"} :b {:value "2"})}))))
+

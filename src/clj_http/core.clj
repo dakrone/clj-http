@@ -1,6 +1,7 @@
 (ns clj-http.core
   "Core HTTP request/response implementation. Rewrite for Apache 4.3"
   (:require [clj-http.conn-mgr :as conn]
+            [clj-http.cookies :as cookies]
             [clj-http.headers :as headers]
             [clj-http.multipart :as mp]
             [clj-http.util :refer [opt]]
@@ -11,7 +12,7 @@
            (org.apache.http HttpEntity HeaderIterator HttpHost HttpRequest
                             HttpEntityEnclosingRequest HttpResponse)
            (org.apache.http.client HttpRequestRetryHandler RedirectStrategy)
-           (org.apache.http.client.config RequestConfig)
+           (org.apache.http.client.config RequestConfig CookieSpecs)
            (org.apache.http.client.methods HttpDelete HttpGet HttpPost HttpPut
                                            HttpOptions HttpPatch
                                            HttpHead
@@ -27,7 +28,9 @@
            (org.apache.http.impl.client BasicCredentialsProvider
                                         CloseableHttpClient HttpClients
                                         DefaultRedirectStrategy
+                                        CookieSpecRegistries
                                         LaxRedirectStrategy)
+           (org.apache.http.impl.cookie DefaultCookieSpecProvider)
            (org.apache.http.impl.conn BasicHttpClientConnectionManager
                                       PoolingHttpClientConnectionManager)))
 
@@ -69,9 +72,13 @@
          (handler e cnt context)))))
   builder)
 
-(defn http-client [conn-mgr redirect-strategy retry-handler]
+(defn http-client [conn-mgr cookie-validation redirect-strategy retry-handler]
   (-> (HttpClients/custom)
       (.setConnectionManager conn-mgr)
+      (.setDefaultCookieSpecRegistry (-> (CookieSpecRegistries/createDefaultBuilder)
+                                         (.register CookieSpecs/DEFAULT (DefaultCookieSpecProvider.))
+                                         (.register "supplied" (cookies/cookie-spec-provider cookie-validation))
+                                         (.build)))
       (.setRedirectStrategy (get-redirect-strategy redirect-strategy))
       (add-retry-handler retry-handler)
       (.build)))
@@ -170,6 +177,7 @@
            conn-timeout
            connection-manager
            cookie-store
+           cookie-validation
            headers
            multipart
            query-string
@@ -191,8 +199,10 @@
         ^RequestConfig request-config (-> (RequestConfig/custom)
                                           (.setConnectTimeout (or conn-timeout -1))
                                           (.setSocketTimeout (or socket-timeout -1))
+                                          (.setCookieSpec (if (nil? cookie-validation) CookieSpecs/DEFAULT "supplied"))
                                           (.build))
         ^CloseableHttpClient client (http-client conn-mgr
+                                                 cookie-validation
                                                  redirect-strategy
                                                  retry-handler)
         ^HttpClientContext context (http-context request-config)

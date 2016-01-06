@@ -3,20 +3,35 @@
   (:require [clj-http.util :refer [opt]]
             [clojure.string :refer [blank? join lower-case]])
   (:import (org.apache.http.client.params ClientPNames CookiePolicy)
-           (org.apache.http.cookie ClientCookie CookieOrigin CookieSpec)
+           (org.apache.http.cookie ClientCookie CookieOrigin
+                                   CookieSpec CookieSpecProvider)
            (org.apache.http.params BasicHttpParams)
            (org.apache.http.impl.cookie BasicClientCookie2)
            (org.apache.http.impl.cookie BrowserCompatSpecFactory)
+           (org.apache.http.impl.cookie DefaultCookieSpec)
            (org.apache.http.message BasicHeader)
            org.apache.http.client.CookieStore
            (org.apache.http.impl.client BasicCookieStore)
            (org.apache.http Header)
            (org.apache.http.protocol BasicHttpContext)))
 
-(defn cookie-spec ^CookieSpec []
+(defn default-cookie-spec ^CookieSpec []
   (.create
    (BrowserCompatSpecFactory.)
    (BasicHttpContext.)))
+
+(defn cookie-spec ^CookieSpec
+  [validate-fn]
+  (if (nil? validate-fn)
+    (default-cookie-spec)
+    (proxy [DefaultCookieSpec] []
+      (match [cookie origin] true)
+      (validate [cookie origin] (validate-fn cookie origin)))))
+
+(defn cookie-spec-provider ^CookieSpecProvider
+  [validate-fn]
+  (proxy [Object CookieSpecProvider] []
+    (create [context] (cookie-spec validate-fn))))
 
 (defn compact-map
   "Removes all map entries where value is nil."
@@ -63,12 +78,12 @@
 
 (defn decode-cookie
   "Decode the Set-Cookie string into a cookie seq."
-  [set-cookie-str]
+  [cookie-spec set-cookie-str]
   (if-not (blank? set-cookie-str)
     ;; I just want to parse a cookie without providing origin. How?
     (let [domain (lower-case (str (gensym)))
           origin (CookieOrigin. domain 80 "/" false)
-          [cookie-name cookie-content] (-> (cookie-spec)
+          [cookie-name cookie-content] (-> cookie-spec
                                            (.parse (BasicHeader.
                                                     "set-cookie"
                                                     set-cookie-str)
@@ -81,23 +96,23 @@
 
 (defn decode-cookies
   "Converts a cookie string or seq of strings into a cookie map."
-  [cookies]
+  [cookie-spec cookies]
   (reduce #(assoc %1 (first %2) (second %2)) {}
-          (map decode-cookie (if (sequential? cookies) cookies [cookies]))))
+          (map #(decode-cookie cookie-spec %) (if (sequential? cookies) cookies [cookies]))))
 
 (defn decode-cookie-header
   "Decode the Set-Cookie header into the cookies key."
-  [response]
+  [cookie-spec response]
   (if-let [cookies (get (:headers response) "set-cookie")]
     (assoc response
-           :cookies (decode-cookies cookies)
+           :cookies (decode-cookies cookie-spec cookies)
            :headers (dissoc (:headers response) "set-cookie"))
     response))
 
 (defn encode-cookie
   "Encode the cookie into a string used by the Cookie header."
   [cookie]
-  (when-let [header (-> (cookie-spec)
+  (when-let [header (-> (default-cookie-spec)
                         (.formatCookies [(to-basic-client-cookie cookie)])
                         first)]
     (.getValue ^Header header)))
@@ -121,10 +136,12 @@
   request."
   [client]
   (fn [request]
-    (let [response (client (encode-cookie-header request))]
+    (let [cookie-validation (:cookie-validation request)
+          cookie-spec (cookie-spec cookie-validation)
+          response (client (encode-cookie-header request))]
       (if (= false (opt request :decode-cookies))
         response
-        (decode-cookie-header response)))))
+        (decode-cookie-header cookie-spec response)))))
 
 (defn cookie-store
   "Returns a new, empty instance of the default implementation of the

@@ -170,13 +170,9 @@ Example requests:
                    "http.protocol.version" HttpVersion/HTTP_1_0
                    "http.useragent" "clj-http"}})
 
-;; Set your own cookie policy
+;; Do not validate cookies:
 (client/post "http://example.com"
-  {:client-params {:cookie-policy (fn [cookie origin] (your-validation cookie origin))}})
-
-;; Completely ignore cookies:
-(client/post "http://example.com"
-  {:client-params {:cookie-policy (constantly nil)}})
+  {:cookie-validation (fn [cookie origin])})
 
 ;; Need to contact a server with an untrusted SSL cert?
 (client/get "https://alioth.debian.org" {:insecure? true})
