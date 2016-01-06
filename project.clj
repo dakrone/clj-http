@@ -1,4 +1,4 @@
-(defproject clj-http "3.0.0-SNAPSHOT"
+(defproject lambdakazan/clj-http "2.0.1"
   :description "A Clojure HTTP library wrapping the Apache HttpComponents client."
   :url "https://github.com/dakrone/clj-http/"
   :license {:name "The MIT License"
@@ -30,6 +30,11 @@
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}}
   :aliases {"all" ["with-profile" "dev,1.5:dev,1.6:dev"]}
   :plugins [[codox "0.6.4"]]
+  :repositories [["snapshots" {:url "http://repo.lambdasoft.ru/artifactory/libs-snapshot-local"
+                               :sign-releases false
+                               :creds gpg}]
+                 ["releases" {:url "http://repo.lambdasoft.ru/artifactory/libs-release-local"
+                              :creds gpg}]]
   :test-selectors {:default  #(not (:integration %))
                    :integration :integration
                    :all (constantly true)})
