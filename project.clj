@@ -1,4 +1,4 @@
-(defproject lambdakazan/clj-http "2.0.3-SNAPSHOT"
+(defproject lambdakazan/clj-http "2.0.3"
   :description "A Clojure HTTP library wrapping the Apache HttpComponents client."
   :url "https://github.com/dakrone/clj-http/"
   :license {:name "The MIT License"
