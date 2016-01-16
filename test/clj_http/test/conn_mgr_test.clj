@@ -78,7 +78,7 @@
                      :as :stream})
       (is false "request should have thrown an exception")
       (catch Exception e))
-    (is @shutdown? "Connection manager has been shut down")))
+    (is @shutdown? "Connection manager has been shutdown")))
 
 (deftest ^:integration t-closed-conn-mgr-for-empty-body
   (run-server)
@@ -87,9 +87,9 @@
              (shutdown []
                (reset! shutdown? true)))
         response (core/request {:request-method :get :uri "/unmodified-resource"
-                             :server-port 18080 :scheme :http
-                             :server-name "localhost"
-                             :connection-manager cm })]
+                                :server-port 18080 :scheme :http
+                                :server-name "localhost"
+                                :connection-manager cm})]
     (is (nil? (:body response)) "response shouldn't have body")
     (is (= 304 (:status response)))
-    (is @shutdown? "connection manager should be shut downed")))
+    (is @shutdown? "connection manager should be shutdown")))

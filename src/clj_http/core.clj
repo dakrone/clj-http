@@ -127,7 +127,7 @@
   "Coerce the http-entity from an HttpResponse to a stream that closes itself
   and the connection manager when closed."
   [^HttpEntity http-entity ^HttpClientConnectionManager conn-mgr ^CloseableHttpResponse response]
-  (when http-entity
+  (if http-entity
     (proxy [FilterInputStream]
         [^InputStream (.getContent http-entity)]
       (close []
@@ -138,7 +138,9 @@
           (finally
             (.close response)
             (when-not (conn/reusable? conn-mgr)
-              (.shutdown conn-mgr))))))))
+              (.shutdown conn-mgr))))))
+    (when-not (conn/reusable? conn-mgr)
+      (.shutdown conn-mgr))))
 
 (defn- print-debug!
   "Print out debugging information to *out* for a given request."
@@ -217,15 +219,20 @@
           (.addHeader http-req header-n header-vth))
         (.addHeader http-req header-n (str header-v))))
     (when (opt req :debug) (print-debug! req http-req))
-    (let [^CloseableHttpResponse response (.execute client http-req context)
-          ^HttpEntity entity (.getEntity response)
-          status (.getStatusLine response)]
-      {:body (coerce-body-entity entity conn-mgr response)
-       :headers (parse-headers
-                 (.headerIterator response)
-                 (opt req :use-header-maps-in-response))
-       :length (if (nil? entity) 0 (.getContentLength entity))
-       :chunked? (if (nil? entity) false (.isChunked entity))
-       :repeatable? (if (nil? entity) false (.isRepeatable entity))
-       :streaming? (if (nil? entity) false (.isStreaming entity))
-       :status (.getStatusCode status)})))
+    (try
+      (let [^CloseableHttpResponse response (.execute client http-req context)
+            ^HttpEntity entity (.getEntity response)
+            status (.getStatusLine response)]
+        {:body (coerce-body-entity entity conn-mgr response)
+         :headers (parse-headers
+                   (.headerIterator response)
+                   (opt req :use-header-maps-in-response))
+         :length (if (nil? entity) 0 (.getContentLength entity))
+         :chunked? (if (nil? entity) false (.isChunked entity))
+         :repeatable? (if (nil? entity) false (.isRepeatable entity))
+         :streaming? (if (nil? entity) false (.isStreaming entity))
+         :status (.getStatusCode status)})
+      (catch Throwable t
+        (when-not (conn/reusable? conn-mgr)
+          (.shutdown conn-mgr))
+        (throw t)))))
