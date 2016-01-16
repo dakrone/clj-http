@@ -50,6 +50,10 @@
                        (^boolean verify [_ ^String _ ^SSLSession _]
                         true))))
 
+(def ^SSLSocketFactory secure-ssl-socket-factory
+  (doto (SSLSocketFactory/getSocketFactory)
+    (.setHostnameVerifier SSLSocketFactory/STRICT_HOSTNAME_VERIFIER)))
+
 ;; New Generic Socket Factories that can support socks proxy
 (defn ^SSLSocketFactory SSLGenericSocketFactory
   "Given a function that returns a new socket, create an SSLSocketFactory that
@@ -94,7 +98,7 @@
 (def regular-scheme-registry
   (doto (SchemeRegistry.)
     (.register (Scheme. "http" 80 (PlainSocketFactory/getSocketFactory)))
-    (.register (Scheme. "https" 443 (SSLSocketFactory/getSocketFactory)))))
+    (.register (Scheme. "https" 443 secure-ssl-socket-factory))))
 
 (defn ^KeyStore get-keystore*
   [keystore-file keystore-type ^String keystore-pass]
