@@ -54,7 +54,7 @@ library has taken over from mmcgrana's clj-http.
 
 [[https://secure.travis-ci.org/dakrone/clj-http.png]]
 
-** Philosophy 
+** Philosophy
 
 The design of =clj-http= is inspired by the [[http://github.com/mmcgrana/ring][Ring]] protocol for Clojure HTTP
  server applications.
@@ -73,7 +73,7 @@ function.
 With Leiningen/Boot:
 
 #+BEGIN_SRC clojure
-[clj-http "2.0.0"]
+[clj-http "2.0.1"]
 #+END_SRC
 
 Previous versions available as:
@@ -140,11 +140,11 @@ Example requests:
   {:client-params {"http.protocol.allow-circular-redirects" false
                    "http.protocol.version" HttpVersion/HTTP_1_0
                    "http.useragent" "clj-http"}})
-                   
+
 ;; Set your own cookie policy
 (client/post "http://example.com"
   {:client-params {:cookie-policy (fn [cookie origin] (your-validation cookie origin))}})
-  
+
 ;; Completely ignore cookies:
 (client/post "http://example.com"
   {:client-params {:cookie-policy (constantly nil)}})
@@ -198,7 +198,7 @@ content encodings.
 (client/put "http://example.com/api" {:body "my PUT body"})
 
 #+END_SRC
-   
+
 ** POST
 
 #+BEGIN_SRC clojure
@@ -450,9 +450,9 @@ APIs:
     :last {:href "https://api.github.com/gists?page=22884"}}
 #+END_SRC
 
-** Redirects 
+** Redirects
 
-clj-http conforms its behaviour regarding automatic redirects to the [[https://tools.ietf.org/html/rfc2616#section-10.3][RFC]]. 
+clj-http conforms its behaviour regarding automatic redirects to the [[https://tools.ietf.org/html/rfc2616#section-10.3][RFC]].
 
 It means that redirects on status =301=, =302= and =307= are not redirected on
 methods other than =GET= and =HEAD=. If you want a behaviour closer to what most
@@ -833,7 +833,7 @@ and clj-json can now live together without causing problems.
 Persistent connections kept alive by the connection manager become stale: the
 target server shuts down the connection on its end without HttpClient being able
 to react to that event, while the connection is being idle, thus rendering the
-connection half-closed or 'stale'. 
+connection half-closed or 'stale'.
 
 This can be solved by using (with-connection-pool) as described in the
 'Using Persistent Connection' section above.
