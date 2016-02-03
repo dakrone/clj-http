@@ -4,7 +4,8 @@
            (java.nio.charset Charset)
            (org.apache.http.entity ContentType)
            (org.apache.http.entity.mime MultipartEntity)
-           (org.apache.http.entity.mime.content ByteArrayBody
+           (org.apache.http.entity.mime.content ContentBody
+                                                ByteArrayBody
                                                 FileBody
                                                 InputStreamBody
                                                 StringBody)))
@@ -97,11 +98,14 @@
 (defn make-multipart-body
   "Create a body object from the given map, dispatching on the type
   of its content. Requires the content to be of type File, InputStream,
-  ByteArray, or String."
+  ByteArray, String, or instance of org.apache.http.entity.mime.content.ContentBody."
   [multipart]
   (let [klass (type (:content multipart))]
     ;; TODO: replace with multimethod? actually helpful?
     (cond
+      (isa? klass ContentBody)
+      (:content multipart)
+
       (isa? klass File)
       (make-file-body multipart)
 
