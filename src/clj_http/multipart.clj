@@ -1,19 +1,39 @@
 (ns clj-http.multipart
   "Namespace used for clj-http to create multipart entities and bodies."
   (:import (java.io File InputStream)
-           (java.nio.charset Charset)
            (org.apache.http.entity ContentType)
            (org.apache.http.entity.mime MultipartEntity)
-           (org.apache.http.entity.mime.content ByteArrayBody
+           (org.apache.http.entity.mime.content ContentBody
+                                                ByteArrayBody
                                                 FileBody
                                                 InputStreamBody
-                                                StringBody)))
+                                                StringBody)
+           (org.apache.http Consts)))
 
 ;; we don't need to make a fake byte-array every time, only once
 (def byte-array-type (type (byte-array 0)))
 
-(defn make-file-body
-  "Create a FileBody object from the given map, requiring at least :content"
+(defmulti
+  make-multipart-body
+  "Create a body object from the given map, dispatching on the type of its content.
+   By default supported content body types are:
+   - String
+   - byte array (requires providing name)
+   - InputStream (requires providing name)
+   - File
+   - org.apache.http.entity.mime.content.ContentBody (which is just returned)"
+  (fn [multipart] (type (:content multipart))))
+
+(defmethod make-multipart-body nil
+  [multipart]
+  (throw (Exception. "Multipart content cannot be nil")))
+
+(defmethod make-multipart-body :default
+  [multipart]
+  (throw (Exception. (str "Unsupported type for multipart content: " (type (:content multipart))))))
+
+(defmethod make-multipart-body File
+  ; Create a FileBody object from the given map, requiring at least :content
   [{:keys [^String name ^String mime-type ^File content ^String encoding]}]
   (cond
     (and name mime-type content encoding)
@@ -34,16 +54,16 @@
     :else
     (throw (Exception. "Multipart file body must contain at least :content"))))
 
-(defn make-input-stream-body
-  "Create an InputStreamBody object from the given map, requiring at least
-  :content and :name. If no :length is specified, clj-http will use
-  chunked transfer-encoding, if :length is specified, clj-http will
-  workaround things be proxying the InputStreamBody to return a length."
+(defmethod make-multipart-body InputStream
+  ; Create an InputStreamBody object from the given map, requiring at least
+  ; :content and :name. If no :length is specified, clj-http will use
+  ; chunked transfer-encoding, if :length is specified, clj-http will
+  ; workaround things be proxying the InputStreamBody to return a length.
   [{:keys [^String name ^String mime-type ^InputStream content length]}]
   (cond
     (and content name length)
     (if mime-type
-      (proxy [InputStreamBody] [content mime-type name]
+      (proxy [InputStreamBody] [content (ContentType/create mime-type) name]
         (getContentLength []
           length))
       (proxy [InputStreamBody] [content name]
@@ -51,7 +71,7 @@
           length)))
 
     (and content mime-type name)
-    (InputStreamBody. content mime-type name)
+    (InputStreamBody. content (ContentType/create mime-type) name)
 
     (and content name)
     (InputStreamBody. content name)
@@ -60,13 +80,13 @@
     (throw (Exception. (str "Multipart input stream body must contain "
                             "at least :content and :name")))))
 
-(defn make-byte-array-body
-  "Create a ByteArrayBody object from the given map, requiring at least :content
-  and :name."
+(defmethod make-multipart-body byte-array-type
+  ; Create a ByteArrayBody object from the given map, requiring at least :content
+  ; and :name.
   [{:keys [^String name ^String mime-type ^bytes content]}]
   (cond
     (and content name mime-type)
-    (ByteArrayBody. content mime-type name)
+    (ByteArrayBody. content (ContentType/create mime-type) name)
 
     (and content name)
     (ByteArrayBody. content name)
@@ -75,48 +95,25 @@
     (throw (Exception. (str "Multipart byte array body must contain "
                             "at least :content and :name")))))
 
-(defn make-string-body
-  "Create a StringBody object from the given map, requiring at least :content.
-  If :encoding is specified, it will be created using the Charset for
-  that encoding."
+(defmethod make-multipart-body String
+  ; Create a StringBody object from the given map, requiring at least :content.
+  ; If :encoding is specified, it will be created using the Charset for
+  ; that encoding.
   [{:keys [mime-type ^String content encoding]}]
   (cond
     (and content mime-type encoding)
-    (StringBody. content mime-type (Charset/forName encoding))
+    (StringBody. content (ContentType/create mime-type encoding))
 
     (and content encoding)
-    (StringBody. content (Charset/forName encoding))
+    (StringBody. content (ContentType/create "text/plain" encoding))
 
     content
-    (StringBody. content)
+    (StringBody. content (ContentType/create "text/plain" Consts/ASCII))))
 
-    :else
-    (throw (Exception. (str "Multipart string body must contain "
-                            "at least :content")))))
-
-(defn make-multipart-body
-  "Create a body object from the given map, dispatching on the type
-  of its content. Requires the content to be of type File, InputStream,
-  ByteArray, or String."
-  [multipart]
-  (let [klass (type (:content multipart))]
-    ;; TODO: replace with multimethod? actually helpful?
-    (cond
-      (isa? klass File)
-      (make-file-body multipart)
-
-      (isa? klass InputStream)
-      (make-input-stream-body multipart)
-
-      (= klass byte-array-type)
-      (make-byte-array-body multipart)
-
-      (= klass String)
-      (make-string-body multipart)
-
-      :else
-      (throw (Exception. (str "Multipart content must be of type File, "
-                              "InputStream, ByteArray, or String."))))))
+(defmethod make-multipart-body ContentBody
+  ; Use provided org.apache.http.entity.mime.content.ContentBody directly
+  [{:keys [^ContentBody content]}]
+  content)
 
 (defn create-multipart-entity
   "Takes a multipart vector of maps and creates a MultipartEntity with each
