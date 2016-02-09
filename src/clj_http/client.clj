@@ -14,7 +14,7 @@
            (java.net URL UnknownHostException)
            (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
                                    InputStreamEntity FileEntity StringEntity)
-           (org.apache.http.impl.conn PoolingClientConnectionManager))
+           (org.apache.http.impl.conn PoolingHttpClientConnectionManager))
   (:refer-clojure :exclude [get update]))
 
 ;; Cheshire is an optional dependency, so we check for it at compile time.
@@ -953,9 +953,9 @@
 
 (defmacro with-connection-pool
   "Macro to execute the body using a connection manager. Creates a
-  PoolingClientConnectionManager to use for all requests within the body of
-  the expression. An option map is allowed to set options for the connection
-  manager.
+  PoolingHttpClientConnectionManager to use for all requests within the
+  body of the expression. An option map is allowed to set options for the
+  connection manager.
 
   The following options are supported:
 
@@ -989,5 +989,5 @@
          ~@body
          (finally
            (.shutdown
-            ^PoolingClientConnectionManager
+            ^PoolingHttpClientConnectionManager
             conn/*connection-manager*))))))

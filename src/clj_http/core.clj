@@ -6,12 +6,15 @@
             [clj-http.util :refer [opt]]
             [clojure.pprint])
   (:import (java.io ByteArrayOutputStream FilterInputStream InputStream)
-           (java.net URI)
+           (java.net URI URL ProxySelector)
            (java.util Locale)
            (org.apache.http HttpEntity HeaderIterator HttpHost HttpRequest
-                            HttpEntityEnclosingRequest HttpResponse)
+                            HttpEntityEnclosingRequest HttpResponse
+                            HttpResponseInterceptor)
+           (org.apache.http.auth UsernamePasswordCredentials AuthScope
+                                 NTCredentials)
            (org.apache.http.client HttpRequestRetryHandler RedirectStrategy)
-           (org.apache.http.client.config RequestConfig)
+           (org.apache.http.client.config RequestConfig CookieSpecs)
            (org.apache.http.client.methods HttpDelete HttpGet HttpPost HttpPut
                                            HttpOptions HttpPatch
                                            HttpHead
@@ -29,7 +32,9 @@
                                         DefaultRedirectStrategy
                                         LaxRedirectStrategy HttpClientBuilder)
            (org.apache.http.impl.conn BasicHttpClientConnectionManager
-                                      PoolingHttpClientConnectionManager)))
+                                      PoolingHttpClientConnectionManager
+                                      SystemDefaultRoutePlanner
+                                      DefaultProxyRoutePlanner)))
 
 (defn parse-headers
   "Takes a HeaderIterator and returns a map of names to values.
@@ -69,13 +74,73 @@
          (handler e cnt context)))))
   builder)
 
-(defn http-client [conn-mgr redirect-strategy retry-handler]
+(defn get-cookie-policy [cookie-policy]
+  (case cookie-policy
+    :none CookieSpecs/IGNORE_COOKIES
+    :default CookieSpecs/DEFAULT
+    :netscape CookieSpecs/NETSCAPE
+    :standard CookieSpecs/STANDARD
+    :standard-strict CookieSpecs/STANDARD_STRICT
+    CookieSpecs/DEFAULT))
+
+(defn request-config [{:keys [conn-timeout
+                              socket-timeout
+                              conn-request-timeout
+                              follow-redirects
+                              max-redirects
+                              allow-circular-redirects
+                              allow-relative-redirects
+                              cookie-policy]}]
+  (let [config (-> (RequestConfig/custom)
+                   (.setConnectTimeout (or conn-timeout -1))
+                   (.setSocketTimeout (or socket-timeout -1))
+                   (.setConnectionRequestTimeout
+                    (or conn-request-timeout -1))
+                   (.setRedirectsEnabled ((complement false?)
+                                          follow-redirects))
+                   (.setCircularRedirectsAllowed
+                    (boolean allow-circular-redirects))
+                   (.setRelativeRedirectsAllowed
+                    ((complement false?) allow-relative-redirects))
+                   (.setCookieSpec (get-cookie-policy cookie-policy)))]
+    (when max-redirects (.setMaxRedirects config max-redirects))
+    (.build config)))
+
+(defn get-route-planner
+  "Return an HttpRoutePlanner that either use the supplied proxy settings
+  if any, or the JVM/system proxy settings otherwise"
+  [proxy-host proxy-port proxy-ignore-hosts http-url]
+  (let [url (URL. http-url)]
+    (if (and (not (contains? (set proxy-ignore-hosts) (.getHost url)))
+             proxy-host)
+      (let [proxy (if proxy-port
+                    (HttpHost. proxy-host proxy-port)
+                    (HttpHost. proxy-host))]
+        (DefaultProxyRoutePlanner. proxy))
+      (SystemDefaultRoutePlanner. (ProxySelector/getDefault)))))
+
+(defn http-client [{:keys [redirect-strategy retry-handler uri
+                           response-interceptor proxy-host proxy-port]}
+                   conn-mgr http-url proxy-ignore-host]
   ; have to let first, otherwise we get a reflection warning on (.build)
   (let [^HttpClientBuilder builder (-> (HttpClients/custom)
                                        (.setConnectionManager conn-mgr)
                                        (.setRedirectStrategy
-                                         (get-redirect-strategy redirect-strategy))
-                                       (add-retry-handler retry-handler))]
+                                        (get-redirect-strategy
+                                         redirect-strategy))
+                                       (add-retry-handler retry-handler)
+                                       ;; By default, get the proxy settings
+                                       ;; from the jvm or system properties
+                                       (.setRoutePlanner
+                                        (get-route-planner
+                                         proxy-host proxy-port
+                                         proxy-ignore-host http-url)))]
+    (when response-interceptor
+      (.addInterceptorLast
+       builder (proxy [HttpResponseInterceptor] []
+                 (process [resp ctx]
+                   (response-interceptor
+                    resp ctx)))))
     (.build builder)))
 
 (defn http-get []
@@ -168,41 +233,52 @@
   (clojure.pprint/pprint (bean http-req)))
 
 (defn request
-  [{:keys [body
-           conn-timeout
-           connection-manager
-           cookie-store
-           headers
-           multipart
-           query-string
-           redirect-strategy
-           retry-handler
-           request-method
-           scheme
-           server-name
-           server-port
-           socket-timeout
-           uri]
+  [{:keys [body conn-timeout conn-request-timeout connection-manager
+           cookie-store cookie-policy headers multipart query-string
+           redirect-strategy follow-redirects max-redirects retry-handler
+           request-method scheme server-name server-port socket-timeout
+           uri response-interceptor proxy-host proxy-port
+           proxy-ignore-hosts proxy-user proxy-pass digest-auth ntlm-auth]
     :as req}]
   (let [scheme (name scheme)
         http-url (str scheme "://" server-name
                       (when server-port (str ":" server-port))
                       uri
                       (when query-string (str "?" query-string)))
-        conn-mgr (or connection-manager (conn/basic-conn-mgr))
-        ^RequestConfig request-config (-> (RequestConfig/custom)
-                                          (.setConnectTimeout (or conn-timeout -1))
-                                          (.setSocketTimeout (or socket-timeout -1))
-                                          (.build))
-        ^CloseableHttpClient client (http-client conn-mgr
-                                                 redirect-strategy
-                                                 retry-handler)
+        conn-mgr (or connection-manager
+                     conn/*connection-manager*
+                     (conn/make-regular-conn-manager req))
+        proxy-ignore-hosts (or proxy-ignore-hosts
+                               #{"localhost" "127.0.0.1"})
+        ^RequestConfig request-config (request-config req)
+        ^CloseableHttpClient client (http-client req conn-mgr http-url
+                                                 proxy-ignore-hosts)
         ^HttpClientContext context (http-context request-config)
-        ^HttpUriRequest http-req (http-request-for request-method http-url body)]
+        ^HttpUriRequest http-req (http-request-for
+                                  request-method http-url body)]
     (when-not (conn/reusable? conn-mgr)
       (.addHeader http-req "Connection" "close"))
     (when cookie-store
       (.setCookieStore context cookie-store))
+    (when-let [[user pass] digest-auth]
+      (.setCredentialsProvider
+       context
+       (doto (credentials-provider)
+         (.setCredentials (AuthScope. nil -1 nil)
+                          (UsernamePasswordCredentials. user pass)))))
+    (when-let [[user password host domain] ntlm-auth]
+      (.setCredentialsProvider
+       context
+       (doto (credentials-provider)
+         (.setCredentials (AuthScope. nil -1 nil)
+                          (NTCredentials. user password host domain)))))
+    (when (and proxy-user proxy-pass)
+      (let [authscope (AuthScope. proxy-host proxy-port)
+            creds (UsernamePasswordCredentials. proxy-user proxy-pass)]
+        (.setCredentialsProvider
+         context
+         (doto (credentials-provider)
+           (.setCredentials authscope creds)))))
     (if multipart
       (.setEntity ^HttpEntityEnclosingRequest http-req
                   (mp/create-multipart-entity multipart))
