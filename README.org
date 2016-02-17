@@ -8,10 +8,12 @@
 #+LANGUAGE: en
 
 * Table of Contents                                                     :TOC:
+ - [[#help-wanted][HELP WANTED]]
  - [[#introduction][Introduction]]
    - [[#overview][Overview]]
-   - [[#philosophy-][Philosophy ]]
+   - [[#philosophy][Philosophy]]
  - [[#installation][Installation]]
+ - [[#towards-a-300-release-new][Towards a 3.0.0 release (NEW)]]
  - [[#quickstart][Quickstart]]
    - [[#head][HEAD]]
    - [[#get][GET]]
@@ -22,7 +24,7 @@
    - [[#headers][Headers]]
    - [[#meta-tag-headers][Meta Tag Headers]]
    - [[#link-headers][Link Headers]]
-   - [[#redirects-][Redirects ]]
+   - [[#redirects][Redirects]]
    - [[#cookies][Cookies]]
    - [[#exceptions][Exceptions]]
    - [[#decompression][Decompression]]
@@ -82,18 +84,19 @@ function.
 With Leiningen/Boot:
 
 #+BEGIN_SRC clojure
-[clj-http "2.0.1"]
+[clj-http "2.1.0"]
 #+END_SRC
 
 Previous versions available as:
 
 #+BEGIN_SRC clojure
+[clj-http "2.0.1"]
 [clj-http "1.1.2"]
 [clj-http "1.1.1"]
 [clj-http "1.0.1"]
 #+END_SRC
 
-clj-http supports clojure 1.5.0 and higher.
+clj-http supports clojure 1.6.0 and higher.
 
 * Towards a 3.0.0 release (NEW)
 So there is a 2.0 branch which is based on the latest released version of
