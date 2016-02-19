@@ -18,7 +18,8 @@
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.client.params ClientPNames)
            (java.net SocketTimeoutException)
-           (sun.security.provider.certpath SunCertPathBuilderException)))
+           (sun.security.provider.certpath SunCertPathBuilderException)
+           (org.apache.http.client CircularRedirectException)))
 
 (defn handler [req]
   (condp = [(:request-method req) (:uri req)]
@@ -289,12 +290,12 @@
     (is (= 302 (:status resp)))
     (is (= (apply vector (repeat 3 "http://localhost:18080/redirect"))
            (:trace-redirects resp))))
-  (is (thrown-with-msg? Exception #"Too many redirects: 3"
-                        (client/get (localhost "/redirect")
-                                    {:max-redirects 2 :throw-exceptions true})))
-  (is (thrown-with-msg? Exception #"Too many redirects: 21"
-                        (client/get (localhost "/redirect")
-                                    {:throw-exceptions true}))))
+  (is (thrown? CircularRedirectException
+               (client/get (localhost "/redirect")
+                           {:max-redirects 2 :throw-exceptions true})))
+  (is (thrown? CircularRedirectException
+               (client/get (localhost "/redirect")
+                           {:throw-exceptions true}))))
 
 (deftest ^:integration get-with-body
   (run-server)
@@ -495,7 +496,6 @@
 ;;                                {:cookie-policy (constantly nil)})))]
 ;;       (is (.startsWith ^String (.getParameter setps ClientPNames/COOKIE_POLICY)
 ;;                        "class ")))))
-
 
 ;; This relies on connections to writequit.org being slower than 10ms, if this
 ;; fails, you must have very nice internet.
