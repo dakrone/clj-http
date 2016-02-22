@@ -122,7 +122,7 @@
 (defn http-client [{:keys [redirect-strategy retry-handler uri
                            response-interceptor proxy-host proxy-port]}
                    conn-mgr http-url proxy-ignore-host]
-  ; have to let first, otherwise we get a reflection warning on (.build)
+  ;; have to let first, otherwise we get a reflection warning on (.build)
   (let [^HttpClientBuilder builder (-> (HttpClients/custom)
                                        (.setConnectionManager conn-mgr)
                                        (.setRedirectStrategy
