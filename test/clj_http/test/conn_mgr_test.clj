@@ -5,8 +5,11 @@
             [clojure.test :refer :all]
             [ring.adapter.jetty :as ring])
   (:import (java.security KeyStore)
-           (org.apache.http.conn.ssl SSLSocketFactory)
-           (org.apache.http.impl.conn BasicHttpClientConnectionManager)))
+           (org.apache.http.impl.conn BasicHttpClientConnectionManager)
+           (org.apache.http.conn.ssl SSLConnectionSocketFactory
+                                     DefaultHostnameVerifier
+                                     NoopHostnameVerifier
+                                     TrustStrategy)))
 
 (def client-ks "test-resources/client-keystore")
 (def client-ks-pass "keykey")
@@ -40,8 +43,8 @@
   (let [sr (conn-mgr/get-keystore-scheme-registry
             {:keystore client-ks :keystore-pass client-ks-pass
              :trust-store client-ks :trust-store-pass client-ks-pass})
-        socket-factory (.getSchemeSocketFactory (.get sr "https"))]
-    (is (instance? SSLSocketFactory socket-factory))))
+        socket-factory (.lookup sr "https")]
+    (is (instance? SSLConnectionSocketFactory socket-factory))))
 
 (deftest ^:integration ssl-client-cert-get
   (let [server (ring/run-jetty secure-handler

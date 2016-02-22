@@ -6,53 +6,32 @@
            (java.security KeyStore)
            (java.security.cert X509Certificate)
            (javax.net.ssl SSLSession SSLSocket)
-           (org.apache.http.config RegistryBuilder)
-           (org.apache.http.conn ClientConnectionManager)
-           (org.apache.http.conn.params ConnPerRouteBean)
+           (org.apache.http.config RegistryBuilder Registry)
            (org.apache.http.conn HttpClientConnectionManager)
-           (org.apache.http.conn.ssl SSLSocketFactory TrustStrategy
-                                     X509HostnameVerifier SSLContexts)
+           (org.apache.http.conn.ssl SSLSocketFactory)
            (org.apache.http.conn.scheme PlainSocketFactory
                                         SchemeRegistry Scheme)
-           (org.apache.http.conn.ssl BrowserCompatHostnameVerifier
-                                     SSLConnectionSocketFactory SSLContexts)
            (org.apache.http.conn.socket PlainConnectionSocketFactory)
-           (org.apache.http.impl.conn BasicClientConnectionManager
-                                      PoolingClientConnectionManager
-                                      SchemeRegistryFactory
-                                      SingleClientConnManager)
+           (org.apache.http.impl.conn PoolingClientConnectionManager)
            (org.apache.http.impl.conn BasicHttpClientConnectionManager
-                                      PoolingHttpClientConnectionManager)))
+                                      PoolingHttpClientConnectionManager)
+           (org.apache.http.conn.ssl SSLConnectionSocketFactory
+                                     DefaultHostnameVerifier
+                                     NoopHostnameVerifier
+                                     TrustStrategy)
+           (org.apache.http.ssl SSLContexts)
+           (org.apache.http.pool ConnPoolControl)))
 
-(def ^SSLSocketFactory insecure-socket-factory
-  (SSLSocketFactory. (reify TrustStrategy
-                       (isTrusted [_ _ _] true))
-                     (reify X509HostnameVerifier
-                       (^void verify [this ^String host ^SSLSocket sock]
-                        ;; for some strange reason, only TLSv1 really
-                        ;; works here, if you know why, tell me.
-                        (.setEnabledProtocols
-                         sock (into-array String ["TLSv1"]))
-                        (.setWantClientAuth sock false)
-                        (let [session (.getSession sock)]
-                          (when-not session
-                            (.startHandshake sock))
-                          (aget (.getPeerCertificates session) 0)
-                          ;; normally you'd want to verify the cert
-                          ;; here, but since this is an insecure
-                          ;; socketfactory, we don't
-                          nil))
-                       (^void verify [_ ^String _ ^X509Certificate _]
-                        nil)
-                       (^void verify [_ ^String _ ^"[Ljava.lang.String;" _
-                                      ^"[Ljava.lang.String;" _]
-                        nil)
-                       (^boolean verify [_ ^String _ ^SSLSession _]
-                        true))))
+(def ^SSLConnectionSocketFactory insecure-socket-factory
+  (SSLConnectionSocketFactory.
+   (-> (SSLContexts/custom)
+       (.loadTrustMaterial nil (reify TrustStrategy
+                                 (isTrusted [_ _ _] true)))
+       (.build))
+   NoopHostnameVerifier/INSTANCE))
 
-(def ^SSLSocketFactory secure-ssl-socket-factory
-  (doto (SSLSocketFactory/getSocketFactory)
-    (.setHostnameVerifier SSLSocketFactory/STRICT_HOSTNAME_VERIFIER)))
+(def ^SSLConnectionSocketFactory secure-ssl-socket-factory
+  (SSLConnectionSocketFactory/getSocketFactory))
 
 ;; New Generic Socket Factories that can support socks proxy
 (defn ^SSLSocketFactory SSLGenericSocketFactory
@@ -91,14 +70,16 @@
     (PoolingClientConnectionManager. reg)))
 
 (def insecure-scheme-registry
-  (doto (SchemeRegistry.)
-    (.register (Scheme. "http" 80 (PlainSocketFactory/getSocketFactory)))
-    (.register (Scheme. "https" 443 insecure-socket-factory))))
+  (-> (RegistryBuilder/create)
+      (.register "http" PlainConnectionSocketFactory/INSTANCE)
+      (.register "https" insecure-socket-factory)
+      (.build)))
 
 (def regular-scheme-registry
-  (doto (SchemeRegistry.)
-    (.register (Scheme. "http" 80 (PlainSocketFactory/getSocketFactory)))
-    (.register (Scheme. "https" 443 secure-ssl-socket-factory))))
+  (-> (RegistryBuilder/create)
+      (.register "http" (PlainConnectionSocketFactory/getSocketFactory))
+      (.register "https" secure-ssl-socket-factory)
+      (.build)))
 
 (defn ^KeyStore get-keystore*
   [keystore-file keystore-type ^String keystore-pass]
@@ -114,35 +95,45 @@
     keystore
     (apply get-keystore* keystore args)))
 
-(defn ^SchemeRegistry get-keystore-scheme-registry
+(defn ^Registry get-keystore-scheme-registry
   [{:keys [keystore keystore-type keystore-pass keystore-instance
            trust-store trust-store-type trust-store-pass]
     :as req}]
   (let [ks (get-keystore keystore keystore-type keystore-pass)
         ts (get-keystore trust-store trust-store-type trust-store-pass)
-        factory (SSLSocketFactory. ks keystore-pass ts)]
-    (if (opt req :insecure)
-      (.setHostnameVerifier factory
-                            SSLSocketFactory/ALLOW_ALL_HOSTNAME_VERIFIER))
-    (doto (SchemeRegistryFactory/createDefault)
-      (.register (Scheme. "https" 443 factory)))))
+        ssl-context (-> (SSLContexts/custom)
+                        (.loadKeyMaterial
+                         ks (when keystore-pass
+                              (.toCharArray keystore-pass)))
+                        (.loadTrustMaterial
+                         ts nil)
+                        (.build))
+        hostname-verifier (if (opt req :insecure)
+                            NoopHostnameVerifier/INSTANCE
+                            (DefaultHostnameVerifier.))
+        factory (SSLConnectionSocketFactory.
+                 ssl-context hostname-verifier )]
+    (-> (RegistryBuilder/create)
+        (.register "https" factory)
+        (.build))))
 
-(defn ^BasicClientConnectionManager make-regular-conn-manager
+(defn ^BasicHttpClientConnectionManager make-regular-conn-manager
   [{:keys [keystore trust-store] :as req}]
   (cond
     (or keystore trust-store)
-    (BasicClientConnectionManager. (get-keystore-scheme-registry req))
+    (BasicHttpClientConnectionManager. (get-keystore-scheme-registry req))
 
-    (opt req :insecure) (BasicClientConnectionManager. insecure-scheme-registry)
+    (opt req :insecure) (BasicHttpClientConnectionManager.
+                         insecure-scheme-registry)
 
-    :else (BasicClientConnectionManager. regular-scheme-registry)))
+    :else (BasicHttpClientConnectionManager. regular-scheme-registry)))
 
 ;; need the fully qualified class name because this fn is later used in a
 ;; macro from a different ns
-(defn ^org.apache.http.impl.conn.PoolingClientConnectionManager
+(defn ^org.apache.http.impl.conn.PoolingHttpClientConnectionManager
   make-reusable-conn-manager*
   "Given an timeout and optional insecure? flag, create a
-  PoolingClientConnectionManager with <timeout> seconds set as the
+  PoolingHttpClientConnectionManager with <timeout> seconds set as the
   timeout value."
   [{:keys [timeout keystore trust-store] :as config}]
   (let [registry (cond
@@ -152,16 +143,12 @@
                    (get-keystore-scheme-registry config)
 
                    :else regular-scheme-registry)]
-    (PoolingClientConnectionManager.
-     registry timeout java.util.concurrent.TimeUnit/SECONDS)))
+    (PoolingHttpClientConnectionManager. registry)))
 
-(def dmcpr ConnPerRouteBean/DEFAULT_MAX_CONNECTIONS_PER_ROUTE)
+(defn reusable? [^HttpClientConnectionManager conn-mgr]
+  (instance? PoolingHttpClientConnectionManager conn-mgr))
 
-(defn reusable? [^ClientConnectionManager conn-mgr]
-  (not (or (instance? SingleClientConnManager conn-mgr)
-           (instance? BasicClientConnectionManager conn-mgr))))
-
-(defn ^PoolingClientConnectionManager make-reusable-conn-manager
+(defn ^PoolingHttpClientConnectionManager make-reusable-conn-manager
   "Creates a default pooling connection manager with the specified options.
 
   The following options are supported:
@@ -187,51 +174,20 @@
   [opts]
   (let [timeout (or (:timeout opts) 5)
         threads (or (:threads opts) 4)
-        default-per-route (or (:default-per-route opts) dmcpr)
+        default-per-route (:default-per-route opts)
         insecure? (opt opts :insecure)
-        leftovers (dissoc opts :timeout :threads :insecure? :insecure)]
-    (doto (make-reusable-conn-manager* (merge {:timeout timeout
-                                               :insecure? insecure?}
-                                              leftovers))
-      (.setMaxTotal threads)
-      (.setDefaultMaxPerRoute default-per-route))))
-
-(defn ^javax.net.ssl.SSLContext ssl-context []
-  (SSLContexts/createSystemDefault))
-
-(defn ^javax.net.ssl.HostnameVerifier hostname-verifier []
-  (BrowserCompatHostnameVerifier.))
-
-(defn ^org.apache.http.config.Registry insecure-registry-builder []
-  (-> (RegistryBuilder/create)
-      (.register "http" PlainConnectionSocketFactory/INSTANCE)
-      (.register "https" insecure-socket-factory)
-      (.build)))
-
-(defn ^org.apache.http.config.Registry registry-builder [{:keys [insecure?] :as opts}]
-  (-> (RegistryBuilder/create)
-      (.register "http" PlainConnectionSocketFactory/INSTANCE)
-      (.register "https"
-                 (cond
-                   insecure? insecure-socket-factory
-                   :default
-                   (SSLConnectionSocketFactory.
-                    (ssl-context)
-                    (hostname-verifier))))
-      (.build)))
-
-(defn pooling-conn-mgr []
-  (PoolingHttpClientConnectionManager. (registry-builder {})))
-
-(defn basic-conn-mgr []
-  (BasicHttpClientConnectionManager. (registry-builder {})))
-
-(defn reusable? [^HttpClientConnectionManager conn-mgr]
-  (instance? PoolingHttpClientConnectionManager conn-mgr))
+        leftovers (dissoc opts :timeout :threads :insecure? :insecure)
+        conn-man (make-reusable-conn-manager* (merge {:timeout timeout
+                                                      :insecure? insecure?}
+                                                     leftovers))]
+    (.setMaxTotal conn-man threads)
+    (when default-per-route
+      (.setDefaultMaxPerRoute conn-man default-per-route))
+    conn-man))
 
 (defn shutdown-manager
   "Shut down the given connection manager, if it is not nil"
-  [^ClientConnectionManager manager]
+  [^HttpClientConnectionManager manager]
   (and manager (.shutdown manager)))
 
 (def ^:dynamic *connection-manager*
