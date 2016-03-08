@@ -10,7 +10,7 @@
            (org.apache.http HeaderIterator HttpEntity
                             HttpEntityEnclosingRequest
                             HttpResponse Header HttpHost
-                            HttpResponseInterceptor)
+                            HttpRequestInterceptor HttpResponseInterceptor)
            (org.apache.http.auth UsernamePasswordCredentials AuthScope
                                  NTCredentials)
            (org.apache.http.params CoreConnectionPNames)
@@ -214,8 +214,8 @@
   [{:keys [request-method scheme server-name server-port uri query-string
            headers body multipart socket-timeout conn-timeout proxy-host
            proxy-ignore-hosts proxy-port proxy-user proxy-pass as cookie-store
-           retry-handler response-interceptor digest-auth ntlm-auth
-           connection-manager client-params]
+           retry-handler request-interceptor response-interceptor
+           digest-auth ntlm-auth connection-manager client-params]
     :as req}]
   (let [^ClientConnectionManager conn-mgr
         (or connection-manager
@@ -270,6 +270,12 @@
                                     proxy-host
                                     proxy-port
                                     proxy-ignore-hosts)]
+      (when request-interceptor
+        (.addRequestInterceptor
+         http-client
+         (proxy [HttpRequestInterceptor] []
+           (process [req ctx]
+             (request-interceptor req ctx)))))
       (when response-interceptor
         (.addResponseInterceptor
          http-client
