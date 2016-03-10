@@ -12,7 +12,7 @@
            (org.apache.http.message BasicHeader BasicHeaderIterator)
            (org.apache.http.client.methods HttpPost)
            (org.apache.http.client.params CookiePolicy ClientPNames)
-           (org.apache.http HttpResponse HttpConnection HttpInetConnection
+           (org.apache.http HttpRequest HttpResponse HttpConnection HttpInetConnection
                             HttpVersion)
            (org.apache.http.protocol HttpContext ExecutionContext)
            (org.apache.http.impl.client DefaultHttpClient)
@@ -436,6 +436,20 @@
                                                :form-params params})]
     (is (= 200 (:status resp)))
     (is (= (json/encode params) (:body resp)))))
+
+(deftest ^:integration t-request-interceptor
+  (run-server)
+  (let [req-ctx (atom [])
+        {:keys [status trace-redirects] :as resp}
+        (client/get
+         (localhost "/get")
+         {:request-interceptor
+          (fn [^HttpRequest req ^HttpContext ctx]
+            (reset! req-ctx {:method (.getMethod req) :uri (.getURI req)}))})]
+    (is (= 200 status))
+    (is (= "GET" (:method @req-ctx)))
+    (is (= "/get" (.getPath (:uri @req-ctx))))))
+
 
 (deftest ^:integration t-response-interceptor
   (run-server)
