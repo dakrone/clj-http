@@ -72,7 +72,7 @@
   {:pre [transit-enabled?]}
   (let [reader (ns-resolve 'cognitect.transit 'reader)
         read (ns-resolve 'cognitect.transit 'read)]
-    (read (reader in type opts))))
+    (read (reader in type (:decode opts)))))
 
 (defn ^:dynamic transit-encode
   "Resolve and apply Transit's JSON/MessagePack encoding."
@@ -81,7 +81,7 @@
   (let [output (ByteArrayOutputStream.)
         writer (ns-resolve 'cognitect.transit 'writer)
         write (ns-resolve 'cognitect.transit 'write)]
-    (write (writer output type opts) out)
+    (write (writer output type (:encode opts)) out)
     (.toByteArray output)))
 
 (defn ^:dynamic json-encode
