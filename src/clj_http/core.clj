@@ -10,7 +10,7 @@
            (java.util Locale)
            (org.apache.http HttpEntity HeaderIterator HttpHost HttpRequest
                             HttpEntityEnclosingRequest HttpResponse
-                            HttpResponseInterceptor)
+                            HttpRequestInterceptor HttpResponseInterceptor)
            (org.apache.http.auth UsernamePasswordCredentials AuthScope
                                  NTCredentials)
            (org.apache.http.client HttpRequestRetryHandler RedirectStrategy)
@@ -120,7 +120,8 @@
       (SystemDefaultRoutePlanner. (ProxySelector/getDefault)))))
 
 (defn http-client [{:keys [redirect-strategy retry-handler uri
-                           response-interceptor proxy-host proxy-port]}
+                           request-interceptor response-interceptor
+                           proxy-host proxy-port]}
                    conn-mgr http-url proxy-ignore-host]
   ;; have to let first, otherwise we get a reflection warning on (.build)
   (let [^HttpClientBuilder builder (-> (HttpClients/custom)
@@ -135,6 +136,12 @@
                                         (get-route-planner
                                          proxy-host proxy-port
                                          proxy-ignore-host http-url)))]
+    (when request-interceptor
+      (.addInterceptorLast
+       builder (proxy [HttpRequestInterceptor] []
+                 (process [req ctx]
+                   (request-interceptor req ctx)))))
+
     (when response-interceptor
       (.addInterceptorLast
        builder (proxy [HttpResponseInterceptor] []
