@@ -7,6 +7,7 @@
             [clojure.string :as str]
             [clojure.java.io :refer [resource]]
             [clojure.test :refer :all]
+            [cognitect.transit :as transit]
             [ring.util.codec :refer [form-decode-str]]
             [ring.middleware.nested-params :refer [parse-nested-keys]])
   (:import (java.net UnknownHostException)
@@ -467,6 +468,26 @@
              client/parse-url
              :user-info))))
 
+(defrecord Point [x y])
+
+(def write-point
+  "Write a point in Transit format."
+  (transit/write-handler
+   (constantly "point")
+   (fn [point] [(:x point) (:y point)])
+   (constantly nil)))
+
+(def read-point
+  "Read a point in Transit format."
+  (transit/read-handler
+   (fn [[x y]]
+     (->Point x y))))
+
+(def transit-opts
+  "Transit read and write options."
+  {:encode {:handlers {Point write-point}}
+   :decode {:handlers {"point" read-point}}})
+
 (deftest apply-on-form-params
   (testing "With form params"
     (let [param-client (client/wrap-form-params identity)
@@ -522,7 +543,7 @@
   (testing "With EDN form params"
     (doseq [method [:post :put :patch]]
       (let [param-client (client/wrap-form-params identity)
-            params {:param1 "value1" :param2 "value2"}
+            params {:param1 "value1" :param2 (Point. 1 2)}
             resp (param-client {:request-method method
                                 :content-type :edn
                                 :form-params params})]
@@ -533,12 +554,14 @@
   (testing "With Transit/JSON form params"
     (doseq [method [:post :put :patch]]
       (let [param-client (client/wrap-form-params identity)
-            params {:param1 "value1" :param2 "value2"}
+            params {:param1 "value1" :param2 (Point. 1 2)}
             resp (param-client {:request-method method
                                 :content-type :transit+json
-                                :form-params params})]
+                                :form-params params
+                                :transit-opts transit-opts})]
         (is (= params (client/parse-transit
-                       (ByteArrayInputStream. (:body resp)) :json)))
+                       (ByteArrayInputStream. (:body resp))
+                       :json transit-opts)))
         (is (= "application/transit+json" (:content-type resp)))
         (is (not (contains? resp :form-params))))))
 
@@ -548,9 +571,11 @@
             params {:param1 "value1" :param2 "value2"}
             resp (param-client {:request-method method
                                 :content-type :transit+msgpack
-                                :form-params params})]
+                                :form-params params
+                                :transit-opts transit-opts})]
         (is (= params (client/parse-transit
-                       (ByteArrayInputStream. (:body resp)) :msgpack)))
+                       (ByteArrayInputStream. (:body resp))
+                       :msgpack transit-opts)))
         (is (= "application/transit+msgpack" (:content-type resp)))
         (is (not (contains? resp :form-params))))))
 

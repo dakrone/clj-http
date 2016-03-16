@@ -270,12 +270,16 @@ content encodings.
 ;; Send form params as a Transit encoded JSON body (POST or PUT) with options
 (client/post "http://site.com" {:form-params {:foo "bar"}
                                 :content-type :transit+json
-                                :transit-opts {:handlers {}}})
+                                :transit-opts
+                                {:encode {:handlers {}}
+                                 :decode {:handlers {}}}})
 
 ;; Send form params as a Transit encoded MessagePack body (POST or PUT) with options
 (client/post "http://site.com" {:form-params {:foo "bar"}
                                 :content-type :transit+msgpack
-                                :transit-opts {:handlers {}}})
+                                :transit-opts
+                                {:encode {:handlers {}}
+                                 :decode {:handlers {}}}})
 
 ;; Multipart form uploads/posts
 ;; takes a vector of maps, to preserve the order of entities, :name
