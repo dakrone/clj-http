@@ -488,6 +488,10 @@
   {:encode {:handlers {Point write-point}}
    :decode {:handlers {"point" read-point}}})
 
+(def transit-opts-deprecated
+  "Deprecated Transit read and write options."
+  {:handlers {Point write-point "point" read-point}})
+
 (deftest apply-on-form-params
   (testing "With form params"
     (let [param-client (client/wrap-form-params identity)
@@ -578,6 +582,19 @@
                        :msgpack transit-opts)))
         (is (= "application/transit+msgpack" (:content-type resp)))
         (is (not (contains? resp :form-params))))))
+
+  (testing "With Transit/JSON form params and deprecated options"
+    (let [param-client (client/wrap-form-params identity)
+          params {:param1 "value1" :param2 (Point. 1 2)}
+          resp (param-client {:request-method :post
+                              :content-type :transit+json
+                              :form-params params
+                              :transit-opts transit-opts-deprecated})]
+      (is (= params (client/parse-transit
+                     (ByteArrayInputStream. (:body resp))
+                     :json transit-opts-deprecated)))
+      (is (= "application/transit+json" (:content-type resp)))
+      (is (not (contains? resp :form-params)))))
 
   (testing "Ensure it does not affect GET requests"
     (let [param-client (client/wrap-form-params identity)
