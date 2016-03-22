@@ -66,13 +66,43 @@
   {:pre [crouton-enabled?]}
   (apply (ns-resolve (symbol "crouton.html") (symbol "parse")) args))
 
+(defn- transit-opts-by-type
+  "Return the Transit options by type."
+  [opts type class-name]
+  {:pre [transit-enabled?]}
+  (cond
+    (empty? opts)
+    opts
+    (contains? opts type)
+    (clojure.core/get opts type)
+    :else
+    (let [class (Class/forName class-name)]
+      (println "Deprecated use of :transit-opts found.")
+      (update-in opts [:handlers]
+                 (fn [handlers]
+                   (->> handlers
+                        (filter #(instance? class (second %)))
+                        (into {})))))))
+
+(defn- transit-read-opts
+  "Return the Transit read options."
+  [opts]
+  {:pre [transit-enabled?]}
+  (transit-opts-by-type opts :decode "com.cognitect.transit.ReadHandler"))
+
+(defn- transit-write-opts
+  "Return the Transit write options."
+  [opts]
+  {:pre [transit-enabled?]}
+  (transit-opts-by-type opts :encode "com.cognitect.transit.WriteHandler"))
+
 (defn ^:dynamic parse-transit
   "Resolve and apply Transit's JSON/MessagePack decoding."
   [in type & [opts]]
   {:pre [transit-enabled?]}
   (let [reader (ns-resolve 'cognitect.transit 'reader)
         read (ns-resolve 'cognitect.transit 'read)]
-    (read (reader in type (:decode opts)))))
+    (read (reader in type (transit-read-opts opts)))))
 
 (defn ^:dynamic transit-encode
   "Resolve and apply Transit's JSON/MessagePack encoding."
@@ -81,7 +111,7 @@
   (let [output (ByteArrayOutputStream.)
         writer (ns-resolve 'cognitect.transit 'writer)
         write (ns-resolve 'cognitect.transit 'write)]
-    (write (writer output type (:encode opts)) out)
+    (write (writer output type (transit-write-opts opts)) out)
     (.toByteArray output)))
 
 (defn ^:dynamic json-encode
