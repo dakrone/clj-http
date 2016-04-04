@@ -280,10 +280,6 @@
         body (slurp stream)]
     (is (= "get" body))))
 
-(deftest throw-on-invalid-body
-  (is (thrown-with-msg? IllegalArgumentException #"Invalid request method :bad"
-                        (client/request {:url "http://example.org"
-                                         :method :bad}))))
 
 (deftest ^:integration throw-on-too-many-redirects
   (run-server)
