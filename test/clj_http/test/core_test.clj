@@ -95,7 +95,11 @@
     [:patch "/patch"]
     {:status 200 :body "patch"}
     [:get "/headers"]
-    {:status 200 :body (json/encode (:headers req))}))
+    {:status 200 :body (json/encode (:headers req))}
+    [:propfind "/propfind"]
+    {:status 200 :body "propfind"}
+    [:propfind "/propfind-with-body"]
+    {:status 200 :body (:body req)}))
 
 (defn run-server
   []
