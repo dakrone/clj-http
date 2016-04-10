@@ -18,7 +18,7 @@
            (org.apache.http.client.methods HttpDelete HttpGet HttpPost HttpPut
                                            HttpOptions HttpPatch
                                            HttpHead
-                                           HttpEntityEnclosingRequestBase CloseableHttpResponse HttpUriRequest)
+                                           HttpEntityEnclosingRequestBase CloseableHttpResponse HttpUriRequest HttpRequestBase)
            (org.apache.http.client.protocol HttpClientContext)
            (org.apache.http.config RegistryBuilder)
            (org.apache.http.conn HttpClientConnectionManager)
@@ -166,6 +166,11 @@
 (def proxy-move-with-body (make-proxy-method-with-body :move))
 (def proxy-patch-with-body (make-proxy-method-with-body :patch))
 
+(defn make-proxy-method [method url] (doto (proxy [HttpRequestBase] []
+                             (getMethod
+                               []
+                               (str method) ) ) (.setURI (URI/create url)) ))
+
 (defn http-request-for
   "Provides the HttpRequest object for a particular request-method and url"
   [request-method ^String http-url body]
@@ -185,8 +190,10 @@
     :patch   (if body
                (proxy-patch-with-body http-url)
                (HttpPatch. http-url))
-    (throw (IllegalArgumentException.
-            (str "Invalid request method " request-method)))))
+    (if body
+      ((make-proxy-method-with-body request-method) http-url)
+      (make-proxy-method request-method http-url))
+    ))
 
 (defn http-context [request-config]
   (doto (HttpClientContext/create)

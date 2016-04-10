@@ -95,7 +95,11 @@
     [:patch "/patch"]
     {:status 200 :body "patch"}
     [:get "/headers"]
-    {:status 200 :body (json/encode (:headers req))}))
+    {:status 200 :body (json/encode (:headers req))}
+    [:propfind "/propfind"]
+    {:status 200 :body "propfind"}
+    [:propfind "/propfind-with-body"]
+    {:status 200 :body (:body req)}))
 
 (defn run-server
   []
@@ -276,10 +280,6 @@
         body (slurp stream)]
     (is (= "get" body))))
 
-(deftest throw-on-invalid-body
-  (is (thrown-with-msg? IllegalArgumentException #"Invalid request method :bad"
-                        (client/request {:url "http://example.org"
-                                         :method :bad}))))
 
 (deftest ^:integration throw-on-too-many-redirects
   (run-server)

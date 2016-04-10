@@ -780,3 +780,14 @@
   (is (= "ISO-8859-1" (client/detect-charset
                        "application/json; charset =  ISO-8859-1")))
   (is (= "GB2312" (client/detect-charset "text/html; Charset=GB2312"))))
+
+(deftest ^:integration customMethodTest
+  (run-server)
+  (let [resp (request {:uri "/propfind" :method "PROPFIND"})]
+    (is (= 200 (:status resp)))
+    (is (= "close" (get-in resp [:headers "connection"])))
+    (is (= "propfind" (:body resp))))
+  (let [resp (request {:uri "/propfind-with-body" :method "PROPFIND" :body "propfindbody"})]
+    (is (= 200 (:status resp)))
+    (is (= "close" (get-in resp [:headers "connection"])))
+    (is (= "propfindbody" (:body resp)))))
