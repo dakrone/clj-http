@@ -166,10 +166,12 @@
 (def proxy-move-with-body (make-proxy-method-with-body :move))
 (def proxy-patch-with-body (make-proxy-method-with-body :patch))
 
-(defn make-proxy-method [method url] (doto (proxy [HttpRequestBase] []
-                             (getMethod
-                               []
-                               (str method) ) ) (.setURI (URI/create url)) ))
+(defn make-proxy-method [method url]
+  (doto (proxy [HttpRequestBase] []
+          (getMethod
+            []
+            (str method)))
+    (.setURI (URI/create url))))
 
 (defn http-request-for
   "Provides the HttpRequest object for a particular request-method and url"
@@ -192,8 +194,7 @@
                (HttpPatch. http-url))
     (if body
       ((make-proxy-method-with-body request-method) http-url)
-      (make-proxy-method request-method http-url))
-    ))
+      (make-proxy-method request-method http-url))))
 
 (defn http-context [request-config]
   (doto (HttpClientContext/create)

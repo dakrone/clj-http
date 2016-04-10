@@ -12,7 +12,7 @@
            (org.apache.http.message BasicHeader BasicHeaderIterator)
            (org.apache.http.client.methods HttpPost)
            (org.apache.http.client.params CookiePolicy ClientPNames)
-           (org.apache.http HttpRequest HttpResponse HttpConnection 
+           (org.apache.http HttpRequest HttpResponse HttpConnection
                             HttpInetConnection HttpVersion)
            (org.apache.http.protocol HttpContext ExecutionContext)
            (org.apache.http.impl.client DefaultHttpClient)
@@ -257,12 +257,12 @@
 
 (deftest parse-headers
   (are [headers expected]
-    (let [iterator (BasicHeaderIterator.
-                    (into-array BasicHeader
-                                (map (fn [[name value]]
-                                       (BasicHeader. name value))
-                                     headers)) nil)]
-      (is (= (core/parse-headers iterator) expected)))
+      (let [iterator (BasicHeaderIterator.
+                      (into-array BasicHeader
+                                  (map (fn [[name value]]
+                                         (BasicHeader. name value))
+                                       headers)) nil)]
+        (is (= (core/parse-headers iterator) expected)))
 
     [] {}
 
