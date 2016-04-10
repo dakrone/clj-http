@@ -87,6 +87,12 @@ With Leiningen/Boot:
 [clj-http "2.1.0"]
 #+END_SRC
 
+If you want to test out the latest version, a 3.0.0 release is also available:
+
+#+BEGIN_SRC clojure
+[clj-http "3.0.0"]
+#+END_SRC
+
 Previous versions available as:
 
 #+BEGIN_SRC clojure
@@ -98,25 +104,26 @@ Previous versions available as:
 
 clj-http supports clojure 1.6.0 and higher.
 
-* Towards a 3.0.0 release (NEW)
-So there is a 2.0 branch which is based on the latest released version of
+* Towards a 3.0.0 release
+So there is a 2.0 branch which is based on the latest stable version of
 clj-http. Master, on the other hand, is a rewrite of the =core.clj= for the new
 Apache changes (starting with 4.0 I believe) to use non-deprecated methods.
 There are a number of things that need to be accomplished in order for it to be
-releasable in a non-snapshot version (3.0.0-SNAPSHOT is already on Clojars)
+releasable in a non-snapshot version (3.0.0+ is already on Clojars)
 
 Here are the tests that need to pass:
 
 - [X] =lein test clj-http.test.client-test :all=
-- [ ] =lein test clj-http.test.conn-mgr-test :all=
+- [X] =lein test clj-http.test.conn-mgr-test :all=
 - [X] =lein test clj-http.test.cookies-test :all=
-- [ ] =lein test clj-http.test.core-test :all=
+- [X] =lein test clj-http.test.core-test :all=
 - [X] =lein test clj-http.test.headers-test :all=
 - [X] =lein test clj-http.test.links-test :all=
 - [X] =lein test clj-http.test.multipart-test :all=
 - [X] =lein test clj-http.test.util-test :all=
 
-Any help or PRs is greatly appreciated.
+There are still a few tests that are commented out. Any help or PRs is greatly
+appreciated.
 
 * Quickstart
 
