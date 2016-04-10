@@ -13,7 +13,7 @@
    - [[#overview][Overview]]
    - [[#philosophy][Philosophy]]
  - [[#installation][Installation]]
- - [[#towards-a-300-release-new][Towards a 3.0.0 release (NEW)]]
+ - [[#towards-a-300-release][Towards a 3.0.0 release]]
  - [[#quickstart][Quickstart]]
    - [[#head][HEAD]]
    - [[#get][GET]]
@@ -87,7 +87,8 @@ With Leiningen/Boot:
 [clj-http "2.1.0"]
 #+END_SRC
 
-If you want to test out the latest version, a 3.0.0 release is also available:
+If you want to test out the latest version, a 3.0.0 release is also available.
+Note that the 3.0.0 version of clj-http requires Java 8.
 
 #+BEGIN_SRC clojure
 [clj-http "3.0.0"]
