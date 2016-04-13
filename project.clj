@@ -15,7 +15,7 @@
                  [slingshot "0.12.2"]
                  [potemkin "0.4.3"]]
   :profiles {:dev {:dependencies [;; optional deps
-                                  [cheshire "5.6.0"]
+                                  [cheshire "5.6.1"]
                                   [crouton "0.1.2"]
                                   [org.clojure/tools.reader "0.10.0"]
                                   [com.cognitect/transit-clj "0.8.285"]
