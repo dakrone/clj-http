@@ -565,8 +565,7 @@
   (run-server)
   (client/request {:method :get :url (localhost "/get") :headers {"foo" 2}}))
 
-;; Currently failing, see: https://github.com/dakrone/clj-http/issues/257
-;; (deftest ^:integration t-empty-response-coercion
-;;   (run-server)
-;;   (let [resp (client/get (localhost "/empty") {:as :clojure})]
-;;     (is (= (:body resp) ""))))
+(deftest ^:integration t-empty-response-coercion
+   (run-server)
+   (let [resp (client/get (localhost "/empty") {:as :clojure})]
+     (is (= (:body resp) nil))))
