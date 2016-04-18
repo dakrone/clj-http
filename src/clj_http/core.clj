@@ -166,6 +166,8 @@
 (def proxy-move-with-body (make-proxy-method-with-body :move))
 (def proxy-patch-with-body (make-proxy-method-with-body :patch))
 
+(def ^:dynamic *cookie-store* nil)
+
 (defn make-proxy-method [method url]
   (doto (proxy [HttpRequestBase] []
           (getMethod
@@ -273,8 +275,8 @@
                                   request-method http-url body)]
     (when-not (conn/reusable? conn-mgr)
       (.addHeader http-req "Connection" "close"))
-    (when cookie-store
-      (.setCookieStore context cookie-store))
+    (when-let [cookie-jar (or cookie-store *cookie-store*)]
+      (.setCookieStore context cookie-jar))
     (when-let [[user pass] digest-auth]
       (.setCredentialsProvider
        context
