@@ -346,11 +346,12 @@
 (defn coerce-clojure-body
   [request {:keys [body] :as resp}]
   (let [^String charset (or (-> resp :content-type-params :charset) "UTF-8")
-        body (util/force-byte-array body)]
-    (if edn-enabled?
-      (assoc resp :body (parse-edn (String. ^"[B" body charset)))
-      (binding [*read-eval* false]
-        (assoc resp :body (read-string (String. ^"[B" body charset)))))))
+        body            (util/force-byte-array body)]
+    (assoc resp :body (cond
+                        (empty? body) nil
+                        edn-enabled? (parse-edn (String. ^"[B" body charset))
+                        :else (binding [*read-eval* false]
+                                (read-string (String. ^"[B" body charset)))))))
 
 (defn coerce-transit-body
   [{:keys [transit-opts] :as request} {:keys [body] :as resp} type]
