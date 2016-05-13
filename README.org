@@ -84,13 +84,13 @@ function.
 With Leiningen/Boot:
 
 #+BEGIN_SRC clojure
-[clj-http "2.1.0"]
+[clj-http "2.2.0"]
 #+END_SRC
 
 If you want to test out the latest version, a 3.x release is also available.
 
 #+BEGIN_SRC clojure
-[clj-http "3.0.1"]
+[clj-http "3.1.0"]
 #+END_SRC
 
 Previous versions available as:
