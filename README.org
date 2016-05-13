@@ -73,7 +73,7 @@ function.
 With Leiningen/Boot:
 
 #+BEGIN_SRC clojure
-[clj-http "2.1.0"]
+[clj-http "2.2.0"]
 #+END_SRC
 
 Previous versions available as:
