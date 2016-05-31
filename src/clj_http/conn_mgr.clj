@@ -143,7 +143,8 @@
                    (get-keystore-scheme-registry config)
 
                    :else regular-scheme-registry)]
-    (PoolingHttpClientConnectionManager. registry)))
+    (PoolingHttpClientConnectionManager.
+     registry nil nil nil timeout java.util.concurrent.TimeUnit/SECONDS)))
 
 (defn reusable? [^HttpClientConnectionManager conn-mgr]
   (instance? PoolingHttpClientConnectionManager conn-mgr))
