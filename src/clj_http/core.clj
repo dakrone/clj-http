@@ -315,7 +315,8 @@
     (try
       (let [^CloseableHttpResponse response (.execute client http-req context)
             ^HttpEntity entity (.getEntity response)
-            status (.getStatusLine response)]
+            status (.getStatusLine response)
+            protocol-version (.getProtocolVersion status)]
         {:body (coerce-body-entity entity conn-mgr response)
          :headers (parse-headers
                    (.headerIterator response)
@@ -325,7 +326,7 @@
          :repeatable? (if (nil? entity) false (.isRepeatable entity))
          :streaming? (if (nil? entity) false (.isStreaming entity))
          :status (.getStatusCode status)
-         :protocol-version (.getProtocolVersion status)
+         :protocol-version  {:name (.getProtocol protocol-version) :major (.getMajor protocol-version) :minor (.getMinor protocol-version)}  
          :reason-phrase (.getReasonPhrase status)})
       (catch Throwable t
         (when-not (conn/reusable? conn-mgr)
