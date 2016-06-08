@@ -324,7 +324,9 @@
          :chunked? (if (nil? entity) false (.isChunked entity))
          :repeatable? (if (nil? entity) false (.isRepeatable entity))
          :streaming? (if (nil? entity) false (.isStreaming entity))
-         :status (.getStatusCode status)})
+         :status (.getStatusCode status)
+         :protocol-version (.getProtocolVersion status)
+         :reason-phrase (.getReasonPhrase status)})
       (catch Throwable t
         (when-not (conn/reusable? conn-mgr)
           (.shutdown conn-mgr))
