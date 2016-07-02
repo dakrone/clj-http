@@ -836,3 +836,13 @@
     (is (= 200 (:status resp)))
     (is (= "close" (get-in resp [:headers "connection"])))
     (is (= "propfindbody" (:body resp)))))
+
+(deftest ^:integration status-line-parsing
+  (run-server)
+  (let [resp (request {:uri "/get" :method :get})
+        protocol-version (:protocol-version resp)]
+    (is (= 200 (:status resp)))
+    (is (= "HTTP" (:name protocol-version)))
+    (is (= 1 (:major protocol-version)))
+    (is (= 1 (:minor protocol-version)))
+    (is (= "OK" (:reason-phrase resp)))))
