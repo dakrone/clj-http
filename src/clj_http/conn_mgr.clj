@@ -4,23 +4,16 @@
             [clojure.java.io :as io])
   (:import (java.net Socket Proxy Proxy$Type InetSocketAddress)
            (java.security KeyStore)
-           (java.security.cert X509Certificate)
-           (javax.net.ssl SSLSession SSLSocket)
            (org.apache.http.config RegistryBuilder Registry)
            (org.apache.http.conn HttpClientConnectionManager)
-           (org.apache.http.conn.ssl SSLSocketFactory)
-           (org.apache.http.conn.scheme PlainSocketFactory
-                                        SchemeRegistry Scheme)
-           (org.apache.http.conn.socket PlainConnectionSocketFactory)
-           (org.apache.http.impl.conn PoolingClientConnectionManager)
-           (org.apache.http.impl.conn BasicHttpClientConnectionManager
-                                      PoolingHttpClientConnectionManager)
-           (org.apache.http.conn.ssl SSLConnectionSocketFactory
-                                     DefaultHostnameVerifier
+           (org.apache.http.conn.ssl DefaultHostnameVerifier
                                      NoopHostnameVerifier
+                                     SSLConnectionSocketFactory
+                                     SSLContexts
                                      TrustStrategy)
-           (org.apache.http.ssl SSLContexts)
-           (org.apache.http.pool ConnPoolControl)))
+           (org.apache.http.conn.socket PlainConnectionSocketFactory)
+           (org.apache.http.impl.conn BasicHttpClientConnectionManager
+                                      PoolingHttpClientConnectionManager)))
 
 (def ^SSLConnectionSocketFactory insecure-socket-factory
   (SSLConnectionSocketFactory.
@@ -33,23 +26,22 @@
 (def ^SSLConnectionSocketFactory secure-ssl-socket-factory
   (SSLConnectionSocketFactory/getSocketFactory))
 
-;; New Generic Socket Factories that can support socks proxy
-(defn ^SSLSocketFactory SSLGenericSocketFactory
-  "Given a function that returns a new socket, create an SSLSocketFactory that
-  will use that socket."
+(defn ^SSLConnectionSocketFactory SSLGenericSocketFactory
+  "Given a function that returns a new socket, create an
+  SSLConnectionSocketFactory that will use that socket."
   [socket-factory]
-  (proxy [SSLSocketFactory] [(SSLContexts/createDefault)]
-    (connectSocket [socket remoteAddress localAddress params]
-      (let [^SSLSocketFactory this this] ;; avoid reflection
-        (proxy-super connectSocket (socket-factory)
-                     remoteAddress localAddress params)))))
+  (proxy [SSLConnectionSocketFactory] [(SSLContexts/createDefault)]
+    (connectSocket [timeout socket host remoteAddress localAddress context]
+      (let [^SSLConnectionSocketFactory this this] ;; avoid reflection
+        (proxy-super connectSocket timeout (socket-factory) remoteAddress
+                     localAddress context)))))
 
-(defn ^PlainSocketFactory PlainGenericSocketFactory
-  "Given a Function that returns a new socket, create a PlainSocketFactory that
-  will use that socket."
+(defn ^PlainConnectionSocketFactory PlainGenericSocketFactory
+  "Given a Function that returns a new socket, create a
+  PlainConnectionSocketFactory that will use that socket."
   [socket-factory]
-  (proxy [PlainSocketFactory] []
-    (createSocket [params]
+  (proxy [PlainConnectionSocketFactory] []
+    (createSocket [context]
       (socket-factory))))
 
 (defn socks-proxied-socket
@@ -62,12 +54,11 @@
   proxied using a SOCKS proxy."
   [^String hostname ^Integer port]
   (let [socket-factory #(socks-proxied-socket hostname port)
-        reg (doto (SchemeRegistry.)
-              (.register
-               (Scheme. "https" 443 (SSLGenericSocketFactory socket-factory)))
-              (.register
-               (Scheme. "http" 80 (PlainGenericSocketFactory socket-factory))))]
-    (PoolingClientConnectionManager. reg)))
+        reg (-> (RegistryBuilder/create)
+                (.register "http" (PlainGenericSocketFactory socket-factory))
+                (.register "https" (SSLGenericSocketFactory socket-factory))
+                (.build))]
+    (PoolingHttpClientConnectionManager. reg)))
 
 (def insecure-scheme-registry
   (-> (RegistryBuilder/create)
