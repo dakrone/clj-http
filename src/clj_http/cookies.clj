@@ -115,16 +115,24 @@
         (dissoc :cookies))
     request))
 
+(defn- cookies-response
+  [request response]
+  (if (= false (opt request :decode-cookies))
+    response
+    (decode-cookie-header response)))
+
 (defn wrap-cookies
   "Middleware wrapping cookie handling. Handles converting
   the :cookies request parameter into the 'Cookies' header for an HTTP
   request."
   [client]
-  (fn [request]
-    (let [response (client (encode-cookie-header request))]
-      (if (= false (opt request :decode-cookies))
-        response
-        (decode-cookie-header response)))))
+  (fn
+    ([request]
+      (cookies-response request (client (encode-cookie-header request))))
+    ([request respond raise]
+      (client (encode-cookie-header request)
+              #(respond (cookies-response request %))
+              raise))))
 
 (defn cookie-store
   "Returns a new, empty instance of the default implementation of the

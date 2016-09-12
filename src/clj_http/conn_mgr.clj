@@ -13,18 +13,35 @@
                                      TrustStrategy)
            (org.apache.http.conn.socket PlainConnectionSocketFactory)
            (org.apache.http.impl.conn BasicHttpClientConnectionManager
-                                      PoolingHttpClientConnectionManager)))
+                                      PoolingHttpClientConnectionManager)
+           (org.apache.http.impl.nio.conn PoolingNHttpClientConnectionManager)
+           (javax.net.ssl SSLContext HostnameVerifier)
+           (org.apache.http.nio.conn.ssl SSLIOSessionStrategy)
+           (org.apache.http.impl.nio.reactor IOReactorConfig AbstractMultiworkerIOReactor$DefaultThreadFactory DefaultConnectingIOReactor)
+           (org.apache.http.nio.conn NoopIOSessionStrategy)))
 
-(def ^SSLConnectionSocketFactory insecure-socket-factory
-  (SSLConnectionSocketFactory.
-   (-> (SSLContexts/custom)
+(def insecure-context-verifier
+  {
+   :context (-> (SSLContexts/custom)
        (.loadTrustMaterial nil (reify TrustStrategy
                                  (isTrusted [_ _ _] true)))
        (.build))
-   NoopHostnameVerifier/INSTANCE))
+   :verifier NoopHostnameVerifier/INSTANCE
+   })
+
+(def ^SSLIOSessionStrategy insecure-socket-factory
+  (let [{:keys [context  verifier]} insecure-context-verifier]
+    (SSLConnectionSocketFactory. ^SSLContext context ^HostnameVerifier verifier)))
+
+(def ^SSLIOSessionStrategy insecure-strategy
+  (let [{:keys [context  verifier]} insecure-context-verifier]
+    (SSLIOSessionStrategy. ^SSLContext context ^HostnameVerifier verifier)))
 
 (def ^SSLConnectionSocketFactory secure-ssl-socket-factory
   (SSLConnectionSocketFactory/getSocketFactory))
+
+(def ^SSLIOSessionStrategy secure-strategy
+  (SSLIOSessionStrategy/getDefaultStrategy))
 
 (defn ^SSLConnectionSocketFactory SSLGenericSocketFactory
   "Given a function that returns a new socket, create an
@@ -66,10 +83,22 @@
       (.register "https" insecure-socket-factory)
       (.build)))
 
+(def insecure-strategy-registry
+  (-> (RegistryBuilder/create)
+      (.register "http" NoopIOSessionStrategy/INSTANCE)
+      (.register "https" insecure-strategy)
+      (.build)))
+
 (def regular-scheme-registry
   (-> (RegistryBuilder/create)
       (.register "http" (PlainConnectionSocketFactory/getSocketFactory))
       (.register "https" secure-ssl-socket-factory)
+      (.build)))
+
+(def regular-strategy-registry
+  (-> (RegistryBuilder/create)
+      (.register "http" NoopIOSessionStrategy/INSTANCE)
+      (.register "https" secure-strategy)
       (.build)))
 
 (defn ^KeyStore get-keystore*
@@ -86,26 +115,37 @@
     keystore
     (apply get-keystore* keystore args)))
 
-(defn ^Registry get-keystore-scheme-registry
+(defn get-keystore-context-verifier
   [{:keys [keystore keystore-type keystore-pass keystore-instance
            trust-store trust-store-type trust-store-pass]
     :as req}]
   (let [ks (get-keystore keystore keystore-type keystore-pass)
-        ts (get-keystore trust-store trust-store-type trust-store-pass)
-        ssl-context (-> (SSLContexts/custom)
-                        (.loadKeyMaterial
-                         ks (when keystore-pass
-                              (.toCharArray keystore-pass)))
-                        (.loadTrustMaterial
-                         ts nil)
-                        (.build))
-        hostname-verifier (if (opt req :insecure)
-                            NoopHostnameVerifier/INSTANCE
-                            (DefaultHostnameVerifier.))
-        factory (SSLConnectionSocketFactory.
-                 ssl-context hostname-verifier )]
+        ts (get-keystore trust-store trust-store-type trust-store-pass)]
+    {:context (-> (SSLContexts/custom)
+         (.loadKeyMaterial
+           ks (when keystore-pass
+                (.toCharArray keystore-pass)))
+         (.loadTrustMaterial
+           ts nil)
+         (.build))
+     :verifier (if (opt req :insecure)
+       NoopHostnameVerifier/INSTANCE
+       (DefaultHostnameVerifier.))}))
+
+(defn ^Registry get-keystore-scheme-registry
+  [req]
+  (let [{:keys [context verifier]} (get-keystore-context-verifier req)
+        factory (SSLConnectionSocketFactory. ^SSLContext context ^HostnameVerifier verifier)]
     (-> (RegistryBuilder/create)
         (.register "https" factory)
+        (.build))))
+
+(defn ^Registry get-keystore-strategy-registry
+  [req]
+  (let [{:keys [context verifier]} (get-keystore-context-verifier req)
+        strategy (SSLIOSessionStrategy. ^SSLContext context ^HostnameVerifier verifier)]
+    (-> (RegistryBuilder/create)
+        (.register "https" strategy)
         (.build))))
 
 (defn ^BasicHttpClientConnectionManager make-regular-conn-manager
@@ -118,6 +158,26 @@
                          insecure-scheme-registry)
 
     :else (BasicHttpClientConnectionManager. regular-scheme-registry)))
+
+(defn- ^DefaultConnectingIOReactor default-ioreactor []
+  (DefaultConnectingIOReactor. IOReactorConfig/DEFAULT nil))
+
+(defn ^PoolingNHttpClientConnectionManager
+  make-regular-async-conn-manager
+  [{:keys [keystore trust-store] :as req}]
+  (let [^Registry registry (cond
+                             (or keystore trust-store)
+                             (get-keystore-strategy-registry req)
+
+                             (opt req :insecure)
+                             insecure-strategy-registry
+
+                             :else regular-strategy-registry)]
+    (doto
+      (PoolingNHttpClientConnectionManager. (default-ioreactor) registry)
+      (.setMaxTotal 1))))
+
+(definterface ReuseableAsyncConnectionManager)
 
 ;; need the fully qualified class name because this fn is later used in a
 ;; macro from a different ns
@@ -137,8 +197,9 @@
     (PoolingHttpClientConnectionManager.
      registry nil nil nil timeout java.util.concurrent.TimeUnit/SECONDS)))
 
-(defn reusable? [^HttpClientConnectionManager conn-mgr]
-  (instance? PoolingHttpClientConnectionManager conn-mgr))
+(defn reusable? [conn-mgr]
+  (or (instance? PoolingHttpClientConnectionManager conn-mgr)
+      (instance? ReuseableAsyncConnectionManager conn-mgr)))
 
 (defn ^PoolingHttpClientConnectionManager make-reusable-conn-manager
   "Creates a default pooling connection manager with the specified options.
@@ -177,11 +238,44 @@
       (.setDefaultMaxPerRoute conn-man default-per-route))
     conn-man))
 
+(defn- ^PoolingNHttpClientConnectionManager make-reusable-async-conn-manager*
+  [{:keys [timeout keystore trust-store] :as config}]
+  (let [registry (cond
+                   (opt config :insecure) insecure-strategy-registry
+
+                   (or keystore trust-store)
+                   (get-keystore-scheme-registry config)
+
+                   :else regular-strategy-registry)]
+    (proxy [PoolingNHttpClientConnectionManager ReuseableAsyncConnectionManager]
+           [(default-ioreactor) nil registry nil nil timeout java.util.concurrent.TimeUnit/SECONDS])))
+
+(defn ^PoolingNHttpClientConnectionManager make-reuseable-async-conn-manager
+  "Creates a default pooling async connection manager with the specified options.
+  See alos make-reusable-conn-manager"
+  [opts]
+  (let [timeout (or (:timeout opts) 5)
+        threads (or (:threads opts) 4)
+        default-per-route (:default-per-route opts)
+        insecure? (opt opts :insecure)
+        leftovers (dissoc opts :timeout :threads :insecure? :insecure)
+        conn-man (make-reusable-async-conn-manager* (merge {:timeout timeout
+                                                      :insecure? insecure?}
+                                                     leftovers))]
+    (.setMaxTotal conn-man threads)
+    (when default-per-route
+      (.setDefaultMaxPerRoute conn-man default-per-route))
+    conn-man))
+
 (defn shutdown-manager
   "Shut down the given connection manager, if it is not nil"
-  [^HttpClientConnectionManager manager]
+  [manager]
   (and manager (.shutdown manager)))
 
 (def ^:dynamic *connection-manager*
   "connection manager to be rebound during request execution"
+  nil)
+
+(def ^:dynamic *async-connection-manager*
+  "connection manager to be rebound during async request execution"
   nil)

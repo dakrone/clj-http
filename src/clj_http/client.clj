@@ -14,7 +14,9 @@
            (java.net URL UnknownHostException)
            (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
                                    InputStreamEntity FileEntity StringEntity)
-           (org.apache.http.impl.conn PoolingHttpClientConnectionManager))
+           (org.apache.http.impl.conn PoolingHttpClientConnectionManager)
+           (org.apache.http.impl.nio.conn PoolingNHttpClientConnectionManager)
+           (org.apache.http.impl.nio.client HttpAsyncClients))
   (:refer-clojure :exclude [get update]))
 
 ;; Cheshire is an optional dependency, so we check for it at compile time.
@@ -210,41 +212,105 @@
   [{:keys [status]}]
   (<= 500 status 599))
 
+(defn- exceptions-response
+  [req {:keys [status] :as resp}]
+  (if (unexceptional-status? status)
+    resp
+    (if (false? (opt req :throw-exceptions))
+      resp
+      (if (opt req :throw-entire-message)
+        (throw+ resp "clj-http: status %d %s" (:status %) resp)
+        (throw+ resp "clj-http: status %s" (:status %))))))
+
 (defn wrap-exceptions
   "Middleware that throws a slingshot exception if the response is not a
   regular response. If :throw-entire-message? is set to true, the entire
   response is used as the message, instead of just the status number."
   [client]
-  (fn [req]
-    (let [{:keys [status] :as resp} (client req)]
-      (if (unexceptional-status? status)
-        resp
-        (if (false? (opt req :throw-exceptions))
-          resp
-          (if (opt req :throw-entire-message)
-            (throw+ resp "clj-http: status %d %s" (:status %) resp)
-            (throw+ resp "clj-http: status %s" (:status %))))))))
+  (fn
+    ([req]
+     (exceptions-response req (client req)))
+    ([req responsd raise]
+     (client req
+             (fn [resp]
+               (try
+                 (responsd (exceptions-response req resp))
+                 (catch Exception ex (raise ex))))
+             raise))))
 
 (declare wrap-redirects)
+
+(defn- follow-redirect-request
+  [req redirect trace-redirects]
+  (-> req
+      (merge (parse-url redirect))
+      (dissoc :query-params)
+      (assoc :url redirect)
+      (assoc :trace-redirects trace-redirects)))
 
 (defn follow-redirect
   "Attempts to follow the redirects from the \"location\" header, if no such
   header exists (bad server!), returns the response without following the
   request."
-  [client {:keys [uri url scheme server-name server-port] :as req}
+  [client {:keys [uri url scheme server-name server-port async? respond raise] :as req}
    {:keys [trace-redirects ^InputStream body] :as resp}]
   (let [url (or url (str (name scheme) "://" server-name
                          (when server-port (str ":" server-port)) uri))]
     (if-let [raw-redirect (get-in resp [:headers "location"])]
       (let [redirect (str (URL. (URL. url) raw-redirect))]
         (try (.close body) (catch Exception _))
-        ((wrap-redirects client) (-> req
-                                     (merge (parse-url redirect))
-                                     (dissoc :query-params)
-                                     (assoc :url redirect)
-                                     (assoc :trace-redirects trace-redirects))))
+        (if-not async?
+          ((wrap-redirects client) (follow-redirect-request req redirect trace-redirects))
+          (if (some nil? [respond raise])
+            (raise (IllegalArgumentException. "If :async? is true, you must set :respond and :raise"))
+            ((wrap-redirects client) (follow-redirect-request req redirect trace-redirects) respond raise))))
       ;; Oh well, we tried, but if no location is set, return the response
       resp)))
+
+(defn- redirects-response
+  [client
+   {:keys [request-method max-redirects redirects-count trace-redirects url]
+      :or {redirects-count 1 trace-redirects []
+           ;; max-redirects default taken from Firefox
+           max-redirects 20}
+      :as req} {:keys [status] :as resp}]
+  (let [resp-r (assoc resp :trace-redirects
+                           (if url
+                             (conj trace-redirects url)
+                             trace-redirects))]
+    (cond
+      (false? (opt req :follow-redirects))
+      resp
+      (not (redirect? resp-r))
+      resp-r
+      (and max-redirects (> redirects-count max-redirects))
+      (if (opt req :throw-exceptions)
+        (throw+ resp-r "Too many redirects: %s" redirects-count)
+        resp-r)
+      (= 303 status)
+      (follow-redirect client (assoc req :request-method :get
+                                         :redirects-count (inc redirects-count))
+                       resp-r)
+      (#{301 302} status)
+      (cond
+        (#{:get :head} request-method)
+        (follow-redirect client (assoc req :redirects-count
+                                           (inc redirects-count)) resp-r)
+        (opt req :force-redirects)
+        (follow-redirect client (assoc req
+                                  :request-method :get
+                                  :redirects-count (inc redirects-count))
+                         resp-r)
+        :else
+        resp-r)
+      (= 307 status)
+      (if (or (#{:get :head} request-method)
+              (opt req :force-redirects))
+        (follow-redirect client (assoc req :redirects-count
+                                           (inc redirects-count)) resp-r)
+        resp-r)
+      :else
+      resp-r)))
 
 (defn wrap-redirects
   "Middleware that follows redirects in the response. A slingshot exception is
@@ -259,49 +325,14 @@
   :redirects-count - number of redirects
   :trace-redirects - vector of sites the request was redirected from"
   [client]
-  (fn [{:keys [request-method max-redirects redirects-count trace-redirects url]
-       :or {redirects-count 1 trace-redirects []
-            ;; max-redirects default taken from Firefox
-            max-redirects 20}
-       :as req}]
-    (let [{:keys [status] :as resp} (client req)
-          resp-r (assoc resp :trace-redirects
-                        (if url
-                          (conj trace-redirects url)
-                          trace-redirects))]
-      (cond
-        (false? (opt req :follow-redirects))
-        resp
-        (not (redirect? resp-r))
-        resp-r
-        (and max-redirects (> redirects-count max-redirects))
-        (if (opt req :throw-exceptions)
-          (throw+ resp-r "Too many redirects: %s" redirects-count)
-          resp-r)
-        (= 303 status)
-        (follow-redirect client (assoc req :request-method :get
-                                       :redirects-count (inc redirects-count))
-                         resp-r)
-        (#{301 302} status)
-        (cond
-          (#{:get :head} request-method)
-          (follow-redirect client (assoc req :redirects-count
-                                         (inc redirects-count)) resp-r)
-          (opt req :force-redirects)
-          (follow-redirect client (assoc req
-                                         :request-method :get
-                                         :redirects-count (inc redirects-count))
-                           resp-r)
-          :else
-          resp-r)
-        (= 307 status)
-        (if (or (#{:get :head} request-method)
-                (opt req :force-redirects))
-          (follow-redirect client (assoc req :redirects-count
-                                         (inc redirects-count)) resp-r)
-          resp-r)
-        :else
-        resp-r))))
+  (fn
+    ([req]
+      (redirects-response client req (client req)))
+    ([req respond raise]
+      (client req
+              #(respond (redirects-response client
+                          (assoc req :async? true :respond respond :raise raise) %))
+              raise))))
 
 ;; Multimethods for Content-Encoding dispatch automatically
 ;; decompressing response bodies
@@ -327,17 +358,30 @@
          :orig-content-encoding
          (get-in resp [:headers "content-encoding"])))
 
+(defn- decompression-request
+  [req]
+  (if (false? (opt req :decompress-body))
+    req
+    (update req :headers assoc "accept-encoding" "gzip, deflate")))
+
+(defn- decompression-response
+  [req resp]
+  (if (false? (opt req :decompress-body))
+    resp
+    (decompress-body resp)))
+
 (defn wrap-decompression
   "Middleware handling automatic decompression of responses from web servers. If
   :decompress-body is set to false, does not automatically set `Accept-Encoding`
   header or decompress body."
   [client]
-  (fn [req]
-    (if (false? (opt req :decompress-body))
-      (client req)
-      (let [req-c (update req :headers assoc "accept-encoding" "gzip, deflate")
-            resp-c (client req-c)]
-        (decompress-body resp-c)))))
+  (fn
+    ([req]
+      (decompression-response req (client (decompression-request req))))
+    ([req respond raise]
+      (client (decompression-request req)
+              #(respond (decompression-response req %))
+              raise))))
 
 ;; Multimethods for coercing body type to the :as key
 (defmulti coerce-response-body (fn [req _] (:as req)))
@@ -459,17 +503,25 @@
       (string? as)  (assoc resp :body (String. ^"[B" body-bytes ^String as))
       :else (assoc resp :body (String. ^"[B" body-bytes "UTF-8")))))
 
+(defn- output-coercion-response
+  [req {:keys [body] :as resp}]
+  (if body
+    (coerce-response-body req resp)
+    resp))
+
 (defn wrap-output-coercion
   "Middleware converting a response body from a byte-array to a different
   object. Defaults to a String if no :as key is specified, the
   `coerce-response-body` multimethod may be extended to add
   additional coercions."
   [client]
-  (fn [req]
-    (let [{:keys [body] :as resp} (client req)]
-      (if body
-        (coerce-response-body req resp)
-        resp))))
+  (fn
+    ([req]
+      (output-coercion-response req (client req)))
+    ([req respond raise]
+     (client req
+             #(respond (output-coercion-response req %))
+             raise))))
 
 (defn maybe-wrap-entity
   "Wrap an HttpEntity in a BufferedHttpEntity if warranted."
@@ -478,45 +530,52 @@
     (BufferedHttpEntity. entity)
     entity))
 
+(defn- input-coercion-request
+  [{:keys [body body-encoding length]
+      :or {^String body-encoding "UTF-8"} :as req}]
+  (if body
+    (cond
+      (string? body)
+      (-> req (assoc :body (maybe-wrap-entity
+                             req (StringEntity. ^String body
+                                                ^String body-encoding))
+                     :character-encoding (or body-encoding
+                                             "UTF-8")))
+      (instance? File body)
+      (-> req (assoc :body
+                     (maybe-wrap-entity
+                       req (FileEntity. ^File body
+                                        ^String body-encoding))))
+
+      ;; A length of -1 instructs HttpClient to use chunked encoding.
+      (instance? InputStream body)
+      (-> req
+                   (assoc :body
+                          (if length
+                            (InputStreamEntity.
+                              ^InputStream body (long length))
+                            (maybe-wrap-entity
+                              req
+                              (InputStreamEntity. ^InputStream body -1)))))
+
+      (instance? (Class/forName "[B") body)
+      (-> req (assoc :body (maybe-wrap-entity
+                                      req (ByteArrayEntity. body))))
+
+      :else
+      req)
+    req))
+
 (defn wrap-input-coercion
   "Middleware coercing the :body of a request from a number of formats into an
   Apache Entity. Currently supports Strings, Files, InputStreams
   and byte-arrays."
   [client]
-  (fn [{:keys [body body-encoding length]
-       :or {^String body-encoding "UTF-8"} :as req}]
-    (if body
-      (cond
-        (string? body)
-        (client (-> req (assoc :body (maybe-wrap-entity
-                                      req (StringEntity. ^String body
-                                                         ^String body-encoding))
-                               :character-encoding (or body-encoding
-                                                       "UTF-8"))))
-        (instance? File body)
-        (client (-> req (assoc :body
-                               (maybe-wrap-entity
-                                req (FileEntity. ^File body
-                                                 ^String body-encoding)))))
-
-        ;; A length of -1 instructs HttpClient to use chunked encoding.
-        (instance? InputStream body)
-        (client (-> req
-                    (assoc :body
-                           (if length
-                             (InputStreamEntity.
-                              ^InputStream body (long length))
-                             (maybe-wrap-entity
-                              req
-                              (InputStreamEntity. ^InputStream body -1))))))
-
-        (instance? (Class/forName "[B") body)
-        (client (-> req (assoc :body (maybe-wrap-entity
-                                      req (ByteArrayEntity. body)))))
-
-        :else
-        (client req))
-      (client req))))
+  (fn
+    ([req]
+      (client (input-coercion-request req)))
+    ([req respond raise]
+      (client (input-coercion-request req) respond raise))))
 
 (defn get-headers-from-body
   "Given a map of body content, return a map of header-name to header-value."
@@ -542,6 +601,24 @@
                          {"content-type" (str "text/html; charset=" cs)}))]
     headers))
 
+(defn- additional-header-parsing-response
+  [req resp]
+  (if (and (opt req :decode-body-headers)
+           crouton-enabled?
+           (:body resp)
+           (let [^String content-type (get-in resp [:headers "content-type"])]
+             (or (str/blank? content-type)
+                 (.startsWith content-type "text"))))
+    (let [body-bytes (util/force-byte-array (:body resp))
+          body-stream1 (java.io.ByteArrayInputStream. body-bytes)
+          body-map (parse-html body-stream1)
+          additional-headers (get-headers-from-body body-map)
+          body-stream2 (java.io.ByteArrayInputStream. body-bytes)]
+      (assoc resp
+        :headers (merge (:headers resp) additional-headers)
+        :body body-stream2))
+    resp))
+
 (defn wrap-additional-header-parsing
   "Middleware that parses additional http headers from the body of a web page,
   adding them into the headers map of the response if any are found. Only looks
@@ -549,65 +626,74 @@
   be silently disabled if crouton is excluded from clj-http's dependencies. Will
   do nothing if no body is returned, e.g. HEAD requests"
   [client]
-  (fn [req]
-    (let [resp (client req)]
-      (if (and (opt req :decode-body-headers)
-               crouton-enabled?
-               (:body resp)
-               (let [^String content-type (get-in resp [:headers "content-type"])]
-                 (or (str/blank? content-type)
-                     (.startsWith content-type "text"))))
-        (let [body-bytes (util/force-byte-array (:body resp))
-              body-stream1 (java.io.ByteArrayInputStream. body-bytes)
-              body-map (parse-html body-stream1)
-              additional-headers (get-headers-from-body body-map)
-              body-stream2 (java.io.ByteArrayInputStream. body-bytes)]
-          (assoc resp
-            :headers (merge (:headers resp) additional-headers)
-            :body body-stream2))
-        resp))))
+  (fn
+    ([req]
+      (additional-header-parsing-response req (client req)))
+    ([req respond raise]
+      (client req #(respond (additional-header-parsing-response req %)) raise))))
 
 (defn content-type-value [type]
   (if (keyword? type)
     (str "application/" (name type))
     type))
 
+(defn- content-type-request
+  [{:keys [content-type character-encoding] :as req}]
+  (if content-type
+    (let [ctv (content-type-value content-type)
+          ct (if character-encoding
+               (str ctv "; charset=" character-encoding)
+               ctv)]
+      (update-in req [:headers] assoc "content-type" ct))
+    req))
+
 (defn wrap-content-type
   "Middleware converting a `:content-type <keyword>` option to the formal
   application/<name> format and adding it as a header."
   [client]
-  (fn [{:keys [content-type character-encoding] :as req}]
-    (if content-type
-      (let [ctv (content-type-value content-type)
-            ct (if character-encoding
-                 (str ctv "; charset=" character-encoding)
-                 ctv)]
-        (client (update-in req [:headers] assoc "content-type" ct)))
-      (client req))))
+  (fn
+    ([req]
+      (client (content-type-request req)))
+    ([req respond raise]
+      (client (content-type-request req) respond raise))))
+
+(defn- accept-request
+  [{:keys [accept] :as req}]
+  (if accept
+    (-> req (dissoc :accept)
+                 (assoc-in [:headers "accept"]
+                           (content-type-value accept)))
+    req))
 
 (defn wrap-accept
   "Middleware converting the :accept key in a request to application/<type>"
   [client]
-  (fn [{:keys [accept] :as req}]
-    (if accept
-      (client (-> req (dissoc :accept)
-                  (assoc-in [:headers "accept"]
-                            (content-type-value accept))))
-      (client req))))
+  (fn
+    ([req]
+      (client (accept-request req)))
+    ([req respond raise]
+      (client (accept-request req) respond raise))))
 
 (defn accept-encoding-value [accept-encoding]
   (str/join ", " (map name accept-encoding)))
+
+(defn- accept-encoding-request
+  [{:keys [accept-encoding] :as req}]
+  (if accept-encoding
+    (-> req
+        (dissoc :accept-encoding)
+        (assoc-in [:headers "accept-encoding"] (accept-encoding-value accept-encoding)))
+    req))
 
 (defn wrap-accept-encoding
   "Middleware converting the :accept-encoding option to an acceptable
   Accept-Encoding header in the request."
   [client]
-  (fn [{:keys [accept-encoding] :as req}]
-    (if accept-encoding
-      (client (-> req (dissoc :accept-encoding)
-                  (assoc-in [:headers "accept-encoding"]
-                            (accept-encoding-value accept-encoding))))
-      (client req))))
+  (fn
+    ([req]
+      (client (accept-encoding-request req)))
+    ([req respond raise]
+      (client (accept-encoding-request req) respond raise))))
 
 (defn detect-charset
   "Given a charset header, detect the charset, returns UTF-8 if not found."
@@ -635,24 +721,31 @@
   (let [encoding (detect-charset content-type)]
     (generate-query-string-with-encoding params encoding)))
 
+(defn- query-params-request
+  [{:keys [query-params content-type]
+      :or {content-type :x-www-form-urlencoded}
+      :as req}]
+  (if query-params
+    (-> req (dissoc :query-params)
+        (update-in [:query-string]
+                   (fn [old-query-string new-query-string]
+                     (if-not (empty? old-query-string)
+                       (str old-query-string "&" new-query-string)
+                       new-query-string))
+                   (generate-query-string
+                     query-params
+                     (content-type-value content-type))))
+    req))
+
 (defn wrap-query-params
   "Middleware converting the :query-params option to a querystring on
   the request."
   [client]
-  (fn [{:keys [query-params content-type]
-       :or {content-type :x-www-form-urlencoded}
-       :as req}]
-    (if query-params
-      (client (-> req (dissoc :query-params)
-                  (update-in [:query-string]
-                             (fn [old-query-string new-query-string]
-                               (if-not (empty? old-query-string)
-                                 (str old-query-string "&" new-query-string)
-                                 new-query-string))
-                             (generate-query-string
-                              query-params
-                              (content-type-value content-type)))))
-      (client req))))
+  (fn
+    ([req]
+     (client (query-params-request req)))
+    ([req respond raise]
+     (client (query-params-request req) respond raise))))
 
 (defn basic-auth-value [basic-auth]
   (let [basic-auth (if (string? basic-auth)
@@ -660,47 +753,75 @@
                      (str (first basic-auth) ":" (second basic-auth)))]
     (str "Basic " (util/base64-encode (util/utf8-bytes basic-auth)))))
 
+(defn- basic-auth-request
+  [req]
+  (if-let [basic-auth (:basic-auth req)]
+    (-> req (dissoc :basic-auth)
+        (assoc-in [:headers "authorization"]
+                  (basic-auth-value basic-auth)))
+    req))
+
 (defn wrap-basic-auth
   "Middleware converting the :basic-auth option into an Authorization header."
   [client]
-  (fn [req]
-    (if-let [basic-auth (:basic-auth req)]
-      (client (-> req (dissoc :basic-auth)
-                  (assoc-in [:headers "authorization"]
-                            (basic-auth-value basic-auth))))
-      (client req))))
+  (fn
+    ([req]
+     (client (basic-auth-request req)))
+    ([req respond raise]
+     (client (basic-auth-request req) respond raise))))
+
+(defn- oauth-request
+  [req]
+  (if-let [oauth-token (:oauth-token req)]
+    (-> req (dissoc :oauth-token)
+        (assoc-in [:headers "authorization"]
+                  (str "Bearer " oauth-token)))
+    req))
 
 (defn wrap-oauth
   "Middleware converting the :oauth-token option into an Authorization header."
   [client]
-  (fn [req]
-    (if-let [oauth-token (:oauth-token req)]
-      (client (-> req (dissoc :oauth-token)
-                  (assoc-in [:headers "authorization"]
-                            (str "Bearer " oauth-token))))
-      (client req))))
+  (fn
+    ([req]
+     (client (oauth-request req)))
+    ([req respond raise]
+     (client (oauth-request req) respond raise))))
 
 
 (defn parse-user-info [user-info]
   (when user-info
     (str/split user-info #":")))
 
+(defn- user-info-request
+  [req]
+  (if-let [[user password] (parse-user-info (:user-info req))]
+    (assoc req :basic-auth [user password])
+    req))
+
 (defn wrap-user-info
   "Middleware converting the :user-info option into a :basic-auth option"
   [client]
-  (fn [req]
-    (if-let [[user password] (parse-user-info (:user-info req))]
-      (client (assoc req :basic-auth [user password]))
-      (client req))))
+  (fn
+    ([req]
+     (client (user-info-request req)))
+    ([req respond raise]
+     (client (user-info-request req) respond raise))))
+
+(defn- method-request
+  [req]
+  (if-let [m (:method req)]
+    (-> req (dissoc :method)
+        (assoc :request-method m))
+    req))
 
 (defn wrap-method
   "Middleware converting the :method option into the :request-method option"
   [client]
-  (fn [req]
-    (if-let [m (:method req)]
-      (client (-> req (dissoc :method)
-                  (assoc :request-method m)))
-      (client req))))
+  (fn
+    ([req]
+     (client (method-request req)))
+    ([req respond raise]
+     (client (method-request req) respond raise))))
 
 (defmulti coerce-form-params
   (fn [req] (keyword (content-type-value (:content-type req)))))
@@ -743,18 +864,25 @@
     (generate-query-string-with-encoding form-params form-param-encoding)
     (generate-query-string form-params (content-type-value content-type))))
 
+(defn- form-params-request
+  [{:keys [form-params content-type request-method]
+      :or {content-type :x-www-form-urlencoded}
+      :as req}]
+  (if (and form-params (#{:post :put :patch} request-method))
+    (-> req
+        (dissoc :form-params)
+        (assoc :content-type (content-type-value content-type)
+               :body (coerce-form-params req)))
+    req))
+
 (defn wrap-form-params
   "Middleware wrapping the submission or form parameters."
   [client]
-  (fn [{:keys [form-params content-type request-method]
-       :or {content-type :x-www-form-urlencoded}
-       :as req}]
-    (if (and form-params (#{:post :put :patch} request-method))
-      (client (-> req
-                  (dissoc :form-params)
-                  (assoc :content-type (content-type-value content-type)
-                         :body (coerce-form-params req))))
-      (client req))))
+  (fn
+    ([req]
+     (client (form-params-request req)))
+    ([req respnd raise]
+     (client (form-params-request req) respnd raise))))
 
 (defn- nest-kv
   [kv]
@@ -777,39 +905,55 @@
     (assoc request param-key (prewalk nest-kv params))
     request))
 
+(defn- nest-params-request
+  [{:keys [content-type] :as req}]
+  (if (or (nil? content-type)
+          (= content-type :x-www-form-urlencoded))
+    (reduce
+      nest-params
+      req
+      [:query-params :form-params])
+    req))
+
 (defn wrap-nested-params
   "Middleware wrapping nested parameters for query strings."
   [client]
-  (fn [{:keys [content-type]
-       :as req}]
-    (if (or (nil? content-type)
-            (= content-type :x-www-form-urlencoded))
-      (client (reduce
-               nest-params
-               req
-               [:query-params :form-params]))
-      (client req))))
+  (fn
+    ([req]
+     (client (nest-params-request req)))
+    ([req respond raise]
+     (client (nest-params-request req) respond raise))))
+
+(defn- url-request
+  [req]
+  (if-let [url (:url req)]
+    (-> req (dissoc :url) (merge (parse-url url)))
+    req))
 
 (defn wrap-url
   "Middleware wrapping request URL parsing."
   [client]
-  (fn [req]
-    (if-let [url (:url req)]
-      (client (-> req (dissoc :url) (merge (parse-url url))))
-      (client req))))
+  (fn
+    ([req]
+     (client (url-request req)))
+    ([req respond raise]
+     (client (url-request req) respond raise))))
 
 (defn wrap-unknown-host
   "Middleware ignoring unknown hosts when the :ignore-unknown-host? option
   is set."
   [client]
-  (fn [req]
-    (try
-      (client req)
-      (catch Exception e
-        (if (= (type (root-cause e)) UnknownHostException)
-          (when-not (opt req :ignore-unknown-host)
-            (throw (root-cause e)))
-          (throw (root-cause e)))))))
+  (fn
+    ([req]
+     (try
+       (client req)
+       (catch Exception e
+         (if (= (type (root-cause e)) UnknownHostException)
+           (when-not (opt req :ignore-unknown-host)
+             (throw (root-cause e)))
+           (throw (root-cause e))))))
+    ([req respond raise]
+     (client (assoc req :unknown-host-respond respond) respond raise))))
 
 (defn wrap-lower-case-headers
   "Middleware lowercasing all headers, as per RFC (case-insensitive) and
@@ -819,22 +963,76 @@
         #(if-let [headers (:headers %1)]
            (assoc %1 :headers (util/lower-case-keys headers))
            %1)]
-    (fn [req]
-      (-> (client (lower-case-headers req))
-          (lower-case-headers)))))
+    (fn
+      ([req]
+       (-> (client (lower-case-headers req))
+           (lower-case-headers)))
+      ([req respond raise]
+        (client (lower-case-headers req) #(respond (lower-case-headers %)) raise)))))
+
+(defn- request-timing-response
+  [resp start]
+  (assoc resp :request-time (- (System/currentTimeMillis) start)))
 
 (defn wrap-request-timing
   "Middleware that times the request, putting the total time (in milliseconds)
   of the request into the :request-time key in the response."
   [client]
-  (fn [req]
-    (let [start (System/currentTimeMillis)
-          resp (client req)]
-      (assoc resp :request-time (- (System/currentTimeMillis) start)))))
+  (fn
+    ([req]
+     (let [start (System/currentTimeMillis)
+           resp (client req)]
+       (request-timing-response resp start)))
+    ([req respond raise]
+     (let [start (System/currentTimeMillis)]
+       (client req
+               #(respond (request-timing-response % start))
+               raise)))))
+
+(defn- async-pooling-request
+  [req release]
+  (let [handler (:oncancel req)]
+    (assoc req :oncancel
+      (fn []
+        (release)
+        (when handler
+          (handler))))))
+
+(def ^:dynamic *pooling-info*
+  "The pooling-info used in pooling function"
+  nil)
+
+(defn wrap-async-pooling
+  "Middleware that handle pooling async request. It use the value of key
+  :pooling-info, the value is a map contains three key-value
+
+  :conn-mgr - connection manager used by the HttpAsyncClient
+  :allocate - a function with no args, will be invoked when connection allocate
+  :release  - a function with no args, will be invoked when connection finished
+
+  You must shutdown the conn-mgr when you don't need it."
+  [client]
+  (fn
+    ([req]
+      (client req))
+    ([req respond raise]
+     (if-let [pooling-info (or *pooling-info* (:pooling-info req))]
+       (let [{:keys [allocate release conn-mgr]} pooling-info]
+         (binding [conn/*async-connection-manager* conn-mgr]
+           (allocate)
+           (client (async-pooling-request req release)
+                   (fn [resp]
+                     (respond (assoc resp :pooling-info pooling-info))
+                     (release))
+                   (fn [ex]
+                     (release)
+                     (raise ex)))))
+       (client req respond raise)))))
 
 (def default-middleware
   "The default list of middleware clj-http uses for wrapping requests."
   [wrap-request-timing
+   wrap-async-pooling
    wrap-header-map
    wrap-query-params
    wrap-basic-auth
@@ -890,6 +1088,11 @@
   * :accept-encoding
   * :as
 
+  The following keys make an async HTTP request, like ring's CPS handler.
+  * :async?
+  * :respond
+  * :raise
+
   The following additional behaviors are also automatically enabled:
   * Exceptions are thrown for status codes other than 200-207, 300-303, or 307
   * Gzip and deflate responses are accepted and decompressed
@@ -903,59 +1106,67 @@
   `(when (nil? ~url)
      (throw (IllegalArgumentException. "Host URL cannot be nil"))))
 
+(defn- request*
+  [{:keys [async?] :as req} [respond raise]]
+  (if async?
+    (if (some nil? [respond raise])
+      (throw (IllegalArgumentException. "If :async? is true, you must pass respond and raise"))
+      (request (dissoc req :respond :raise) respond raise))
+    (request req)))
+
 (defn get
   "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
+  [url & [req & r]]
   (check-url! url)
-  (request (merge req {:method :get :url url})))
+  (request* (merge req {:method :get :url url}) r))
 
 (defn head
   "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
+  [url & [req & r]]
   (check-url! url)
-  (request (merge req {:method :head :url url})))
+  (request* (merge req {:method :head :url url}) r))
 
 (defn post
   "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
+  [url & [req & r]]
   (check-url! url)
-  (request (merge req {:method :post :url url})))
+  (request* (merge req {:method :post :url url}) r))
 
 (defn put
   "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
+  [url & [req & r]]
   (check-url! url)
-  (request (merge req {:method :put :url url})))
+  (request* (merge req {:method :put :url url}) r))
 
 (defn delete
   "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
+  [url & [req & r]]
   (check-url! url)
-  (request (merge req {:method :delete :url url})))
+  (request* (merge req {:method :delete :url url}) r))
 
 (defn options
   "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
+  [url & [req & r]]
   (check-url! url)
-  (request (merge req {:method :options :url url})))
+  (request* (merge req {:method :options :url url}) r))
 
 (defn copy
   "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
+  [url & [req & r]]
   (check-url! url)
-  (request (merge req {:method :copy :url url})))
+  (request* (merge req {:method :copy :url url}) r))
 
 (defn move
   "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
+  [url & [req & r]]
   (check-url! url)
-  (request (merge req {:method :move :url url})))
+  (request* (merge req {:method :move :url url}) r))
 
 (defn patch
   "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req]]
+  [url & [req & r]]
   (check-url! url)
-  (request (merge req {:method :patch :url url})))
+  (request* (merge req {:method :patch :url url}) r))
 
 (defmacro with-middleware
   "Perform the body of the macro with a custom middleware list.
@@ -1022,3 +1233,43 @@
            (.shutdown
             ^PoolingHttpClientConnectionManager
             conn/*connection-manager*))))))
+
+(defn reuse-pool
+  "A helper function takes a request options map and a response map respond
+  from a pooled async request, the returned options map will be set to reuse
+  the connection pool which used by the former request"
+  [options response]
+  (if-let [info (:pooling-info response)]
+    (assoc options :pooling-info info)
+    options))
+
+(defmacro with-async-connection-pool
+  [opts & body]
+  `(let [cm# (conn/make-reuseable-async-conn-manager ~opts)
+         count# (atom 0)
+         all-requested# (atom false)
+         p-info# {:conn-mgr cm#
+                  :allocate (fn [] (swap! count# inc))
+                  :release  (fn [] (swap! count# dec))}
+         ;; A http client hold the conn-mgr and start the io-reactor.
+         ;; In this context any other client's ConnectionManagerShared will be
+         ;; set to true.
+         holder-client# (-> (HttpAsyncClients/custom)
+                            (.setConnectionManager cm#)
+                            (.build)
+                            (.start))]
+     (add-watch count# :close-conn-mgr
+                (fn [key# identity# old# new#]
+                  (if (and (not= old# new#) (<= new# 0) @all-requested#)
+                    (.shutdown
+                      ^PoolingNHttpClientConnectionManager
+                      cm#))))
+     (binding [*pooling-info* p-info#]
+       (try
+         ~@body
+         (finally
+           (swap! all-requested# not)
+           (if (= 0 @count#)
+             (.shutdown
+               ^PoolingNHttpClientConnectionManager
+               cm#)))))))

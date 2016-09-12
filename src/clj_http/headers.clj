@@ -131,13 +131,19 @@
   (into (HeaderMap. {} nil)
         (apply array-map keyvals)))
 
+(defn- header-map-request
+  [req]
+  (let [req-headers (:headers req)]
+    (if req-headers
+      (-> req (assoc :headers (into (header-map) req-headers)
+                     :use-header-maps-in-response? true))
+      req)))
+
 (defn wrap-header-map
   "Middleware that converts headers from a map into a header-map."
   [client]
-  (fn [req]
-    (let [req-headers (:headers req)
-          req (if req-headers
-                (-> req (assoc :headers (into (header-map) req-headers)
-                               :use-header-maps-in-response? true))
-                req)]
-      (client req))))
+  (fn
+    ([req]
+     (client (header-map-request req)))
+    ([req respond raise]
+     (client (header-map-request req) respond raise))))

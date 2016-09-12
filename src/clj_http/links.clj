@@ -38,6 +38,17 @@
        (map read-link-value)
        (into {})))
 
+(defn- links-response
+  [response]
+  (if-let [link-headers (get-in response [:headers "link"])]
+    (let [link-headers (if (coll? link-headers)
+                         link-headers
+                         [link-headers])]
+      (assoc response
+        :links
+        (into {} (map read-link-headers link-headers))))
+    response))
+
 (defn wrap-links
   "Add a :links key to the response map that contains parsed Link headers. The
   links will be represented as a map, with the 'rel' value being the key. The
@@ -47,13 +58,8 @@
   => {:links {:next {:href \"http://example.com/page2.html\"
   :title \"Page 2\"}}}"
   [client]
-  (fn [request]
-    (let [response (client request)]
-      (if-let [link-headers (get-in response [:headers "link"])]
-        (let [link-headers (if (coll? link-headers)
-                             link-headers
-                             [link-headers])]
-          (assoc response
-                 :links
-                 (into {} (map read-link-headers link-headers))))
-        response))))
+  (fn
+    ([request]
+      (links-response (client request)))
+    ([request respond raise]
+      (client request #(respond (links-response %)) raise))))
