@@ -99,7 +99,9 @@
     [:propfind "/propfind"]
     {:status 200 :body "propfind"}
     [:propfind "/propfind-with-body"]
-    {:status 200 :body (:body req)}))
+    {:status 200 :body (:body req)}
+    [:get "/query-string"]
+    {:status 200 :body (:query-string req)}))
 
 (defn run-server
   []

@@ -618,28 +618,34 @@
      (second found))
    "UTF-8"))
 
-(defn generate-query-string-with-encoding [params encoding]
+(defn- multi-param-suffix [index multi-param-style]
+  (case multi-param-style
+    :indexed (str "[" index "]")
+    :array "[]"
+    ""))
+
+(defn generate-query-string-with-encoding [params encoding multi-param-style]
   (str/join "&"
             (mapcat (fn [[k v]]
                       (if (sequential? v)
-                        (map #(str (util/url-encode (name %1) encoding)
-                                   "="
-                                   (util/url-encode (str %2) encoding))
-                             (repeat k) v)
+                        (map-indexed #(str (util/url-encode (name k) encoding)
+                                           (multi-param-suffix %1 multi-param-style)
+                                           "="
+                                           (util/url-encode (str %2) encoding)) v)
                         [(str (util/url-encode (name k) encoding)
                               "="
                               (util/url-encode (str v) encoding))]))
                     params)))
 
-(defn generate-query-string [params & [content-type]]
+(defn generate-query-string [params & [content-type multi-param-style]]
   (let [encoding (detect-charset content-type)]
-    (generate-query-string-with-encoding params encoding)))
+    (generate-query-string-with-encoding params encoding multi-param-style)))
 
 (defn wrap-query-params
   "Middleware converting the :query-params option to a querystring on
   the request."
   [client]
-  (fn [{:keys [query-params content-type]
+  (fn [{:keys [query-params content-type multi-param-style]
        :or {content-type :x-www-form-urlencoded}
        :as req}]
     (if query-params
@@ -651,7 +657,8 @@
                                  new-query-string))
                              (generate-query-string
                               query-params
-                              (content-type-value content-type)))))
+                              (content-type-value content-type)
+                              multi-param-style))))
       (client req))))
 
 (defn basic-auth-value [basic-auth]
@@ -737,11 +744,13 @@
                      :json-opts json-opts})))
   (json-encode form-params json-opts))
 
-(defmethod coerce-form-params :default [{:keys [content-type form-params
+(defmethod coerce-form-params :default [{:keys [content-type
+                                                multi-param-style
+                                                form-params
                                                 form-param-encoding]}]
   (if form-param-encoding
-    (generate-query-string-with-encoding form-params form-param-encoding)
-    (generate-query-string form-params (content-type-value content-type))))
+    (generate-query-string-with-encoding form-params form-param-encoding multi-param-style)
+    (generate-query-string form-params (content-type-value content-type) multi-param-style)))
 
 (defn wrap-form-params
   "Middleware wrapping the submission or form parameters."
