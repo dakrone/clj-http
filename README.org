@@ -2,7 +2,7 @@
 #+AUTHOR:   Lee Hinman
 #+STARTUP:  align fold nodlcheck lognotestate showall
 #+OPTIONS:  H:4 num:nil toc:t \n:nil @:t ::t |:t ^:{} -:t f:t *:t
-#+OPTIONS:  skip:nil d:(HIDE) tags:not-in-toc
+#+OPTIONS:  skip:nil d:(HIDE) tags:not-in-toc auto-id:t
 #+PROPERTY: header-args :results code :exports both :noweb yes
 #+HTML_HEAD: <style type="text/css"> body {margin-right:15%; margin-left:15%;} </style>
 #+LANGUAGE: en
@@ -381,6 +381,33 @@ header map.
 This special treatment of headers is implemented in the
 wrap-header-map middleware, which (like any middleware) can be
 disabled by using with-middleware to specify different behavior.
+
+** Query-string parameters
+:PROPERTIES:
+:CUSTOM_ID: h:dd49992c-a516-4af0-9735-4f4340773361
+:END:
+
+There are three different ways that query string parameters for array values can
+be generated, depending on what the resulting query string should look like,
+they are:
+
+- A repeating parameter (default)
+- Array style
+- Indexed array style
+
+Here is an example of the input and output for the ~:query_string~ parameter,
+controlled by the ~:multi-param-style~ option:
+
+#+BEGIN_SRC clojure
+;; default style, with :multi-param-style unset
+:a [1 2 3] => "a=1&a=2&a=3"
+;; with :multi-param-style :array, a repeating param with array suffix
+;; (PHP-style):
+:a [1 2 3] => "a[]=1&a[]=2&a[]=3"
+;; with :multi-param-style :indexed, a repeating param with array suffix and
+;; index (Rails-style):
+:a [1 2 3] => "a[0]=1&a[1]=2&a[2]=3"
+#+END_SRC
 
 ** Meta Tag Headers
 
