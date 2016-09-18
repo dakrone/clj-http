@@ -755,25 +755,20 @@
                          :body (coerce-form-params req))))
       (client req))))
 
-(defn- nest-kv
-  [kv]
-  (if (and (vector? kv)
-           (or (map? (second kv))
-               (vector? (second kv))))
-    (let [[fk m] kv]
-      (reduce-kv (fn [m sk v]
-                   (assoc m
-                     (str (name fk)
-                          \[ (if (integer? sk) sk (name sk)) \])
-                     v))
-                 {}
-                 m))
-    kv))
-
 (defn- nest-params
   [request param-key]
   (if-let [params (request param-key)]
-    (assoc request param-key (prewalk nest-kv params))
+    (assoc request param-key (prewalk
+                              #(if (and (vector? %) (map? (second %)))
+                                 (let [[fk m] %]
+                                   (reduce
+                                    (fn [m [sk v]]
+                                      (assoc m (str (name fk)
+                                                    \[ (name sk) \]) v))
+                                    {}
+                                    m))
+                                 %)
+                              params))
     request))
 
 (defn wrap-nested-params
