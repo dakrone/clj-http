@@ -8,6 +8,9 @@
 #+LANGUAGE: en
 
 * Table of Contents                                                     :TOC:
+:PROPERTIES:
+:CUSTOM_ID: h:84c64317-1dfa-4955-bfa7-180745c31546
+:END:
  - [[#introduction][Introduction]]
    - [[#overview][Overview]]
    - [[#philosophy-][Philosophy ]]
@@ -46,8 +49,14 @@
  - [[#license][License]]
 
 * Introduction
+:PROPERTIES:
+:CUSTOM_ID: h:5caf5111-96b3-401b-bba3-6b66cc625cbd
+:END:
 
 ** Overview
+:PROPERTIES:
+:CUSTOM_ID: h:301e4e08-cd19-4066-888d-166f35d3f696
+:END:
 
 clj-http is an HTTP library wrapping the [[http://hc.apache.org/][Apache HttpComponents]] client. This
 library has taken over from mmcgrana's clj-http.
@@ -55,6 +64,9 @@ library has taken over from mmcgrana's clj-http.
 [[https://secure.travis-ci.org/dakrone/clj-http.png]]
 
 ** Philosophy
+:PROPERTIES:
+:CUSTOM_ID: h:b8fdaffd-1f9f-4d08-93f7-ef50392e7af1
+:END:
 
 The design of =clj-http= is inspired by the [[http://github.com/mmcgrana/ring][Ring]] protocol for Clojure HTTP
  server applications.
@@ -67,27 +79,30 @@ like =clj-http.client/get= are sugar over this =clj-http.client/request=
 function.
 
 * Installation
+:PROPERTIES:
+:CUSTOM_ID: h:280b3315-2b20-484d-962b-7f7132d20840
+:END:
 
 =clj-http= is available as a Maven artifact from [[http://clojars.org/clj-http][Clojars]].
 
 With Leiningen/Boot:
 
 #+BEGIN_SRC clojure
-[clj-http "2.2.0"]
+[clj-http "2.3.0"]
 #+END_SRC
 
-Previous versions available as:
+The previous major versions is available as:
 
 #+BEGIN_SRC clojure
-[clj-http "2.0.1"]
 [clj-http "1.1.2"]
-[clj-http "1.1.1"]
-[clj-http "1.0.1"]
 #+END_SRC
 
 clj-http supports clojure 1.6.0 and higher.
 
 * Quickstart
+:PROPERTIES:
+:CUSTOM_ID: h:67644772-7a82-451b-91b8-6cab871445b6
+:END:
 
 The main HTTP client functionality is provided by the =clj-http.client= namespace.
 
@@ -109,6 +124,9 @@ The client supports simple =get=, =head=, =put=, =post=, =delete=, =copy=,
 response maps]]:
 
 ** HEAD
+:PROPERTIES:
+:CUSTOM_ID: h:5db60716-9834-4658-9256-63732e69bed6
+:END:
 
 #+BEGIN_SRC clojure
 
@@ -119,6 +137,9 @@ response maps]]:
 #+END_SRC
 
 ** GET
+:PROPERTIES:
+:CUSTOM_ID: h:b2c26b5c-a36a-4f65-9c70-5d9921a2390d
+:END:
 
 Example requests:
 
@@ -193,6 +214,9 @@ content encodings.
 =:trace-redirects= will contain the chain of the redirections followed.
 
 ** PUT
+:PROPERTIES:
+:CUSTOM_ID: h:f28939e5-24af-4e0d-ac3d-81c52a271418
+:END:
 
 #+BEGIN_SRC clojure
 
@@ -201,6 +225,9 @@ content encodings.
 #+END_SRC
 
 ** POST
+:PROPERTIES:
+:CUSTOM_ID: h:f1454284-011f-4426-8cfc-c116da4301e0
+:END:
 
 #+BEGIN_SRC clojure
 
@@ -269,6 +296,9 @@ content encodings.
 #+END_SRC
 
 ** DELETE
+:PROPERTIES:
+:CUSTOM_ID: h:23225b05-4fc1-48f1-995c-8daeaf4c7c90
+:END:
 
 #+BEGIN_SRC clojure
 
@@ -277,7 +307,13 @@ content encodings.
 #+END_SRC
 
 ** Coercions
+:PROPERTIES:
+:CUSTOM_ID: h:44b36885-b8ea-4e78-9e04-5141995e6771
+:END:
 *** Input coercion
+:PROPERTIES:
+:CUSTOM_ID: h:b72eb0a0-5546-440b-95ea-ff10aa631fd8
+:END:
 
 #+BEGIN_SRC clojure
 ;; body as a byte-array
@@ -305,6 +341,9 @@ content encodings.
 #+END_SRC
 
 *** Output coercion
+:PROPERTIES:
+:CUSTOM_ID: h:f617095a-dbda-40a8-8662-db62d0389fd5
+:END:
 
 #+BEGIN_SRC clojure
 ;; The default output is a string body
@@ -359,6 +398,9 @@ to:
 The =:coerce= setting defaults to =:unexceptional=.
 
 ** Headers
+:PROPERTIES:
+:CUSTOM_ID: h:5f5e2c8b-e9da-40ea-a5aa-2afc9fa4f2df
+:END:
 
 clj-http's treatment of headers is a little more permissive than the [[https://github.com/ring-clojure/ring/blob/master/SPEC][ring spec]]
 specifies.
@@ -410,6 +452,9 @@ controlled by the ~:multi-param-style~ option:
 #+END_SRC
 
 ** Meta Tag Headers
+:PROPERTIES:
+:CUSTOM_ID: h:1f1a4258-849f-4324-8687-d066c15de09b
+:END:
 
 HTML 4.01 allows using the tag ~<meta http-equiv="..." />~ and HTML 5 allows
 using the tag ~<meta charset="..." />~ to specify a header that should be
@@ -471,6 +516,9 @@ Note also that HEAD requests will not return a body, in which case this setting 
 clj-http will automatically disable the =:decode-body-headers= option.
 
 ** Link Headers
+:PROPERTIES:
+:CUSTOM_ID: h:338ed551-06d7-4889-91cd-b21aec21d15f
+:END:
 
 clj-http parses any [[http://tools.ietf.org/html/rfc5988][link headers]] returned in the response, and adds them to the
 =:links= key on the response map. This is particularly useful for paging RESTful
@@ -483,6 +531,9 @@ APIs:
 #+END_SRC
 
 ** Redirects
+:PROPERTIES:
+:CUSTOM_ID: h:0176f085-4ddb-4dfd-9007-d27a6e598ebd
+:END:
 
 clj-http conforms its behaviour regarding automatic redirects to the [[https://tools.ietf.org/html/rfc2616#section-10.3][RFC]].
 
@@ -493,8 +544,14 @@ automatic redirection work on all methods by transforming the method of the
 request to =GET=.
 
 ** Cookies
+:PROPERTIES:
+:CUSTOM_ID: h:82472506-4fbe-4c1d-9c09-b6f764647c24
+:END:
 
 *** Cookiestores
+:PROPERTIES:
+:CUSTOM_ID: h:d9887431-486f-456f-b698-3f708e46367f
+:END:
 
 clj-http can simplify the maintenance of cookies across requests if it is
 provided with a _cookie store_.
@@ -551,6 +608,9 @@ from a cookie store:
 #+END_SRC
 
 *** Keystores, Trust-stores
+:PROPERTIES:
+:CUSTOM_ID: h:1546e3f1-3f9f-459a-9015-628afa22f59e
+:END:
 
 You can also specify your own keystore/trust-store to be used:
 
@@ -567,6 +627,9 @@ The =:keystore/:trust-store= values may be either paths to keystore
 files or =KeyStore= instances.
 
 ** Exceptions
+:PROPERTIES:
+:CUSTOM_ID: h:dfb56fc9-a958-41ad-8de2-af15a4cd4902
+:END:
 
 The client will throw exceptions on, well, exceptional status codes, meaning all
 HTTP responses other than =#{200 201 202 203 204 205 206 207 300 301 302 303
@@ -617,6 +680,9 @@ How to use with Slingshot:
 #+END_SRC
 
 ** Decompression
+:PROPERTIES:
+:CUSTOM_ID: h:1ff48808-dc42-46de-8cef-12983c446d80
+:END:
 
 By default, clj-http will add the ={"Accept-Encoding" "gzip, deflate"}= header
 to requests, and automatically decompress the resulting gzip or deflate stream
@@ -643,6 +709,9 @@ available as =:orig-content-encoding= in the response map if auto-decompression
 is enabled.
 
 ** Debugging
+:PROPERTIES:
+:CUSTOM_ID: h:f86f4daa-356e-40ca-b87e-bf347ec1f38e
+:END:
 
 There are four debugging methods you can use:
 
@@ -669,8 +738,14 @@ There are four debugging methods you can use:
 #+END_SRC
 
 * Authentication
+:PROPERTIES:
+:CUSTOM_ID: h:3c375d7a-7acc-45cb-a7a4-6f2bdf4cad95
+:END:
 
 ** Basic Auth
+:PROPERTIES:
+:CUSTOM_ID: h:8ae77bcc-68c6-4560-affb-4bbe02c6b7a9
+:END:
 
 #+BEGIN_SRC
 
@@ -680,6 +755,9 @@ There are four debugging methods you can use:
 #+END_SRC
 
 ** Digest Auth
+:PROPERTIES:
+:CUSTOM_ID: h:47c07a03-677f-4a4f-967f-242329a8ab07
+:END:
 
 #+BEGIN_SRC
 
@@ -688,6 +766,9 @@ There are four debugging methods you can use:
 #+END_SRC
 
 ** oAuth2
+:PROPERTIES:
+:CUSTOM_ID: h:e34482c0-15d2-483a-a183-d5e3f1f662a6
+:END:
 
 #+BEGIN_SRC
 
@@ -696,8 +777,14 @@ There are four debugging methods you can use:
 #+END_SRC
 
 * Advanced Usage
+:PROPERTIES:
+:CUSTOM_ID: h:e6aed224-7ed5-4340-bc4e-7874eefadd87
+:END:
 
 ** Raw Request
+:PROPERTIES:
+:CUSTOM_ID: h:71bf84d3-2ff0-44a8-99aa-214d339cf7d2
+:END:
 
 A more general =request= function is also available, which is useful as a
 primitive for building higher-level interfaces:
@@ -709,11 +796,17 @@ primitive for building higher-level interfaces:
 #+END_SRC
 
 *** Boolean options
+:PROPERTIES:
+:CUSTOM_ID: h:4a5870a5-693f-441d-a69c-da96eebbbb6e
+:END:
 
 Since 0.9.0, all boolean options can be expressed as either ={:debug true}= or
 ={:debug? true}=, with or without the question mark.
 
 ** Persistent Connections
+:PROPERTIES:
+:CUSTOM_ID: h:5f755de8-c106-4b89-aa0a-3074ef96efc4
+:END:
 
 clj-http can use persistent connections to speed up connections if multiple
 connections are being used:
@@ -751,6 +844,9 @@ See the docstring on =make-reusable-conn-manager= for options and default
 values.
 
 ** Proxies
+:PROPERTIES:
+:CUSTOM_ID: h:b5007a6f-f0bf-4d98-9ab9-b23fcebfa49a
+:END:
 
 A proxy can be specified by setting the Java properties: =<scheme>.proxyHost=
 and =<scheme>.proxyPort= where =<scheme>= is the client scheme used (normally
@@ -787,6 +883,9 @@ would:
 You can also store the proxied connection manager and reuse it later.
 
 ** Custom Middleware
+:PROPERTIES:
+:CUSTOM_ID: h:afec8fd4-580a-4a82-9521-628f8fa4fbd8
+:END:
 
 Sometime it is desirable to run a request with some middleware enabled and some
 left out, the =with-middleware= method provides this functionality:
@@ -805,15 +904,24 @@ which is a vector of the default middleware that clj-http uses.
 middleware during request time.
 
 * Development
+:PROPERTIES:
+:CUSTOM_ID: h:0fb11882-d060-4e2e-85f7-3bf18dc9051b
+:END:
 
 Please send a pull request or open an issue if you have any problems.
 
 ** Faking Responses
+:PROPERTIES:
+:CUSTOM_ID: h:8bacf773-9af1-4098-907e-f96a780d3fca
+:END:
 
 If you need to fake clj-http responses (for things like testing and such), check
 out the [[https://github.com/myfreeweb/clj-http-fake][clj-http-fake]] library.
 
 ** Optional Dependencies
+:PROPERTIES:
+:CUSTOM_ID: h:a847429d-741f-4a5a-8d27-916ea1017461
+:END:
 
 In 2.0.0+ clj-http's optional dependencies at excluded by default, in order to
 use the features you will need to add them to your =project.clj= file.
@@ -834,13 +942,22 @@ Prior to 2.0.0, you can /exclude/ the dependencies and clj-http will work
 without them.
 
 ** clj-http-lite
+:PROPERTIES:
+:CUSTOM_ID: h:472e4fba-3c50-4eb6-95fb-95d0d9afdbad
+:END:
 
 Like clj-http but need something more lightweight without as many external
 dependencies? Check out [[https://github.com/hiredman/clj-http-lite][clj-http-lite]] for a project that can be used as a
 drop-in replacement for clj-http.
 
 ** Troubleshooting
+:PROPERTIES:
+:CUSTOM_ID: h:e97ba275-3324-4102-9beb-9bcbc483ad15
+:END:
 *** VerifyError class org.codehaus.jackson.smile.SmileParser overrides final method getBinaryValue...
+:PROPERTIES:
+:CUSTOM_ID: h:048d8994-647a-4325-ab5d-f96fa12d5798
+:END:
 
 This is actually caused by your project attempting to use [[https://github.com/mmcgrana/clj-json/][clj-json]] and [[https://github.com/dakrone/cheshire][cheshire]]
 in the same classloader. You can fix the issue by either not using clj-json (and
@@ -861,6 +978,9 @@ As of clj-http 0.3.5, you should no longer see this, as Cheshire 3.1.0
 and clj-json can now live together without causing problems.
 
 *** NoHttpResponseException ... due to stale connections**
+:PROPERTIES:
+:CUSTOM_ID: h:c2a2ea17-d402-43ba-b57b-2a5bc75a6750
+:END:
 
 Persistent connections kept alive by the connection manager become stale: the
 target server shuts down the connection on its end without HttpClient being able
@@ -871,6 +991,9 @@ This can be solved by using (with-connection-pool) as described in the
 'Using Persistent Connection' section above.
 
 * Tests
+:PROPERTIES:
+:CUSTOM_ID: h:34bd658a-26a2-4731-9b7d-dd93bce8c35a
+:END:
 
 To run the tests:
 
@@ -887,6 +1010,9 @@ $ lein all test :all
 #+END_SRC
 
 * Testimonials
+:PROPERTIES:
+:CUSTOM_ID: h:3e19427d-7d2b-465e-8fa4-1d59f9555924
+:END:
 
 With close to a [million](https://clojars.org/clj-http) downloads, clj-http is a
 widely used, battle-tested clojure library. It is also included in other
@@ -904,6 +1030,9 @@ Libraries inspired by clj-http:
 - [[https://github.com/hiredman/clj-http-lite] [clj-http-lite]]
 
 * License
+:PROPERTIES:
+:CUSTOM_ID: h:9968d81c-ff40-40f5-be27-60bab27c64c9
+:END:
 
 Released under the MIT License:
 <http://www.opensource.org/licenses/mit-license.php>
