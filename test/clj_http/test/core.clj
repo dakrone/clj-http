@@ -95,7 +95,9 @@
     [:patch "/patch"]
     {:status 200 :body "patch"}
     [:get "/headers"]
-    {:status 200 :body (json/encode (:headers req))}))
+    {:status 200 :body (json/encode (:headers req))}
+    [:get "/query-string"]
+    {:status 200 :body (:query-string req)}))
 
 (defn run-server
   []
