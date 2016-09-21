@@ -227,7 +227,7 @@
 
 (declare wrap-redirects)
 
-(defn follow-redirect
+(defn ^:deprecated follow-redirect
   "Attempts to follow the redirects from the \"location\" header, if no such
   header exists (bad server!), returns the response without following the
   request."
@@ -246,7 +246,7 @@
       ;; Oh well, we tried, but if no location is set, return the response
       resp)))
 
-(defn wrap-redirects
+(defn ^:deprecated wrap-redirects
   "Middleware that follows redirects in the response. A slingshot exception is
   thrown if too many redirects occur. Options
 
@@ -845,7 +845,6 @@
    wrap-oauth
    wrap-user-info
    wrap-url
-   wrap-redirects
    wrap-decompression
    wrap-input-coercion
    ;; put this before output-coercion, so additional charset

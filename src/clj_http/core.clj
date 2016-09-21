@@ -327,7 +327,13 @@
          :streaming? (if (nil? entity) false (.isStreaming entity))
          :status (.getStatusCode status)
          :protocol-version  {:name (.getProtocol protocol-version) :major (.getMajor protocol-version) :minor (.getMinor protocol-version)}  
-         :reason-phrase (.getReasonPhrase status)})
+         :reason-phrase (.getReasonPhrase status)
+         :trace-redirects (conj
+                           (mapv #(.toString %)
+                                 (into []
+                                       (.getAll (.getAttribute context HttpClientContext/REDIRECT_LOCATIONS))))
+                           http-url)
+         })
       (catch Throwable t
         (when-not (conn/reusable? conn-mgr)
           (.shutdown conn-mgr))
