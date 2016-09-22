@@ -233,20 +233,20 @@
     ([req responsd raise]
      (client req
              (fn [resp]
-               (try
-                 (responsd (exceptions-response req resp))
-                 (catch Exception ex (raise ex))))
+               (responsd (exceptions-response req resp)))
              raise))))
 
 (declare wrap-redirects)
+(declare reuse-pool)
 
 (defn- follow-redirect-request
-  [req redirect trace-redirects]
+  [req redirect trace-redirects resp]
   (-> req
       (merge (parse-url redirect))
       (dissoc :query-params)
       (assoc :url redirect)
-      (assoc :trace-redirects trace-redirects)))
+      (assoc :trace-redirects trace-redirects)
+      (reuse-pool resp)))
 
 (defn follow-redirect
   "Attempts to follow the redirects from the \"location\" header, if no such
@@ -260,12 +260,21 @@
       (let [redirect (str (URL. (URL. url) raw-redirect))]
         (try (.close body) (catch Exception _))
         (if-not async?
-          ((wrap-redirects client) (follow-redirect-request req redirect trace-redirects))
+          ((wrap-redirects client) (follow-redirect-request req redirect trace-redirects resp))
           (if (some nil? [respond raise])
             (raise (IllegalArgumentException. "If :async? is true, you must set :respond and :raise"))
-            ((wrap-redirects client) (follow-redirect-request req redirect trace-redirects) respond raise))))
+            ((wrap-redirects client)
+              (follow-redirect-request req redirect trace-redirects resp) respond raise))))
       ;; Oh well, we tried, but if no location is set, return the response
-      resp)))
+      (if-not async?
+        resp
+        (respond resp)))))
+
+(defn- respond*
+  [resp req]
+  (if (:async? req)
+    ((:respond req) resp)
+    resp))
 
 (defn- redirects-response
   [client
@@ -280,13 +289,13 @@
                              trace-redirects))]
     (cond
       (false? (opt req :follow-redirects))
-      resp
+      (respond* resp req)
       (not (redirect? resp-r))
-      resp-r
+      (respond* resp-r req)
       (and max-redirects (> redirects-count max-redirects))
       (if (opt req :throw-exceptions)
         (throw+ resp-r "Too many redirects: %s" redirects-count)
-        resp-r)
+        (respond* resp-r req))
       (= 303 status)
       (follow-redirect client (assoc req :request-method :get
                                          :redirects-count (inc redirects-count))
@@ -302,15 +311,15 @@
                                   :redirects-count (inc redirects-count))
                          resp-r)
         :else
-        resp-r)
+        (respond* resp-r req))
       (= 307 status)
       (if (or (#{:get :head} request-method)
               (opt req :force-redirects))
         (follow-redirect client (assoc req :redirects-count
                                            (inc redirects-count)) resp-r)
-        resp-r)
+        (respond* resp-r req))
       :else
-      resp-r)))
+      (respond* resp-r req))))
 
 (defn wrap-redirects
   "Middleware that follows redirects in the response. A slingshot exception is
@@ -330,8 +339,11 @@
       (redirects-response client req (client req)))
     ([req respond raise]
       (client req
-              #(respond (redirects-response client
-                          (assoc req :async? true :respond respond :raise raise) %))
+              #(redirects-response client
+                                   (assoc req :async? true
+                                              :respond respond
+                                              :raise raise)
+                                   %)
               raise))))
 
 ;; Multimethods for Content-Encoding dispatch automatically
@@ -1020,13 +1032,17 @@
        (let [{:keys [allocate release conn-mgr]} pooling-info]
          (binding [conn/*async-connection-manager* conn-mgr]
            (allocate)
-           (client (async-pooling-request req release)
-                   (fn [resp]
-                     (respond (assoc resp :pooling-info pooling-info))
-                     (release))
-                   (fn [ex]
-                     (release)
-                     (raise ex)))))
+           (try
+             (client (async-pooling-request req release)
+                     (fn [resp]
+                       (respond (assoc resp :pooling-info pooling-info))
+                       (release))
+                     (fn [ex]
+                       (release)
+                       (raise ex)))
+             (catch Throwable ex
+               (release)
+               (throw ex)))))
        (client req respond raise)))))
 
 (def default-middleware
