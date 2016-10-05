@@ -2,7 +2,7 @@
 #+AUTHOR:   Lee Hinman
 #+STARTUP:  align fold nodlcheck lognotestate showall
 #+OPTIONS:  H:4 num:nil toc:t \n:nil @:t ::t |:t ^:{} -:t f:t *:t
-#+OPTIONS:  skip:nil d:(HIDE) tags:not-in-toc
+#+OPTIONS:  skip:nil d:(HIDE) tags:not-in-toc auto-id:t
 #+PROPERTY: header-args :results code :exports both :noweb yes
 #+HTML_HEAD: <style type="text/css"> body {margin-right:15%; margin-left:15%;} </style>
 #+LANGUAGE: en
@@ -23,6 +23,7 @@
    - [[#put][PUT]]
    - [[#post][POST]]
    - [[#delete][DELETE]]
+   - [[#async][Async HTTP Request]]
    - [[#coercions][Coercions]]
    - [[#headers][Headers]]
    - [[#meta-tag-headers][Meta Tag Headers]]
@@ -102,22 +103,19 @@ function.
 With Leiningen/Boot:
 
 #+BEGIN_SRC clojure
-[clj-http "2.2.0"]
+[clj-http "2.3.0"]
 #+END_SRC
 
 If you want to test out the latest version, a 3.x release is also available.
 
 #+BEGIN_SRC clojure
-[clj-http "3.2.0"]
+[clj-http "3.3.0"]
 #+END_SRC
 
-Previous versions available as:
+The previous major version is available as:
 
 #+BEGIN_SRC clojure
-[clj-http "2.0.1"]
 [clj-http "1.1.2"]
-[clj-http "1.1.1"]
-[clj-http "1.0.1"]
 #+END_SRC
 
 clj-http supports clojure 1.6.0 and higher.
@@ -353,6 +351,26 @@ content encodings.
 
 #+END_SRC
 
+** Async HTTP Request
+:PROPERTIES:
+:CUSTOM_ID: h:0e3eb987-5b2b-4874-97ef-b834394d083d
+:END:
+The new async HTTP request API is a Ring-style async API.
+All options for synchronous request can use in asynchronous requests.
+start an async request is easy, for example:
+
+#+BEGIN_SRC clojure
+;; :async? in options map need to be true
+(client/get "http://example.com"
+            {:async? true}
+            ;; respond callback
+            (fn [response] (println "response is:" response))
+            ;; raise callback
+            (fn [exception] (println "exception message is: " (.getMessage exception))))
+#+END_SRC
+
+All exceptions thrown during the request will be passed to the raise callback.
+
 ** Coercions
 :PROPERTIES:
 :CUSTOM_ID: h:8902cd95-e01e-4d9b-9dc8-5f5c8f04504b
@@ -470,6 +488,33 @@ header map.
 This special treatment of headers is implemented in the
 wrap-header-map middleware, which (like any middleware) can be
 disabled by using with-middleware to specify different behavior.
+
+** Query-string parameters
+:PROPERTIES:
+:CUSTOM_ID: h:dd49992c-a516-4af0-9735-4f4340773361
+:END:
+
+There are three different ways that query string parameters for array values can
+be generated, depending on what the resulting query string should look like,
+they are:
+
+- A repeating parameter (default)
+- Array style
+- Indexed array style
+
+Here is an example of the input and output for the ~:query_string~ parameter,
+controlled by the ~:multi-param-style~ option:
+
+#+BEGIN_SRC clojure
+;; default style, with :multi-param-style unset
+:a [1 2 3] => "a=1&a=2&a=3"
+;; with :multi-param-style :array, a repeating param with array suffix
+;; (PHP-style):
+:a [1 2 3] => "a[]=1&a[]=2&a[]=3"
+;; with :multi-param-style :indexed, a repeating param with array suffix and
+;; index (Rails-style):
+:a [1 2 3] => "a[0]=1&a[1]=2&a[2]=3"
+#+END_SRC
 
 ** Meta Tag Headers
 :PROPERTIES:
@@ -840,9 +885,45 @@ connections are being used:
   (get "http://aoeu.com/999"))
 #+END_SRC
 
+For async request, you can use =with-async-connection-pool=
+
+#+BEGIN_SRC clojure
+(with-async-connection-pool {:timeout 5 :threads 4 :insecure? false :default-per-route 10}
+  (get "http://aoeu.com/1" {async? :true} resp1 exce1)
+  (post "http://aoeu.com/2" {async? :true} resp2 exce2)
+  (get "http://aoeu.com/3" {async? :true} resp3 exce3)
+  ...
+  (get "http://aoeu.com/999" {async? :true} resp999 exce999))
+#+END_SRC
+
 This is MUCH faster than sequentially performing all requests, because a
 persistent connection can be used instead creating a new connection for each
 request.
+
+If you want to start an async request in the =respond= callback of an async request and
+reuse the pool context, just use =reuse-pool=.
+
+#+BEGIN_SRC clojure
+(with-async-connection-pool {:timeout 5 :threads 4 :insecure? false :default-per-route 10}
+  (get "http://aoeu.com/1" {async? :true} resp1 exce1)
+  (post "http://aoeu.com/2"
+        {async? :true}
+        (fn [resp] (get "http://aoeu.com/3"
+                        (reuse-pool {async? :true} resp)
+                        resp3 exce3))
+        exce2))
+#+END_SRC
+
+To implement the persistent connections of async requests, we add a middleware
+named =wrap-async-pooling= to the default middleware list. This middleware's
+behaviour depends on =*pooling-info*= binding or =:polling-info= in options map.
+The =pooling-info= contains =:conn-mgr=, =:allocate= and =:release=.
+=:conn-mgr= is the connection manager used in the pooling context, =:allocate=
+is a function will be invoked when request start and =:release= will be invoked
+when request finished.
+
+=with-async-connection-pool= use the =wrap-async-pooling= to manage the
+connection manager, you can also implement your manage strategy.
 
 If you would prefer to handle managing the connection manager yourself, you can
 create a connection manager yourself and specify it for each request:
@@ -862,6 +943,8 @@ create a connection manager yourself and specify it for each request:
 
 See the docstring on =make-reusable-conn-manager= for options and default
 values.
+
+In current version, pooled async request CANNOT specify connection manager.
 
 ** Proxies
 :PROPERTIES:

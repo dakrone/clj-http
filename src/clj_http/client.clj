@@ -716,25 +716,31 @@
      (second found))
    "UTF-8"))
 
-(defn generate-query-string-with-encoding [params encoding]
+(defn- multi-param-suffix [index multi-param-style]
+  (case multi-param-style
+    :indexed (str "[" index "]")
+    :array "[]"
+    ""))
+
+(defn generate-query-string-with-encoding [params encoding multi-param-style]
   (str/join "&"
             (mapcat (fn [[k v]]
                       (if (sequential? v)
-                        (map #(str (util/url-encode (name %1) encoding)
-                                   "="
-                                   (util/url-encode (str %2) encoding))
-                             (repeat k) v)
+                        (map-indexed #(str (util/url-encode (name k) encoding)
+                                           (multi-param-suffix %1 multi-param-style)
+                                           "="
+                                           (util/url-encode (str %2) encoding)) v)
                         [(str (util/url-encode (name k) encoding)
                               "="
                               (util/url-encode (str v) encoding))]))
                     params)))
 
-(defn generate-query-string [params & [content-type]]
+(defn generate-query-string [params & [content-type multi-param-style]]
   (let [encoding (detect-charset content-type)]
-    (generate-query-string-with-encoding params encoding)))
+    (generate-query-string-with-encoding params encoding multi-param-style)))
 
 (defn- query-params-request
-  [{:keys [query-params content-type]
+  [{:keys [query-params content-type multi-param-style]
       :or {content-type :x-www-form-urlencoded}
       :as req}]
   (if query-params
@@ -746,7 +752,8 @@
                        new-query-string))
                    (generate-query-string
                      query-params
-                     (content-type-value content-type))))
+                     (content-type-value content-type)
+                     multi-param-style)))
     req))
 
 (defn wrap-query-params
@@ -870,11 +877,13 @@
                      :json-opts json-opts})))
   (json-encode form-params json-opts))
 
-(defmethod coerce-form-params :default [{:keys [content-type form-params
+(defmethod coerce-form-params :default [{:keys [content-type
+                                                multi-param-style
+                                                form-params
                                                 form-param-encoding]}]
   (if form-param-encoding
-    (generate-query-string-with-encoding form-params form-param-encoding)
-    (generate-query-string form-params (content-type-value content-type))))
+    (generate-query-string-with-encoding form-params form-param-encoding multi-param-style)
+    (generate-query-string form-params (content-type-value content-type) multi-param-style)))
 
 (defn- form-params-request
   [{:keys [form-params content-type request-method]
@@ -896,25 +905,20 @@
     ([req respnd raise]
      (client (form-params-request req) respnd raise))))
 
-(defn- nest-kv
-  [kv]
-  (if (and (vector? kv)
-           (or (map? (second kv))
-               (vector? (second kv))))
-    (let [[fk m] kv]
-      (reduce-kv (fn [m sk v]
-                   (assoc m
-                     (str (name fk)
-                          \[ (if (integer? sk) sk (name sk)) \])
-                     v))
-                 {}
-                 m))
-    kv))
-
 (defn- nest-params
   [request param-key]
   (if-let [params (request param-key)]
-    (assoc request param-key (prewalk nest-kv params))
+    (assoc request param-key (prewalk
+                              #(if (and (vector? %) (map? (second %)))
+                                 (let [[fk m] %]
+                                   (reduce
+                                    (fn [m [sk v]]
+                                      (assoc m (str (name fk)
+                                                    \[ (name sk) \]) v))
+                                    {}
+                                    m))
+                                 %)
+                              params))
     request))
 
 (defn- nest-params-request

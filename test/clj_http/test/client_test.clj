@@ -1107,11 +1107,6 @@
     (are [in out] (is-applied client/wrap-nested-params
                               {:query-params in :form-params in}
                               {:query-params out :form-params out})
-      {"x" ["0" "1"]} {"x[0]" "0" "x[1]" "1"}
-
-      {"x" [{"y" "a" "z" "b"} {"w" "c"}]}
-      {"x[0][y]" "a" "x[0][z]" "b" "x[1][w]" "c"}
-
       {"foo" "bar"} {"foo" "bar"}
       {"x" {"y" "z"}} {"x[y]" "z"}
       {"a" {"b" {"c" "d"}}} {"a[b][c]" "d"}
@@ -1462,3 +1457,37 @@
     (is (= 1 (:major protocol-version)))
     (is (= 1 (:minor protocol-version)))
     (is (= "OK" (:reason-phrase resp)))))
+
+(deftest ^:integration multi-valued-query-params
+  (run-server)
+  (testing "default (repeating) multi-valued query params"
+    (let [resp (request {:uri "/query-string"
+                         :method :get
+                         :query-params {:a [1 2 3]
+                                        :b ["x" "y" "z"]}})
+          query-string (-> resp :body form-decode-str)]
+      (is (= 200 (:status resp)))
+      (is (.contains query-string "a=1&a=2&a=3") query-string)
+      (is (.contains query-string "b=x&b=y&b=z") query-string)))
+
+  (testing "multi-valued query params in indexed-style"
+    (let [resp (request {:uri "/query-string"
+                         :method :get
+                         :multi-param-style :indexed
+                         :query-params {:a [1 2 3]
+                                        :b ["x" "y" "z"]}})
+          query-string (-> resp :body form-decode-str)]
+      (is (= 200 (:status resp)))
+      (is (.contains query-string "a[0]=1&a[1]=2&a[2]=3") query-string)
+      (is (.contains query-string "b[0]=x&b[1]=y&b[2]=z") query-string)))
+
+  (testing "multi-valued query params in array-style"
+    (let [resp (request {:uri "/query-string"
+                         :method :get
+                         :multi-param-style :array
+                         :query-params {:a [1 2 3]
+                                        :b ["x" "y" "z"]}})
+          query-string (-> resp :body form-decode-str)]
+      (is (= 200 (:status resp)))
+      (is (.contains query-string "a[]=1&a[]=2&a[]=3") query-string)
+      (is (.contains query-string "b[]=x&b[]=y&b[]=z") query-string))))
