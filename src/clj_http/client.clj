@@ -230,10 +230,10 @@
   (fn
     ([req]
      (exceptions-response req (client req)))
-    ([req responsd raise]
+    ([req response raise]
      (client req
              (fn [resp]
-               (responsd (exceptions-response req resp)))
+               (response (exceptions-response req resp)))
              raise))))
 
 (declare wrap-redirects)
