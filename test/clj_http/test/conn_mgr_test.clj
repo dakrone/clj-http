@@ -64,6 +64,29 @@
       (finally
         (.stop server)))))
 
+(deftest ^:integration ssl-client-cert-get-async
+  (let [server (ring/run-jetty secure-handler
+                               {:port 18083 :ssl-port 18084
+                                :ssl? true
+                                :join? false
+                                :keystore "test-resources/keystore"
+                                :key-password "keykey"
+                                :client-auth :want})]
+    (try
+      (let [resp (promise)
+            exception (promise)
+            _ (core/request {:request-method :get :uri "/get"
+                                :server-port 18084 :scheme :https
+                                :insecure? true :server-name "localhost"
+                                :async? true} resp exception)]
+        (is (= 403 (:status @resp))))
+      (let [resp (promise)
+            exception (promise)
+            _ (core/request (assoc secure-request :async? true) resp exception)]
+        (is (= 200 (:status @resp))))
+      (finally
+        (.stop server)))))
+
 (deftest ^:integration t-closed-conn-mgr-for-as-stream
   (run-server)
   (let [shutdown? (atom false)

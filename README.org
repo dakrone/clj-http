@@ -23,6 +23,7 @@
    - [[#put][PUT]]
    - [[#post][POST]]
    - [[#delete][DELETE]]
+   - [[#async][Async HTTP Request]]
    - [[#coercions][Coercions]]
    - [[#headers][Headers]]
    - [[#meta-tag-headers][Meta Tag Headers]]
@@ -349,6 +350,26 @@ content encodings.
 (client/delete "http://example.com/resource")
 
 #+END_SRC
+
+** Async HTTP Request
+:PROPERTIES:
+:CUSTOM_ID: h:0e3eb987-5b2b-4874-97ef-b834394d083d
+:END:
+The new async HTTP request API is a Ring-style async API.
+All options for synchronous request can use in asynchronous requests.
+start an async request is easy, for example:
+
+#+BEGIN_SRC clojure
+;; :async? in options map need to be true
+(client/get "http://example.com"
+            {:async? true}
+            ;; respond callback
+            (fn [response] (println "response is:" response))
+            ;; raise callback
+            (fn [exception] (println "exception message is: " (.getMessage exception))))
+#+END_SRC
+
+All exceptions thrown during the request will be passed to the raise callback.
 
 ** Coercions
 :PROPERTIES:
@@ -864,9 +885,45 @@ connections are being used:
   (get "http://aoeu.com/999"))
 #+END_SRC
 
+For async request, you can use =with-async-connection-pool=
+
+#+BEGIN_SRC clojure
+(with-async-connection-pool {:timeout 5 :threads 4 :insecure? false :default-per-route 10}
+  (get "http://aoeu.com/1" {async? :true} resp1 exce1)
+  (post "http://aoeu.com/2" {async? :true} resp2 exce2)
+  (get "http://aoeu.com/3" {async? :true} resp3 exce3)
+  ...
+  (get "http://aoeu.com/999" {async? :true} resp999 exce999))
+#+END_SRC
+
 This is MUCH faster than sequentially performing all requests, because a
 persistent connection can be used instead creating a new connection for each
 request.
+
+If you want to start an async request in the =respond= callback of an async request and
+reuse the pool context, just use =reuse-pool=.
+
+#+BEGIN_SRC clojure
+(with-async-connection-pool {:timeout 5 :threads 4 :insecure? false :default-per-route 10}
+  (get "http://aoeu.com/1" {async? :true} resp1 exce1)
+  (post "http://aoeu.com/2"
+        {async? :true}
+        (fn [resp] (get "http://aoeu.com/3"
+                        (reuse-pool {async? :true} resp)
+                        resp3 exce3))
+        exce2))
+#+END_SRC
+
+To implement the persistent connections of async requests, we add a middleware
+named =wrap-async-pooling= to the default middleware list. This middleware's
+behaviour depends on =*pooling-info*= binding or =:polling-info= in options map.
+The =pooling-info= contains =:conn-mgr=, =:allocate= and =:release=.
+=:conn-mgr= is the connection manager used in the pooling context, =:allocate=
+is a function will be invoked when request start and =:release= will be invoked
+when request finished.
+
+=with-async-connection-pool= use the =wrap-async-pooling= to manage the
+connection manager, you can also implement your manage strategy.
 
 If you would prefer to handle managing the connection manager yourself, you can
 create a connection manager yourself and specify it for each request:
@@ -886,6 +943,8 @@ create a connection manager yourself and specify it for each request:
 
 See the docstring on =make-reusable-conn-manager= for options and default
 values.
+
+In current version, pooled async request CANNOT specify connection manager.
 
 ** Proxies
 :PROPERTIES:
