@@ -19,7 +19,7 @@
                                   [cheshire "5.6.3"]
                                   [crouton "0.1.2"]
                                   [org.clojure/tools.reader "0.10.0"]
-                                  [com.cognitect/transit-clj "0.8.288"]
+                                  [com.cognitect/transit-clj "0.8.290"]
                                   [ring/ring-codec "1.0.1"]
                                   ;; other (testing) deps
                                   [org.clojure/clojure "1.8.0"]
