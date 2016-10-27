@@ -17,21 +17,24 @@
            (org.apache.http.impl.nio.conn PoolingNHttpClientConnectionManager)
            (javax.net.ssl SSLContext HostnameVerifier)
            (org.apache.http.nio.conn.ssl SSLIOSessionStrategy)
-           (org.apache.http.impl.nio.reactor IOReactorConfig AbstractMultiworkerIOReactor$DefaultThreadFactory DefaultConnectingIOReactor)
+           (org.apache.http.impl.nio.reactor
+            IOReactorConfig
+            AbstractMultiworkerIOReactor$DefaultThreadFactory
+            DefaultConnectingIOReactor)
            (org.apache.http.nio.conn NoopIOSessionStrategy)))
 
 (def insecure-context-verifier
   {
    :context (-> (SSLContexts/custom)
-       (.loadTrustMaterial nil (reify TrustStrategy
-                                 (isTrusted [_ _ _] true)))
-       (.build))
-   :verifier NoopHostnameVerifier/INSTANCE
-   })
+                (.loadTrustMaterial nil (reify TrustStrategy
+                                          (isTrusted [_ _ _] true)))
+                (.build))
+   :verifier NoopHostnameVerifier/INSTANCE})
 
 (def ^SSLIOSessionStrategy insecure-socket-factory
   (let [{:keys [context  verifier]} insecure-context-verifier]
-    (SSLConnectionSocketFactory. ^SSLContext context ^HostnameVerifier verifier)))
+    (SSLConnectionSocketFactory. ^SSLContext context
+                                 ^HostnameVerifier verifier)))
 
 (def ^SSLIOSessionStrategy insecure-strategy
   (let [{:keys [context  verifier]} insecure-context-verifier]
@@ -122,20 +125,21 @@
   (let [ks (get-keystore keystore keystore-type keystore-pass)
         ts (get-keystore trust-store trust-store-type trust-store-pass)]
     {:context (-> (SSLContexts/custom)
-         (.loadKeyMaterial
-           ks (when keystore-pass
-                (.toCharArray keystore-pass)))
-         (.loadTrustMaterial
-           ts nil)
-         (.build))
+                  (.loadKeyMaterial
+                   ks (when keystore-pass
+                        (.toCharArray keystore-pass)))
+                  (.loadTrustMaterial
+                   ts nil)
+                  (.build))
      :verifier (if (opt req :insecure)
-       NoopHostnameVerifier/INSTANCE
-       (DefaultHostnameVerifier.))}))
+                 NoopHostnameVerifier/INSTANCE
+                 (DefaultHostnameVerifier.))}))
 
 (defn ^Registry get-keystore-scheme-registry
   [req]
   (let [{:keys [context verifier]} (get-keystore-context-verifier req)
-        factory (SSLConnectionSocketFactory. ^SSLContext context ^HostnameVerifier verifier)]
+        factory (SSLConnectionSocketFactory. ^SSLContext context
+                                             ^HostnameVerifier verifier)]
     (-> (RegistryBuilder/create)
         (.register "https" factory)
         (.build))))
@@ -143,7 +147,8 @@
 (defn ^Registry get-keystore-strategy-registry
   [req]
   (let [{:keys [context verifier]} (get-keystore-context-verifier req)
-        strategy (SSLIOSessionStrategy. ^SSLContext context ^HostnameVerifier verifier)]
+        strategy (SSLIOSessionStrategy. ^SSLContext context
+                                        ^HostnameVerifier verifier)]
     (-> (RegistryBuilder/create)
         (.register "https" strategy)
         (.build))))
@@ -174,7 +179,7 @@
 
                              :else regular-strategy-registry)]
     (doto
-      (PoolingNHttpClientConnectionManager. (default-ioreactor) registry)
+        (PoolingNHttpClientConnectionManager. (default-ioreactor) registry)
       (.setMaxTotal 1))))
 
 (definterface ReuseableAsyncConnectionManager)
@@ -248,20 +253,20 @@
 
                    :else regular-strategy-registry)]
     (proxy [PoolingNHttpClientConnectionManager ReuseableAsyncConnectionManager]
-           [(default-ioreactor) nil registry nil nil timeout java.util.concurrent.TimeUnit/SECONDS])))
+        [(default-ioreactor) nil registry nil nil timeout
+         java.util.concurrent.TimeUnit/SECONDS])))
 
 (defn ^PoolingNHttpClientConnectionManager make-reuseable-async-conn-manager
-  "Creates a default pooling async connection manager with the specified options.
-  See alos make-reusable-conn-manager"
+  "Creates a default pooling async connection manager with the specified
+  options. See alos make-reusable-conn-manager"
   [opts]
   (let [timeout (or (:timeout opts) 5)
         threads (or (:threads opts) 4)
         default-per-route (:default-per-route opts)
         insecure? (opt opts :insecure)
         leftovers (dissoc opts :timeout :threads :insecure? :insecure)
-        conn-man (make-reusable-async-conn-manager* (merge {:timeout timeout
-                                                      :insecure? insecure?}
-                                                     leftovers))]
+        conn-man (make-reusable-async-conn-manager*
+                  (merge {:timeout timeout :insecure? insecure?} leftovers))]
     (.setMaxTotal conn-man threads)
     (when default-per-route
       (.setDefaultMaxPerRoute conn-man default-per-route))

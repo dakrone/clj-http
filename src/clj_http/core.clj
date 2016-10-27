@@ -18,7 +18,9 @@
            (org.apache.http.client.methods HttpDelete HttpGet HttpPost HttpPut
                                            HttpOptions HttpPatch
                                            HttpHead
-                                           HttpEntityEnclosingRequestBase CloseableHttpResponse HttpUriRequest HttpRequestBase)
+                                           HttpEntityEnclosingRequestBase
+                                           CloseableHttpResponse
+                                           HttpUriRequest HttpRequestBase)
            (org.apache.http.client.protocol HttpClientContext)
            (org.apache.http.config RegistryBuilder)
            (org.apache.http.conn HttpClientConnectionManager)
@@ -35,7 +37,9 @@
                                       PoolingHttpClientConnectionManager
                                       SystemDefaultRoutePlanner
                                       DefaultProxyRoutePlanner)
-           (org.apache.http.impl.nio.client HttpAsyncClientBuilder HttpAsyncClients CloseableHttpAsyncClient)
+           (org.apache.http.impl.nio.client HttpAsyncClientBuilder
+                                            HttpAsyncClients
+                                            CloseableHttpAsyncClient)
            (org.eclipse.jetty.util FutureCallback)
            (org.apache.http.message BasicHttpResponse)
            (java.util.concurrent ExecutionException)))
@@ -155,36 +159,37 @@
     (.build builder)))
 
 (defn http-async-client [{:keys [redirect-strategy uri
-                           request-interceptor response-interceptor
-                           proxy-host proxy-port] :as req}
-                   conn-mgr http-url proxy-ignore-host]
+                                 request-interceptor response-interceptor
+                                 proxy-host proxy-port] :as req}
+                         conn-mgr http-url proxy-ignore-host]
   ;; have to let first, otherwise we get a reflection warning on (.build)
   (let [^HttpAsyncClientBuilder builder (-> (HttpAsyncClients/custom)
                                             (.setConnectionManager conn-mgr)
                                             (.setRedirectStrategy
-                                              (get-redirect-strategy
-                                                redirect-strategy))
-                                            ;; By default, get the proxy settings
-                                            ;; from the jvm or system properties
+                                             (get-redirect-strategy
+                                              redirect-strategy))
+                                            ;; By default, get the proxy
+                                            ;; settings from the jvm or system
+                                            ;; properties
                                             (.setRoutePlanner
-                                              (get-route-planner
-                                                proxy-host proxy-port
-                                                proxy-ignore-host http-url)))]
+                                             (get-route-planner
+                                              proxy-host proxy-port
+                                              proxy-ignore-host http-url)))]
     (when (conn/reusable? conn-mgr)
       (.setConnectionManagerShared builder true))
 
     (when request-interceptor
       (.addInterceptorLast
-        builder (proxy [HttpRequestInterceptor] []
-                  (process [req ctx]
-                    (request-interceptor req ctx)))))
+       builder (proxy [HttpRequestInterceptor] []
+                 (process [req ctx]
+                   (request-interceptor req ctx)))))
 
     (when response-interceptor
       (.addInterceptorLast
-        builder (proxy [HttpResponseInterceptor] []
-                  (process [resp ctx]
-                    (response-interceptor
-                      resp ctx)))))
+       builder (proxy [HttpResponseInterceptor] []
+                 (process [resp ctx]
+                   (response-interceptor
+                    resp ctx)))))
     (.build builder)))
 
 (defn http-get []
@@ -294,14 +299,16 @@
         protocol-version (.getProtocolVersion status)]
     {:body (coerce-body-entity entity conn-mgr response)
      :headers (parse-headers
-                (.headerIterator response)
-                (opt req :use-header-maps-in-response))
+               (.headerIterator response)
+               (opt req :use-header-maps-in-response))
      :length (if (nil? entity) 0 (.getContentLength entity))
      :chunked? (if (nil? entity) false (.isChunked entity))
      :repeatable? (if (nil? entity) false (.isRepeatable entity))
      :streaming? (if (nil? entity) false (.isStreaming entity))
      :status (.getStatusCode status)
-     :protocol-version  {:name (.getProtocol protocol-version) :major (.getMajor protocol-version) :minor (.getMinor protocol-version)}
+     :protocol-version  {:name (.getProtocol protocol-version)
+                         :major (.getMajor protocol-version)
+                         :minor (.getMinor protocol-version)}
      :reason-phrase (.getReasonPhrase status)}))
 
 (defn- get-conn-mgr
@@ -334,30 +341,30 @@
          ^RequestConfig request-config (request-config req)
          ^HttpClientContext context (http-context request-config)
          ^HttpUriRequest http-req (http-request-for
-                                    request-method http-url body)]
+                                   request-method http-url body)]
      (when-not (conn/reusable? conn-mgr)
        (.addHeader http-req "Connection" "close"))
      (when-let [cookie-jar (or cookie-store *cookie-store*)]
        (.setCookieStore context cookie-jar))
      (when-let [[user pass] digest-auth]
        (.setCredentialsProvider
-         context
-         (doto (credentials-provider)
-           (.setCredentials (AuthScope. nil -1 nil)
-                            (UsernamePasswordCredentials. user pass)))))
+        context
+        (doto (credentials-provider)
+          (.setCredentials (AuthScope. nil -1 nil)
+                           (UsernamePasswordCredentials. user pass)))))
      (when-let [[user password host domain] ntlm-auth]
        (.setCredentialsProvider
-         context
-         (doto (credentials-provider)
-           (.setCredentials (AuthScope. nil -1 nil)
-                            (NTCredentials. user password host domain)))))
+        context
+        (doto (credentials-provider)
+          (.setCredentials (AuthScope. nil -1 nil)
+                           (NTCredentials. user password host domain)))))
      (when (and proxy-user proxy-pass)
        (let [authscope (AuthScope. proxy-host proxy-port)
              creds (UsernamePasswordCredentials. proxy-user proxy-pass)]
          (.setCredentialsProvider
-           context
-           (doto (credentials-provider)
-             (.setCredentials authscope creds)))))
+          context
+          (doto (credentials-provider)
+            (.setCredentials authscope creds)))))
      (if multipart
        (.setEntity ^HttpEntityEnclosingRequest http-req
                    (mp/create-multipart-entity multipart))
@@ -383,8 +390,8 @@
              (when-not (conn/reusable? conn-mgr)
                (.shutdown conn-mgr))
              (throw t))))
-       (let [^CloseableHttpAsyncClient client (http-async-client req conn-mgr http-url
-                                                proxy-ignore-hosts)]
+       (let [^CloseableHttpAsyncClient client
+             (http-async-client req conn-mgr http-url proxy-ignore-hosts)]
          (.start client)
          (.execute client http-req context
                    (reify org.apache.http.concurrent.FutureCallback

@@ -15,8 +15,8 @@
 
 (defmulti
   make-multipart-body
-  "Create a body object from the given map, dispatching on the type of its content.
-   By default supported content body types are:
+  "Create a body object from the given map, dispatching on the type of its
+   content. By default supported content body types are:
    - String
    - byte array (requires providing name)
    - InputStream (requires providing name)
@@ -30,7 +30,8 @@
 
 (defmethod make-multipart-body :default
   [multipart]
-  (throw (Exception. (str "Unsupported type for multipart content: " (type (:content multipart))))))
+  (throw (Exception. (str "Unsupported type for multipart content: "
+                          (type (:content multipart))))))
 
 (defmethod make-multipart-body File
   ; Create a FileBody object from the given map, requiring at least :content
@@ -81,8 +82,8 @@
                             "at least :content and :name")))))
 
 (defmethod make-multipart-body byte-array-type
-  ; Create a ByteArrayBody object from the given map, requiring at least :content
-  ; and :name.
+  ;; Create a ByteArrayBody object from the given map, requiring at least
+  ;; :content and :name.
   [{:keys [^String name ^String mime-type ^bytes content]}]
   (cond
     (and content name mime-type)
@@ -96,9 +97,9 @@
                             "at least :content and :name")))))
 
 (defmethod make-multipart-body String
-  ; Create a StringBody object from the given map, requiring at least :content.
-  ; If :encoding is specified, it will be created using the Charset for
-  ; that encoding.
+  ;; Create a StringBody object from the given map, requiring at least :content.
+  ;; If :encoding is specified, it will be created using the Charset for that
+  ;; encoding.
   [{:keys [mime-type ^String content encoding]}]
   (cond
     (and content mime-type encoding)

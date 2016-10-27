@@ -252,7 +252,8 @@
   "Attempts to follow the redirects from the \"location\" header, if no such
   header exists (bad server!), returns the response without following the
   request."
-  [client {:keys [uri url scheme server-name server-port async? respond raise] :as req}
+  [client {:keys [uri url scheme server-name server-port async? respond raise]
+           :as req}
    {:keys [trace-redirects ^InputStream body] :as resp}]
   (let [url (or url (str (name scheme) "://" server-name
                          (when server-port (str ":" server-port)) uri))]
@@ -260,11 +261,15 @@
       (let [redirect (str (URL. (URL. url) raw-redirect))]
         (try (.close body) (catch Exception _))
         (if-not async?
-          ((wrap-redirects client) (follow-redirect-request req redirect trace-redirects resp))
+          ((wrap-redirects client)
+           (follow-redirect-request req redirect trace-redirects resp))
           (if (some nil? [respond raise])
-            (raise (IllegalArgumentException. "If :async? is true, you must set :respond and :raise"))
+            (raise
+             (IllegalArgumentException.
+              "If :async? is true, you must set :respond and :raise"))
             ((wrap-redirects client)
-              (follow-redirect-request req redirect trace-redirects resp) respond raise))))
+             (follow-redirect-request req redirect trace-redirects resp)
+             respond raise))))
       ;; Oh well, we tried, but if no location is set, return the response
       (if-not async?
         resp
@@ -279,14 +284,14 @@
 (defn- redirects-response
   [client
    {:keys [request-method max-redirects redirects-count trace-redirects url]
-      :or {redirects-count 1 trace-redirects []
-           ;; max-redirects default taken from Firefox
-           max-redirects 20}
-      :as req} {:keys [status] :as resp}]
+    :or {redirects-count 1 trace-redirects []
+         ;; max-redirects default taken from Firefox
+         max-redirects 20}
+    :as req} {:keys [status] :as resp}]
   (let [resp-r (assoc resp :trace-redirects
-                           (if url
-                             (conj trace-redirects url)
-                             trace-redirects))]
+                      (if url
+                        (conj trace-redirects url)
+                        trace-redirects))]
     (cond
       (false? (opt req :follow-redirects))
       (respond* resp req)
@@ -298,17 +303,17 @@
         (respond* resp-r req))
       (= 303 status)
       (follow-redirect client (assoc req :request-method :get
-                                         :redirects-count (inc redirects-count))
+                                     :redirects-count (inc redirects-count))
                        resp-r)
       (#{301 302} status)
       (cond
         (#{:get :head} request-method)
         (follow-redirect client (assoc req :redirects-count
-                                           (inc redirects-count)) resp-r)
+                                       (inc redirects-count)) resp-r)
         (opt req :force-redirects)
         (follow-redirect client (assoc req
-                                  :request-method :get
-                                  :redirects-count (inc redirects-count))
+                                       :request-method :get
+                                       :redirects-count (inc redirects-count))
                          resp-r)
         :else
         (respond* resp-r req))
@@ -316,7 +321,7 @@
       (if (or (#{:get :head} request-method)
               (opt req :force-redirects))
         (follow-redirect client (assoc req :redirects-count
-                                           (inc redirects-count)) resp-r)
+                                       (inc redirects-count)) resp-r)
         (respond* resp-r req))
       :else
       (respond* resp-r req))))
@@ -336,15 +341,15 @@
   [client]
   (fn
     ([req]
-      (redirects-response client req (client req)))
+     (redirects-response client req (client req)))
     ([req respond raise]
-      (client req
-              #(redirects-response client
-                                   (assoc req :async? true
-                                              :respond respond
-                                              :raise raise)
-                                   %)
-              raise))))
+     (client req
+             #(redirects-response client
+                                  (assoc req :async? true
+                                         :respond respond
+                                         :raise raise)
+                                  %)
+             raise))))
 
 ;; Multimethods for Content-Encoding dispatch automatically
 ;; decompressing response bodies
@@ -389,11 +394,11 @@
   [client]
   (fn
     ([req]
-      (decompression-response req (client (decompression-request req))))
+     (decompression-response req (client (decompression-request req))))
     ([req respond raise]
-      (client (decompression-request req)
-              #(respond (decompression-response req %))
-              raise))))
+     (client (decompression-request req)
+             #(respond (decompression-response req %))
+             raise))))
 
 ;; Multimethods for coercing body type to the :as key
 (defmulti coerce-response-body (fn [req _] (:as req)))
@@ -529,7 +534,7 @@
   [client]
   (fn
     ([req]
-      (output-coercion-response req (client req)))
+     (output-coercion-response req (client req)))
     ([req respond raise]
      (client req
              #(respond (output-coercion-response req %))
@@ -544,35 +549,35 @@
 
 (defn- input-coercion-request
   [{:keys [body body-encoding length]
-      :or {^String body-encoding "UTF-8"} :as req}]
+    :or {^String body-encoding "UTF-8"} :as req}]
   (if body
     (cond
       (string? body)
       (-> req (assoc :body (maybe-wrap-entity
-                             req (StringEntity. ^String body
-                                                ^String body-encoding))
+                            req (StringEntity. ^String body
+                                               ^String body-encoding))
                      :character-encoding (or body-encoding
                                              "UTF-8")))
       (instance? File body)
       (-> req (assoc :body
                      (maybe-wrap-entity
-                       req (FileEntity. ^File body
-                                        ^String body-encoding))))
+                      req (FileEntity. ^File body
+                                       ^String body-encoding))))
 
       ;; A length of -1 instructs HttpClient to use chunked encoding.
       (instance? InputStream body)
       (-> req
-                   (assoc :body
-                          (if length
-                            (InputStreamEntity.
-                              ^InputStream body (long length))
-                            (maybe-wrap-entity
-                              req
-                              (InputStreamEntity. ^InputStream body -1)))))
+          (assoc :body
+                 (if length
+                   (InputStreamEntity.
+                    ^InputStream body (long length))
+                   (maybe-wrap-entity
+                    req
+                    (InputStreamEntity. ^InputStream body -1)))))
 
       (instance? (Class/forName "[B") body)
       (-> req (assoc :body (maybe-wrap-entity
-                                      req (ByteArrayEntity. body))))
+                            req (ByteArrayEntity. body))))
 
       :else
       req)
@@ -585,9 +590,9 @@
   [client]
   (fn
     ([req]
-      (client (input-coercion-request req)))
+     (client (input-coercion-request req)))
     ([req respond raise]
-      (client (input-coercion-request req) respond raise))))
+     (client (input-coercion-request req) respond raise))))
 
 (defn get-headers-from-body
   "Given a map of body content, return a map of header-name to header-value."
@@ -627,8 +632,8 @@
           additional-headers (get-headers-from-body body-map)
           body-stream2 (java.io.ByteArrayInputStream. body-bytes)]
       (assoc resp
-        :headers (merge (:headers resp) additional-headers)
-        :body body-stream2))
+             :headers (merge (:headers resp) additional-headers)
+             :body body-stream2))
     resp))
 
 (defn wrap-additional-header-parsing
@@ -640,9 +645,10 @@
   [client]
   (fn
     ([req]
-      (additional-header-parsing-response req (client req)))
+     (additional-header-parsing-response req (client req)))
     ([req respond raise]
-      (client req #(respond (additional-header-parsing-response req %)) raise))))
+     (client req
+             #(respond (additional-header-parsing-response req %)) raise))))
 
 (defn content-type-value [type]
   (if (keyword? type)
@@ -665,16 +671,16 @@
   [client]
   (fn
     ([req]
-      (client (content-type-request req)))
+     (client (content-type-request req)))
     ([req respond raise]
-      (client (content-type-request req) respond raise))))
+     (client (content-type-request req) respond raise))))
 
 (defn- accept-request
   [{:keys [accept] :as req}]
   (if accept
     (-> req (dissoc :accept)
-                 (assoc-in [:headers "accept"]
-                           (content-type-value accept)))
+        (assoc-in [:headers "accept"]
+                  (content-type-value accept)))
     req))
 
 (defn wrap-accept
@@ -682,9 +688,9 @@
   [client]
   (fn
     ([req]
-      (client (accept-request req)))
+     (client (accept-request req)))
     ([req respond raise]
-      (client (accept-request req) respond raise))))
+     (client (accept-request req) respond raise))))
 
 (defn accept-encoding-value [accept-encoding]
   (str/join ", " (map name accept-encoding)))
@@ -694,7 +700,8 @@
   (if accept-encoding
     (-> req
         (dissoc :accept-encoding)
-        (assoc-in [:headers "accept-encoding"] (accept-encoding-value accept-encoding)))
+        (assoc-in [:headers "accept-encoding"]
+                  (accept-encoding-value accept-encoding)))
     req))
 
 (defn wrap-accept-encoding
@@ -703,9 +710,9 @@
   [client]
   (fn
     ([req]
-      (client (accept-encoding-request req)))
+     (client (accept-encoding-request req)))
     ([req respond raise]
-      (client (accept-encoding-request req) respond raise))))
+     (client (accept-encoding-request req) respond raise))))
 
 (defn detect-charset
   "Given a charset header, detect the charset, returns UTF-8 if not found."
@@ -726,10 +733,11 @@
   (str/join "&"
             (mapcat (fn [[k v]]
                       (if (sequential? v)
-                        (map-indexed #(str (util/url-encode (name k) encoding)
-                                           (multi-param-suffix %1 multi-param-style)
-                                           "="
-                                           (util/url-encode (str %2) encoding)) v)
+                        (map-indexed
+                         #(str (util/url-encode (name k) encoding)
+                               (multi-param-suffix %1 multi-param-style)
+                               "="
+                               (util/url-encode (str %2) encoding)) v)
                         [(str (util/url-encode (name k) encoding)
                               "="
                               (util/url-encode (str v) encoding))]))
@@ -741,8 +749,8 @@
 
 (defn- query-params-request
   [{:keys [query-params content-type multi-param-style]
-      :or {content-type :x-www-form-urlencoded}
-      :as req}]
+    :or {content-type :x-www-form-urlencoded}
+    :as req}]
   (if query-params
     (-> req (dissoc :query-params)
         (update-in [:query-string]
@@ -751,9 +759,9 @@
                        (str old-query-string "&" new-query-string)
                        new-query-string))
                    (generate-query-string
-                     query-params
-                     (content-type-value content-type)
-                     multi-param-style)))
+                    query-params
+                    (content-type-value content-type)
+                    multi-param-style)))
     req))
 
 (defn wrap-query-params
@@ -882,13 +890,16 @@
                                                 form-params
                                                 form-param-encoding]}]
   (if form-param-encoding
-    (generate-query-string-with-encoding form-params form-param-encoding multi-param-style)
-    (generate-query-string form-params (content-type-value content-type) multi-param-style)))
+    (generate-query-string-with-encoding form-params
+                                         form-param-encoding multi-param-style)
+    (generate-query-string form-params
+                           (content-type-value content-type)
+                           multi-param-style)))
 
 (defn- form-params-request
   [{:keys [form-params content-type request-method]
-      :or {content-type :x-www-form-urlencoded}
-      :as req}]
+    :or {content-type :x-www-form-urlencoded}
+    :as req}]
   (if (and form-params (#{:post :put :patch} request-method))
     (-> req
         (dissoc :form-params)
@@ -926,9 +937,9 @@
   (if (or (nil? content-type)
           (= content-type :x-www-form-urlencoded))
     (reduce
-      nest-params
-      req
-      [:query-params :form-params])
+     nest-params
+     req
+     [:query-params :form-params])
     req))
 
 (defn wrap-nested-params
@@ -984,7 +995,9 @@
        (-> (client (lower-case-headers req))
            (lower-case-headers)))
       ([req respond raise]
-        (client (lower-case-headers req) #(respond (lower-case-headers %)) raise)))))
+       (client (lower-case-headers req)
+               #(respond (lower-case-headers %))
+               raise)))))
 
 (defn- request-timing-response
   [resp start]
@@ -1009,10 +1022,10 @@
   [req release]
   (let [handler (:oncancel req)]
     (assoc req :oncancel
-      (fn []
-        (release)
-        (when handler
-          (handler))))))
+           (fn []
+             (release)
+             (when handler
+               (handler))))))
 
 (def ^:dynamic *pooling-info*
   "The pooling-info used in pooling function"
@@ -1030,7 +1043,7 @@
   [client]
   (fn
     ([req]
-      (client req))
+     (client req))
     ([req respond raise]
      (if-let [pooling-info (or *pooling-info* (:pooling-info req))]
        (let [{:keys [allocate release conn-mgr]} pooling-info]
@@ -1130,7 +1143,8 @@
   [{:keys [async?] :as req} [respond raise]]
   (if async?
     (if (some nil? [respond raise])
-      (throw (IllegalArgumentException. "If :async? is true, you must pass respond and raise"))
+      (throw (IllegalArgumentException.
+              "If :async? is true, you must pass respond and raise"))
       (request (dissoc req :respond :raise) respond raise))
     (request req)))
 
@@ -1282,8 +1296,8 @@
                 (fn [key# identity# old# new#]
                   (if (and (not= old# new#) (<= new# 0) @all-requested#)
                     (.shutdown
-                      ^PoolingNHttpClientConnectionManager
-                      cm#))))
+                     ^PoolingNHttpClientConnectionManager
+                     cm#))))
      (binding [*pooling-info* p-info#]
        (try
          ~@body
@@ -1291,5 +1305,5 @@
            (swap! all-requested# not)
            (if (= 0 @count#)
              (.shutdown
-               ^PoolingNHttpClientConnectionManager
-               cm#)))))))
+              ^PoolingNHttpClientConnectionManager
+              cm#)))))))

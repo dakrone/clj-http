@@ -2,7 +2,8 @@
   (:require [clj-http.multipart :refer :all]
             [clojure.test :refer :all])
   (:import (java.io File ByteArrayOutputStream ByteArrayInputStream)
-           (org.apache.http.entity.mime.content FileBody StringBody ContentBody ByteArrayBody InputStreamBody)
+           (org.apache.http.entity.mime.content FileBody StringBody ContentBody
+                                                ByteArrayBody InputStreamBody)
            (java.nio.charset Charset)))
 
 (defn body-str [^StringBody body]
@@ -28,12 +29,15 @@
                           (make-multipart-body {:content nil}))))
 
   (testing "unsupported content type throws exception"
-    (is (thrown-with-msg? Exception #"Unsupported type for multipart content: class java.lang.Object"
-                          (make-multipart-body {:content (Object.)}))))
+    (is (thrown-with-msg?
+         Exception
+         #"Unsupported type for multipart content: class java.lang.Object"
+         (make-multipart-body {:content (Object.)}))))
 
   (testing "ContentBody content direct usage"
     (let [contentBody (StringBody. "abc")]
-      (is (identical? contentBody (make-multipart-body {:content contentBody})))))
+      (is (identical? contentBody
+                      (make-multipart-body {:content contentBody})))))
 
   (testing "StringBody"
 
@@ -49,7 +53,9 @@
         (is (= (Charset/forName "ascii") (body-charset body)))))
 
     (testing "can create StringBody with content and mime-type and encoding"
-      (let [body (make-multipart-body {:content "abc" :mime-type "stream-body" :encoding "ascii"})]
+      (let [body (make-multipart-body {:content "abc"
+                                       :mime-type "stream-body"
+                                       :encoding "ascii"})]
         (is (instance? StringBody body))
         (is (= "abc" (body-str body)))
         (is (= (Charset/forName "ascii") (body-charset body)))
@@ -58,11 +64,14 @@
   (testing "ByteArrayBody"
 
     (testing "exception thrown on missing name"
-      (is (thrown-with-msg? Exception #"Multipart byte array body must contain at least :content and :name"
-                            (make-multipart-body {:content (byte-array [0 1 2])}))))
+      (is (thrown-with-msg?
+           Exception
+           #"Multipart byte array body must contain at least :content and :name"
+           (make-multipart-body {:content (byte-array [0 1 2])}))))
 
     (testing "can create ByteArrayBody with name only"
-      (let [body (make-multipart-body {:content (byte-array [0 1 2]) :name "testname"})]
+      (let [body (make-multipart-body {:content (byte-array [0 1 2])
+                                       :name "testname"})]
         (is (instance? ByteArrayBody body))
         (is (= "testname" (.getFilename body)))
         (is (= [0 1 2] (vec (body-bytes body))))))
@@ -79,10 +88,12 @@
   (testing "InputStreamBody"
 
     (testing "exception thrown on missing name"
-      (is (thrown-with-msg?
-            Exception
-            #"Multipart input stream body must contain at least :content and :name"
-            (make-multipart-body {:content (ByteArrayInputStream. (byte-array [0 1 2]))}))))
+      (is
+       (thrown-with-msg?
+        Exception
+        #"Multipart input stream body must contain at least :content and :name"
+        (make-multipart-body
+         {:content (ByteArrayInputStream. (byte-array [0 1 2]))}))))
 
     (testing "can create InputStreamBody with name and content"
       (let [input-stream (make-input-stream 1 2 3)
@@ -102,7 +113,8 @@
         (is (= "input-stream-body" (body-mime-type body)))
         (is (identical? input-stream (.getInputStream body)))))
 
-    (testing "can create input InputStreamBody name, content, mime-type and length"
+    (testing
+        "can create input InputStreamBody name, content, mime-type and length"
       (let [input-stream (make-input-stream 1 2 3)
             body (make-multipart-body {:content   input-stream
                                        :name      "testname"

@@ -512,7 +512,8 @@
 ;;     (let [setps (.getParams (doto (DefaultHttpClient.)
 ;;                               (core/add-client-params!
 ;;                                {:cookie-policy (constantly nil)})))]
-;;       (is (.startsWith ^String (.getParameter setps ClientPNames/COOKIE_POLICY)
+;;       (is (.startsWith ^String
+;;                        (.getParameter setps ClientPNames/COOKIE_POLICY)
 ;;                        "class ")))))
 
 

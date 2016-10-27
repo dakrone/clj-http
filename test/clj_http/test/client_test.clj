@@ -23,7 +23,7 @@
   ([req]
    (client/request (merge base-req req)))
   ([req respond raise]
-    (client/request (merge base-req req) respond raise)))
+   (client/request (merge base-req req) respond raise)))
 
 (defn parse-form-params [s]
   (->> (str/split (form-decode-str s) #"&")
@@ -211,7 +211,7 @@
         resp (promise)
         exception (promise)
         _ (r-client {:server-name "foo.com" :url "http://foo.com"
-                        :request-method :get} resp exception)]
+                     :request-method :get} resp exception)]
     (is (= 200 (:status @resp)))
     (is (= :get (:request-method (:req @resp))))
     (is (= :http (:scheme (:req @resp))))
@@ -235,7 +235,7 @@
         resp (promise)
         execption (promise)
         _ (r-client {:scheme :http :server-name "foo.com" :uri "/"
-                        :request-method :get} resp execption)]
+                     :request-method :get} resp execption)]
     (is (= 200 (:status @resp)))
     (is (= :get (:request-method (:req @resp))))
     (is (= :http (:scheme (:req @resp))))
@@ -259,7 +259,7 @@
         resp (promise)
         execption (promise)
         _ (r-client {:server-name "foo.com" :url "http://foo.com"
-                        :request-method :get} resp execption)]
+                     :request-method :get} resp execption)]
     (is (= 302 (:status @resp)))
     (is (= ["http://foo.com"] (:trace-redirects @resp)))
     (is (= "no redirection here" (:body @resp)))
@@ -286,20 +286,21 @@
 (deftest redirect-with-query-string-async
   (let [client (fn [req respond raise]
                  (respond (if (= "foo.com" (:server-name req))
-                   {:status 302
-                    :headers {"location" "http://bar.com/bat?x=y"}}
-                   {:status 200
-                    :req req})))
+                            {:status 302
+                             :headers {"location" "http://bar.com/bat?x=y"}}
+                            {:status 200
+                             :req req})))
         r-client (-> client client/wrap-url client/wrap-redirects)
         resp (promise)
         execption (promise)
         _ (r-client {:server-name "foo.com" :url "http://foo.com"
-                        :request-method :get :query-params {:x "z"}}
+                     :request-method :get :query-params {:x "z"}}
                     resp execption)]
     (is (= 200 (:status @resp)))
     (is (= :get (:request-method (:req @resp))))
     (is (= :http (:scheme (:req @resp))))
-    (is (= ["http://foo.com" "http://bar.com/bat?x=y"] (:trace-redirects @resp)))
+    (is (= ["http://foo.com" "http://bar.com/bat?x=y"]
+           (:trace-redirects @resp)))
     (is (= "/bat" (:uri (:req @resp))))
     (is (= "x=y" (:query-string (:req @resp))))
     (is (nil? (:query-params (:req @resp))))
@@ -322,15 +323,15 @@
 (deftest max-redirects-async
   (let [client (fn [req respond raise]
                  (respond (if (= "foo.com" (:server-name req))
-                   {:status 302
-                    :headers {"location" "http://bar.com/bat"}}
-                   {:status 200
-                    :req req})))
+                            {:status 302
+                             :headers {"location" "http://bar.com/bat"}}
+                            {:status 200
+                             :req req})))
         r-client (-> client client/wrap-url client/wrap-redirects)
         resp (promise)
         execption (promise)
         _ (r-client {:server-name "foo.com" :url "http://foo.com"
-                        :request-method :get :max-redirects 0}
+                     :request-method :get :max-redirects 0}
                     resp execption)]
     (is (= 302 (:status @resp)))
     (is (= ["http://foo.com"] (:trace-redirects @resp)))
@@ -358,15 +359,15 @@
   (doseq [method [:get :head :post :delete :put :option]]
     (let [client (fn [req respond raise]
                    (respond (if (= "foo.com" (:server-name req))
-                     {:status 303
-                      :headers {"location" "http://bar.com/bat"}}
-                     {:status 200
-                      :req req})))
+                              {:status 303
+                               :headers {"location" "http://bar.com/bat"}}
+                              {:status 200
+                               :req req})))
           r-client (-> client client/wrap-url client/wrap-redirects)
           resp (promise)
           execption (promise)
           _ (r-client {:server-name "foo.com" :url "http://foo.com"
-                          :request-method method}
+                       :request-method method}
                       resp execption)]
       (is (= 200 (:status @resp)))
       (is (= :get (:request-method (:req @resp))))
@@ -384,7 +385,8 @@
     (is (= "ok" (:body resp)))))
 
 (deftest pass-on-non-redirect-async
-  (let [client (fn [req respond raise] (respond {:status 200 :body (:body req)}))
+  (let [client (fn [req respond raise]
+                 (respond {:status 200 :body (:body req)}))
         r-client (client/wrap-redirects client)
         resp (promise)
         execption (promise)
@@ -417,7 +419,7 @@
           resp (promise)
           execption (promise)
           _ (r-client {:body "ok" :url "http://foo.com"
-                          :request-method method} resp execption)]
+                       :request-method method} resp execption)]
       (is (= status (:status @resp)))
       (is (= ["http://foo.com"] (:trace-redirects @resp)))
       (is (= {"location" "http://foo.com/bat"} (:headers @resp)))
@@ -447,16 +449,17 @@
           [status expected-method] [[301 :get] [302 :get] [307 method]]]
     (let [client (fn [{:keys [trace-redirects body] :as req} respond raise]
                    (respond (if trace-redirects
-                     {:status 200 :body body :trace-redirects trace-redirects
-                      :req req}
-                     {:status status :body body :req req
-                      :headers {"location" "http://foo.com/bat"}})))
+                              {:status 200 :body body
+                               :trace-redirects trace-redirects
+                               :req req}
+                              {:status status :body body :req req
+                               :headers {"location" "http://foo.com/bat"}})))
           r-client (client/wrap-redirects client)
           resp (promise)
           execption (promise)
           _ (r-client {:body "ok" :url "http://foo.com"
-                          :request-method method
-                          :force-redirects true} resp execption)]
+                       :request-method method
+                       :force-redirects true} resp execption)]
       (is (= 200 (:status @resp)))
       (is (= ["http://foo.com" "http://foo.com/bat"] (:trace-redirects @resp)))
       (is (= "ok" (:body @resp)))
@@ -472,7 +475,8 @@
     (is (nil? (:trace-redirects resp)))))
 
 (deftest pass-on-follow-redirects-false-async
-  (let [client (fn [req respond raise] (respond {:status 302 :body (:body req)}))
+  (let [client (fn [req respond raise]
+                 (respond {:status 302 :body (:body req)}))
         r-client (client/wrap-redirects client)
         resp (promise)
         execption (promise)
@@ -590,7 +594,7 @@
                  (is (= "gzip, deflate"
                         (get-in req [:headers "accept-encoding"])))
                  (respond {:body (util/deflate (util/utf8-bytes "barbarbar"))
-                  :headers {"content-encoding" "deflate"}}))
+                           :headers {"content-encoding" "deflate"}}))
         c-client (client/wrap-decompression client)
         resp (promise)
         execption (promise)
@@ -644,14 +648,14 @@
 
 (deftest apply-on-accept-async
   (is-applied-async client/wrap-accept
-              {:accept :json}
-              {:headers {"accept" "application/json"}})
+                    {:accept :json}
+                    {:headers {"accept" "application/json"}})
   (is-applied-async client/wrap-accept
-              {:accept :transit+json}
-              {:headers {"accept" "application/transit+json"}})
+                    {:accept :transit+json}
+                    {:headers {"accept" "application/transit+json"}})
   (is-applied-async client/wrap-accept
-              {:accept :transit+msgpack}
-              {:headers {"accept" "application/transit+msgpack"}}))
+                    {:accept :transit+msgpack}
+                    {:headers {"accept" "application/transit+msgpack"}}))
 
 (deftest pass-on-no-accept
   (is-passed client/wrap-accept
@@ -659,7 +663,7 @@
 
 (deftest pass-on-no-accept-async
   (is-passed-async client/wrap-accept
-             {:uri "/foo"}))
+                   {:uri "/foo"}))
 
 (deftest apply-on-accept-encoding
   (is-applied client/wrap-accept-encoding
@@ -677,7 +681,8 @@
     (is (= "foo" (:body resp)))))
 
 (deftest apply-on-output-coercion-async
-  (let [client (fn [req respond raise] (respond {:body (util/utf8-bytes "foo")}))
+  (let [client (fn [req respond raise]
+                 (respond {:body (util/utf8-bytes "foo")}))
         o-client (client/wrap-output-coercion client)
         resp (promise)
         execption (promise)
@@ -746,7 +751,7 @@
 
 (deftest pass-on-no-input-coercion
   (is-passed-async client/wrap-input-coercion
-             {:body nil}))
+                   {:body nil}))
 
 (deftest no-length-for-input-stream
   (let [i-client (client/wrap-input-coercion identity)
@@ -778,21 +783,21 @@
 
 (deftest apply-on-content-type-async
   (is-applied-async client/wrap-content-type
-              {:content-type :json}
-              {:headers {"content-type" "application/json"}
-               :content-type :json})
+                    {:content-type :json}
+                    {:headers {"content-type" "application/json"}
+                     :content-type :json})
   (is-applied-async client/wrap-content-type
-              {:content-type :json :character-encoding "UTF-8"}
-              {:headers {"content-type" "application/json; charset=UTF-8"}
-               :content-type :json :character-encoding "UTF-8"})
+                    {:content-type :json :character-encoding "UTF-8"}
+                    {:headers {"content-type" "application/json; charset=UTF-8"}
+                     :content-type :json :character-encoding "UTF-8"})
   (is-applied-async client/wrap-content-type
-              {:content-type :transit+json}
-              {:headers {"content-type" "application/transit+json"}
-               :content-type :transit+json})
+                    {:content-type :transit+json}
+                    {:headers {"content-type" "application/transit+json"}
+                     :content-type :transit+json})
   (is-applied-async client/wrap-content-type
-              {:content-type :transit+msgpack}
-              {:headers {"content-type" "application/transit+msgpack"}
-               :content-type :transit+msgpack}))
+                    {:content-type :transit+msgpack}
+                    {:headers {"content-type" "application/transit+msgpack"}
+                     :content-type :transit+msgpack}))
 
 (deftest pass-on-no-content-type
   (is-passed client/wrap-content-type
@@ -809,12 +814,12 @@
 
 (deftest apply-on-query-params-async
   (is-applied-async client/wrap-query-params
-              {:query-params {"foo" "bar" "dir" "<<"}}
-              {:query-string "foo=bar&dir=%3C%3C"})
+                    {:query-params {"foo" "bar" "dir" "<<"}}
+                    {:query-string "foo=bar&dir=%3C%3C"})
   (is-applied-async client/wrap-query-params
-              {:query-string "foo=1"
-               :query-params {"foo" ["2" "3"]}}
-              {:query-string "foo=1&foo=2&foo=3"}))
+                    {:query-string "foo=1"
+                     :query-params {"foo" ["2" "3"]}}
+                    {:query-string "foo=1&foo=2&foo=3"}))
 
 (deftest pass-on-no-query-params
   (is-passed client/wrap-query-params
@@ -828,9 +833,9 @@
 
 (deftest apply-on-basic-auth-async
   (is-applied-async client/wrap-basic-auth
-              {:basic-auth ["Aladdin" "open sesame"]}
-              {:headers {"authorization"
-                         "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="}}))
+                    {:basic-auth ["Aladdin" "open sesame"]}
+                    {:headers {"authorization"
+                               "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="}}))
 
 (deftest pass-on-no-basic-auth
   (is-passed client/wrap-basic-auth
@@ -844,9 +849,9 @@
 
 (deftest apply-on-oauth-async
   (is-applied-async client/wrap-oauth
-              {:oauth-token "my-token"}
-              {:headers {"authorization"
-                         "Bearer my-token"}}))
+                    {:oauth-token "my-token"}
+                    {:headers {"authorization"
+                               "Bearer my-token"}}))
 
 (deftest pass-on-no-oauth
   (is-passed client/wrap-oauth
@@ -887,7 +892,8 @@
   (let [u-client (client/wrap-url async-identity-client)
         resp (promise)
         execption (promise)
-        _ (u-client {:url "http://google.com:8080/baz foo?bar=bat bit?"} resp execption)]
+        _ (u-client {:url "http://google.com:8080/baz foo?bar=bat bit?"}
+                    resp execption)]
     (is (= :http (:scheme @resp)))
     (is (= "google.com" (:server-name @resp)))
     (is (= 8080 (:server-port @resp)))
@@ -1061,8 +1067,8 @@
           resp (promise)
           exception (promise)
           _ (param-client {:request-method :post
-                              :form-params (sorted-map :param1 "value1"
-                                                       :param2 "value2")}
+                           :form-params (sorted-map :param1 "value1"
+                                                    :param2 "value2")}
                           resp exception)]
       (is (= "param1=value1&param2=value2" (:body @resp)))
       (is (= "application/x-www-form-urlencoded" (:content-type @resp)))
@@ -1072,8 +1078,8 @@
           resp (promise)
           exception (promise)
           _ (param-client {:request-method :put
-                              :form-params (sorted-map :param1 "value1"
-                                                       :param2 "value2")}
+                           :form-params (sorted-map :param1 "value1"
+                                                    :param2 "value2")}
                           resp exception)]
       (is (= "param1=value1&param2=value2" (:body @resp)))
       (is (= "application/x-www-form-urlencoded" (:content-type @resp)))
@@ -1085,9 +1091,9 @@
           resp (promise)
           exception (promise)
           _ (param-client {:request-method :get
-                              :body "untouched"
-                              :form-params {:param1 "value1"
-                                            :param2 "value2"}}
+                           :body "untouched"
+                           :form-params {:param1 "value1"
+                                         :param2 "value2"}}
                           resp exception)]
       (is (= "untouched" (:body @resp)))
       (is (not (contains? @resp :content-type)))
@@ -1184,7 +1190,7 @@
                 (fn [req] {:body nil})) {:decode-body-headers true})
         resp4 ((client/wrap-additional-header-parsing
                 (fn [req] {:headers {"content-type" "application/pdf"}
-                          :body (.getBytes text)}))
+                           :body (.getBytes text)}))
                {:decode-body-headers true})]
     (is (= {"content-type" "text/html; charset=Shift_JIS"
             "content-style-type" "text/css"
@@ -1232,7 +1238,8 @@
     (let [resp1 (promise) resp2 (promise)
           exce1 (promise) exce2 (promise)
           count (atom 2)]
-      (binding [client/*pooling-info* (assoc client/*pooling-info* :release (count-release count))]
+      (binding [client/*pooling-info*
+                (assoc client/*pooling-info* :release (count-release count))]
         (request {:async? true :uri "/get" :method :get} resp1 exce1)
         (request {:async? true :uri "/get" :method :get} resp2 exce2)
         (is (= 200 (:status @resp1) (:status @resp2)))
@@ -1248,7 +1255,8 @@
     (let [resp1 (promise) resp2 (promise)
           exce1 (promise) exce2 (promise)
           count (atom 2)]
-      (binding [client/*pooling-info* (assoc client/*pooling-info* :release (count-release count))]
+      (binding [client/*pooling-info*
+                (assoc client/*pooling-info* :release (count-release count))]
         (request {:async? true :uri "/get" :method :get} resp1 exce1)
         (Thread/sleep 500)
         (request {:async? true :uri "/get" :method :get} resp2 exce2)
@@ -1264,7 +1272,8 @@
   (client/with-async-connection-pool {}
     (let [resp1 (promise) resp2 (promise)
           exce1 (promise) exce2 (promise) count (atom 2)]
-      (binding [client/*pooling-info* (assoc client/*pooling-info* :release (count-release count))]
+      (binding [client/*pooling-info*
+                (assoc client/*pooling-info* :release (count-release count))]
         (request {:async? true :uri "/error" :method :get} resp1 exce1)
         (Thread/sleep 500)
         (request {:async? true :uri "/get" :method :get} resp2 exce2)
@@ -1283,7 +1292,8 @@
                        (fn [req resp raise] (throw (Exception.))))]
       (client/with-additional-middleware
         [middleware]
-        (binding [client/*pooling-info* (assoc client/*pooling-info* :release (count-release count))]
+        (binding [client/*pooling-info*
+                  (assoc client/*pooling-info* :release (count-release count))]
           (try (request {:async? true :uri "/error" :method :get} resp1 exce1)
                (catch Throwable ex))
           (Thread/sleep 500)
@@ -1301,15 +1311,19 @@
     (let [resp1 (promise) resp2 (promise)
           exce1 (promise) exce2 (promise)
           count (atom 2)]
-      (binding [client/*pooling-info* (assoc client/*pooling-info* :release (count-release count))]
+      (binding [client/*pooling-info*
+                (assoc client/*pooling-info* :release (count-release count))]
         (request {:async? true :uri "/get" :method :get}
-               (fn [resp]
-                 (resp1 resp)
-                 (request (client/reuse-pool {:async? true :uri "/get" :method :get}
-                                             resp)
-                          resp2
-                          exce2))
-               exce1)
+                 (fn [resp]
+                   (resp1 resp)
+                   (request (client/reuse-pool
+                             {:async? true
+                              :uri "/get"
+                              :method :get}
+                             resp)
+                            resp2
+                            exce2))
+                 exce1)
         (is (= 200 (:status @resp1) (:status @resp2)))
         (is (:pooling-info @resp1))
         (is (:pooling-info @resp2))
@@ -1321,8 +1335,10 @@
   (run-server)
   (client/with-async-connection-pool {}
     (let [resp (promise) exce (promise) count (atom 2)]
-      (binding [client/*pooling-info* (assoc client/*pooling-info* :release (count-release count))]
-        (request {:async? true :uri "/redirect-to-get" :method :get :redirect-strategy :none} resp exce)
+      (binding [client/*pooling-info*
+                (assoc client/*pooling-info* :release (count-release count))]
+        (request {:async? true :uri "/redirect-to-get"
+                  :method :get :redirect-strategy :none} resp exce)
         (is (= 200 (:status @resp)))
         (is (:pooling-info @resp))
         (is (not (realized? exce)))
@@ -1332,7 +1348,8 @@
   (run-server)
   (client/with-async-connection-pool {}
     (let [resp (promise) exce (promise) count (atom 21)]
-      (binding [client/*pooling-info* (assoc client/*pooling-info* :release (count-release count))]
+      (binding [client/*pooling-info*
+                (assoc client/*pooling-info* :release (count-release count))]
         (request {:async? true :uri "/redirect" :method :get
                   :redirect-strategy :none
                   :throw-exceptions true} resp exce)
@@ -1443,7 +1460,9 @@
     (is (= 200 (:status resp)))
     (is (= "close" (get-in resp [:headers "connection"])))
     (is (= "propfind" (:body resp))))
-  (let [resp (request {:uri "/propfind-with-body" :method "PROPFIND" :body "propfindbody"})]
+  (let [resp (request {:uri "/propfind-with-body"
+                       :method "PROPFIND"
+                       :body "propfindbody"})]
     (is (= 200 (:status resp)))
     (is (= "close" (get-in resp [:headers "connection"])))
     (is (= "propfindbody" (:body resp)))))
