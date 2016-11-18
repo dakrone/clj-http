@@ -40,7 +40,6 @@
            (org.apache.http.impl.nio.client HttpAsyncClientBuilder
                                             HttpAsyncClients
                                             CloseableHttpAsyncClient)
-           (org.eclipse.jetty.util FutureCallback)
            (org.apache.http.message BasicHttpResponse)
            (java.util.concurrent ExecutionException)))
 
