@@ -109,7 +109,7 @@ With Leiningen/Boot:
 If you want to test out the latest version, a 3.x release is also available.
 
 #+BEGIN_SRC clojure
-[clj-http "3.4.0"]
+[clj-http "3.4.1"]
 #+END_SRC
 
 The previous major version is available as:
