@@ -27,7 +27,7 @@
   "Addes value into a vector at an specific index."
   (-> (subvec v 0 idx)
       (conj val)
-      (concat (subvec v idx))))
+      (into (subvec v idx))))
 
 (defn insert-after [v needle val]
   "Finds an item into a vector and adds val just after it.
