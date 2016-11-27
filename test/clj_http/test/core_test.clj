@@ -572,3 +572,8 @@
    (run-server)
    (let [resp (client/get (localhost "/empty") {:as :clojure})]
      (is (= (:body resp) nil))))
+
+(deftest ^:integration t-once-trace-redirects
+  (run-server)
+  (let [resp (client/request {:method :get :url (localhost "/redirect-to-get")})]
+    (is (= (:trace-redirects resp) ["http://localhost:18080/get"]))))
