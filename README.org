@@ -83,7 +83,7 @@ library has taken over from mmcgrana's clj-http.
 :CUSTOM_ID: h:aa21d07d-333b-4ff2-93a9-ffdca31d8949
 :END:
 
-The design of =clj-http= is inspired by the [[http://github.com/mmcgrana/ring][Ring]] protocol for Clojure HTTP
+The design of =clj-http= is inspired by the [[https://github.com/ring-clojure/ring][Ring]] protocol for Clojure HTTP
  server applications.
 
 The client in =clj-http.core= makes HTTP requests according to a given Ring
