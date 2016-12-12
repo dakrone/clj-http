@@ -40,75 +40,75 @@
     (fn [] (swap! count dec) (release*))))
 
 (deftest ^:integration roundtrip
-  (run-server)
-  ;; roundtrip with scheme as a keyword
-  (let [resp (request {:uri "/get" :method :get})]
-    (is (= 200 (:status resp)))
-    (is (= "close" (get-in resp [:headers "connection"])))
-    (is (= "get" (:body resp))))
-  ;; roundtrip with scheme as a string
-  (let [resp (request {:uri "/get" :method :get
-                       :scheme "http"})]
-    (is (= 200 (:status resp)))
-    (is (= "close" (get-in resp [:headers "connection"])))
-    (is (= "get" (:body resp))))
-  (let [params {:a "1" :b {:c "2"}}]
-    (doseq [[content-type read-fn]
-            [[nil (comp parse-form-params slurp)]
-             [:x-www-form-urlencoded (comp parse-form-params slurp)]
-             [:edn (comp read-string slurp)]
-             [:transit+json #(client/parse-transit % :json)]
-             [:transit+msgpack #(client/parse-transit % :msgpack)]]]
-      (let [resp (request {:uri "/post"
-                           :as :stream
-                           :method :post
-                           :content-type content-type
-                           :form-params params})]
-        (is (= 200 (:status resp)))
-        (is (= "close" (get-in resp [:headers "connection"])))
-        (is (= params (read-fn (:body resp))))))))
+  (with-open [s (run-server)]
+    ;; roundtrip with scheme as a keyword
+    (let [resp (request {:uri "/get" :method :get})]
+      (is (= 200 (:status resp)))
+      (is (= "close" (get-in resp [:headers "connection"])))
+      (is (= "get" (:body resp))))
+    ;; roundtrip with scheme as a string
+    (let [resp (request {:uri "/get" :method :get
+                         :scheme "http"})]
+      (is (= 200 (:status resp)))
+      (is (= "close" (get-in resp [:headers "connection"])))
+      (is (= "get" (:body resp))))
+    (let [params {:a "1" :b {:c "2"}}]
+      (doseq [[content-type read-fn]
+              [[nil (comp parse-form-params slurp)]
+               [:x-www-form-urlencoded (comp parse-form-params slurp)]
+               [:edn (comp read-string slurp)]
+               [:transit+json #(client/parse-transit % :json)]
+               [:transit+msgpack #(client/parse-transit % :msgpack)]]]
+        (let [resp (request {:uri "/post"
+                             :as :stream
+                             :method :post
+                             :content-type content-type
+                             :form-params params})]
+          (is (= 200 (:status resp)))
+          (is (= "close" (get-in resp [:headers "connection"])))
+          (is (= params (read-fn (:body resp)))))))))
 
 (deftest ^:integration roundtrip-async
-  (run-server)
-  ;; roundtrip with scheme as a keyword
-  (let [resp (promise)
-        exception (promise)
-        _ (request {:uri "/get" :method :get
-                    :async? true} resp exception)]
-    (is (= 200 (:status @resp)))
-    (is (= "close" (get-in @resp [:headers "connection"])))
-    (is (= "get" (:body @resp)))
-    (is (not (realized? exception))))
-  ;; roundtrip with scheme as a string
-  (let [resp (promise)
-        exception (promise)
-        _ (request {:uri "/get" :method :get
-                    :scheme "http"
-                    :async? true} resp exception)]
-    (is (= 200 (:status @resp)))
-    (is (= "close" (get-in @resp [:headers "connection"])))
-    (is (= "get" (:body @resp)))
-    (is (not (realized? exception))))
+  (with-open [s (run-server)]
+    ;; roundtrip with scheme as a keyword
+    (let [resp (promise)
+          exception (promise)
+          _ (request {:uri "/get" :method :get
+                      :async? true} resp exception)]
+      (is (= 200 (:status @resp)))
+      (is (= "close" (get-in @resp [:headers "connection"])))
+      (is (= "get" (:body @resp)))
+      (is (not (realized? exception))))
+    ;; roundtrip with scheme as a string
+    (let [resp (promise)
+          exception (promise)
+          _ (request {:uri "/get" :method :get
+                      :scheme "http"
+                      :async? true} resp exception)]
+      (is (= 200 (:status @resp)))
+      (is (= "close" (get-in @resp [:headers "connection"])))
+      (is (= "get" (:body @resp)))
+      (is (not (realized? exception))))
 
-  (let [params {:a "1" :b {:c "2"}}]
-    (doseq [[content-type read-fn]
-            [[nil (comp parse-form-params slurp)]
-             [:x-www-form-urlencoded (comp parse-form-params slurp)]
-             [:edn (comp read-string slurp)]
-             [:transit+json #(client/parse-transit % :json)]
-             [:transit+msgpack #(client/parse-transit % :msgpack)]]]
-      (let [resp (promise)
-            exception (promise)
-            _ (request {:uri "/post"
-                        :as :stream
-                        :method :post
-                        :content-type content-type
-                        :form-params params
-                        :async? true} resp exception)]
-        (is (= 200 (:status @resp)))
-        (is (= "close" (get-in @resp [:headers "connection"])))
-        (is (= params (read-fn (:body @resp))))
-        (is (not (realized? exception)))))))
+    (let [params {:a "1" :b {:c "2"}}]
+      (doseq [[content-type read-fn]
+              [[nil (comp parse-form-params slurp)]
+               [:x-www-form-urlencoded (comp parse-form-params slurp)]
+               [:edn (comp read-string slurp)]
+               [:transit+json #(client/parse-transit % :json)]
+               [:transit+msgpack #(client/parse-transit % :msgpack)]]]
+        (let [resp (promise)
+              exception (promise)
+              _ (request {:uri "/post"
+                          :as :stream
+                          :method :post
+                          :content-type content-type
+                          :form-params params
+                          :async? true} resp exception)]
+          (is (= 200 (:status @resp)))
+          (is (= "close" (get-in @resp [:headers "connection"])))
+          (is (= params (read-fn (:body @resp))))
+          (is (not (realized? exception))))))))
 
 (deftest ^:integration nil-input
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
@@ -400,7 +400,7 @@
   (doseq [method [:put :post :delete]
           status [301 302 307]]
     (let [client (fn [req] {:status status :body (:body req)
-                           :headers {"location" "http://foo.com/bat"}})
+                            :headers {"location" "http://foo.com/bat"}})
           r-client (client/wrap-redirects client)
           resp (r-client {:body "ok" :url "http://foo.com"
                           :request-method method})]
@@ -1209,153 +1209,153 @@
            (:headers resp)))))
 
 (deftest ^:integration t-request-without-url-set
-  (run-server)
-  ;; roundtrip with scheme as a keyword
-  (let [resp (request {:uri "/redirect-to-get"
-                       :method :get})]
-    (is (= 200 (:status resp)))
-    (is (= "close" (get-in resp [:headers "connection"])))
-    (is (= "get" (:body resp)))))
+  (with-open [s (run-server)]
+    ;; roundtrip with scheme as a keyword
+    (let [resp (request {:uri "/redirect-to-get"
+                         :method :get})]
+      (is (= 200 (:status resp)))
+      (is (= "close" (get-in resp [:headers "connection"])))
+      (is (= "get" (:body resp))))))
 
 (deftest ^:integration t-reusable-conn-mgrs
-  (run-server)
-  (let [cm (conn/make-reusable-conn-manager {:timeout 10 :insecure? false})
-        resp1 (request {:uri "/redirect-to-get"
-                        :method :get
-                        :connection-manager cm})
-        resp2 (request {:uri "/redirect-to-get"
-                        :method :get})]
-    (is (= 200 (:status resp1) (:status resp2)))
-    (is (nil? (get-in resp1 [:headers "connection"]))
-        "connection should remain open")
-    (is (= "close" (get-in resp2 [:headers "connection"]))
-        "connection should be closed")
-    (.shutdown cm)))
+  (with-open [s (run-server)]
+    (let [cm (conn/make-reusable-conn-manager {:timeout 10 :insecure? false})
+          resp1 (request {:uri "/redirect-to-get"
+                          :method :get
+                          :connection-manager cm})
+          resp2 (request {:uri "/redirect-to-get"
+                          :method :get})]
+      (is (= 200 (:status resp1) (:status resp2)))
+      (is (nil? (get-in resp1 [:headers "connection"]))
+          "connection should remain open")
+      (is (= "close" (get-in resp2 [:headers "connection"]))
+          "connection should be closed")
+      (.shutdown cm))))
 
 (deftest ^:integration t-with-async-pool
-  (run-server)
-  (client/with-async-connection-pool {}
-    (let [resp1 (promise) resp2 (promise)
-          exce1 (promise) exce2 (promise)
-          count (atom 2)]
-      (binding [client/*pooling-info*
-                (assoc client/*pooling-info* :release (count-release count))]
-        (request {:async? true :uri "/get" :method :get} resp1 exce1)
-        (request {:async? true :uri "/get" :method :get} resp2 exce2)
-        (is (= 200 (:status @resp1) (:status @resp2)))
-        (is (:pooling-info @resp1))
-        (is (:pooling-info @resp2))
-        (is (not (realized? exce2)))
-        (is (not (realized? exce1)))
-        (is (= 0 @count))))))
-
-(deftest ^:integration t-with-async-pool-sleep
-  (run-server)
-  (client/with-async-connection-pool {}
-    (let [resp1 (promise) resp2 (promise)
-          exce1 (promise) exce2 (promise)
-          count (atom 2)]
-      (binding [client/*pooling-info*
-                (assoc client/*pooling-info* :release (count-release count))]
-        (request {:async? true :uri "/get" :method :get} resp1 exce1)
-        (Thread/sleep 500)
-        (request {:async? true :uri "/get" :method :get} resp2 exce2)
-        (is (= 200 (:status @resp1) (:status @resp2)))
-        (is (:pooling-info @resp1))
-        (is (:pooling-info @resp2))
-        (is (not (realized? exce2)))
-        (is (not (realized? exce1)))
-        (is (= 0 @count))))))
-
-(deftest ^:integration t-async-pool-wrap-exception
-  (run-server)
-  (client/with-async-connection-pool {}
-    (let [resp1 (promise) resp2 (promise)
-          exce1 (promise) exce2 (promise) count (atom 2)]
-      (binding [client/*pooling-info*
-                (assoc client/*pooling-info* :release (count-release count))]
-        (request {:async? true :uri "/error" :method :get} resp1 exce1)
-        (Thread/sleep 500)
-        (request {:async? true :uri "/get" :method :get} resp2 exce2)
-        (is (realized? exce1))
-        (is (not (realized? exce2)))
-        (is (= 200 (:status @resp2)))
-        (is (= 0 @count))))))
-
-(deftest ^:integration t-async-pool-exception-when-start
-  (run-server)
-  (client/with-async-connection-pool {}
-    (let [resp1 (promise) resp2 (promise)
-          exce1 (promise) exce2 (promise)
-          count (atom 2)
-          middleware (fn [client]
-                       (fn [req resp raise] (throw (Exception.))))]
-      (client/with-additional-middleware
-        [middleware]
+  (with-open [s (run-server)]
+    (client/with-async-connection-pool {}
+      (let [resp1 (promise) resp2 (promise)
+            exce1 (promise) exce2 (promise)
+            count (atom 2)]
         (binding [client/*pooling-info*
                   (assoc client/*pooling-info* :release (count-release count))]
-          (try (request {:async? true :uri "/error" :method :get} resp1 exce1)
-               (catch Throwable ex))
-          (Thread/sleep 500)
-          (try (request {:async? true :uri "/get" :method :get} resp2 exce2)
-               (catch Throwable ex))
-          (is (not (realized? exce1)))
+          (request {:async? true :uri "/get" :method :get} resp1 exce1)
+          (request {:async? true :uri "/get" :method :get} resp2 exce2)
+          (is (= 200 (:status @resp1) (:status @resp2)))
+          (is (:pooling-info @resp1))
+          (is (:pooling-info @resp2))
           (is (not (realized? exce2)))
-          (is (not (realized? resp1)))
-          (is (not (realized? resp2)))
+          (is (not (realized? exce1)))
           (is (= 0 @count)))))))
 
+(deftest ^:integration t-with-async-pool-sleep
+  (with-open [s (run-server)]
+    (client/with-async-connection-pool {}
+      (let [resp1 (promise) resp2 (promise)
+            exce1 (promise) exce2 (promise)
+            count (atom 2)]
+        (binding [client/*pooling-info*
+                  (assoc client/*pooling-info* :release (count-release count))]
+          (request {:async? true :uri "/get" :method :get} resp1 exce1)
+          (Thread/sleep 500)
+          (request {:async? true :uri "/get" :method :get} resp2 exce2)
+          (is (= 200 (:status @resp1) (:status @resp2)))
+          (is (:pooling-info @resp1))
+          (is (:pooling-info @resp2))
+          (is (not (realized? exce2)))
+          (is (not (realized? exce1)))
+          (is (= 0 @count)))))))
+
+(deftest ^:integration t-async-pool-wrap-exception
+  (with-open [s (run-server)]
+    (client/with-async-connection-pool {}
+      (let [resp1 (promise) resp2 (promise)
+            exce1 (promise) exce2 (promise) count (atom 2)]
+        (binding [client/*pooling-info*
+                  (assoc client/*pooling-info* :release (count-release count))]
+          (request {:async? true :uri "/error" :method :get} resp1 exce1)
+          (Thread/sleep 500)
+          (request {:async? true :uri "/get" :method :get} resp2 exce2)
+          (is (realized? exce1))
+          (is (not (realized? exce2)))
+          (is (= 200 (:status @resp2)))
+          (is (= 0 @count)))))))
+
+(deftest ^:integration t-async-pool-exception-when-start
+  (with-open [s (run-server)]
+    (client/with-async-connection-pool {}
+      (let [resp1 (promise) resp2 (promise)
+            exce1 (promise) exce2 (promise)
+            count (atom 2)
+            middleware (fn [client]
+                         (fn [req resp raise] (throw (Exception.))))]
+        (client/with-additional-middleware
+          [middleware]
+          (binding [client/*pooling-info*
+                    (assoc client/*pooling-info* :release (count-release count))]
+            (try (request {:async? true :uri "/error" :method :get} resp1 exce1)
+                 (catch Throwable ex))
+            (Thread/sleep 500)
+            (try (request {:async? true :uri "/get" :method :get} resp2 exce2)
+                 (catch Throwable ex))
+            (is (not (realized? exce1)))
+            (is (not (realized? exce2)))
+            (is (not (realized? resp1)))
+            (is (not (realized? resp2)))
+            (is (= 0 @count))))))))
+
 (deftest ^:integration t-reuse-async-pool
-  (run-server)
-  (client/with-async-connection-pool {}
-    (let [resp1 (promise) resp2 (promise)
-          exce1 (promise) exce2 (promise)
-          count (atom 2)]
-      (binding [client/*pooling-info*
-                (assoc client/*pooling-info* :release (count-release count))]
-        (request {:async? true :uri "/get" :method :get}
-                 (fn [resp]
-                   (resp1 resp)
-                   (request (client/reuse-pool
-                             {:async? true
-                              :uri "/get"
-                              :method :get}
-                             resp)
-                            resp2
-                            exce2))
-                 exce1)
-        (is (= 200 (:status @resp1) (:status @resp2)))
-        (is (:pooling-info @resp1))
-        (is (:pooling-info @resp2))
-        (is (not (realized? exce2)))
-        (is (not (realized? exce1)))
-        (is (= 0 @count))))))
+  (with-open [s (run-server)]
+    (client/with-async-connection-pool {}
+      (let [resp1 (promise) resp2 (promise)
+            exce1 (promise) exce2 (promise)
+            count (atom 2)]
+        (binding [client/*pooling-info*
+                  (assoc client/*pooling-info* :release (count-release count))]
+          (request {:async? true :uri "/get" :method :get}
+                   (fn [resp]
+                     (resp1 resp)
+                     (request (client/reuse-pool
+                               {:async? true
+                                :uri "/get"
+                                :method :get}
+                               resp)
+                              resp2
+                              exce2))
+                   exce1)
+          (is (= 200 (:status @resp1) (:status @resp2)))
+          (is (:pooling-info @resp1))
+          (is (:pooling-info @resp2))
+          (is (not (realized? exce2)))
+          (is (not (realized? exce1)))
+          (is (= 0 @count)))))))
 
 (deftest ^:integration t-async-pool-redirect-to-get
-  (run-server)
-  (client/with-async-connection-pool {}
-    (let [resp (promise) exce (promise) count (atom 2)]
-      (binding [client/*pooling-info*
-                (assoc client/*pooling-info* :release (count-release count))]
-        (request {:async? true :uri "/redirect-to-get"
-                  :method :get :redirect-strategy :none} resp exce)
-        (is (= 200 (:status @resp)))
-        (is (:pooling-info @resp))
-        (is (not (realized? exce)))
-        (is (= 0 @count))))))
+  (with-open [s (run-server)]
+    (client/with-async-connection-pool {}
+      (let [resp (promise) exce (promise) count (atom 2)]
+        (binding [client/*pooling-info*
+                  (assoc client/*pooling-info* :release (count-release count))]
+          (request {:async? true :uri "/redirect-to-get"
+                    :method :get :redirect-strategy :none} resp exce)
+          (is (= 200 (:status @resp)))
+          (is (:pooling-info @resp))
+          (is (not (realized? exce)))
+          (is (= 0 @count)))))))
 
 (deftest ^:integration t-async-pool-max-redirect
-  (run-server)
-  (client/with-async-connection-pool {}
-    (let [resp (promise) exce (promise) count (atom 21)]
-      (binding [client/*pooling-info*
-                (assoc client/*pooling-info* :release (count-release count))]
-        (request {:async? true :uri "/redirect" :method :get
-                  :redirect-strategy :none
-                  :throw-exceptions true} resp exce)
-        (is @exce)
-        (is (not (realized? resp)))
-        (is (= 0 @count))))))
+  (with-open [s (run-server)]
+    (client/with-async-connection-pool {}
+      (let [resp (promise) exce (promise) count (atom 21)]
+        (binding [client/*pooling-info*
+                  (assoc client/*pooling-info* :release (count-release count))]
+          (request {:async? true :uri "/redirect" :method :get
+                    :redirect-strategy :none
+                    :throw-exceptions true} resp exce)
+          (is @exce)
+          (is (not (realized? resp)))
+          (is (= 0 @count)))))))
 
 (deftest test-url-encode-path
   (is (= (client/url-encode-illegal-characters "?foo bar+baz[]75")
@@ -1425,23 +1425,23 @@
                                                www-form-urlencoded-resp))))))
 
 (deftest ^:integration t-with-middleware
-  (run-server)
-  (is (:request-time (request {:uri "/get" :method :get})))
-  (is (= client/*current-middleware* client/default-middleware))
-  (client/with-middleware [client/wrap-url
-                           client/wrap-method
-                           #'client/wrap-request-timing]
+  (with-open [s (run-server)]
     (is (:request-time (request {:uri "/get" :method :get})))
-    (is (= client/*current-middleware* [client/wrap-url
-                                        client/wrap-method
-                                        #'client/wrap-request-timing])))
-  (client/with-middleware (->> client/default-middleware
-                               (remove #{client/wrap-request-timing}))
-    (is (not (:request-time (request {:uri "/get" :method :get}))))
-    (is (not (contains? (set client/*current-middleware*)
-                        client/wrap-request-timing)))
-    (is (contains? (set client/default-middleware)
-                   client/wrap-request-timing))))
+    (is (= client/*current-middleware* client/default-middleware))
+    (client/with-middleware [client/wrap-url
+                             client/wrap-method
+                             #'client/wrap-request-timing]
+      (is (:request-time (request {:uri "/get" :method :get})))
+      (is (= client/*current-middleware* [client/wrap-url
+                                          client/wrap-method
+                                          #'client/wrap-request-timing])))
+    (client/with-middleware (->> client/default-middleware
+                                 (remove #{client/wrap-request-timing}))
+      (is (not (:request-time (request {:uri "/get" :method :get}))))
+      (is (not (contains? (set client/*current-middleware*)
+                          client/wrap-request-timing)))
+      (is (contains? (set client/default-middleware)
+                     client/wrap-request-timing)))))
 
 (deftest t-detect-charset-by-content-type
   (is (= "UTF-8" (client/detect-charset nil)))
@@ -1455,58 +1455,58 @@
   (is (= "GB2312" (client/detect-charset "text/html; Charset=GB2312"))))
 
 (deftest ^:integration customMethodTest
-  (run-server)
-  (let [resp (request {:uri "/propfind" :method "PROPFIND"})]
-    (is (= 200 (:status resp)))
-    (is (= "close" (get-in resp [:headers "connection"])))
-    (is (= "propfind" (:body resp))))
-  (let [resp (request {:uri "/propfind-with-body"
-                       :method "PROPFIND"
-                       :body "propfindbody"})]
-    (is (= 200 (:status resp)))
-    (is (= "close" (get-in resp [:headers "connection"])))
-    (is (= "propfindbody" (:body resp)))))
+  (with-open [s (run-server)]
+    (let [resp (request {:uri "/propfind" :method "PROPFIND"})]
+      (is (= 200 (:status resp)))
+      (is (= "close" (get-in resp [:headers "connection"])))
+      (is (= "propfind" (:body resp))))
+    (let [resp (request {:uri "/propfind-with-body"
+                         :method "PROPFIND"
+                         :body "propfindbody"})]
+      (is (= 200 (:status resp)))
+      (is (= "close" (get-in resp [:headers "connection"])))
+      (is (= "propfindbody" (:body resp))))))
 
 (deftest ^:integration status-line-parsing
-  (run-server)
-  (let [resp (request {:uri "/get" :method :get})
-        protocol-version (:protocol-version resp)]
-    (is (= 200 (:status resp)))
-    (is (= "HTTP" (:name protocol-version)))
-    (is (= 1 (:major protocol-version)))
-    (is (= 1 (:minor protocol-version)))
-    (is (= "OK" (:reason-phrase resp)))))
+  (with-open [s (run-server)]
+    (let [resp (request {:uri "/get" :method :get})
+          protocol-version (:protocol-version resp)]
+      (is (= 200 (:status resp)))
+      (is (= "HTTP" (:name protocol-version)))
+      (is (= 1 (:major protocol-version)))
+      (is (= 1 (:minor protocol-version)))
+      (is (= "OK" (:reason-phrase resp))))))
 
 (deftest ^:integration multi-valued-query-params
-  (run-server)
-  (testing "default (repeating) multi-valued query params"
-    (let [resp (request {:uri "/query-string"
-                         :method :get
-                         :query-params {:a [1 2 3]
-                                        :b ["x" "y" "z"]}})
-          query-string (-> resp :body form-decode-str)]
-      (is (= 200 (:status resp)))
-      (is (.contains query-string "a=1&a=2&a=3") query-string)
-      (is (.contains query-string "b=x&b=y&b=z") query-string)))
+  (with-open [s (run-server)]
+    (testing "default (repeating) multi-valued query params"
+      (let [resp (request {:uri "/query-string"
+                           :method :get
+                           :query-params {:a [1 2 3]
+                                          :b ["x" "y" "z"]}})
+            query-string (-> resp :body form-decode-str)]
+        (is (= 200 (:status resp)))
+        (is (.contains query-string "a=1&a=2&a=3") query-string)
+        (is (.contains query-string "b=x&b=y&b=z") query-string)))
 
-  (testing "multi-valued query params in indexed-style"
-    (let [resp (request {:uri "/query-string"
-                         :method :get
-                         :multi-param-style :indexed
-                         :query-params {:a [1 2 3]
-                                        :b ["x" "y" "z"]}})
-          query-string (-> resp :body form-decode-str)]
-      (is (= 200 (:status resp)))
-      (is (.contains query-string "a[0]=1&a[1]=2&a[2]=3") query-string)
-      (is (.contains query-string "b[0]=x&b[1]=y&b[2]=z") query-string)))
+    (testing "multi-valued query params in indexed-style"
+      (let [resp (request {:uri "/query-string"
+                           :method :get
+                           :multi-param-style :indexed
+                           :query-params {:a [1 2 3]
+                                          :b ["x" "y" "z"]}})
+            query-string (-> resp :body form-decode-str)]
+        (is (= 200 (:status resp)))
+        (is (.contains query-string "a[0]=1&a[1]=2&a[2]=3") query-string)
+        (is (.contains query-string "b[0]=x&b[1]=y&b[2]=z") query-string)))
 
-  (testing "multi-valued query params in array-style"
-    (let [resp (request {:uri "/query-string"
-                         :method :get
-                         :multi-param-style :array
-                         :query-params {:a [1 2 3]
-                                        :b ["x" "y" "z"]}})
-          query-string (-> resp :body form-decode-str)]
-      (is (= 200 (:status resp)))
-      (is (.contains query-string "a[]=1&a[]=2&a[]=3") query-string)
-      (is (.contains query-string "b[]=x&b[]=y&b[]=z") query-string))))
+    (testing "multi-valued query params in array-style"
+      (let [resp (request {:uri "/query-string"
+                           :method :get
+                           :multi-param-style :array
+                           :query-params {:a [1 2 3]
+                                          :b ["x" "y" "z"]}})
+            query-string (-> resp :body form-decode-str)]
+        (is (= 200 (:status resp)))
+        (is (.contains query-string "a[]=1&a[]=2&a[]=3") query-string)
+        (is (.contains query-string "b[]=x&b[]=y&b[]=z") query-string)))))

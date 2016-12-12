@@ -47,75 +47,70 @@
     (is (instance? SSLConnectionSocketFactory socket-factory))))
 
 (deftest ^:integration ssl-client-cert-get
-  (let [server (ring/run-jetty secure-handler
+  (with-open [server (run-server secure-handler
                                {:port 18083 :ssl-port 18084
                                 :ssl? true
                                 :join? false
                                 :keystore "test-resources/keystore"
                                 :key-password "keykey"
                                 :client-auth :want})]
-    (try
-      (let [resp (core/request {:request-method :get :uri "/get"
-                                :server-port 18084 :scheme :https
-                                :insecure? true :server-name "localhost"})]
-        (is (= 403 (:status resp))))
-      (let [resp (core/request secure-request)]
-        (is (= 200 (:status resp))))
-      (finally
-        (.stop server)))))
+    (let [resp (core/request {:request-method :get :uri "/get"
+                              :server-port 18084 :scheme :https
+                              :insecure? true :server-name "localhost"})]
+      (is (= 403 (:status resp))))
+    (let [resp (core/request secure-request)]
+      (is (= 200 (:status resp))))))
 
 (deftest ^:integration ssl-client-cert-get-async
-  (let [server (ring/run-jetty secure-handler
+  (with-open [server (run-server secure-handler
                                {:port 18083 :ssl-port 18084
                                 :ssl? true
                                 :join? false
                                 :keystore "test-resources/keystore"
                                 :key-password "keykey"
                                 :client-auth :want})]
-    (try
-      (let [resp (promise)
-            exception (promise)
-            _ (core/request {:request-method :get :uri "/get"
-                                :server-port 18084 :scheme :https
-                                :insecure? true :server-name "localhost"
-                                :async? true} resp exception)]
-        (is (= 403 (:status @resp))))
-      (let [resp (promise)
-            exception (promise)
-            _ (core/request (assoc secure-request :async? true) resp exception)]
-        (is (= 200 (:status @resp))))
-      (finally
-        (.stop server)))))
+
+    (let [resp (promise)
+          exception (promise)
+          _ (core/request {:request-method :get :uri "/get"
+                           :server-port 18084 :scheme :https
+                           :insecure? true :server-name "localhost"
+                           :async? true} resp exception)]
+      (is (= 403 (:status @resp))))
+    (let [resp (promise)
+          exception (promise)
+          _ (core/request (assoc secure-request :async? true) resp exception)]
+      (is (= 200 (:status @resp))))))
 
 (deftest ^:integration t-closed-conn-mgr-for-as-stream
-  (run-server)
-  (let [shutdown? (atom false)
-        cm (proxy [BasicHttpClientConnectionManager] []
-             (shutdown []
-               (reset! shutdown? true)))]
-    (try
-      (core/request {:request-method :get :uri "/timeout"
-                     :server-port 18080 :scheme :http
-                     :server-name "localhost"
-                     ;; timeouts forces an exception being thrown
-                     :socket-timeout 1
-                     :conn-timeout 1
-                     :connection-manager cm
-                     :as :stream})
-      (is false "request should have thrown an exception")
-      (catch Exception e))
-    (is @shutdown? "Connection manager has been shutdown")))
+  (with-open [s (run-server)]
+    (let [shutdown? (atom false)
+          cm (proxy [BasicHttpClientConnectionManager] []
+               (shutdown []
+                 (reset! shutdown? true)))]
+      (try
+        (core/request {:request-method :get :uri "/timeout"
+                       :server-port 18080 :scheme :http
+                       :server-name "localhost"
+                       ;; timeouts forces an exception being thrown
+                       :socket-timeout 1
+                       :conn-timeout 1
+                       :connection-manager cm
+                       :as :stream})
+        (is false "request should have thrown an exception")
+        (catch Exception e))
+      (is @shutdown? "Connection manager has been shutdown"))))
 
 (deftest ^:integration t-closed-conn-mgr-for-empty-body
-  (run-server)
-  (let [shutdown? (atom false)
-        cm (proxy [BasicHttpClientConnectionManager] []
-             (shutdown []
-               (reset! shutdown? true)))
-        response (core/request {:request-method :get :uri "/unmodified-resource"
-                                :server-port 18080 :scheme :http
-                                :server-name "localhost"
-                                :connection-manager cm})]
-    (is (nil? (:body response)) "response shouldn't have body")
-    (is (= 304 (:status response)))
-    (is @shutdown? "connection manager should be shutdown")))
+  (with-open [s (run-server)]
+    (let [shutdown? (atom false)
+          cm (proxy [BasicHttpClientConnectionManager] []
+               (shutdown []
+                 (reset! shutdown? true)))
+          response (core/request {:request-method :get :uri "/unmodified-resource"
+                                  :server-port 18080 :scheme :http
+                                  :server-name "localhost"
+                                  :connection-manager cm})]
+      (is (nil? (:body response)) "response shouldn't have body")
+      (is (= 304 (:status response)))
+      (is @shutdown? "connection manager should be shutdown"))))
