@@ -23,7 +23,7 @@
    - [[#put][PUT]]
    - [[#post][POST]]
    - [[#delete][DELETE]]
-   - [[#async][Async HTTP Request]]
+   - [[#async-http-request][Async HTTP Request]]
    - [[#coercions][Coercions]]
    - [[#headers][Headers]]
    - [[#meta-tag-headers][Meta Tag Headers]]
@@ -891,11 +891,11 @@ For async request, you can use =with-async-connection-pool=
 
 #+BEGIN_SRC clojure
 (with-async-connection-pool {:timeout 5 :threads 4 :insecure? false :default-per-route 10}
-  (get "http://aoeu.com/1" {async? :true} resp1 exce1)
-  (post "http://aoeu.com/2" {async? :true} resp2 exce2)
-  (get "http://aoeu.com/3" {async? :true} resp3 exce3)
+  (get "http://aoeu.com/1" {:async? true} resp1 exce1)
+  (post "http://aoeu.com/2" {:async? true} resp2 exce2)
+  (get "http://aoeu.com/3" {:async? true} resp3 exce3)
   ...
-  (get "http://aoeu.com/999" {async? :true} resp999 exce999))
+  (get "http://aoeu.com/999" {:async? true} resp999 exce999))
 #+END_SRC
 
 This is MUCH faster than sequentially performing all requests, because a
@@ -907,11 +907,11 @@ reuse the pool context, just use =reuse-pool=.
 
 #+BEGIN_SRC clojure
 (with-async-connection-pool {:timeout 5 :threads 4 :insecure? false :default-per-route 10}
-  (get "http://aoeu.com/1" {async? :true} resp1 exce1)
+  (get "http://aoeu.com/1" {:async? true} resp1 exce1)
   (post "http://aoeu.com/2"
-        {async? :true}
+        {:async? true}
         (fn [resp] (get "http://aoeu.com/3"
-                        (reuse-pool {async? :true} resp)
+                        (reuse-pool {:async? true} resp)
                         resp3 exce3))
         exce2))
 #+END_SRC
