@@ -218,9 +218,10 @@
     resp
     (if (false? (opt req :throw-exceptions))
       resp
-      (if (opt req :throw-entire-message)
-        (throw+ resp "clj-http: status %d %s" (:status %) resp)
-        (throw+ resp "clj-http: status %s" (:status %))))))
+      (let [data (assoc resp :type ::unexceptional-status)]
+        (if (opt req :throw-entire-message)
+          (throw+ data "clj-http: status %d %s" (:status %) resp)
+          (throw+ data "clj-http: status %s" (:status %)))))))
 
 (defn wrap-exceptions
   "Middleware that throws a slingshot exception if the response is not a
