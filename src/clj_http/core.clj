@@ -309,8 +309,7 @@
                          :major (.getMajor protocol-version)
                          :minor (.getMinor protocol-version)}
      :reason-phrase (.getReasonPhrase status)
-     :trace-redirects (mapv str
-                            (into [] (.getRedirectLocations context)))}))
+     :trace-redirects (mapv str (.getRedirectLocations context))}))
 
 (defn- get-conn-mgr
   [async? req]
