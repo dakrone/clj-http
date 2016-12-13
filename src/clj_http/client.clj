@@ -327,7 +327,7 @@
       :else
       (respond* resp-r req))))
 
-(defn wrap-redirects
+(defn ^:deprecated wrap-redirects
   "Middleware that follows redirects in the response. A slingshot exception is
   thrown if too many redirects occur. Options
 
@@ -1073,7 +1073,6 @@
    wrap-oauth
    wrap-user-info
    wrap-url
-   wrap-redirects
    wrap-decompression
    wrap-input-coercion
    ;; put this before output-coercion, so additional charset

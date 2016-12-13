@@ -292,7 +292,7 @@
   (clojure.pprint/pprint (bean http-req)))
 
 (defn- build-response-map
-  [^HttpResponse response req conn-mgr]
+  [^HttpResponse response req conn-mgr context]
   (let [^HttpEntity entity (.getEntity response)
         status (.getStatusLine response)
         protocol-version (.getProtocolVersion status)]
@@ -308,7 +308,9 @@
      :protocol-version  {:name (.getProtocol protocol-version)
                          :major (.getMajor protocol-version)
                          :minor (.getMinor protocol-version)}
-     :reason-phrase (.getReasonPhrase status)}))
+     :reason-phrase (.getReasonPhrase status)
+     :trace-redirects (mapv str
+                            (into [] (.getRedirectLocations context)))}))
 
 (defn- get-conn-mgr
   [async? req]
@@ -384,7 +386,7 @@
        (let [^CloseableHttpClient client (http-client req conn-mgr http-url
                                                       proxy-ignore-hosts)]
          (try
-           (build-response-map (.execute client http-req context) req conn-mgr)
+           (build-response-map (.execute client http-req context) req conn-mgr context)
            (catch Throwable t
              (when-not (conn/reusable? conn-mgr)
                (.shutdown conn-mgr))
@@ -402,7 +404,7 @@
                          (raise ex)))
                      (completed [this resp]
                        (try
-                         (respond (build-response-map resp req conn-mgr))
+                         (respond (build-response-map resp req conn-mgr context))
                          (catch Throwable t
                            (when-not (conn/reusable? conn-mgr)
                              (.shutdown conn-mgr))

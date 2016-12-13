@@ -1349,11 +1349,11 @@
       (binding [client/*pooling-info*
                 (assoc client/*pooling-info* :release (count-release count))]
         (request {:async? true :uri "/redirect-to-get"
-                  :method :get :redirect-strategy :none} resp exce)
+                  :method :get :redirect-strategy :default} resp exce)
         (is (= 200 (:status @resp)))
         (is (:pooling-info @resp))
         (is (not (realized? exce)))
-        (is (= 0 @count))))))
+        (is (= 1 @count))))))
 
 (deftest ^:integration t-async-pool-max-redirect
   (run-server)
@@ -1362,11 +1362,11 @@
       (binding [client/*pooling-info*
                 (assoc client/*pooling-info* :release (count-release count))]
         (request {:async? true :uri "/redirect" :method :get
-                  :redirect-strategy :none
+                  :redirect-strategy :default
                   :throw-exceptions true} resp exce)
         (is @exce)
         (is (not (realized? resp)))
-        (is (= 0 @count))))))
+        (is (= 20 @count))))))
 
 (deftest test-url-encode-path
   (is (= (client/url-encode-illegal-characters "?foo bar+baz[]75")
