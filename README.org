@@ -732,7 +732,7 @@ HTTP responses other than =#{200 201 202 203 204 205 206 207 300 301 302 303
 
 How to use with Slingshot:
 
-#+BEGIN_SRC
+#+BEGIN_SRC clojure
 ; Response map is thrown as exception obj.
 ; We filter out by status codes
 (try+
@@ -814,7 +814,7 @@ There are four debugging methods you can use:
 :CUSTOM_ID: h:d3ea348f-88ed-4193-bb16-d8d5accdc2aa
 :END:
 
-#+BEGIN_SRC
+#+BEGIN_SRC clojure
 
 (client/get "http://site.com/protected" {:basic-auth ["user" "pass"]})
 (client/get "http://site.com/protected" {:basic-auth "user:pass"})
@@ -826,7 +826,7 @@ There are four debugging methods you can use:
 :CUSTOM_ID: h:d1904589-e71e-43db-8b93-0f94ccecaabe
 :END:
 
-#+BEGIN_SRC
+#+BEGIN_SRC clojure
 
 (client/get "http://site.com/protected" {:digest-auth ["user" "pass"]})
 
@@ -837,7 +837,7 @@ There are four debugging methods you can use:
 :CUSTOM_ID: h:dd077440-a1de-437e-b34e-5d6d0d1da4bd
 :END:
 
-#+BEGIN_SRC
+#+BEGIN_SRC clojure
 
 (client/get "http://site.com/protected" {:oauth-token "secret-token"})
 
