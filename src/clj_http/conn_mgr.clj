@@ -53,7 +53,7 @@
   (proxy [SSLConnectionSocketFactory] [(SSLContexts/createDefault)]
     (connectSocket [timeout socket host remoteAddress localAddress context]
       (let [^SSLConnectionSocketFactory this this] ;; avoid reflection
-        (proxy-super connectSocket timeout (socket-factory) remoteAddress
+        (proxy-super connectSocket timeout (socket-factory) host remoteAddress
                      localAddress context)))))
 
 (defn ^PlainConnectionSocketFactory PlainGenericSocketFactory
