@@ -335,7 +335,8 @@
   (fn [req]
     (if (false? (opt req :decompress-body))
       (client req)
-      (let [req-c (update req :headers assoc "accept-encoding" "gzip, deflate")
+      (let [merge-encodings (fn [e] (str/join ", " (remove nil? [e "gzip, deflate"])))
+            req-c (update-in req [:headers "accept-encoding"] merge-encodings)
             resp-c (client req-c)]
         (decompress-body resp-c)))))
 
