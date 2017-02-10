@@ -380,7 +380,8 @@
   [req]
   (if (false? (opt req :decompress-body))
     req
-    (update req :headers assoc "accept-encoding" "gzip, deflate")))
+    (update-in req [:headers "accept-encoding"]
+               #(str/join ", " (remove nil? [% "gzip, deflate"])))))
 
 (defn- decompression-response
   [req resp]
