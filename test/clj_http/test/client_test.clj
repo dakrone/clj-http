@@ -681,6 +681,26 @@
               {:accept-encoding [:identity :gzip]}
               {:headers {"accept-encoding" "identity, gzip"}}))
 
+(deftest apply-custom-accept-encoding
+  (testing "no custom encodings to accept"
+    (is-applied (comp client/wrap-accept-encoding
+                      client/wrap-decompression)
+                {}
+                {:headers {"accept-encoding" "gzip, deflate"}
+                 :orig-content-encoding nil}))
+  (testing "accept some custom encodings, but still include gzip and deflate"
+    (is-applied (comp client/wrap-accept-encoding
+                      client/wrap-decompression)
+                {:accept-encoding [:foo :bar]}
+                {:headers {"accept-encoding" "foo, bar, gzip, deflate"}
+                 :orig-content-encoding nil}))
+  (testing "accept some custom encodings, but exclude gzip and deflate"
+    (is-applied (comp client/wrap-accept-encoding
+                      client/wrap-decompression)
+                {:accept-encoding [:foo :bar] :decompress-body false}
+                {:headers {"accept-encoding" "foo, bar"}
+                 :decompress-body false})))
+
 (deftest pass-on-no-accept-encoding
   (is-passed client/wrap-accept-encoding
              {:uri "/foo"}))
