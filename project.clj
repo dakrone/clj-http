@@ -16,7 +16,7 @@
                  [slingshot "0.12.2"]
                  [potemkin "0.4.3"]]
   :profiles {:dev {:dependencies [;; optional deps
-                                  [cheshire "5.6.3"]
+                                  [cheshire "5.7.0"]
                                   [crouton "0.1.2"]
                                   [org.clojure/tools.reader "0.10.0"]
                                   [com.cognitect/transit-clj "0.8.293"]
@@ -25,8 +25,8 @@
                                   [org.clojure/clojure "1.8.0"]
                                   [org.clojure/tools.logging "0.3.1"]
                                   [log4j "1.2.17"]
-                                  [ring/ring-jetty-adapter "1.5.0"]
-                                  [ring/ring-devel "1.5.0"]]}
+                                  [ring/ring-jetty-adapter "1.5.1"]
+                                  [ring/ring-devel "1.5.1"]]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
              :1.7 {:dependencies [[org.clojure/clojure "1.7.0"]]}}
   :aliases {"all" ["with-profile" "dev,1.6:dev,1.7:dev"]}
