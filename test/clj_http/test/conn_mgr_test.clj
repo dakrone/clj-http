@@ -119,3 +119,13 @@
     (is (nil? (:body response)) "response shouldn't have body")
     (is (= 304 (:status response)))
     (is @shutdown? "connection manager should be shutdown")))
+
+(deftest t-reusable-conn-mgrs
+  (let [regular (conn-mgr/make-regular-conn-manager {})
+        regular-reusable (conn-mgr/make-reusable-conn-manager {})
+        async (conn-mgr/make-regular-async-conn-manager {})
+        async-reusable (conn-mgr/make-reuseable-async-conn-manager {})]
+    (is (false? (conn-mgr/reusable? regular)))
+    (is (true? (conn-mgr/reusable? regular-reusable)))
+    (is (false? (conn-mgr/reusable? async)))
+    (is (true? (conn-mgr/reusable? async-reusable)))))
