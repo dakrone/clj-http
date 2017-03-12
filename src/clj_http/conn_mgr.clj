@@ -179,7 +179,11 @@
 
                              :else regular-strategy-registry)]
     (doto
-        (PoolingNHttpClientConnectionManager. (default-ioreactor) registry)
+        (PoolingNHttpClientConnectionManager. (-> (IOReactorConfig/custom)
+                                                  (.setShutdownGracePeriod 1)
+                                                  .build
+                                                  DefaultConnectingIOReactor.)
+                                              registry)
       (.setMaxTotal 1))))
 
 (definterface ReuseableAsyncConnectionManager)
