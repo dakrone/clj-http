@@ -119,7 +119,7 @@
     (apply get-keystore* keystore args)))
 
 (defn get-keystore-context-verifier
-  [{:keys [keystore keystore-type keystore-pass keystore-instance
+  [{:keys [keystore keystore-type ^String keystore-pass keystore-instance   ; Note: JVM strings aren't ideal for passwords - see http://stackoverflow.com/questions/8881291/why-is-char-preferred-over-string-for-passwords
            trust-store trust-store-type trust-store-pass]
     :as req}]
   (let [ks (get-keystore keystore keystore-type keystore-pass)
@@ -274,7 +274,7 @@
 
 (defn shutdown-manager
   "Shut down the given connection manager, if it is not nil"
-  [manager]
+  [^org.apache.http.conn.HttpClientConnectionManager manager]
   (and manager (.shutdown manager)))
 
 (def ^:dynamic *connection-manager*
