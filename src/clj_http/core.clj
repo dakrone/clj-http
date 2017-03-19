@@ -320,7 +320,7 @@
     (or conn/*connection-manager*
         (conn/make-regular-conn-manager req))))
 
-(defmulti ^:private  shutdown class)
+(defmulti ^:private shutdown class)
 (defmethod shutdown org.apache.http.conn.HttpClientConnectionManager      [^HttpClientConnectionManager  conn-mgr] (.shutdown conn-mgr))
 (defmethod shutdown org.apache.http.nio.conn.NHttpClientConnectionManager [^NHttpClientConnectionManager conn-mgr] (.shutdown conn-mgr))
 
