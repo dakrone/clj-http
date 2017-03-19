@@ -13,7 +13,7 @@
                             HttpRequestInterceptor HttpResponseInterceptor)
            (org.apache.http.auth UsernamePasswordCredentials AuthScope
                                  NTCredentials)
-           (org.apache.http.client HttpRequestRetryHandler RedirectStrategy)
+           (org.apache.http.client HttpRequestRetryHandler RedirectStrategy CredentialsProvider)
            (org.apache.http.client.config RequestConfig CookieSpecs)
            (org.apache.http.client.methods HttpDelete HttpGet HttpPost HttpPut
                                            HttpOptions HttpPatch
@@ -24,7 +24,7 @@
            (org.apache.http.client.protocol HttpClientContext)
            (org.apache.http.config RegistryBuilder)
            (org.apache.http.conn HttpClientConnectionManager)
-           (org.apache.http.conn.routing HttpRoute)
+           (org.apache.http.conn.routing HttpRoute HttpRoutePlanner)
            (org.apache.http.conn.ssl BrowserCompatHostnameVerifier
                                      SSLConnectionSocketFactory SSLContexts)
            (org.apache.http.conn.socket PlainConnectionSocketFactory)
@@ -72,7 +72,7 @@
     nil (DefaultRedirectStrategy/INSTANCE)
     (DefaultRedirectStrategy/INSTANCE)))
 
-(defn add-retry-handler [^HttpClientBuilder builder handler]
+(defn ^HttpClientBuilder add-retry-handler [^HttpClientBuilder builder handler]
   (when handler
     (.setRetryHandler
      builder
@@ -113,10 +113,10 @@
     (when max-redirects (.setMaxRedirects config max-redirects))
     (.build config)))
 
-(defn get-route-planner
+(defn ^HttpRoutePlanner get-route-planner
   "Return an HttpRoutePlanner that either use the supplied proxy settings
   if any, or the JVM/system proxy settings otherwise"
-  [proxy-host proxy-port proxy-ignore-hosts http-url]
+  [^String proxy-host ^Long proxy-port proxy-ignore-hosts http-url]
   (let [url (URL. http-url)]
     (if (and (not (contains? (set proxy-ignore-hosts) (.getHost url)))
              proxy-host)
@@ -239,17 +239,17 @@
       ((make-proxy-method-with-body request-method) http-url)
       (make-proxy-method request-method http-url))))
 
-(defn http-context [request-config]
+(defn ^HttpClientContext http-context [request-config]
   (doto (HttpClientContext/create)
     (.setRequestConfig request-config)))
 
-(defn credentials-provider []
+(defn ^CredentialsProvider credentials-provider []
   (BasicCredentialsProvider.))
 
 (defn- coerce-body-entity
   "Coerce the http-entity from an HttpResponse to a stream that closes itself
   and the connection manager when closed."
-  [^HttpEntity http-entity conn-mgr ^CloseableHttpResponse response]
+  [^HttpEntity http-entity ^HttpClientConnectionManager conn-mgr ^CloseableHttpResponse response]
   (if http-entity
     (proxy [FilterInputStream]
         [^InputStream (.getContent http-entity)]
@@ -292,7 +292,7 @@
   (clojure.pprint/pprint (bean http-req)))
 
 (defn- build-response-map
-  [^HttpResponse response req conn-mgr context]
+  [^HttpResponse response req conn-mgr ^HttpClientContext context]
   (let [^HttpEntity entity (.getEntity response)
         status (.getStatusLine response)
         protocol-version (.getProtocolVersion status)]
@@ -334,6 +334,8 @@
                        (when server-port (str ":" server-port))
                        uri
                        (when query-string (str "?" query-string)))
+; #### THIS DEADLOCKS THE TESTS FOR SOME REASON!!!!
+;         ^HttpClientConnectionManager conn-mgr (or connection-manager
          conn-mgr (or connection-manager
                       (get-conn-mgr async? req))
          proxy-ignore-hosts (or proxy-ignore-hosts
