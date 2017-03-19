@@ -6,7 +6,7 @@
             [clj-http.util :refer [opt]]
             [clojure.pprint])
   (:import (java.io ByteArrayOutputStream FilterInputStream InputStream)
-           (java.net URI URL ProxySelector)
+           (java.net URI URL ProxySelector InetAddress)
            (java.util Locale)
            (org.apache.http HttpEntity HeaderIterator HttpHost HttpRequest
                             HttpEntityEnclosingRequest HttpResponse
@@ -114,6 +114,18 @@
     (when max-redirects (.setMaxRedirects config max-redirects))
     (.build config)))
 
+(defmulti ^:private construct-http-host (fn [proxy-host proxy-port] (class proxy-host)))
+(defmethod construct-http-host String
+  [^String proxy-host ^Long proxy-port]
+  (if proxy-port
+    (HttpHost. proxy-host proxy-port)
+    (HttpHost. proxy-host)))
+(defmethod construct-http-host java.net.InetAddress
+  [^InetAddress proxy-host ^Long proxy-port]
+  (if proxy-port
+    (HttpHost. proxy-host proxy-port)
+    (HttpHost. proxy-host)))
+
 (defn ^HttpRoutePlanner get-route-planner
   "Return an HttpRoutePlanner that either use the supplied proxy settings
   if any, or the JVM/system proxy settings otherwise"
@@ -121,10 +133,7 @@
   (let [url (URL. http-url)]
     (if (and (not (contains? (set proxy-ignore-hosts) (.getHost url)))
              proxy-host)
-      (let [proxy (if proxy-port
-                    (HttpHost. proxy-host proxy-port)
-                    (HttpHost. proxy-host))]
-        (DefaultProxyRoutePlanner. proxy))
+      (DefaultProxyRoutePlanner. (construct-http-host proxy-host proxy-port))
       (SystemDefaultRoutePlanner. (ProxySelector/getDefault)))))
 
 (defn http-client [{:keys [redirect-strategy retry-handler uri
