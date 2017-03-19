@@ -40,6 +40,7 @@
            (org.apache.http.impl.nio.client HttpAsyncClientBuilder
                                             HttpAsyncClients
                                             CloseableHttpAsyncClient)
+           (org.apache.http.nio.conn NHttpClientConnectionManager)
            (org.apache.http.message BasicHttpResponse)
            (java.util.concurrent ExecutionException)))
 
@@ -319,6 +320,10 @@
     (or conn/*connection-manager*
         (conn/make-regular-conn-manager req))))
 
+(defmulti ^:private  shutdown class)
+(defmethod shutdown org.apache.http.conn.HttpClientConnectionManager      [^HttpClientConnectionManager  conn-mgr] (.shutdown conn-mgr))
+(defmethod shutdown org.apache.http.nio.conn.NHttpClientConnectionManager [^NHttpClientConnectionManager conn-mgr] (.shutdown conn-mgr))
+
 (defn request
   ([req] (request req nil nil))
   ([{:keys [body conn-timeout conn-request-timeout connection-manager
@@ -334,8 +339,6 @@
                        (when server-port (str ":" server-port))
                        uri
                        (when query-string (str "?" query-string)))
-; #### THIS DEADLOCKS THE TESTS FOR SOME REASON!!!!
-;         ^HttpClientConnectionManager conn-mgr (or connection-manager
          conn-mgr (or connection-manager
                       (get-conn-mgr async? req))
          proxy-ignore-hosts (or proxy-ignore-hosts
@@ -390,7 +393,7 @@
            (build-response-map (.execute client http-req context) req conn-mgr context)
            (catch Throwable t
              (when-not (conn/reusable? conn-mgr)
-               (.shutdown conn-mgr))
+               (shutdown conn-mgr))
              (throw t))))
        (let [^CloseableHttpAsyncClient client
              (http-async-client req conn-mgr http-url proxy-ignore-hosts)]
@@ -399,7 +402,7 @@
                    (reify org.apache.http.concurrent.FutureCallback
                      (failed [this ex]
                        (when-not (conn/reusable? conn-mgr)
-                         (.shutdown conn-mgr))
+                         (shutdown conn-mgr))
                        (if (:ignore-unknown-host? req)
                          ((:unknown-host-respond req) nil)
                          (raise ex)))
@@ -408,10 +411,10 @@
                          (respond (build-response-map resp req conn-mgr context))
                          (catch Throwable t
                            (when-not (conn/reusable? conn-mgr)
-                             (.shutdown conn-mgr))
+                             (shutdown conn-mgr))
                            (raise t))))
                      (cancelled [this]
                        (if-let [oncancel (:oncancel req)]
                          (oncancel))
                        (when-not (conn/reusable? conn-mgr)
-                         (.shutdown conn-mgr))))))))))
+                         (shutdown conn-mgr))))))))))
