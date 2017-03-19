@@ -6,14 +6,14 @@
             [clj-http.util :refer [opt]]
             [clojure.pprint])
   (:import (java.io ByteArrayOutputStream FilterInputStream InputStream)
-           (java.net URI URL ProxySelector)
+           (java.net URI URL ProxySelector InetAddress)
            (java.util Locale)
            (org.apache.http HttpEntity HeaderIterator HttpHost HttpRequest
                             HttpEntityEnclosingRequest HttpResponse
                             HttpRequestInterceptor HttpResponseInterceptor)
            (org.apache.http.auth UsernamePasswordCredentials AuthScope
                                  NTCredentials)
-           (org.apache.http.client HttpRequestRetryHandler RedirectStrategy)
+           (org.apache.http.client HttpRequestRetryHandler RedirectStrategy CredentialsProvider)
            (org.apache.http.client.config RequestConfig CookieSpecs)
            (org.apache.http.client.methods HttpDelete HttpGet HttpPost HttpPut
                                            HttpOptions HttpPatch
@@ -24,7 +24,7 @@
            (org.apache.http.client.protocol HttpClientContext)
            (org.apache.http.config RegistryBuilder)
            (org.apache.http.conn HttpClientConnectionManager)
-           (org.apache.http.conn.routing HttpRoute)
+           (org.apache.http.conn.routing HttpRoute HttpRoutePlanner)
            (org.apache.http.conn.ssl BrowserCompatHostnameVerifier
                                      SSLConnectionSocketFactory SSLContexts)
            (org.apache.http.conn.socket PlainConnectionSocketFactory)
@@ -40,6 +40,7 @@
            (org.apache.http.impl.nio.client HttpAsyncClientBuilder
                                             HttpAsyncClients
                                             CloseableHttpAsyncClient)
+           (org.apache.http.nio.conn NHttpClientConnectionManager)
            (org.apache.http.message BasicHttpResponse)
            (java.util.concurrent ExecutionException)))
 
@@ -72,7 +73,7 @@
     nil (DefaultRedirectStrategy/INSTANCE)
     (DefaultRedirectStrategy/INSTANCE)))
 
-(defn add-retry-handler [^HttpClientBuilder builder handler]
+(defn ^HttpClientBuilder add-retry-handler [^HttpClientBuilder builder handler]
   (when handler
     (.setRetryHandler
      builder
@@ -113,17 +114,26 @@
     (when max-redirects (.setMaxRedirects config max-redirects))
     (.build config)))
 
-(defn get-route-planner
+(defmulti ^:private construct-http-host (fn [proxy-host proxy-port] (class proxy-host)))
+(defmethod construct-http-host String
+  [^String proxy-host ^Long proxy-port]
+  (if proxy-port
+    (HttpHost. proxy-host proxy-port)
+    (HttpHost. proxy-host)))
+(defmethod construct-http-host java.net.InetAddress
+  [^InetAddress proxy-host ^Long proxy-port]
+  (if proxy-port
+    (HttpHost. proxy-host proxy-port)
+    (HttpHost. proxy-host)))
+
+(defn ^HttpRoutePlanner get-route-planner
   "Return an HttpRoutePlanner that either use the supplied proxy settings
   if any, or the JVM/system proxy settings otherwise"
-  [proxy-host proxy-port proxy-ignore-hosts http-url]
+  [^String proxy-host ^Long proxy-port proxy-ignore-hosts http-url]
   (let [url (URL. http-url)]
     (if (and (not (contains? (set proxy-ignore-hosts) (.getHost url)))
              proxy-host)
-      (let [proxy (if proxy-port
-                    (HttpHost. proxy-host proxy-port)
-                    (HttpHost. proxy-host))]
-        (DefaultProxyRoutePlanner. proxy))
+      (DefaultProxyRoutePlanner. (construct-http-host proxy-host proxy-port))
       (SystemDefaultRoutePlanner. (ProxySelector/getDefault)))))
 
 (defn http-client [{:keys [redirect-strategy retry-handler uri
@@ -239,17 +249,17 @@
       ((make-proxy-method-with-body request-method) http-url)
       (make-proxy-method request-method http-url))))
 
-(defn http-context [request-config]
+(defn ^HttpClientContext http-context [request-config]
   (doto (HttpClientContext/create)
     (.setRequestConfig request-config)))
 
-(defn credentials-provider []
+(defn ^CredentialsProvider credentials-provider []
   (BasicCredentialsProvider.))
 
 (defn- coerce-body-entity
   "Coerce the http-entity from an HttpResponse to a stream that closes itself
   and the connection manager when closed."
-  [^HttpEntity http-entity conn-mgr ^CloseableHttpResponse response]
+  [^HttpEntity http-entity ^HttpClientConnectionManager conn-mgr ^CloseableHttpResponse response]
   (if http-entity
     (proxy [FilterInputStream]
         [^InputStream (.getContent http-entity)]
@@ -292,7 +302,7 @@
   (clojure.pprint/pprint (bean http-req)))
 
 (defn- build-response-map
-  [^HttpResponse response req conn-mgr context]
+  [^HttpResponse response req conn-mgr ^HttpClientContext context]
   (let [^HttpEntity entity (.getEntity response)
         status (.getStatusLine response)
         protocol-version (.getProtocolVersion status)]
@@ -318,6 +328,10 @@
         (conn/make-regular-async-conn-manager req))
     (or conn/*connection-manager*
         (conn/make-regular-conn-manager req))))
+
+(defmulti ^:private shutdown class)
+(defmethod shutdown org.apache.http.conn.HttpClientConnectionManager      [^HttpClientConnectionManager  conn-mgr] (.shutdown conn-mgr))
+(defmethod shutdown org.apache.http.nio.conn.NHttpClientConnectionManager [^NHttpClientConnectionManager conn-mgr] (.shutdown conn-mgr))
 
 (defn request
   ([req] (request req nil nil))
@@ -388,7 +402,7 @@
            (build-response-map (.execute client http-req context) req conn-mgr context)
            (catch Throwable t
              (when-not (conn/reusable? conn-mgr)
-               (.shutdown conn-mgr))
+               (shutdown conn-mgr))
              (throw t))))
        (let [^CloseableHttpAsyncClient client
              (http-async-client req conn-mgr http-url proxy-ignore-hosts)]
@@ -397,7 +411,7 @@
                    (reify org.apache.http.concurrent.FutureCallback
                      (failed [this ex]
                        (when-not (conn/reusable? conn-mgr)
-                         (.shutdown conn-mgr))
+                         (shutdown conn-mgr))
                        (if (:ignore-unknown-host? req)
                          ((:unknown-host-respond req) nil)
                          (raise ex)))
@@ -406,10 +420,10 @@
                          (respond (build-response-map resp req conn-mgr context))
                          (catch Throwable t
                            (when-not (conn/reusable? conn-mgr)
-                             (.shutdown conn-mgr))
+                             (shutdown conn-mgr))
                            (raise t))))
                      (cancelled [this]
                        (if-let [oncancel (:oncancel req)]
                          (oncancel))
                        (when-not (conn/reusable? conn-mgr)
-                         (.shutdown conn-mgr))))))))))
+                         (shutdown conn-mgr))))))))))

@@ -96,17 +96,22 @@
     (throw (Exception. (str "Multipart byte array body must contain "
                             "at least :content and :name")))))
 
+(defmulti  ^java.nio.charset.Charset encoding-to-charset class)
+(defmethod encoding-to-charset nil                      [encoding] nil)
+(defmethod encoding-to-charset java.nio.charset.Charset [encoding] encoding)
+(defmethod encoding-to-charset java.lang.String         [encoding] (java.nio.charset.Charset/forName encoding))
+
 (defmethod make-multipart-body String
   ;; Create a StringBody object from the given map, requiring at least :content.
   ;; If :encoding is specified, it will be created using the Charset for that
   ;; encoding.
-  [{:keys [mime-type ^String content encoding]}]
+  [{:keys [^String mime-type ^String content encoding]}]
   (cond
     (and content mime-type encoding)
-    (StringBody. content (ContentType/create mime-type encoding))
+    (StringBody. content (ContentType/create mime-type (encoding-to-charset encoding)))
 
     (and content encoding)
-    (StringBody. content (ContentType/create "text/plain" encoding))
+    (StringBody. content (ContentType/create "text/plain" (encoding-to-charset encoding)))
 
     content
     (StringBody. content (ContentType/create "text/plain" Consts/ASCII))))
