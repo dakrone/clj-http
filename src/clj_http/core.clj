@@ -23,7 +23,6 @@
                                            HttpUriRequest HttpRequestBase)
            (org.apache.http.client.protocol HttpClientContext)
            (org.apache.http.config RegistryBuilder)
-           (org.apache.http.conn HttpClientConnectionManager)
            (org.apache.http.conn.routing HttpRoute HttpRoutePlanner)
            (org.apache.http.conn.ssl BrowserCompatHostnameVerifier
                                      SSLConnectionSocketFactory SSLContexts)
@@ -33,14 +32,11 @@
                                         CloseableHttpClient HttpClients
                                         DefaultRedirectStrategy
                                         LaxRedirectStrategy HttpClientBuilder)
-           (org.apache.http.impl.conn BasicHttpClientConnectionManager
-                                      PoolingHttpClientConnectionManager
-                                      SystemDefaultRoutePlanner
+           (org.apache.http.impl.conn SystemDefaultRoutePlanner
                                       DefaultProxyRoutePlanner)
            (org.apache.http.impl.nio.client HttpAsyncClientBuilder
                                             HttpAsyncClients
                                             CloseableHttpAsyncClient)
-           (org.apache.http.nio.conn NHttpClientConnectionManager)
            (org.apache.http.message BasicHttpResponse)
            (java.util.concurrent ExecutionException)))
 
@@ -259,7 +255,7 @@
 (defn- coerce-body-entity
   "Coerce the http-entity from an HttpResponse to a stream that closes itself
   and the connection manager when closed."
-  [^HttpEntity http-entity ^HttpClientConnectionManager conn-mgr ^CloseableHttpResponse response]
+  [^HttpEntity http-entity conn-mgr ^CloseableHttpResponse response]
   (if http-entity
     (proxy [FilterInputStream]
         [^InputStream (.getContent http-entity)]
@@ -272,9 +268,9 @@
             (when (instance? CloseableHttpResponse response)
               (.close response))
             (when-not (conn/reusable? conn-mgr)
-              (.shutdown conn-mgr))))))
+              (conn/shutdown-manager conn-mgr))))))
     (when-not (conn/reusable? conn-mgr)
-      (.shutdown conn-mgr))))
+      (conn/shutdown-manager conn-mgr))))
 
 (defn- print-debug!
   "Print out debugging information to *out* for a given request."
@@ -328,10 +324,6 @@
         (conn/make-regular-async-conn-manager req))
     (or conn/*connection-manager*
         (conn/make-regular-conn-manager req))))
-
-(defmulti ^:private shutdown class)
-(defmethod shutdown org.apache.http.conn.HttpClientConnectionManager      [^HttpClientConnectionManager  conn-mgr] (.shutdown conn-mgr))
-(defmethod shutdown org.apache.http.nio.conn.NHttpClientConnectionManager [^NHttpClientConnectionManager conn-mgr] (.shutdown conn-mgr))
 
 (defn request
   ([req] (request req nil nil))
@@ -402,7 +394,7 @@
            (build-response-map (.execute client http-req context) req conn-mgr context)
            (catch Throwable t
              (when-not (conn/reusable? conn-mgr)
-               (shutdown conn-mgr))
+               (conn/shutdown-manager conn-mgr))
              (throw t))))
        (let [^CloseableHttpAsyncClient client
              (http-async-client req conn-mgr http-url proxy-ignore-hosts)]
@@ -411,7 +403,7 @@
                    (reify org.apache.http.concurrent.FutureCallback
                      (failed [this ex]
                        (when-not (conn/reusable? conn-mgr)
-                         (shutdown conn-mgr))
+                         (conn/shutdown-manager conn-mgr))
                        (if (:ignore-unknown-host? req)
                          ((:unknown-host-respond req) nil)
                          (raise ex)))
@@ -420,10 +412,10 @@
                          (respond (build-response-map resp req conn-mgr context))
                          (catch Throwable t
                            (when-not (conn/reusable? conn-mgr)
-                             (shutdown conn-mgr))
+                             (conn/shutdown-manager conn-mgr))
                            (raise t))))
                      (cancelled [this]
                        (if-let [oncancel (:oncancel req)]
                          (oncancel))
                        (when-not (conn/reusable? conn-mgr)
-                         (shutdown conn-mgr))))))))))
+                         (conn/shutdown-manager conn-mgr))))))))))

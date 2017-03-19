@@ -16,6 +16,7 @@
                                       PoolingHttpClientConnectionManager)
            (org.apache.http.impl.nio.conn PoolingNHttpClientConnectionManager)
            (javax.net.ssl SSLContext HostnameVerifier)
+           (org.apache.http.nio.conn NHttpClientConnectionManager)
            (org.apache.http.nio.conn.ssl SSLIOSessionStrategy)
            (org.apache.http.impl.nio.reactor
             IOReactorConfig
@@ -272,10 +273,12 @@
       (.setDefaultMaxPerRoute conn-man default-per-route))
     conn-man))
 
-(defn shutdown-manager
+(defmulti shutdown-manager
   "Shut down the given connection manager, if it is not nil"
-  [^org.apache.http.conn.HttpClientConnectionManager manager]
-  (and manager (.shutdown manager)))
+  class)
+(defmethod shutdown-manager nil                                                   [conn-mgr] nil)
+(defmethod shutdown-manager org.apache.http.conn.HttpClientConnectionManager      [^HttpClientConnectionManager  conn-mgr] (.shutdown conn-mgr))
+(defmethod shutdown-manager org.apache.http.nio.conn.NHttpClientConnectionManager [^NHttpClientConnectionManager conn-mgr] (.shutdown conn-mgr))
 
 (def ^:dynamic *connection-manager*
   "connection manager to be rebound during request execution"
