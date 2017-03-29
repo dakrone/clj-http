@@ -13,7 +13,8 @@
                             HttpRequestInterceptor HttpResponseInterceptor)
            (org.apache.http.auth UsernamePasswordCredentials AuthScope
                                  NTCredentials)
-           (org.apache.http.client HttpRequestRetryHandler RedirectStrategy CredentialsProvider)
+           (org.apache.http.client HttpRequestRetryHandler RedirectStrategy
+                                   CredentialsProvider)
            (org.apache.http.client.config RequestConfig CookieSpecs)
            (org.apache.http.client.methods HttpDelete HttpGet HttpPost HttpPut
                                            HttpOptions HttpPatch
@@ -110,7 +111,8 @@
     (when max-redirects (.setMaxRedirects config max-redirects))
     (.build config)))
 
-(defmulti ^:private construct-http-host (fn [proxy-host proxy-port] (class proxy-host)))
+(defmulti ^:private construct-http-host (fn [proxy-host proxy-port]
+                                          (class proxy-host)))
 (defmethod construct-http-host String
   [^String proxy-host ^Long proxy-port]
   (if proxy-port
@@ -388,10 +390,11 @@
          (.addHeader http-req header-n (str header-v))))
      (when (opt req :debug) (print-debug! req http-req))
      (if-not async?
-       (let [^CloseableHttpClient client (http-client req conn-mgr http-url
-                                                      proxy-ignore-hosts)]
+       (let [^CloseableHttpClient
+             client (http-client req conn-mgr http-url proxy-ignore-hosts)]
          (try
-           (build-response-map (.execute client http-req context) req conn-mgr context)
+           (build-response-map (.execute client http-req context)
+                               req conn-mgr context)
            (catch Throwable t
              (when-not (conn/reusable? conn-mgr)
                (conn/shutdown-manager conn-mgr))
@@ -409,7 +412,8 @@
                          (raise ex)))
                      (completed [this resp]
                        (try
-                         (respond (build-response-map resp req conn-mgr context))
+                         (respond (build-response-map
+                                   resp req conn-mgr context))
                          (catch Throwable t
                            (when-not (conn/reusable? conn-mgr)
                              (conn/shutdown-manager conn-mgr))

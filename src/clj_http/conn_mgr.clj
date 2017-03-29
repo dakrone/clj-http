@@ -120,7 +120,10 @@
     (apply get-keystore* keystore args)))
 
 (defn get-keystore-context-verifier
-  [{:keys [keystore keystore-type ^String keystore-pass keystore-instance   ; Note: JVM strings aren't ideal for passwords - see http://stackoverflow.com/questions/8881291/why-is-char-preferred-over-string-for-passwords
+  ;; TODO: use something else for passwords
+  ;; Note: JVM strings aren't ideal for passwords - see
+  ;; https://tinyurl.com/azm3ab9
+  [{:keys [keystore keystore-type ^String keystore-pass keystore-instance
            trust-store trust-store-type trust-store-pass]
     :as req}]
   (let [ks (get-keystore keystore keystore-type keystore-pass)
@@ -280,9 +283,12 @@
 (defmulti shutdown-manager
   "Shut down the given connection manager, if it is not nil"
   class)
-(defmethod shutdown-manager nil                                                   [conn-mgr] nil)
-(defmethod shutdown-manager org.apache.http.conn.HttpClientConnectionManager      [^HttpClientConnectionManager  conn-mgr] (.shutdown conn-mgr))
-(defmethod shutdown-manager org.apache.http.nio.conn.NHttpClientConnectionManager [^NHttpClientConnectionManager conn-mgr] (.shutdown conn-mgr))
+(defmethod shutdown-manager nil [conn-mgr] nil)
+(defmethod shutdown-manager org.apache.http.conn.HttpClientConnectionManager
+  [^HttpClientConnectionManager  conn-mgr] (.shutdown conn-mgr))
+(defmethod shutdown-manager
+  org.apache.http.nio.conn.NHttpClientConnectionManager
+  [^NHttpClientConnectionManager conn-mgr] (.shutdown conn-mgr))
 
 (def ^:dynamic *connection-manager*
   "connection manager to be rebound during request execution"

@@ -34,7 +34,7 @@
                           (type (:content multipart))))))
 
 (defmethod make-multipart-body File
-  ; Create a FileBody object from the given map, requiring at least :content
+  ;; Create a FileBody object from the given map, requiring at least :content
   [{:keys [^String name ^String mime-type ^File content ^String encoding]}]
   (cond
     (and name mime-type content encoding)
@@ -56,10 +56,10 @@
     (throw (Exception. "Multipart file body must contain at least :content"))))
 
 (defmethod make-multipart-body InputStream
-  ; Create an InputStreamBody object from the given map, requiring at least
-  ; :content and :name. If no :length is specified, clj-http will use
-  ; chunked transfer-encoding, if :length is specified, clj-http will
-  ; workaround things be proxying the InputStreamBody to return a length.
+  ;; Create an InputStreamBody object from the given map, requiring at least
+  ;; :content and :name. If no :length is specified, clj-http will use
+  ;; chunked transfer-encoding, if :length is specified, clj-http will
+  ;; workaround things be proxying the InputStreamBody to return a length.
   [{:keys [^String name ^String mime-type ^InputStream content length]}]
   (cond
     (and content name length)
@@ -97,9 +97,10 @@
                             "at least :content and :name")))))
 
 (defmulti  ^java.nio.charset.Charset encoding-to-charset class)
-(defmethod encoding-to-charset nil                      [encoding] nil)
+(defmethod encoding-to-charset nil [encoding] nil)
 (defmethod encoding-to-charset java.nio.charset.Charset [encoding] encoding)
-(defmethod encoding-to-charset java.lang.String         [encoding] (java.nio.charset.Charset/forName encoding))
+(defmethod encoding-to-charset java.lang.String [encoding]
+  (java.nio.charset.Charset/forName encoding))
 
 (defmethod make-multipart-body String
   ;; Create a StringBody object from the given map, requiring at least :content.
@@ -108,16 +109,18 @@
   [{:keys [^String mime-type ^String content encoding]}]
   (cond
     (and content mime-type encoding)
-    (StringBody. content (ContentType/create mime-type (encoding-to-charset encoding)))
+    (StringBody.
+     content (ContentType/create mime-type (encoding-to-charset encoding)))
 
     (and content encoding)
-    (StringBody. content (ContentType/create "text/plain" (encoding-to-charset encoding)))
+    (StringBody.
+     content (ContentType/create "text/plain" (encoding-to-charset encoding)))
 
     content
     (StringBody. content (ContentType/create "text/plain" Consts/ASCII))))
 
 (defmethod make-multipart-body ContentBody
-  ; Use provided org.apache.http.entity.mime.content.ContentBody directly
+  ;; Use provided org.apache.http.entity.mime.content.ContentBody directly
   [{:keys [^ContentBody content]}]
   content)
 
