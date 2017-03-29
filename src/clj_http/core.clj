@@ -84,7 +84,9 @@
     :default (DefaultRedirectStrategy/INSTANCE)
     :lax (LaxRedirectStrategy.)
     nil (DefaultRedirectStrategy/INSTANCE)
-    (DefaultRedirectStrategy/INSTANCE)))
+
+    ;; use directly as reifed RedirectStrategy
+    redirect-strategy))
 
 (defn ^HttpClientBuilder add-retry-handler [^HttpClientBuilder builder handler]
   (when handler
