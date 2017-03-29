@@ -60,11 +60,27 @@
                    (headers/assoc-join hs k v))
                  (headers/header-map)))))
 
+(def graceful-redirect-strategy
+  (reify RedirectStrategy
+    (getRedirect [this request response context]
+      (.getRedirect DefaultRedirectStrategy/INSTANCE request response context))
+
+    (isRedirected [this request response context]
+      (let [max-redirects (.getMaxRedirects (.getRequestConfig context))
+            num-redirects (count (.getRedirectLocations context))]
+        (if (<= max-redirects num-redirects)
+          false
+          (.isRedirected DefaultRedirectStrategy/INSTANCE request response context))))))
+
 (defn get-redirect-strategy [redirect-strategy]
   (case redirect-strategy
     :none (reify RedirectStrategy
             (getRedirect [this request response context] nil)
             (isRedirected [this request response context] false))
+
+    ;; Like default, but does not
+    :graceful graceful-redirect-strategy
+
     :default (DefaultRedirectStrategy/INSTANCE)
     :lax (LaxRedirectStrategy.)
     nil (DefaultRedirectStrategy/INSTANCE)

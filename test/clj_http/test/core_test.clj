@@ -289,9 +289,17 @@
                          {:max-redirects 2 :throw-exceptions false
                           :redirect-strategy :none
                           :allow-circular-redirects true})]
+    (is (= 302 (:status resp))))
+
+  (let [resp (client/get (localhost "/redirect")
+                         {:max-redirects 3
+                          :redirect-strategy :graceful
+                          :allow-circular-redirects true})]
     (is (= 302 (:status resp)))
-    #_(is (= (apply vector (repeat 3 "http://localhost:18080/redirect"))
-             (:trace-redirects resp))))
+    (is (= 3 (count (:trace-redirects resp))))
+    (is (=  ["http://localhost:18080/redirect" "http://localhost:18080/redirect" "http://localhost:18080/redirect"]
+            (:trace-redirects resp))))
+
   (is (thrown-with-msg? Exception #"Maximum redirects \(2\) exceeded"
                         (client/get (localhost "/redirect")
                                     {:max-redirects 2
