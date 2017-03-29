@@ -109,7 +109,6 @@
 (defn request-config [{:keys [conn-timeout
                               socket-timeout
                               conn-request-timeout
-                              follow-redirects
                               max-redirects
                               allow-circular-redirects
                               allow-relative-redirects
@@ -119,8 +118,7 @@
                    (.setSocketTimeout (or socket-timeout -1))
                    (.setConnectionRequestTimeout
                     (or conn-request-timeout -1))
-                   (.setRedirectsEnabled ((complement false?)
-                                          follow-redirects))
+                   (.setRedirectsEnabled true)
                    (.setCircularRedirectsAllowed
                     (boolean allow-circular-redirects))
                    (.setRelativeRedirectsAllowed
@@ -349,7 +347,7 @@
   ([req] (request req nil nil))
   ([{:keys [body conn-timeout conn-request-timeout connection-manager
             cookie-store cookie-policy headers multipart query-string
-            redirect-strategy follow-redirects max-redirects retry-handler
+            redirect-strategy max-redirects retry-handler
             request-method scheme server-name server-port socket-timeout
             uri response-interceptor proxy-host proxy-port async?
             proxy-ignore-hosts proxy-user proxy-pass digest-auth ntlm-auth]
