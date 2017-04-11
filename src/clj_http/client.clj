@@ -183,6 +183,19 @@
                   (util/url-decode user-info))
      :query-string (url-encode-illegal-characters (.getQuery url-parsed))}))
 
+(defn unparse-url
+  "Takes a map of url-parts and generates a string representation"
+  [{:keys [scheme server-name server-port uri user-info query-string]}]
+  (str (name scheme) "://"
+       (if (seq user-info)
+         (str user-info "@" server-name)
+         server-name)
+       (when server-port
+         (str ":" server-port))
+       uri
+       (when (seq query-string)
+         (str "?" query-string))))
+
 ;; Statuses for which clj-http will not throw an exception
 (def unexceptional-status?
   #{200 201 202 203 204 205 206 207 300 301 302 303 304 307})
