@@ -55,11 +55,15 @@
 :PROPERTIES:
 :CUSTOM_ID: h:bfae0ecf-471b-438f-bf47-37c1aebea2a6
 :END:
-Hi Everyone, I'm in need of help with the 3.0.0 version (the master branch) of
-clj-http. In moving to the non-deprecated Apache HTTP client APIs I have broken
-a lot of the existing features for clj-http. Since 3.0.0 is basically a rewrite
-of =core.clj=, there are many things that still need implementing before 3.0 can
-be released. To see what needs fixing run =lein test :all=.
+Hi Everyone,
+The tests are working now, but there is a lot of work still to be done,
+for instance, the connection manager code needs to be simplified, and another
+pass needs to be done to see if any more deprecated APIs are in use,
+so any help is appreciated!
+
+Additionally, there are things like reusing the httpclient between
+requests (perhaps only when a connection manager is used)
+that need to be worked out.
 
 If you have interest, please do send PRs for fixing.
 
