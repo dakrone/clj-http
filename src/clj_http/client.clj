@@ -902,7 +902,7 @@
   [{:keys [form-params content-type request-method]
     :or {content-type :x-www-form-urlencoded}
     :as req}]
-  (if (and form-params (#{:post :put :patch} request-method))
+  (if (and form-params (#{:post :put :patch :delete} request-method))
     (-> req
         (dissoc :form-params)
         (assoc :content-type (content-type-value content-type)
