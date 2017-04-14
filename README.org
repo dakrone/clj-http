@@ -107,19 +107,13 @@ function.
 With Leiningen/Boot:
 
 #+BEGIN_SRC clojure
-[clj-http "2.3.0"]
-#+END_SRC
-
-If you want to test out the latest version, a 3.x release is also available.
-
-#+BEGIN_SRC clojure
 [clj-http "3.4.1"]
 #+END_SRC
 
-The previous major version is available as:
+If you need an older version, a 2.x release is also available.
 
 #+BEGIN_SRC clojure
-[clj-http "1.1.2"]
+[clj-http "2.3.0"]
 #+END_SRC
 
 clj-http supports clojure 1.6.0 and higher.
