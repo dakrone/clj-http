@@ -184,7 +184,9 @@
      :query-string (url-encode-illegal-characters (.getQuery url-parsed))}))
 
 (defn unparse-url
-  "Takes a map of url-parts and generates a string representation"
+  "Takes a map of url-parts and generates a string representation.
+  WARNING: does not do any sort of encoding! Don't use this for strict RFC
+  following!"
   [{:keys [scheme server-name server-port uri user-info query-string]}]
   (str (name scheme) "://"
        (if (seq user-info)
