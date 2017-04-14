@@ -949,6 +949,17 @@
              client/parse-url
              :user-info))))
 
+(deftest unparse-url
+  (is (= "http://fred's diner:fred's password@example.com/foo"
+         (-> "http://fred%27s%20diner:fred%27s%20password@example.com/foo"
+             client/parse-url client/unparse-url)))
+  (is (= "https://foo:bar@vg.no:8080"
+         (-> "https://foo:bar@vg.no:8080"
+             client/parse-url client/unparse-url)))
+  (is (= "ftp://lol.com?foo"
+         (-> "ftp://lol.com?foo"
+             client/parse-url client/unparse-url))))
+
 (defrecord Point [x y])
 
 (def write-point
