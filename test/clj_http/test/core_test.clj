@@ -586,10 +586,21 @@
   (let [resp-with-redirects
         (client/request {:method :get
                          :url (localhost "/redirect-to-get")})
+
+        resp-with-graceful-redirects
+        (client/request {:method :get
+                         :url (localhost "/redirect-to-get")
+                         :redirect-strategy :graceful})
+
         resp-without-redirects
         (client/request {:method :get
                          :url (localhost "/redirect-to-get")
-                         :follow-redirects false})]
+                         :redirect-strategy :none})]
+
     (is (= (:trace-redirects resp-with-redirects)
            ["http://localhost:18080/get"]))
+
+    (is (= (:trace-redirects resp-with-graceful-redirects)
+           ["http://localhost:18080/get"]))
+
     (is (= (:trace-redirects resp-without-redirects) []))))
