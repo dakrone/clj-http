@@ -30,7 +30,12 @@
 
 (defn example [& uri]
   (http/with-additional-middleware [#'wrap-caching-middleware]
-    (http/get (or uri "https://api.github.com"))))
+    (http/get (or uri "https://api.github.com")
+              {
+               :debug true
+               :debug-body true
+               :throw-entire-message? true
+               })))
 
 ;; Try this out:
 ;;
