@@ -5,6 +5,13 @@
 
 (def http-cache (atom (cache/ttl-cache-factory {} :ttl (* 60 60 1000))))
 
+(defn slurp-bytes
+  "Slurp the bytes from a slurpable thing"
+  [x]
+  (with-open [out (java.io.ByteArrayOutputStream.)]
+    (clojure.java.io/copy (clojure.java.io/input-stream x) out)
+    (.toByteArray out)))
+
 (defn- cached-response
   ([client req]
    (let [cache-key (str (:server-name req) (:uri req) "?" (:query-string req))]
@@ -16,7 +23,7 @@
          ; do not invoke further middleware
        (do
          (println "CACHE MISS")
-         (let [resp (update (client req) :body slurp)]
+         (let [resp (update (client req) :body slurp-bytes)]
            (if (http/success? resp)
              (do
                (reset! http-cache (cache/miss @http-cache cache-key resp)) ; update cache value
