@@ -11,14 +11,16 @@
      (if (cache/has? @http-cache cache-key)
        (do
          (println "CACHE HIT")
-         (client req (reset! http-cache (cache/hit @http-cache cache-key)) nil ) )
+         (reset! http-cache (cache/hit @http-cache cache-key)) ; update cache stats
+         (cache/lookup @http-cache cache-key)) ; return cached value
+         ; do not invoke further middleware
        (do
          (println "CACHE MISS")
-         (let [resp (client req)]
+         (let [resp (update (client req) :body slurp)]
            (if (http/success? resp)
              (do
-               (reset! http-cache (cache/miss @http-cache cache-key resp))
-               (client req resp nil))
+               (reset! http-cache (cache/miss @http-cache cache-key resp)) ; update cache value
+               (client req resp nil)) ; invoke next middleware
              (do
                (client req resp nil)))))))))
 
