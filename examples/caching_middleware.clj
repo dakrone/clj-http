@@ -51,12 +51,12 @@
 ;;
 ;; user> (use '[clj-http.examples.caching-middleware :as mw])
 ;; nil
-;; user> (clojure.pprint/pprint (mw/example))
+;; user> (mw/example)
 ;; CACHE MISS
-;; "Elapsed time: 2044.735745 msecs"
-;; nil
-;; user> (clojure.pprint/pprint (mw/example))
+;; "Elapsed time: 1910.027361 msecs"
+;; {:status 200, :reason-phrase "OK"}
+;; user> (mw/example)
 ;; CACHE HIT
-;; "Elapsed time: 0.89591 msecs"
-;; nil
+;; "Elapsed time: 0.83484 msecs"
+;; {:status 200, :reason-phrase "OK"}
 ;; user>
