@@ -38,17 +38,25 @@
      (cached-response client req))))
 
 (defn example [& uri]
-  (http/with-additional-middleware [#'wrap-caching-middleware]
-    (http/get (or uri "https://api.github.com")
-              {
-               :debug true
-               :debug-body true
-               :throw-entire-message? true
-               })))
+  (-> (time (http/with-additional-middleware [#'wrap-caching-middleware]
+              (http/get (or uri "https://api.github.com")
+                        {
+                         ;; :debug true
+                         ;; :debug-body true
+                         ;; :throw-entire-message? true
+                         })))
+      (select-keys ,,, [:status :reason-phrase])))
 
 ;; Try this out:
 ;;
 ;; user> (use '[clj-http.examples.caching-middleware :as mw])
 ;; nil
-;; user> (mw/example)
+;; user> (clojure.pprint/pprint (mw/example))
 ;; CACHE MISS
+;; "Elapsed time: 2044.735745 msecs"
+;; nil
+;; user> (clojure.pprint/pprint (mw/example))
+;; CACHE HIT
+;; "Elapsed time: 0.89591 msecs"
+;; nil
+;; user>
