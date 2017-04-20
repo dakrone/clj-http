@@ -23,13 +23,10 @@
          ; do not invoke further middleware
        (do
          (println "CACHE MISS")
-         (let [resp (update (client req) :body slurp-bytes)]
-           (if (http/success? resp)
-             (do
-               (reset! http-cache (cache/miss @http-cache cache-key resp)) ; update cache value
-               (client req resp nil)) ; invoke next middleware
-             (do
-               (client req resp nil)))))))))
+         (let [resp (update (client req) :body slurp-bytes)] ; middleware chain invoked
+           (when (http/success? resp)
+             (reset! http-cache (cache/miss @http-cache cache-key resp)) ; update cache value
+            resp)))))))
 
 (defn wrap-caching-middleware
   [client]
@@ -45,7 +42,7 @@
                          ;; :debug-body true
                          ;; :throw-entire-message? true
                          })))
-      (select-keys ,,, [:status :reason-phrase])))
+      (select-keys ,,, [:status :reason-phrase :headers])))
 
 ;; Try this out:
 ;;
