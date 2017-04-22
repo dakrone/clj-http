@@ -175,7 +175,7 @@ response maps]]:
 
 (client/head "http://example.com/resource")
 
-(client/head "http://site.com/resource" {:accept :json})
+(client/head "http://example.com/resource" {:accept :json})
 
 #+END_SRC
 
@@ -188,9 +188,9 @@ Example requests:
 
 #+BEGIN_SRC clojure
 
-(client/get "http://site.com/resources/id")
+(client/get "http://example.com/resources/id")
 
-(client/get "http://site.com/resources/3" {:accept :json})
+(client/get "http://example.com/resources/3" {:accept :json})
 
 ;; Specifying headers as either a string or collection:
 (client/get "http://example.com"
@@ -218,27 +218,27 @@ Example requests:
 (client/get "https://alioth.debian.org" {:insecure? true})
 
 ;; If you don't want to follow-redirects automatically:
-(client/get "http://site.come/redirects-somewhere" {:follow-redirects false})
+(client/get "http://example.com/redirects-somewhere" {:follow-redirects false})
 
 ;; Only follow a certain number of redirects:
-(client/get "http://site.come/redirects-somewhere" {:max-redirects 5})
+(client/get "http://example.com/redirects-somewhere" {:max-redirects 5})
 
 ;; Throw an exception if redirected too many times:
-(client/get "http://site.come/redirects-somewhere" {:max-redirects 5 :throw-exceptions true})
+(client/get "http://example.com/redirects-somewhere" {:max-redirects 5 :throw-exceptions true})
 
 ;; Throw an exception if the get takes too long. Timeouts in milliseconds.
-(client/get "http://site.come/redirects-somewhere" {:socket-timeout 1000 :conn-timeout 1000})
+(client/get "http://example.com/redirects-somewhere" {:socket-timeout 1000 :conn-timeout 1000})
 
 ;; Query parameters
-(client/get "http://site.com/search" {:query-params {"q" "foo, bar"}})
+(client/get "http://example.com/search" {:query-params {"q" "foo, bar"}})
 
 ;; "Nested" query parameters
 ;; (this yields a query string of `a[e][f]=6&a[b][c]=5`)
-(client/get "http://site.com/search" {:query-params {:a {:b {:c 5} :e {:f 6})
+(client/get "http://example.com/search" {:query-params {:a {:b {:c 5} :e {:f 6})
 
 ;; Provide cookies — uses same schema as :cookies returned in responses
 ;; (see the cookie store option for easy cross-request maintenance of cookies)
-(client/get "http://site.com"
+(client/get "http://example.com"
   {:cookies {"ring-session" {:discard true, :path "/", :value "", :version 0}}})
 
 ;; Tell clj-http not to decode cookies from the response header
@@ -275,7 +275,7 @@ content encodings.
 #+BEGIN_SRC clojure
 
 ;; Various options:
-(client/post "http://site.com/api"
+(client/post "http://example.com/api"
   {:basic-auth ["user" "pass"]
    :body "{\"json\": \"input\"}"
    :headers {"X-Api-Version" "2"}
@@ -285,29 +285,29 @@ content encodings.
    :accept :json})
 
 ;; Send form params as a urlencoded body (POST or PUT)
-(client/post "http://site.com" {:form-params {:foo "bar"}})
+(client/post "http://example.com" {:form-params {:foo "bar"}})
 
 ;; Send form params as a json encoded body (POST or PUT)
-(client/post "http://site.com" {:form-params {:foo "bar"} :content-type :json})
+(client/post "http://example.com" {:form-params {:foo "bar"} :content-type :json})
 
 ;; Send form params as a json encoded body (POST or PUT) with options
-(client/post "http://site.com" {:form-params {:foo "bar"}
+(client/post "http://example.com" {:form-params {:foo "bar"}
                                :content-type :json
                                :json-opts {:date-format "yyyy-MM-dd"}})
 
 ;; You can also specify the encoding of form parameters
-(client/post "http://site.com" {:form-params {:foo "bar"}
+(client/post "http://example.com" {:form-params {:foo "bar"}
                                 :form-param-encoding "ISO-8859-1"})
 
 ;; Send form params as a Transit encoded JSON body (POST or PUT) with options
-(client/post "http://site.com" {:form-params {:foo "bar"}
+(client/post "http://example.com" {:form-params {:foo "bar"}
                                 :content-type :transit+json
                                 :transit-opts
                                 {:encode {:handlers {}}
                                  :decode {:handlers {}}}})
 
 ;; Send form params as a Transit encoded MessagePack body (POST or PUT) with options
-(client/post "http://site.com" {:form-params {:foo "bar"}
+(client/post "http://example.com" {:form-params {:foo "bar"}
                                 :content-type :transit+msgpack
                                 :transit-opts
                                 {:encode {:handlers {}}
@@ -380,26 +380,26 @@ All exceptions thrown during the request will be passed to the raise callback.
 
 #+BEGIN_SRC clojure
 ;; body as a byte-array
-(client/post "http://site.com/resources" {:body my-byte-array})
+(client/post "http://example.com/resources" {:body my-byte-array})
 
 ;; body as a string
-(client/post "http://site.com/resources" {:body "string"})
+(client/post "http://example.com/resources" {:body "string"})
 
 ;; :body-encoding is optional and defaults to "UTF-8"
-(client/post "http://site.com/resources"
+(client/post "http://example.com/resources"
              {:body "string" :body-encoding "UTF-8"})
 
 ;; body as a file
-(client/post "http://site.com/resources"
+(client/post "http://example.com/resources"
              {:body (clojure.java.io/file "/tmp/foo") :body-encoding "UTF-8"})
 
 ;; :length is optional for passing in an InputStream; if not
 ;; supplied it will default to -1 to signal to HttpClient to use
 ;; chunked encoding
-(client/post "http://site.com/resources"
+(client/post "http://example.com/resources"
              {:body (clojure.java.io/input-stream "/tmp/foo")})
 
-(client/post "http://site.com/resources"
+(client/post "http://example.com/resources"
              {:body (clojure.java.io/input-stream "/tmp/foo") :length 1000})
 #+END_SRC
 
@@ -410,39 +410,39 @@ All exceptions thrown during the request will be passed to the raise callback.
 
 #+BEGIN_SRC clojure
 ;; The default output is a string body
-(client/get "http://site.com/foo.txt")
+(client/get "http://example.com/foo.txt")
 
 ;; Coerce as a byte-array
-(client/get "http://site.com/favicon.ico" {:as :byte-array})
+(client/get "http://example.com/favicon.ico" {:as :byte-array})
 
 ;; Coerce as something other than UTF-8 string
-(client/get "http://site.com/string.txt" {:as "UTF-16"})
+(client/get "http://example.com/string.txt" {:as "UTF-16"})
 
 ;; Coerce as json
-(client/get "http://site.com/foo.json" {:as :json})
-(client/get "http://site.com/foo.json" {:as :json-strict})
-(client/get "http://site.com/foo.json" {:as :json-string-keys})
-(client/get "http://site.com/foo.json" {:as :json-strict-string-keys})
+(client/get "http://example.com/foo.json" {:as :json})
+(client/get "http://example.com/foo.json" {:as :json-strict})
+(client/get "http://example.com/foo.json" {:as :json-string-keys})
+(client/get "http://example.com/foo.json" {:as :json-strict-string-keys})
 
 ;; Coerce as Transit encoded JSON or MessagePack
-(client/get "http://site.com/foo" {:as :transit+json})
-(client/get "http://site.com/foo" {:as :transit+msgpack})
+(client/get "http://example.com/foo" {:as :transit+json})
+(client/get "http://example.com/foo" {:as :transit+msgpack})
 
 ;; Coerce as a clojure datastructure
-(client/get "http://site.com/foo.clj" {:as :clojure})
+(client/get "http://example.com/foo.clj" {:as :clojure})
 
 ;; Coerce as x-www-form-urlencoded
-(client/post "http://site.com/foo" {:as :x-www-form-urlencoded})
+(client/post "http://example.com/foo" {:as :x-www-form-urlencoded})
 
 ;; Try to automatically coerce the output based on the content-type
 ;; header (this is currently a BETA feature!). Currently supports
 ;; text, json and clojure (with automatic charset detection)
 ;; clojure coercion requires "application/clojure" or
 ;; "application/edn" in the content-type header
-(client/get "http://site.com/foo.json" {:as :auto})
+(client/get "http://example.com/foo.json" {:as :auto})
 
 ;; Return the body as a stream
-(client/get "http://site.com/bigrequest.html" {:as :stream})
+(client/get "http://example.com/bigrequest.html" {:as :stream})
 ;; Note that the connection to the server will NOT be closed until the
 ;; stream has been read
 #+END_SRC
@@ -623,9 +623,9 @@ provided with a _cookie store_.
 
 #+BEGIN_SRC clojure
 (binding [clj-http.core/*cookie-store* (clj-http.cookies/cookie-store)]
-  (client/post "http://site.com/login" {:form-params {:username "..."
+  (client/post "http://example.com/login" {:form-params {:username "..."
                                                       :password "..."}})
-  (client/get "http://site.com/secured-page")
+  (client/get "http://example.com/secured-page")
   ...)
 #+END_SRC
 
@@ -640,10 +640,10 @@ each request, specify the cookie-store with the =:cookie-store= option:
 
 #+BEGIN_SRC clojure
 (let [my-cs (clj-http.cookies/cookie-store)]
-  (client/post "http://site.com/login" {:form-params {:username "..."
+  (client/post "http://example.com/login" {:form-params {:username "..."
                                                       :password "..."}
                                         :cookie-store my-cs})
-  (client/post "http://site.com/update" {:body my-data
+  (client/post "http://example.com/update" {:body my-data
                                          :cookie-store my-cs}))
 #+END_SRC
 
@@ -702,10 +702,10 @@ HTTP responses other than =#{200 201 202 203 204 205 206 207 300 301 302 303
 =(catch Exception e ...)= or in Slingshot's =try+= block:
 
 #+BEGIN_SRC clojure
-(client/get "http://site.com/broken")
+(client/get "http://example.com/broken")
 => ExceptionInfo clj-http: status 404  clj-http.client/wrap-exceptions/fn--583 (client.clj:41)
 ;; Or, if you would like the Exception message to contain the entire response:
-(client/get "http://site.com/broken" {:throw-entire-message? true})
+(client/get "http://example.com/broken" {:throw-entire-message? true})
 => ExceptionInfo clj-http: status 404 {:status 404,
                                        :headers {"server" "nginx/1.0.4",
                                                  "x-runtime" "12ms",
@@ -720,10 +720,10 @@ HTTP responses other than =#{200 201 202 203 204 205 206 207 300 301 302 303
    clj-http.client/wrap-exceptions/fn--584 (client.clj:42
 
 ;; You can also ignore HTTP-status-code exceptions and handle them yourself:
-(client/get "http://site.com/broken" {:throw-exceptions false})
+(client/get "http://example.com/broken" {:throw-exceptions false})
 ;; Or ignore an unknown host (methods return 'nil' if this is set to
 ;; true and the host does not exist:
-(client/get "http://aoeuntahuf89o.com" {:ignore-unknown-host? true})
+(client/get "http://example.invalid" {:ignore-unknown-host? true})
 #+END_SRC
 
 (spacing added by me to be human readable)
@@ -734,7 +734,7 @@ How to use with Slingshot:
 ; Response map is thrown as exception obj.
 ; We filter out by status codes
 (try+
-  (client/get "http://some-site.com/broken")
+  (client/get "http://example.com/broken")
   (catch [:status 403] {:keys [request-time headers body]}
     (log/warn "403" request-time headers))
   (catch [:status 404] {:keys [request-time headers body]}
@@ -814,8 +814,8 @@ There are four debugging methods you can use:
 
 #+BEGIN_SRC clojure
 
-(client/get "http://site.com/protected" {:basic-auth ["user" "pass"]})
-(client/get "http://site.com/protected" {:basic-auth "user:pass"})
+(client/get "http://example.com/protected" {:basic-auth ["user" "pass"]})
+(client/get "http://example.com/protected" {:basic-auth "user:pass"})
 
 #+END_SRC
 
@@ -826,7 +826,7 @@ There are four debugging methods you can use:
 
 #+BEGIN_SRC clojure
 
-(client/get "http://site.com/protected" {:digest-auth ["user" "pass"]})
+(client/get "http://example.com/protected" {:digest-auth ["user" "pass"]})
 
 #+END_SRC
 
@@ -837,7 +837,7 @@ There are four debugging methods you can use:
 
 #+BEGIN_SRC clojure
 
-(client/get "http://site.com/protected" {:oauth-token "secret-token"})
+(client/get "http://example.com/protected" {:oauth-token "secret-token"})
 
 #+END_SRC
 
@@ -857,7 +857,7 @@ primitive for building higher-level interfaces:
 #+BEGIN_SRC clojure
 (defn api-action [method path & [opts]]
   (client/request
-    (merge {:method method :url (str "http://site.com/" path)} opts)))
+    (merge {:method method :url (str "http://example.com/" path)} opts)))
 #+END_SRC
 
 *** Boolean options
@@ -878,22 +878,22 @@ connections are being used:
 
 #+BEGIN_SRC clojure
 (with-connection-pool {:timeout 5 :threads 4 :insecure? false :default-per-route 10}
-  (get "http://aoeu.com/1")
-  (post "http://aoeu.com/2")
-  (get "http://aoeu.com/3")
+  (get "http://example.org/1")
+  (post "http://example.org/2")
+  (get "http://example.org/3")
   ...
-  (get "http://aoeu.com/999"))
+  (get "http://example.org/999"))
 #+END_SRC
 
 For async request, you can use =with-async-connection-pool=
 
 #+BEGIN_SRC clojure
 (with-async-connection-pool {:timeout 5 :threads 4 :insecure? false :default-per-route 10}
-  (get "http://aoeu.com/1" {:async? true} resp1 exce1)
-  (post "http://aoeu.com/2" {:async? true} resp2 exce2)
-  (get "http://aoeu.com/3" {:async? true} resp3 exce3)
+  (get "http://example.org/1" {:async? true} resp1 exce1)
+  (post "http://example.org/2" {:async? true} resp2 exce2)
+  (get "http://example.org/3" {:async? true} resp3 exce3)
   ...
-  (get "http://aoeu.com/999" {:async? true} resp999 exce999))
+  (get "http://example.org/999" {:async? true} resp999 exce999))
 #+END_SRC
 
 This is MUCH faster than sequentially performing all requests, because a
@@ -905,10 +905,10 @@ reuse the pool context, just use =reuse-pool=.
 
 #+BEGIN_SRC clojure
 (with-async-connection-pool {:timeout 5 :threads 4 :insecure? false :default-per-route 10}
-  (get "http://aoeu.com/1" {:async? true} resp1 exce1)
-  (post "http://aoeu.com/2"
+  (get "http://example.org/1" {:async? true} resp1 exce1)
+  (post "http://example.org/2"
         {:async? true}
-        (fn [resp] (get "http://aoeu.com/3"
+        (fn [resp] (get "http://example.org/3"
                         (reuse-pool {:async? true} resp)
                         resp3 exce3))
         exce2))
@@ -932,9 +932,9 @@ create a connection manager yourself and specify it for each request:
 (def cm (clj-http.conn-mgr/make-reusable-conn-manager {:timeout 2 :threads 3}))
 (def cm2 (clj-http.conn-mgr/make-reusable-conn-manager {:timeout 10 :threads 1}))
 
-(get "http://aoeu.com/1" {:connection-manager cm2})
-(post "http://aoeu.com/2" {:connection-manager cm})
-(get "http://aoeu.com/3" {:connection-manager cm2})
+(get "http://example.org/1" {:connection-manager cm2})
+(post "http://example.org/2" {:connection-manager cm})
+(get "http://example.org/3" {:connection-manager cm2})
 
 ;; Don't forget to shut it down when you're done!
 (clj-http.conn-mgr/shutdown-manager cm)
@@ -959,7 +959,7 @@ Additionally, per-request proxies can be specified with the =proxy-host= and
 =proxy-port= options (this overrides =http.nonProxyHosts= too):
 
 #+BEGIN_SRC clojure
-(client/get "http://foo.com" {:proxy-host "127.0.0.1" :proxy-port 8118})
+(client/get "http://example.com" {:proxy-host "127.0.0.1" :proxy-port 8118})
 #+END_SRC
 
 You can also specify the =proxy-ignore-hosts= parameter with a list of

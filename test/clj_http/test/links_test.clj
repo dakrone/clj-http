@@ -30,9 +30,9 @@
       (is (not (contains? response :links))))))
 
 (deftest t-multiple-link-headers
-  (let [handler (link-handler ["<http://tmblr.co/Zl_A>; rel=shorturl"
-                               "<http://25.media.com/foo.png>; rel=icon"])
+  (let [handler (link-handler ["<http://example.com/Zl_A>; rel=shorturl"
+                               "<http://example.com/foo.png>; rel=icon"])
         resp (handler {})]
     (is (= (:links resp)
-           {:shorturl {:href "http://tmblr.co/Zl_A"}
-            :icon {:href "http://25.media.com/foo.png"}}))))
+           {:shorturl {:href "http://example.com/Zl_A"}
+            :icon {:href "http://example.com/foo.png"}}))))
