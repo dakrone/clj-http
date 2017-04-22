@@ -133,10 +133,10 @@
 (defn is-passed-async [middleware req]
   (let [client (middleware async-identity-client)
         resp (promise)
-        execption (promise)
-        _ (client req resp execption)]
+        exception (promise)
+        _ (client req resp exception)]
     (is (= req @resp))
-    (is (not (realized? execption)))))
+    (is (not (realized? exception)))))
 
 (defn is-applied [middleware req-in req-out]
   (let [client (middleware identity)]
@@ -145,10 +145,10 @@
 (defn is-applied-async [middleware req-in req-out]
   (let [client (middleware async-identity-client)
         resp (promise)
-        execption (promise)
-        _ (client req-in resp execption)]
+        exception (promise)
+        _ (client req-in resp exception)]
     (is (= req-out @resp))
-    (is (not (realized? execption)))))
+    (is (not (realized? exception)))))
 
 (deftest redirect-on-get
   (let [client (fn [req]
@@ -234,14 +234,14 @@
   (let [client (fn [req respond raise] (respond {:status 200 :req req}))
         r-client (-> client client/wrap-redirects)
         resp (promise)
-        execption (promise)
+        exception (promise)
         _ (r-client {:scheme :http :server-name "example.com" :uri "/"
-                     :request-method :get} resp execption)]
+                     :request-method :get} resp exception)]
     (is (= 200 (:status @resp)))
     (is (= :get (:request-method (:req @resp))))
     (is (= :http (:scheme (:req @resp))))
     (is (= [] (:trace-redirects @resp)))
-    (is (not (realized? execption)))))
+    (is (not (realized? exception)))))
 
 (deftest redirect-without-location-header
   (let [client (fn [req]
@@ -258,13 +258,13 @@
                  (respond {:status 302 :body "no redirection here"}))
         r-client (-> client client/wrap-url client/wrap-redirects)
         resp (promise)
-        execption (promise)
+        exception (promise)
         _ (r-client {:server-name "example.com" :url "http://example.com"
-                     :request-method :get} resp execption)]
+                     :request-method :get} resp exception)]
     (is (= 302 (:status @resp)))
     (is (= ["http://example.com"] (:trace-redirects @resp)))
     (is (= "no redirection here" (:body @resp)))
-    (is (not (realized? execption)))))
+    (is (not (realized? exception)))))
 
 (deftest redirect-with-query-string
   (let [client (fn [req]
@@ -293,10 +293,10 @@
                              :req req})))
         r-client (-> client client/wrap-url client/wrap-redirects)
         resp (promise)
-        execption (promise)
+        exception (promise)
         _ (r-client {:server-name "example.com" :url "http://example.com"
                      :request-method :get :query-params {:x "z"}}
-                    resp execption)]
+                    resp exception)]
     (is (= 200 (:status @resp)))
     (is (= :get (:request-method (:req @resp))))
     (is (= :http (:scheme (:req @resp))))
@@ -305,7 +305,7 @@
     (is (= "/bat" (:uri (:req @resp))))
     (is (= "x=y" (:query-string (:req @resp))))
     (is (nil? (:query-params (:req @resp))))
-    (is (not (realized? execption)))))
+    (is (not (realized? exception)))))
 
 (deftest max-redirects
   (let [client (fn [req]
@@ -330,14 +330,14 @@
                              :req req})))
         r-client (-> client client/wrap-url client/wrap-redirects)
         resp (promise)
-        execption (promise)
+        exception (promise)
         _ (r-client {:server-name "example.com" :url "http://example.com"
                      :request-method :get :max-redirects 0}
-                    resp execption)]
+                    resp exception)]
     (is (= 302 (:status @resp)))
     (is (= ["http://example.com"] (:trace-redirects @resp)))
     (is (= "http://example.net/bat" (get (:headers @resp) "location")))
-    (is (not (realized? execption)))))
+    (is (not (realized? exception)))))
 
 (deftest redirect-303-to-get-on-any-method
   (doseq [method [:get :head :post :delete :put :option]]
@@ -366,16 +366,16 @@
                                :req req})))
           r-client (-> client client/wrap-url client/wrap-redirects)
           resp (promise)
-          execption (promise)
+          exception (promise)
           _ (r-client {:server-name "example.com" :url "http://example.com"
                        :request-method method}
-                      resp execption)]
+                      resp exception)]
       (is (= 200 (:status @resp)))
       (is (= :get (:request-method (:req @resp))))
       (is (= :http (:scheme (:req @resp))))
       (is (= ["http://example.com" "http://example.net/bat"] (:trace-redirects @resp)))
       (is (= "/bat" (:uri (:req @resp))))
-      (is (not (realized? execption))))))
+      (is (not (realized? exception))))))
 
 (deftest pass-on-non-redirect
   (let [client (fn [req] {:status 200 :body (:body req)})
@@ -390,12 +390,12 @@
                  (respond {:status 200 :body (:body req)}))
         r-client (client/wrap-redirects client)
         resp (promise)
-        execption (promise)
-        _ (r-client {:body "ok" :url "http://example.com"} resp execption)]
+        exception (promise)
+        _ (r-client {:body "ok" :url "http://example.com"} resp exception)]
     (is (= 200 (:status @resp)))
     (is (= ["http://example.com"] (:trace-redirects @resp)))
     (is (= "ok" (:body @resp)))
-    (is (not (realized? execption)))))
+    (is (not (realized? exception)))))
 
 (deftest pass-on-non-redirectable-methods
   (doseq [method [:put :post :delete]
@@ -418,14 +418,14 @@
                              :headers {"location" "http://example.com/bat"}}))
           r-client (client/wrap-redirects client)
           resp (promise)
-          execption (promise)
+          exception (promise)
           _ (r-client {:body "ok" :url "http://example.com"
-                       :request-method method} resp execption)]
+                       :request-method method} resp exception)]
       (is (= status (:status @resp)))
       (is (= ["http://example.com"] (:trace-redirects @resp)))
       (is (= {"location" "http://example.com/bat"} (:headers @resp)))
       (is (= "ok" (:body @resp)))
-      (is (not (realized? execption))))))
+      (is (not (realized? exception))))))
 
 (deftest force-redirects-on-non-redirectable-methods
   (doseq [method [:put :post :delete]
@@ -457,15 +457,15 @@
                                :headers {"location" "http://example.com/bat"}})))
           r-client (client/wrap-redirects client)
           resp (promise)
-          execption (promise)
+          exception (promise)
           _ (r-client {:body "ok" :url "http://example.com"
                        :request-method method
-                       :force-redirects true} resp execption)]
+                       :force-redirects true} resp exception)]
       (is (= 200 (:status @resp)))
       (is (= ["http://example.com" "http://example.com/bat"] (:trace-redirects @resp)))
       (is (= "ok" (:body @resp)))
       (is (= expected-method (:request-method (:req @resp))))
-      (is (not (realized? execption))))))
+      (is (not (realized? exception))))))
 
 (deftest pass-on-follow-redirects-false
   (let [client (fn [req] {:status 302 :body (:body req)})
@@ -480,12 +480,12 @@
                  (respond {:status 302 :body (:body req)}))
         r-client (client/wrap-redirects client)
         resp (promise)
-        execption (promise)
-        _ (r-client {:body "ok" :follow-redirects false} resp execption)]
+        exception (promise)
+        _ (r-client {:body "ok" :follow-redirects false} resp exception)]
     (is (= 302 (:status @resp)))
     (is (= "ok" (:body @resp)))
     (is (nil? (:trace-redirects @resp)))
-    (is (not (realized? execption)))))
+    (is (not (realized? exception)))))
 
 (deftest throw-on-exceptional
   (let [client (fn [req] {:status 500})
@@ -541,10 +541,10 @@
   (let [client (fn [req respond raise] (respond {:status 200}))
         e-client (client/wrap-exceptions client)
         resp (promise)
-        execption (promise)
-        _ (e-client {} resp execption)]
+        exception (promise)
+        _ (e-client {} resp exception)]
     (is (= 200 (:status @resp)))
-    (is (not (realized? execption)))))
+    (is (not (realized? exception)))))
 
 (deftest pass-on-exceptional-when-surpressed
   (let [client (fn [req] {:status 500})
@@ -608,8 +608,8 @@
                            :headers {"content-encoding" "deflate"}}))
         c-client (client/wrap-decompression client)
         resp (promise)
-        execption (promise)
-        _ (c-client {} resp execption)]
+        exception (promise)
+        _ (c-client {} resp exception)]
     (is (= "barbarbar" (-> @resp :body util/force-byte-array util/utf8-string))
         "string correctly inflated")
     (is (= "deflate" (:orig-content-encoding @resp)))
@@ -716,10 +716,10 @@
                  (respond {:body (util/utf8-bytes "foo")}))
         o-client (client/wrap-output-coercion client)
         resp (promise)
-        execption (promise)
-        _ (o-client {:uri "/foo"} resp execption)]
+        exception (promise)
+        _ (o-client {:uri "/foo"} resp exception)]
     (is (= "foo" (:body @resp)))
-    (is (not (realized? execption)))))
+    (is (not (realized? exception)))))
 
 (deftest pass-on-no-output-coercion
   (let [client (fn [req] {:body nil})
@@ -898,8 +898,8 @@
 (deftest apply-on-method-async
   (let [m-client (client/wrap-method async-identity-client)
         echo (promise)
-        execption (promise)
-        _ (m-client {:key :val :method :post} echo execption)]
+        exception (promise)
+        _ (m-client {:key :val :method :post} echo exception)]
     (is (= :val (:key @echo)))
     (is (= :post (:request-method @echo)))
     (is (not (:method @echo)))))
@@ -922,15 +922,15 @@
 (deftest apply-on-url
   (let [u-client (client/wrap-url async-identity-client)
         resp (promise)
-        execption (promise)
+        exception (promise)
         _ (u-client {:url "http://google.com:8080/baz foo?bar=bat bit?"}
-                    resp execption)]
+                    resp exception)]
     (is (= :http (:scheme @resp)))
     (is (= "google.com" (:server-name @resp)))
     (is (= 8080 (:server-port @resp)))
     (is (= "/baz%20foo" (:uri @resp)))
     (is (= "bar=bat%20bit?" (:query-string @resp)))
-    (is (not (realized? execption)))))
+    (is (not (realized? exception)))))
 
 (deftest pass-on-no-url
   (let [u-client (client/wrap-url identity)
@@ -1169,14 +1169,14 @@
                         {:ignore-unknown-host? true}))))
 
 (deftest t-ignore-unknown-host-async
-  (let [resp (promise) execption (promise)]
+  (let [resp (promise) exception (promise)]
     (client/get "http://example.invalid"
-                {:async? true} resp execption)
-    (is (thrown? UnknownHostException (throw @execption))))
-  (let [resp (promise) execption (promise)]
+                {:async? true} resp exception)
+    (is (thrown? UnknownHostException (throw @exception))))
+  (let [resp (promise) exception (promise)]
     (client/get "http://example.invalid"
                 {:ignore-unknown-host? true
-                 :async? true} resp execption)
+                 :async? true} resp exception)
     (is (nil? @resp))))
 
 (deftest test-status-predicates
