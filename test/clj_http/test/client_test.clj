@@ -1164,17 +1164,17 @@
     (is-applied client/wrap-query-params {} {})))
 
 (deftest t-ignore-unknown-host
-  (is (thrown? UnknownHostException (client/get "http://example.org")))
-  (is (nil? (client/get "http://example.org"
+  (is (thrown? UnknownHostException (client/get "http://example.invalid")))
+  (is (nil? (client/get "http://example.invalid"
                         {:ignore-unknown-host? true}))))
 
 (deftest t-ignore-unknown-host-async
   (let [resp (promise) execption (promise)]
-    (client/get "http://example.org"
+    (client/get "http://example.invalid"
                 {:async? true} resp execption)
     (is (thrown? UnknownHostException (throw @execption))))
   (let [resp (promise) execption (promise)]
-    (client/get "http://example.org"
+    (client/get "http://example.invalid"
                 {:ignore-unknown-host? true
                  :async? true} resp execption)
     (is (nil? @resp))))
