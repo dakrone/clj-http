@@ -168,8 +168,23 @@
 
     :else (BasicHttpClientConnectionManager. regular-scheme-registry)))
 
-(defn- ^DefaultConnectingIOReactor default-ioreactor []
-  (DefaultConnectingIOReactor. IOReactorConfig/DEFAULT nil))
+(defn- ^DefaultConnectingIOReactor make-ioreactor
+  [{:keys [connect-timeout interest-op-queued io-thread-count rcv-buf-size
+           select-interval shutdown-grace-period snd-buf-size
+           so-keep-alive so-linger so-timeout tcp-no-delay]}]
+  (as-> (IOReactorConfig/custom) c
+    (if-some [v connect-timeout] (.setConnectTimeout c v) c)
+    (if-some [v interest-op-queued] (.setInterestOpQueued c v) c)
+    (if-some [v io-thread-count] (.setIoThreadCount c v) c)
+    (if-some [v rcv-buf-size] (.setRcvBufSize c v) c)
+    (if-some [v select-interval] (.setSelectInterval c v) c)
+    (if-some [v shutdown-grace-period] (.setShutdownGracePeriod c v) c)
+    (if-some [v snd-buf-size] (.setSndBufSize c v) c)
+    (if-some [v so-keep-alive] (.setSoKeepAlive c v) c)
+    (if-some [v so-linger] (.setSoLinger c v) c)
+    (if-some [v so-timeout] (.setSoTimeout c v) c)
+    (if-some [v tcp-no-delay] (.setTcpNoDelay c v) c)
+    (DefaultConnectingIOReactor. (.build c))))
 
 (defn ^PoolingNHttpClientConnectionManager
   make-regular-async-conn-manager
@@ -181,13 +196,9 @@
                              (opt req :insecure)
                              insecure-strategy-registry
 
-                             :else regular-strategy-registry)]
-    (doto
-        (PoolingNHttpClientConnectionManager. (-> (IOReactorConfig/custom)
-                                                  (.setShutdownGracePeriod 1)
-                                                  .build
-                                                  DefaultConnectingIOReactor.)
-                                              registry)
+                             :else regular-strategy-registry)
+        io-reactor (make-ioreactor {:shutdown-grace-period 1})]
+    (doto (PoolingNHttpClientConnectionManager. io-reactor registry)
       (.setMaxTotal 1))))
 
 (definterface ReuseableAsyncConnectionManager)
@@ -252,7 +263,7 @@
     conn-man))
 
 (defn- ^PoolingNHttpClientConnectionManager make-reusable-async-conn-manager*
-  [{:keys [timeout keystore trust-store] :as config}]
+  [{:keys [timeout keystore trust-store io-config] :as config}]
   (let [registry (cond
                    (opt config :insecure) insecure-strategy-registry
 
@@ -261,12 +272,40 @@
 
                    :else regular-strategy-registry)]
     (proxy [PoolingNHttpClientConnectionManager ReuseableAsyncConnectionManager]
-        [(default-ioreactor) nil registry nil nil timeout
+        [(make-ioreactor io-config) nil registry nil nil timeout
          java.util.concurrent.TimeUnit/SECONDS])))
 
 (defn ^PoolingNHttpClientConnectionManager make-reuseable-async-conn-manager
   "Creates a default pooling async connection manager with the specified
-  options. See alos make-reusable-conn-manager"
+  options. Handles the same options as make-reusable-conn-manager plus
+  :io-config which should be a map containing some of the following keys:
+
+  :connect-timeout - int the default connect timeout value for connection
+    requests (default 0, meaning no timeout)
+  :interest-op-queued - boolean, whether or not I/O interest operations are to
+    be queued and executed asynchronously or to be applied to the underlying
+    SelectionKey immediately (default false)
+  :io-thread-count - int, the number of I/O dispatch threads to be used
+    (default is the number of available processors)
+  :rcv-buf-size - int the default value of the SO_RCVBUF parameter for
+    newly created sockets (default is 0, meaning the system default)
+  :select-interval - long, time interval in milliseconds at which to check for
+    timed out sessions and session requests (default 1000)
+  :shutdown-grace-period - long, grace period in milliseconds to wait for
+    individual worker threads to terminate cleanly (default 500)
+  :snd-buf-size - int, the default value of the SO_SNDBUF parameter for
+    newly created sockets (default is 0, meaning the system default)
+  :so-keep-alive - boolean, the default value of the SO_KEEPALIVE parameter for
+    newly created sockets (default false)
+  :so-linger - int, the default value of the SO_LINGER parameter for
+    newly created sockets (default -1)
+  :so-timeout - int, the default socket timeout value for I/O operations
+    (default 0, meaning no timeout)
+  :tcp-no-delay - boolean, the default value of the TCP_NODELAY parameter for
+    newly created sockets (default true)
+
+  If the value 'nil' is specified or the value is not set, the default value
+  will be used."
   [opts]
   (let [timeout (or (:timeout opts) 5)
         threads (or (:threads opts) 4)
