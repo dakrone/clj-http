@@ -263,8 +263,8 @@
       ((make-proxy-method-with-body request-method) http-url)
       (make-proxy-method request-method http-url))))
 
-(defn ^HttpClientContext http-context [request-config]
-  (doto (HttpClientContext/create)
+(defn ^HttpClientContext http-context [request-config http-client-context]
+  (doto (or http-client-context (HttpClientContext/create))
     (.setRequestConfig request-config)))
 
 (defn ^CredentialsProvider credentials-provider []
@@ -350,6 +350,7 @@
             redirect-strategy max-redirects retry-handler
             request-method scheme server-name server-port socket-timeout
             uri response-interceptor proxy-host proxy-port async?
+            http-client-context http-request-config
             proxy-ignore-hosts proxy-user proxy-pass digest-auth ntlm-auth]
      :as req} respond raise]
    (let [req (dissoc req :async?)
@@ -362,8 +363,8 @@
                       (get-conn-mgr async? req))
          proxy-ignore-hosts (or proxy-ignore-hosts
                                 #{"localhost" "127.0.0.1"})
-         ^RequestConfig request-config (request-config req)
-         ^HttpClientContext context (http-context request-config)
+         ^RequestConfig request-config (or http-request-config (request-config req))
+         ^HttpClientContext context (http-context request-config http-client-context)
          ^HttpUriRequest http-req (http-request-for
                                    request-method http-url body)]
      (when-not (conn/reusable? conn-mgr)
