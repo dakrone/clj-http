@@ -56,6 +56,11 @@
                             "[\"~#set\",[1,3,2]]],\"~:baz\",\"~f7\","
                             "\"~:foo\",\"bar\"]")
      :headers {"content-type" "application/transit+json"}}
+    [:get "/transit-json-bad"]
+    {:status 400 :body "[\"^ \", \"~:foo\",\"bar\"]"}
+    [:get "/transit-json-empty"]
+    {:status 200
+     :headers {"content-type" "application/transit+json"}}
     [:get "/transit-msgpack"]
     {:status 200
      :body (->> [-125 -86 126 58 101 103 103 112 108 97 110 116 -127 -90 126
@@ -338,13 +343,37 @@
   (run-server)
   (let [transit-json-resp (client/get (localhost "/transit-json") {:as :auto})
         transit-msgpack-resp (client/get (localhost "/transit-msgpack")
-                                         {:as :auto})]
+                                         {:as :auto})
+        bad-status-resp-default (client/get (localhost "/transit-json-bad")
+                                    {:throw-exceptions false :as :transit+json})
+        bad-status-resp-always (client/get (localhost "/transit-json-bad")
+                                     {:throw-exceptions false :as :transit+json
+                                      :coerce :always})
+        bad-status-resp-exceptional (client/get (localhost "/transit-json-bad")
+                                     {:throw-exceptions false :as :transit+json
+                                      :coerce :exceptional})
+        empty-resp (client/get (localhost "/transit-json-empty")
+                               {:throw-exceptions false :as :transit+json})]
     (is (= 200
            (:status transit-json-resp)
-           (:status transit-msgpack-resp)))
+           (:status transit-msgpack-resp)
+           (:status empty-resp)))
+    (is (= 400
+           (:status bad-status-resp-default)
+           (:status bad-status-resp-always)
+           (:status bad-status-resp-exceptional)))
     (is (= {:foo "bar" :baz 7M :eggplant {:quux #{1 2 3}}}
            (:body transit-json-resp)
-           (:body transit-msgpack-resp)))))
+           (:body transit-msgpack-resp)))
+
+    (is (nil? (:body empty-resp)))
+    
+    (is (= "[\"^ \", \"~:foo\",\"bar\"]"
+           (:body bad-status-resp-default)))
+    (is (= {:foo "bar"}
+           (:body bad-status-resp-always)))
+    (is (= {:foo "bar"}
+           (:body bad-status-resp-exceptional)))))
 
 (deftest ^:integration t-json-output-coercion
   (run-server)
