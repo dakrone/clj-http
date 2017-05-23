@@ -561,7 +561,7 @@
   (try
     (is (thrown? SocketTimeoutException
                  (client/request {:scheme :http
-                                  :server-name "www.writequit.org"
+                                  :server-name "writequit.org"
                                   :server-port 80
                                   :request-method :get :uri "/"
                                   :conn-timeout 10})))))
