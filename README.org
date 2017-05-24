@@ -107,7 +107,7 @@ function.
 With Leiningen/Boot:
 
 #+BEGIN_SRC clojure
-[clj-http "3.5.0"]
+[clj-http "3.6.0"]
 #+END_SRC
 
 If you need an older version, a 2.x release is also available.
