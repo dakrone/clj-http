@@ -11,6 +11,8 @@
            (org.apache.http.params CoreConnectionPNames CoreProtocolPNames)
            (org.apache.http.message BasicHeader BasicHeaderIterator)
            (org.apache.http.client.methods HttpPost)
+           (org.apache.http.client.protocol HttpClientContext)
+           (org.apache.http.client.config RequestConfig)
            (org.apache.http.client.params CookiePolicy ClientPNames)
            (org.apache.http HttpRequest HttpResponse HttpConnection
                             HttpInetConnection HttpVersion)
@@ -633,3 +635,23 @@
            ["http://localhost:18080/get"]))
 
     (is (= (:trace-redirects resp-without-redirects) []))))
+
+(deftest ^:integration t-override-request-config
+  (run-server)
+  (let [called-args (atom [])
+        real-http-client core/http-client
+        http-context (HttpClientContext/create)
+        request-config (.build (RequestConfig/custom))]
+    (with-redefs [core/http-client (fn [& args]
+                                     (proxy [org.apache.http.impl.client.CloseableHttpClient] []
+                                       (execute [http-req context]
+                                         (swap! called-args conj [http-req context])
+                                         (.execute (apply real-http-client args) http-req context))))]
+      (client/request {:method :get
+                       :url "http://localhost:18080/get"
+                       :http-client-context http-context
+                       :http-request-config request-config})
+
+      (let [context-for-request (last (last @called-args))]
+      (is (= http-context context-for-request))
+      (is (= request-config (.getRequestConfig context-for-request)))))))
