@@ -247,7 +247,7 @@ Example requests:
 ;; Support for IPv6!
 (client/get "http://[2001:62f5:9006:e472:cabd:c8ff:fee3:8ddf]")
 
-;; Super advance, your own http-client-context and request-config
+;; Super advanced, your own http-client-context and request-config
 (client/get "http://example.com/get"
             {:http-client-context my-http-client-context
              :http-request-config my-request-config})
