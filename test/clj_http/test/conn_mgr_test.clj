@@ -9,7 +9,8 @@
            (org.apache.http.conn.ssl SSLConnectionSocketFactory
                                      DefaultHostnameVerifier
                                      NoopHostnameVerifier
-                                     TrustStrategy)))
+                                     TrustStrategy)
+           (org.apache.http.conn.socket PlainConnectionSocketFactory)))
 
 (def client-ks "test-resources/client-keystore")
 (def client-ks-pass "keykey")
@@ -43,8 +44,11 @@
   (let [sr (conn-mgr/get-keystore-scheme-registry
             {:keystore client-ks :keystore-pass client-ks-pass
              :trust-store client-ks :trust-store-pass client-ks-pass})
-        socket-factory (.lookup sr "https")]
-    (is (instance? SSLConnectionSocketFactory socket-factory))))
+        plain-socket-factory (.lookup sr "http")
+        ssl-socket-factory (.lookup sr "https")]
+    (is (instance? PlainConnectionSocketFactory plain-socket-factory))
+    (is (instance? SSLConnectionSocketFactory ssl-socket-factory))
+    ))
 
 (deftest ^:integration ssl-client-cert-get
   (let [server (ring/run-jetty secure-handler
