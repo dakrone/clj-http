@@ -10,7 +10,10 @@
                                      DefaultHostnameVerifier
                                      NoopHostnameVerifier
                                      TrustStrategy)
-           (org.apache.http.conn.socket PlainConnectionSocketFactory)))
+           (org.apache.http.conn.socket PlainConnectionSocketFactory)
+           (org.apache.http.nio.conn NoopIOSessionStrategy)
+           (org.apache.http.nio.conn.ssl SSLIOSessionStrategy)
+           ))
 
 (def client-ks "test-resources/client-keystore")
 (def client-ks-pass "keykey")
@@ -48,6 +51,16 @@
         ssl-socket-factory (.lookup sr "https")]
     (is (instance? PlainConnectionSocketFactory plain-socket-factory))
     (is (instance? SSLConnectionSocketFactory ssl-socket-factory))
+    ))
+
+(deftest keystore-session-strategy
+  (let [strategy-registry (conn-mgr/get-keystore-strategy-registry
+                            {:keystore client-ks :keystore-pass client-ks-pass
+                             :trust-store client-ks :trust-store-pass client-ks-pass})
+        noop-session-strategy (.lookup strategy-registry "http")
+        ssl-session-strategy (.lookup strategy-registry "https")]
+    (is (instance? NoopIOSessionStrategy noop-session-strategy))
+    (is (instance? SSLIOSessionStrategy ssl-session-strategy))
     ))
 
 (deftest ^:integration ssl-client-cert-get

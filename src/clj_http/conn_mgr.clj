@@ -155,6 +155,7 @@
         strategy (SSLIOSessionStrategy. ^SSLContext context
                                         ^HostnameVerifier verifier)]
     (-> (RegistryBuilder/create)
+        (.register "http" NoopIOSessionStrategy/INSTANCE)
         (.register "https" strategy)
         (.build))))
 
