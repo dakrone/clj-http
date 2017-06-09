@@ -24,7 +24,7 @@
             DefaultConnectingIOReactor)
            (org.apache.http.nio.conn NoopIOSessionStrategy)))
 
-(def insecure-context-verifier
+(def ^:private insecure-context-verifier
   {
    :context (-> (SSLContexts/custom)
                 (.loadTrustMaterial nil (reify TrustStrategy
@@ -32,7 +32,7 @@
                 (.build))
    :verifier NoopHostnameVerifier/INSTANCE})
 
-(def ^SSLIOSessionStrategy insecure-socket-factory
+(def ^SSLConnectionSocketFactory insecure-socket-factory
   (let [{:keys [context  verifier]} insecure-context-verifier]
     (SSLConnectionSocketFactory. ^SSLContext context
                                  ^HostnameVerifier verifier)))
