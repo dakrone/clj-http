@@ -66,11 +66,13 @@
       (.getRedirect DefaultRedirectStrategy/INSTANCE request response context))
 
     (isRedirected [this request response context]
-      (let [max-redirects (.getMaxRedirects (.getRequestConfig context))
-            num-redirects (count (.getRedirectLocations context))]
+      (let [^HttpClientContext typed-context context
+            max-redirects (-> (.getRequestConfig typed-context)
+                              .getMaxRedirects)
+            num-redirects (count (.getRedirectLocations typed-context))]
         (if (<= max-redirects num-redirects)
           false
-          (.isRedirected DefaultRedirectStrategy/INSTANCE request response context))))))
+          (.isRedirected DefaultRedirectStrategy/INSTANCE request response typed-context))))))
 
 (defn get-redirect-strategy [redirect-strategy]
   (case redirect-strategy
@@ -264,8 +266,10 @@
       (make-proxy-method request-method http-url))))
 
 (defn ^HttpClientContext http-context [request-config http-client-context]
-  (doto (or http-client-context (HttpClientContext/create))
-    (.setRequestConfig request-config)))
+  (let [^HttpClientContext typed-context (or http-client-context
+                                             (HttpClientContext/create))]
+    (doto typed-context
+      (.setRequestConfig request-config))))
 
 (defn ^CredentialsProvider credentials-provider []
   (BasicCredentialsProvider.))
