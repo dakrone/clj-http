@@ -50,12 +50,13 @@
 (defn ^SSLConnectionSocketFactory SSLGenericSocketFactory
   "Given a function that returns a new socket, create an
   SSLConnectionSocketFactory that will use that socket."
-  [socket-factory]
-  (proxy [SSLConnectionSocketFactory] [(SSLContexts/createDefault)]
-    (connectSocket [timeout socket host remoteAddress localAddress context]
-      (let [^SSLConnectionSocketFactory this this] ;; avoid reflection
-        (proxy-super connectSocket timeout (socket-factory) host remoteAddress
-                     localAddress context)))))
+  ([socket-factory] (SSLGenericSocketFactory socket-factory (SSLContexts/createDefault)))
+  ([socket-factory ^SSLContext ssl-context]
+   (proxy [SSLConnectionSocketFactory] [ssl-context]
+     (connectSocket [timeout socket host remoteAddress localAddress context]
+       (let [^SSLConnectionSocketFactory this this] ;; avoid reflection
+         (proxy-super connectSocket timeout (socket-factory) host remoteAddress
+                      localAddress context))))))
 
 (defn ^PlainConnectionSocketFactory PlainGenericSocketFactory
   "Given a Function that returns a new socket, create a
@@ -69,41 +70,6 @@
   "Create a Socket proxied through socks, using the given hostname and port"
   [^String hostname ^Integer port]
   (Socket. (Proxy. Proxy$Type/SOCKS (InetSocketAddress. hostname port))))
-
-(defn make-socks-proxied-conn-manager
-  "Given an optional hostname and a port, create a connection manager that's
-  proxied using a SOCKS proxy."
-  [^String hostname ^Integer port]
-  (let [socket-factory #(socks-proxied-socket hostname port)
-        reg (-> (RegistryBuilder/create)
-                (.register "http" (PlainGenericSocketFactory socket-factory))
-                (.register "https" (SSLGenericSocketFactory socket-factory))
-                (.build))]
-    (PoolingHttpClientConnectionManager. reg)))
-
-(def insecure-scheme-registry
-  (-> (RegistryBuilder/create)
-      (.register "http" PlainConnectionSocketFactory/INSTANCE)
-      (.register "https" insecure-socket-factory)
-      (.build)))
-
-(def insecure-strategy-registry
-  (-> (RegistryBuilder/create)
-      (.register "http" NoopIOSessionStrategy/INSTANCE)
-      (.register "https" insecure-strategy)
-      (.build)))
-
-(def regular-scheme-registry
-  (-> (RegistryBuilder/create)
-      (.register "http" (PlainConnectionSocketFactory/getSocketFactory))
-      (.register "https" secure-ssl-socket-factory)
-      (.build)))
-
-(def regular-strategy-registry
-  (-> (RegistryBuilder/create)
-      (.register "http" NoopIOSessionStrategy/INSTANCE)
-      (.register "https" secure-strategy)
-      (.build)))
 
 (defn ^KeyStore get-keystore*
   [keystore-file keystore-type ^String keystore-pass]
@@ -138,6 +104,44 @@
      :verifier (if (opt req :insecure)
                  NoopHostnameVerifier/INSTANCE
                  (DefaultHostnameVerifier.))}))
+
+(defn make-socks-proxied-conn-manager
+  "Given an optional hostname and a port, create a connection manager that's
+  proxied using a SOCKS proxy."
+  ([^String hostname ^Integer port] (make-socks-proxied-conn-manager hostname port {}))
+  ([^String hostname ^Integer port {:keys [keystore keystore-type keystore-pass trust-store trust-store-type trust-store-pass] :as opts}]
+   (let [socket-factory #(socks-proxied-socket hostname port)
+         ssl-context (when (some (complement nil?) [keystore keystore-type keystore-pass trust-store trust-store-type trust-store-pass])
+                           (-> opts get-keystore-context-verifier :context))
+         reg (-> (RegistryBuilder/create)
+                 (.register "http" (PlainGenericSocketFactory socket-factory))
+                 (.register "https" (SSLGenericSocketFactory socket-factory ssl-context))
+                 (.build))]
+     (PoolingHttpClientConnectionManager. reg))))
+
+(def insecure-scheme-registry
+  (-> (RegistryBuilder/create)
+      (.register "http" PlainConnectionSocketFactory/INSTANCE)
+      (.register "https" insecure-socket-factory)
+      (.build)))
+
+(def insecure-strategy-registry
+  (-> (RegistryBuilder/create)
+      (.register "http" NoopIOSessionStrategy/INSTANCE)
+      (.register "https" insecure-strategy)
+      (.build)))
+
+(def regular-scheme-registry
+  (-> (RegistryBuilder/create)
+      (.register "http" (PlainConnectionSocketFactory/getSocketFactory))
+      (.register "https" secure-ssl-socket-factory)
+      (.build)))
+
+(def regular-strategy-registry
+  (-> (RegistryBuilder/create)
+      (.register "http" NoopIOSessionStrategy/INSTANCE)
+      (.register "https" secure-strategy)
+      (.build)))
 
 (defn ^Registry get-keystore-scheme-registry
   [req]
