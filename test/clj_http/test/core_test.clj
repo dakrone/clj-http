@@ -19,7 +19,7 @@
            (org.apache.http.protocol HttpContext ExecutionContext)
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.client.params ClientPNames)
-           (java.net SocketTimeoutException)
+           (java.net SocketTimeoutException ServerSocket)
            (sun.security.provider.certpath SunCertPathBuilderException)))
 
 (defn handler [req]
@@ -655,3 +655,37 @@
       (let [context-for-request (last (last @called-args))]
       (is (= http-context context-for-request))
       (is (= request-config (.getRequestConfig context-for-request)))))))
+
+(def blocking-port 18081)
+
+(defn run-blocking-server
+  []
+  (let [server (ServerSocket. blocking-port 1)
+        port   (.getLocalPort server)]
+    (future
+      (let [socket (.accept server)
+            reader (java.io.InputStreamReader. (.getInputStream socket))]
+        (loop [stop? (.isClosed server)]
+          (if-not stop?
+            (try
+              (.read reader (char-array 10))
+              (Thread/sleep 5000)
+              (catch InterruptedException e))
+            (recur (.isClosed server))))))
+    server))
+
+(deftest AbortStuckRequest
+  (let [server (run-blocking-server)
+        f      (future
+                 (core/request {:scheme :http
+                                   :request-method :get
+                                   :server-name "localhost"
+                                   :server-port blocking-port
+                                   :uri "/"
+                                   :request-timeout 100}))]
+    (try
+      (is (thrown-with-msg? java.util.concurrent.ExecutionException
+                            #"Socket closed"
+                            (deref f 200 :request-test-timeout)))
+      (finally
+        (.close server)))))

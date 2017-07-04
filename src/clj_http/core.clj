@@ -39,7 +39,10 @@
                                             HttpAsyncClients
                                             CloseableHttpAsyncClient)
            (org.apache.http.message BasicHttpResponse)
-           (java.util.concurrent ExecutionException)))
+           (java.util.concurrent ExecutionException
+                                 ThreadFactory
+                                 TimeUnit
+                                 ScheduledThreadPoolExecutor)))
 
 (defn parse-headers
   "Takes a HeaderIterator and returns a map of names to values.
@@ -347,6 +350,26 @@
     (or conn/*connection-manager*
         (conn/make-regular-conn-manager req))))
 
+(defn- make-daemon-thread-factory
+  []
+  (let [counter (atom 0)]
+    (reify
+      ThreadFactory
+      (newThread [this runnable]
+        (doto (Thread. runnable)
+          (.setName (format "clj-http.abort-scheduler-%d" (swap! counter inc)))
+          (.setDaemon true))))))
+
+(def ^{:private true} ^ScheduledThreadPoolExecutor abort-scheduler
+  (ScheduledThreadPoolExecutor. 4 (make-daemon-thread-factory)))
+
+(defn- delay-abort
+  [ms ^HttpUriRequest req]
+  (.schedule abort-scheduler
+             #(.abort req)
+             ms
+             TimeUnit/MILLISECONDS))
+
 (defn request
   ([req] (request req nil nil))
   ([{:keys [body conn-timeout conn-request-timeout connection-manager
@@ -354,7 +377,7 @@
             redirect-strategy max-redirects retry-handler
             request-method scheme server-name server-port socket-timeout
             uri response-interceptor proxy-host proxy-port async?
-            http-client-context http-request-config
+            http-client-context http-request-config request-timeout
             proxy-ignore-hosts proxy-user proxy-pass digest-auth ntlm-auth]
      :as req} respond raise]
    (let [req (dissoc req :async?)
@@ -414,6 +437,8 @@
        (let [^CloseableHttpClient
              client (http-client req conn-mgr http-url proxy-ignore-hosts)]
          (try
+           (if request-timeout
+             (delay-abort request-timeout http-req))
            (build-response-map (.execute client http-req context)
                                req conn-mgr context)
            (catch Throwable t
