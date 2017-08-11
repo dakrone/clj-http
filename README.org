@@ -987,6 +987,24 @@ would:
              (conn-mgr/make-socks-proxied-conn-manager "localhost" 8081)})
 #+END_SRC
 
+If your SOCKS connection requires a keystore / trust-store, you can specify that too:
+
+#+BEGIN_SRC clojure
+(ns foo.bar
+  (:require [clj-http.client :as client]
+            [clj-http.conn-mgr :as conn-mgr]))
+
+(client/get "https://google.com"
+            {:connection-manager
+             (conn-mgr/make-socks-proxied-conn-manager "localhost" 8081
+               {:keystore "/path/to/keystore.ks"
+                :keystore-type "jks" ; default: jks
+                :keystore-pass "secretpass"
+                :trust-store "/path/to/trust-store.ks"
+                :trust-store-type "jks" ; default jks
+                :trust-store-pass "trustpass"})})
+#+END_SRC
+
 You can also store the proxied connection manager and reuse it later.
 
 ** Custom Middleware
