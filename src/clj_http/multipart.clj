@@ -3,6 +3,7 @@
   (:import (java.io File InputStream)
            (org.apache.http.entity ContentType)
            (org.apache.http.entity.mime MultipartEntity)
+           (org.apache.http.entity.mime HttpMultipartMode)
            (org.apache.http.entity.mime.content ContentBody
                                                 ByteArrayBody
                                                 FileBody
@@ -117,7 +118,7 @@
      content (ContentType/create "text/plain" (encoding-to-charset encoding)))
 
     content
-    (StringBody. content (ContentType/create "text/plain" Consts/ASCII))))
+    (StringBody. content (ContentType/create "text/plain" Consts/UTF_8))))
 
 (defmethod make-multipart-body ContentBody
   ;; Use provided org.apache.http.entity.mime.content.ContentBody directly
@@ -128,7 +129,9 @@
   "Takes a multipart vector of maps and creates a MultipartEntity with each
   map added as a part, depending on the type of content."
   [multipart]
-  (let [mp-entity (MultipartEntity.)]
+  (let [mp-entity (MultipartEntity. HttpMultipartMode/STRICT 
+                                    nil
+                                    (encoding-to-charset "UTF-8"))]
     (doseq [m multipart]
       (let [name (or (:part-name m) (:name m))
             part (make-multipart-body m)]
