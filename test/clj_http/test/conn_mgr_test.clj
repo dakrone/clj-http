@@ -96,11 +96,11 @@
                                 :server-port 18084 :scheme :https
                                 :insecure? true :server-name "localhost"
                                 :async? true} resp exception)]
-        (is (= 403 (:status @resp))))
+        (is (= 403 (:status (deref resp 1000 {:status :timeout})))))
       (let [resp (promise)
             exception (promise)
             _ (core/request (assoc secure-request :async? true) resp exception)]
-        (is (= 200 (:status @resp))))
+        (is (= 200 (:status (deref resp 1000 {:status :timeout})))))
       (finally
         (.stop server)))))
 
