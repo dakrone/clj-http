@@ -235,7 +235,7 @@
     (add-client-params!
      http-client
      ;; merge in map of specified timeouts, to
-     ;; support backward compatiblity.
+     ;; support backward compatibility.
      (merge {CoreConnectionPNames/SO_TIMEOUT socket-timeout
              CoreConnectionPNames/CONNECTION_TIMEOUT conn-timeout}
             client-params))
