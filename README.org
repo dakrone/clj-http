@@ -11,45 +11,53 @@
 :PROPERTIES:
 :CUSTOM_ID: h:aaf075ea-2f0e-4a45-871a-0f89c838fb4b
 :END:
- - [[#help-wanted][HELP WANTED]]
- - [[#introduction][Introduction]]
-   - [[#overview][Overview]]
-   - [[#philosophy][Philosophy]]
- - [[#installation][Installation]]
- - [[#towards-a-300-release][Towards a 3.0.0 release]]
- - [[#quickstart][Quickstart]]
-   - [[#head][HEAD]]
-   - [[#get][GET]]
-   - [[#put][PUT]]
-   - [[#post][POST]]
-   - [[#delete][DELETE]]
-   - [[#async-http-request][Async HTTP Request]]
-   - [[#coercions][Coercions]]
-   - [[#headers][Headers]]
-   - [[#meta-tag-headers][Meta Tag Headers]]
-   - [[#link-headers][Link Headers]]
-   - [[#redirects][Redirects]]
-   - [[#cookies][Cookies]]
-   - [[#exceptions][Exceptions]]
-   - [[#decompression][Decompression]]
-   - [[#debugging][Debugging]]
- - [[#authentication][Authentication]]
-   - [[#basic-auth][Basic Auth]]
-   - [[#digest-auth][Digest Auth]]
-   - [[#oauth2][oAuth2]]
- - [[#advanced-usage][Advanced Usage]]
-   - [[#raw-request][Raw Request]]
-   - [[#persistent-connections][Persistent Connections]]
-   - [[#proxies][Proxies]]
-   - [[#custom-middleware][Custom Middleware]]
- - [[#development][Development]]
-   - [[#faking-responses][Faking Responses]]
-   - [[#optional-dependencies][Optional Dependencies]]
-   - [[#clj-http-lite][clj-http-lite]]
-   - [[#troubleshooting][Troubleshooting]]
- - [[#tests][Tests]]
- - [[#testimonials][Testimonials]]
- - [[#license][License]]
+- [[#help-wanted][HELP WANTED]]
+- [[#introduction][Introduction]]
+  - [[#overview][Overview]]
+  - [[#philosophy][Philosophy]]
+- [[#installation][Installation]]
+- [[#towards-a-300-release][Towards a 3.0.0 release]]
+- [[#quickstart][Quickstart]]
+  - [[#head][HEAD]]
+  - [[#get][GET]]
+  - [[#put][PUT]]
+  - [[#post][POST]]
+  - [[#delete][DELETE]]
+  - [[#async-http-request][Async HTTP Request]]
+  - [[#coercions][Coercions]]
+    - [[#input-coercion][Input coercion]]
+    - [[#output-coercion][Output coercion]]
+  - [[#headers][Headers]]
+  - [[#query-string-parameters][Query-string parameters]]
+  - [[#meta-tag-headers][Meta Tag Headers]]
+  - [[#link-headers][Link Headers]]
+  - [[#redirects][Redirects]]
+  - [[#cookies][Cookies]]
+    - [[#cookiestores][Cookiestores]]
+    - [[#keystores-trust-stores][Keystores, Trust-stores]]
+  - [[#exceptions][Exceptions]]
+  - [[#decompression][Decompression]]
+  - [[#debugging][Debugging]]
+- [[#authentication][Authentication]]
+  - [[#basic-auth][Basic Auth]]
+  - [[#digest-auth][Digest Auth]]
+  - [[#oauth2][oAuth2]]
+- [[#advanced-usage][Advanced Usage]]
+  - [[#raw-request][Raw Request]]
+    - [[#boolean-options][Boolean options]]
+  - [[#persistent-connections][Persistent Connections]]
+  - [[#proxies][Proxies]]
+  - [[#custom-middleware][Custom Middleware]]
+- [[#development][Development]]
+  - [[#faking-responses][Faking Responses]]
+  - [[#optional-dependencies][Optional Dependencies]]
+  - [[#clj-http-lite][clj-http-lite]]
+  - [[#troubleshooting][Troubleshooting]]
+    - [[#verifyerror-class-orgcodehausjacksonsmilesmileparser-overrides-final-method-getbinaryvalue][VerifyError class org.codehaus.jackson.smile.SmileParser overrides final method getBinaryValue...]]
+    - [[#nohttpresponseexception--due-to-stale-connections][NoHttpResponseException ... due to stale connections**]]
+- [[#tests][Tests]]
+- [[#testimonials][Testimonials]]
+- [[#license][License]]
 
 * HELP WANTED
 :PROPERTIES:
@@ -218,13 +226,13 @@ Example requests:
 (client/get "https://alioth.debian.org" {:insecure? true})
 
 ;; If you don't want to follow-redirects automatically:
-(client/get "http://example.com/redirects-somewhere" {:follow-redirects false})
+(client/get "http://example.com/redirects-somewhere" {:redirect-strategy :none})
 
 ;; Only follow a certain number of redirects:
 (client/get "http://example.com/redirects-somewhere" {:max-redirects 5})
 
-;; Throw an exception if redirected too many times:
-(client/get "http://example.com/redirects-somewhere" {:max-redirects 5 :throw-exceptions true})
+;; Avoid throwing exceptions if redirected too many times:
+(client/get "http://example.com/redirects-somewhere" {:max-redirects 5 :redirect-strategy :graceful})
 
 ;; Throw an exception if the get takes too long. Timeouts in milliseconds.
 (client/get "http://example.com/redirects-somewhere" {:socket-timeout 1000 :conn-timeout 1000})
@@ -608,9 +616,27 @@ clj-http conforms its behaviour regarding automatic redirects to the [[https://t
 
 It means that redirects on status =301=, =302= and =307= are not redirected on
 methods other than =GET= and =HEAD=. If you want a behaviour closer to what most
-browser have, you can set =:force-redirects= to =true= in your request to have
+browser have, you can set =:redirect-strategy= to =:lax= in your request to have
 automatic redirection work on all methods by transforming the method of the
 request to =GET=.
+
+Redirect Options:
+
+- :trace-redirects :: If true, clj-http will enhance the response object with a
+     list of redirected URLs with key: =:trace-redirects=.
+- :redirect-strategy :: Sets the redirect strategy for clj-http. Accepts the following:
+     :none     - Perform no redirects
+     :default  - See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/client/DefaultRedirectStrategy.html
+     :lax      - See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/client/LaxRedirectStrategy.html
+     :graceful - Similar to :default, but does not throw exceptions when max redirects is reached. This is the redirects behaviour in 2.x
+     nil       - When nil, assumes :default
+
+     You may also pass in an instance of RedirectStrategy if you want a behaviour that's not implemented
+
+NOTE: The options =:force-redirects= and =:follow-redirects= (present in
+clj-http 2.x are no longer used). You can use =:graceful= to mostly emulate the
+old redirect behaviour.
+
 
 ** Cookies
 :PROPERTIES:
