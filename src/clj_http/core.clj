@@ -72,7 +72,8 @@
             num-redirects (count (.getRedirectLocations typed-context))]
         (if (<= max-redirects num-redirects)
           false
-          (.isRedirected DefaultRedirectStrategy/INSTANCE request response typed-context))))))
+          (.isRedirected DefaultRedirectStrategy/INSTANCE
+                         request response typed-context))))))
 
 (defn get-redirect-strategy [redirect-strategy]
   (case redirect-strategy
@@ -367,8 +368,10 @@
                       (get-conn-mgr async? req))
          proxy-ignore-hosts (or proxy-ignore-hosts
                                 #{"localhost" "127.0.0.1"})
-         ^RequestConfig request-config (or http-request-config (request-config req))
-         ^HttpClientContext context (http-context request-config http-client-context)
+         ^RequestConfig request-config (or http-request-config
+                                           (request-config req))
+         ^HttpClientContext context (http-context
+                                     request-config http-client-context)
          ^HttpUriRequest http-req (http-request-for
                                    request-method http-url body)]
      (when-not (conn/reusable? conn-mgr)

@@ -462,7 +462,8 @@
                                 (read-string (String. ^"[B" body charset)))))))
 
 (defn coerce-transit-body
-  [{:keys [transit-opts coerce] :as request} {:keys [body status] :as resp} type & [charset]]
+  [{:keys [transit-opts coerce] :as request}
+   {:keys [body status] :as resp} type & [charset]]
   (let [^String charset (or charset (-> resp :content-type-params :charset)
                             "UTF-8")
         body (util/force-byte-array body)]
@@ -470,14 +471,17 @@
       (if transit-enabled?
         (cond
           (= coerce :always)
-          (assoc resp :body (parse-transit (ByteArrayInputStream. body) type transit-opts))
+          (assoc resp :body (parse-transit
+                             (ByteArrayInputStream. body) type transit-opts))
 
           (and (unexceptional-status? status)
                (or (nil? coerce) (= coerce :unexceptional)))
-          (assoc resp :body (parse-transit (ByteArrayInputStream. body) type transit-opts))
+          (assoc resp :body (parse-transit
+                             (ByteArrayInputStream. body) type transit-opts))
 
           (and (not (unexceptional-status? status)) (= coerce :exceptional))
-          (assoc resp :body (parse-transit (ByteArrayInputStream. body) type transit-opts))
+          (assoc resp :body (parse-transit
+                             (ByteArrayInputStream. body) type transit-opts))
 
           :else (assoc resp :body (String. ^"[B" body charset)))
         (assoc resp :body (String. ^"[B" body charset)))

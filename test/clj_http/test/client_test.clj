@@ -163,7 +163,8 @@
     (is (= 200 (:status resp)))
     (is (= :get (:request-method (:req resp))))
     (is (= :http (:scheme (:req resp))))
-    (is (= ["http://example.com" "http://example.net/bat"] (:trace-redirects resp)))
+    (is (= ["http://example.com" "http://example.net/bat"]
+           (:trace-redirects resp)))
     (is (= "/bat" (:uri (:req resp))))))
 
 (deftest redirect-on-get-async
@@ -181,7 +182,8 @@
     (is (= 200 (:status @resp)))
     (is (= :get (:request-method (:req @resp))))
     (is (= :http (:scheme (:req @resp))))
-    (is (= ["http://example.com" "http://example.net/bat"] (:trace-redirects @resp)))
+    (is (= ["http://example.com" "http://example.net/bat"]
+           (:trace-redirects @resp)))
     (is (= "/bat" (:uri (:req @resp))))
     (is (not (realized? exception)))))
 
@@ -198,7 +200,8 @@
     (is (= 200 (:status resp)))
     (is (= :get (:request-method (:req resp))))
     (is (= :http (:scheme (:req resp))))
-    (is (= ["http://example.com" "http://example.com/bat"] (:trace-redirects resp)))
+    (is (= ["http://example.com" "http://example.com/bat"]
+           (:trace-redirects resp)))
     (is (= "/bat" (:uri (:req resp))))))
 
 (deftest relative-redirect-on-get-async
@@ -216,7 +219,8 @@
     (is (= 200 (:status @resp)))
     (is (= :get (:request-method (:req @resp))))
     (is (= :http (:scheme (:req @resp))))
-    (is (= ["http://example.com" "http://example.com/bat"] (:trace-redirects @resp)))
+    (is (= ["http://example.com" "http://example.com/bat"]
+           (:trace-redirects @resp)))
     (is (= "/bat" (:uri (:req @resp))))
     (is (not (realized? exception)))))
 
@@ -279,7 +283,8 @@
     (is (= 200 (:status resp)))
     (is (= :get (:request-method (:req resp))))
     (is (= :http (:scheme (:req resp))))
-    (is (= ["http://example.com" "http://example.net/bat?x=y"] (:trace-redirects resp)))
+    (is (= ["http://example.com" "http://example.net/bat?x=y"]
+           (:trace-redirects resp)))
     (is (= "/bat" (:uri (:req resp))))
     (is (= "x=y" (:query-string (:req resp))))
     (is (nil? (:query-params (:req resp))))))
@@ -353,7 +358,8 @@
       (is (= 200 (:status resp)))
       (is (= :get (:request-method (:req resp))))
       (is (= :http (:scheme (:req resp))))
-      (is (= ["http://example.com" "http://example.net/bat"] (:trace-redirects resp)))
+      (is (= ["http://example.com" "http://example.net/bat"]
+             (:trace-redirects resp)))
       (is (= "/bat" (:uri (:req resp)))))))
 
 (deftest redirect-303-to-get-on-any-method-async
@@ -373,7 +379,8 @@
       (is (= 200 (:status @resp)))
       (is (= :get (:request-method (:req @resp))))
       (is (= :http (:scheme (:req @resp))))
-      (is (= ["http://example.com" "http://example.net/bat"] (:trace-redirects @resp)))
+      (is (= ["http://example.com" "http://example.net/bat"]
+             (:trace-redirects @resp)))
       (is (= "/bat" (:uri (:req @resp))))
       (is (not (realized? exception))))))
 
@@ -441,7 +448,8 @@
                           :request-method method
                           :force-redirects true})]
       (is (= 200 (:status resp)))
-      (is (= ["http://example.com" "http://example.com/bat"] (:trace-redirects resp)))
+      (is (= ["http://example.com" "http://example.com/bat"]
+             (:trace-redirects resp)))
       (is (= "ok" (:body resp)))
       (is (= expected-method (:request-method (:req resp)))))))
 
@@ -454,7 +462,8 @@
                                :trace-redirects trace-redirects
                                :req req}
                               {:status status :body body :req req
-                               :headers {"location" "http://example.com/bat"}})))
+                               :headers {"location"
+                                         "http://example.com/bat"}})))
           r-client (client/wrap-redirects client)
           resp (promise)
           exception (promise)
@@ -462,7 +471,8 @@
                        :request-method method
                        :force-redirects true} resp exception)]
       (is (= 200 (:status @resp)))
-      (is (= ["http://example.com" "http://example.com/bat"] (:trace-redirects @resp)))
+      (is (= ["http://example.com" "http://example.com/bat"]
+             (:trace-redirects @resp)))
       (is (= "ok" (:body @resp)))
       (is (= expected-method (:request-method (:req @resp))))
       (is (not (realized? exception))))))

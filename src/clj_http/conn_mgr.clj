@@ -52,7 +52,8 @@
 (defn ^SSLConnectionSocketFactory SSLGenericSocketFactory
   "Given a function that returns a new socket, create an
   SSLConnectionSocketFactory that will use that socket."
-  ([socket-factory] (SSLGenericSocketFactory socket-factory (SSLContexts/createDefault)))
+  ([socket-factory]
+   (SSLGenericSocketFactory socket-factory (SSLContexts/createDefault)))
   ([socket-factory ^SSLContext ssl-context]
    (proxy [SSLConnectionSocketFactory] [ssl-context]
      (connectSocket [timeout socket host remoteAddress localAddress context]
@@ -110,14 +111,22 @@
 (defn make-socks-proxied-conn-manager
   "Given an optional hostname and a port, create a connection manager that's
   proxied using a SOCKS proxy."
-  ([^String hostname ^Integer port] (make-socks-proxied-conn-manager hostname port {}))
-  ([^String hostname ^Integer port {:keys [keystore keystore-type keystore-pass trust-store trust-store-type trust-store-pass] :as opts}]
+  ([^String hostname ^Integer port]
+   (make-socks-proxied-conn-manager hostname port {}))
+  ([^String hostname ^Integer port
+    {:keys [keystore keystore-type keystore-pass
+            trust-store trust-store-type trust-store-pass] :as opts}]
    (let [socket-factory #(socks-proxied-socket hostname port)
-         ssl-context (when (some (complement nil?) [keystore keystore-type keystore-pass trust-store trust-store-type trust-store-pass])
-                           (-> opts get-keystore-context-verifier :context))
+         ssl-context (when
+                         (some (complement nil?)
+                               [keystore keystore-type keystore-pass trust-store
+                                trust-store-type trust-store-pass])
+                       (-> opts get-keystore-context-verifier :context))
          reg (-> (RegistryBuilder/create)
                  (.register "http" (PlainGenericSocketFactory socket-factory))
-                 (.register "https" (SSLGenericSocketFactory socket-factory ssl-context))
+                 (.register "https"
+                            (SSLGenericSocketFactory
+                             socket-factory ssl-context))
                  (.build))]
      (PoolingHttpClientConnectionManager. reg))))
 

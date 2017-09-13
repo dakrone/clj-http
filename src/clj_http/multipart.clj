@@ -129,7 +129,7 @@
   "Takes a multipart vector of maps and creates a MultipartEntity with each
   map added as a part, depending on the type of content."
   [multipart]
-  (let [mp-entity (MultipartEntity. HttpMultipartMode/STRICT 
+  (let [mp-entity (MultipartEntity. HttpMultipartMode/STRICT
                                     nil
                                     (encoding-to-charset "UTF-8"))]
     (doseq [m multipart]
