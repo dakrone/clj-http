@@ -41,6 +41,7 @@
 - [[#authentication][Authentication]]
   - [[#basic-auth][Basic Auth]]
   - [[#digest-auth][Digest Auth]]
+  - [[#ntlm-auth][NTLM Auth]]
   - [[#oauth2][oAuth2]]
 - [[#advanced-usage][Advanced Usage]]
   - [[#raw-request][Raw Request]]
@@ -857,6 +858,17 @@ There are four debugging methods you can use:
 #+BEGIN_SRC clojure
 
 (client/get "http://example.com/protected" {:digest-auth ["user" "pass"]})
+
+#+END_SRC
+
+** NTLM Auth
+:PROPERTIES:
+:CUSTOM_ID: h:AE80FFDC-2016-4883-9512-2BE16640339D
+:END:
+
+#+BEGIN_SRC clojure
+
+(client/get "http://example.com/protected" {:ntlm-auth ["user" "pass" "host" "domain"]})
 
 #+END_SRC
 
