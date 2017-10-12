@@ -678,7 +678,7 @@ each request, specify the cookie-store with the =:cookie-store= option:
                                          :cookie-store my-cs}))
 #+END_SRC
 
-You can also us the =get-cookies= function to retrieve the cookies
+You can also use the =get-cookies= function to retrieve the cookies
 from a cookie store:
 
 #+BEGIN_SRC clojure
@@ -961,14 +961,14 @@ named =wrap-async-pooling= to the default middleware list. This middleware's
 behaviour depends on =*pooling-info*= binding or =:polling-info= in options map.
 The =pooling-info= contains =:conn-mgr=, =:allocate= and =:release=.
 =:conn-mgr= is the connection manager used in the pooling context, =:allocate=
-is a function will be invoked when request start and =:release= will be invoked
-when request finished.
+is a function that will be invoked when the request starts and =:release= will be invoked
+when the request is finished.
 
-=with-async-connection-pool= use the =wrap-async-pooling= to manage the
-connection manager, you can also implement your manage strategy.
+=with-async-connection-pool= uses the =wrap-async-pooling= to manage the
+connection manager; you can also implement your own manage strategy.
 
 If you would prefer to handle managing the connection manager yourself, you can
-create a connection manager yourself and specify it for each request:
+create a connection manager and specify it for each request:
 
 #+BEGIN_SRC clojure
 (def cm (clj-http.conn-mgr/make-reusable-conn-manager {:timeout 2 :threads 3}))
@@ -986,7 +986,7 @@ create a connection manager yourself and specify it for each request:
 See the docstring on =make-reusable-conn-manager= for options and default
 values.
 
-In current version, pooled async request CANNOT specify connection manager.
+In the current version, pooled async request CANNOT specify connection manager.
 
 ** Proxies
 :PROPERTIES:
