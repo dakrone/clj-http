@@ -8,8 +8,7 @@
             [clj-http.util :refer [opt] :as util]
             [clojure.stacktrace :refer [root-cause]]
             [clojure.string :as str]
-            [clojure.walk :refer [keywordize-keys prewalk]]
-            [slingshot.slingshot :refer [throw+]])
+            [clojure.walk :refer [keywordize-keys prewalk]])
   (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream)
            (java.net URL UnknownHostException)
            (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
@@ -235,11 +234,11 @@
       resp
       (let [data (assoc resp :type ::unexceptional-status)]
         (if (opt req :throw-entire-message)
-          (throw+ data "clj-http: status %d %s" (:status %) resp)
-          (throw+ data "clj-http: status %s" (:status %)))))))
+          (throw (ex-info (format "clj-http: status %d %s" status resp) data))
+          (throw (ex-info (format "clj-http: status %s" status) data)))))))
 
 (defn wrap-exceptions
-  "Middleware that throws a slingshot exception if the response is not a
+  "Middleware that throws a ex-info exception if the response is not a
   regular response. If :throw-entire-message? is set to true, the entire
   response is used as the message, instead of just the status number."
   [client]
@@ -315,7 +314,7 @@
       (respond* resp-r req)
       (and max-redirects (> redirects-count max-redirects))
       (if (opt req :throw-exceptions)
-        (throw+ resp-r "Too many redirects: %s" redirects-count)
+        (throw (ex-info (format "Too many redirects: %s" redirects-count) resp-r))
         (respond* resp-r req))
       (= 303 status)
       (follow-redirect client (assoc req :request-method :get
@@ -343,7 +342,7 @@
       (respond* resp-r req))))
 
 (defn ^:deprecated wrap-redirects
-  "Middleware that follows redirects in the response. A slingshot exception is
+  "Middleware that follows redirects in the response. A ex-info exception is
   thrown if too many redirects occur. Options
 
   :follow-redirects - default:true, whether to follow redirects

@@ -729,8 +729,8 @@ files or =KeyStore= instances.
 
 The client will throw exceptions on, well, exceptional status codes, meaning all
 HTTP responses other than =#{200 201 202 203 204 205 206 207 300 301 302 303
-307}=. clj-http will throw a [[http://github.com/scgilardi/slingshot][Slingshot]] Stone that can be caught by a regular
-=(catch Exception e ...)= or in Slingshot's =try+= block:
+307}=. clj-http will throw an ex-info exception that can be caught by a regular
+=(catch Exception e ...)= or in [[http://github.com/scgilardi/slingshot][Slingshot]]'s =try+= block:
 
 #+BEGIN_SRC clojure
 (client/get "http://example.com/broken")
