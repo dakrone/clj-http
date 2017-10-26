@@ -1284,6 +1284,26 @@
         "connection should be closed")
     (.shutdown cm)))
 
+(deftest ^:integration t-reusable-async-conn-mgrs
+  (run-server)
+  (let [cm (conn/make-reuseable-async-conn-manager {:timeout 10 :insecure? false})
+        resp1 (promise) resp2 (promise)
+        exce1 (promise) exce2 (promise)]
+    (request {:async? true :uri "/redirect-to-get" :method :get :connection-manager cm}
+             resp1
+             exce1)
+    (request {:async? true :uri "/redirect-to-get" :method :get}
+             resp2
+             exce2)
+    (is (= 200 (:status @resp1) (:status @resp2)))
+    (is (nil? (get-in @resp1 [:headers "connection"]))
+        "connection should remain open")
+    (is (= "close" (get-in @resp2 [:headers "connection"]))
+        "connection should be closed")
+    (is (not (realized? exce2)))
+    (is (not (realized? exce1)))
+    (.shutdown cm)))
+
 (deftest ^:integration t-with-async-pool
   (run-server)
   (client/with-async-connection-pool {}

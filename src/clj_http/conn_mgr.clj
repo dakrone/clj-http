@@ -22,7 +22,10 @@
             IOReactorConfig
             AbstractMultiworkerIOReactor$DefaultThreadFactory
             DefaultConnectingIOReactor)
-           (org.apache.http.nio.conn NoopIOSessionStrategy)))
+           (org.apache.http.nio.conn NoopIOSessionStrategy)
+           (org.apache.http.nio.protocol HttpAsyncRequestExecutor)
+           (org.apache.http.impl.nio DefaultHttpClientIODispatch)
+           (org.apache.http.config ConnectionConfig)))
 
 (def ^:private insecure-context-verifier
   (delay {
@@ -289,9 +292,14 @@
                    (or keystore trust-store)
                    (get-keystore-scheme-registry config)
 
-                   :else regular-strategy-registry)]
+                   :else regular-strategy-registry)
+        io-reactor (make-ioreactor io-config)
+        protocol-handler (HttpAsyncRequestExecutor.)
+        io-event-dispatch (DefaultHttpClientIODispatch. protocol-handler
+                                                        ConnectionConfig/DEFAULT)]
+    (future (.execute io-reactor io-event-dispatch))
     (proxy [PoolingNHttpClientConnectionManager ReuseableAsyncConnectionManager]
-        [(make-ioreactor io-config) nil registry nil nil timeout
+        [io-reactor nil registry nil nil timeout
          java.util.concurrent.TimeUnit/SECONDS])))
 
 (defn ^PoolingNHttpClientConnectionManager make-reuseable-async-conn-manager
