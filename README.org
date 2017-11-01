@@ -623,14 +623,14 @@ request to =GET=.
 
 Redirect Options:
 
-- :trace-redirects :: If true, clj-http will enhance the response object with a
+- =:trace-redirects= :: If true, clj-http will enhance the response object with a
      list of redirected URLs with key: =:trace-redirects=.
-- :redirect-strategy :: Sets the redirect strategy for clj-http. Accepts the following:
-     :none     - Perform no redirects
-     :default  - See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/client/DefaultRedirectStrategy.html
-     :lax      - See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/client/LaxRedirectStrategy.html
-     :graceful - Similar to :default, but does not throw exceptions when max redirects is reached. This is the redirects behaviour in 2.x
-     nil       - When nil, assumes :default
+- =:redirect-strategy= :: Sets the redirect strategy for clj-http. Accepts the following:
+  - =:none=     - Perform no redirects
+  - =:default=  - See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/client/DefaultRedirectStrategy.html
+  - =:lax=      - See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/client/LaxRedirectStrategy.html
+  - =:graceful= - Similar to =:default=, but does not throw exceptions when max redirects is reached. This is the redirects behaviour in 2.x
+  - =nil=       - When nil, assumes =:default=
 
      You may also pass in an instance of RedirectStrategy if you want a behaviour that's not implemented
 
