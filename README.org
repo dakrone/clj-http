@@ -16,7 +16,6 @@
   - [[#overview][Overview]]
   - [[#philosophy][Philosophy]]
 - [[#installation][Installation]]
-- [[#towards-a-300-release][Towards a 3.0.0 release]]
 - [[#quickstart][Quickstart]]
   - [[#head][HEAD]]
   - [[#get][GET]]
@@ -126,30 +125,6 @@ If you need an older version, a 2.x release is also available.
 #+END_SRC
 
 clj-http supports clojure 1.6.0 and higher.
-
-* Towards a 3.0.0 release
-:PROPERTIES:
-:CUSTOM_ID: h-adb56cf4-1034-4d81-965e-880c7315860c
-:END:
-So there is a 2.0 branch which is based on the latest stable version of
-clj-http. Master, on the other hand, is a rewrite of the =core.clj= for the new
-Apache changes (starting with 4.0 I believe) to use non-deprecated methods.
-There are a number of things that need to be accomplished in order for it to be
-releasable in a non-snapshot version (3.0.0+ is already on Clojars)
-
-Here are the tests that need to pass:
-
-- [X] =lein test clj-http.test.client-test :all=
-- [X] =lein test clj-http.test.conn-mgr-test :all=
-- [X] =lein test clj-http.test.cookies-test :all=
-- [X] =lein test clj-http.test.core-test :all=
-- [X] =lein test clj-http.test.headers-test :all=
-- [X] =lein test clj-http.test.links-test :all=
-- [X] =lein test clj-http.test.multipart-test :all=
-- [X] =lein test clj-http.test.util-test :all=
-
-There are still a few tests that are commented out. Any help or PRs is greatly
-appreciated.
 
 * Quickstart
 :PROPERTIES:
