@@ -12,6 +12,7 @@
 :CUSTOM_ID: h-aaf075ea-2f0e-4a45-871a-0f89c838fb4b
 :END:
 - [[#help-wanted][HELP WANTED]]
+- [[#branches][Branches]]
 - [[#introduction][Introduction]]
   - [[#overview][Overview]]
   - [[#philosophy][Philosophy]]
@@ -74,6 +75,17 @@ requests (perhaps only when a connection manager is used)
 that need to be worked out.
 
 If you have interest, please do send PRs for fixing.
+
+* Branches
+:PROPERTIES:
+:CUSTOM_ID: h-e390585c-cbd8-4e94-b36b-4e9c27c16720
+:END:
+
+There are branches for the major version numbers:
+
+- 2.x
+- 3.x
+- master (which is 4.x)
 
 * Introduction
 :PROPERTIES:
