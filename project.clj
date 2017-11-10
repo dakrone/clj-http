@@ -13,7 +13,6 @@
                  [org.apache.httpcomponents/httpmime "4.5.3"]
                  [commons-codec "1.10"]
                  [commons-io "2.5"]
-                 [slingshot "0.12.2"]
                  [potemkin "0.4.3"]]
   :profiles {:dev {:dependencies [;; optional deps
                                   [cheshire "5.7.1"]

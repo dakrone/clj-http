@@ -9,8 +9,7 @@
             [clojure.test :refer :all]
             [cognitect.transit :as transit]
             [ring.util.codec :refer [form-decode-str]]
-            [ring.middleware.nested-params :refer [parse-nested-keys]]
-            [slingshot.slingshot :refer [try+]])
+            [ring.middleware.nested-params :refer [parse-nested-keys]])
   (:import (java.net UnknownHostException)
            (java.io ByteArrayInputStream)
            (org.apache.http HttpEntity)))
@@ -510,12 +509,12 @@
 (deftest throw-type-field
   (let [client (fn [req] {:status 500})
         e-client (client/wrap-exceptions client)]
-    (try+
+    (try
      (e-client {})
-     (catch [:type :clj-http.client/unexceptional-status] _
-       (is true))
-     (catch Object _
-       (is false ":type selector was not caught.")))))
+     (catch Exception e
+      (if (= :clj-http.client/unexceptional-status (:type (ex-data e)))
+       (is true)
+       (is false ":type selector was not caught."))))))
 
 (deftest throw-on-exceptional-async
   (let [client (fn [req respond raise]
