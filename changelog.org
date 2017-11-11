@@ -10,6 +10,10 @@
 * Changelog
 List of user-visible changes that have gone into each release
 
+** 4.0.0 (Unreleased)
+- Removed slingshot dependency. clj-http exceptions are now regular exceptions
+- Removed deprecated :follow-redirects & :force-redirects options
+
 ** 3.7.0
 This list contains all the changes since 3.0.0.
 
