@@ -321,24 +321,47 @@
   (clojure.pprint/pprint (bean http-req)))
 
 (defn- build-response-map
-  [^HttpResponse response req conn-mgr ^HttpClientContext context]
+  [^HttpResponse response req ^HttpUriRequest http-req
+   conn-mgr ^HttpClientContext context]
   (let [^HttpEntity entity (.getEntity response)
         status (.getStatusLine response)
-        protocol-version (.getProtocolVersion status)]
-    {:body (coerce-body-entity entity conn-mgr response)
-     :headers (parse-headers
-               (.headerIterator response)
-               (opt req :use-header-maps-in-response))
-     :length (if (nil? entity) 0 (.getContentLength entity))
-     :chunked? (if (nil? entity) false (.isChunked entity))
-     :repeatable? (if (nil? entity) false (.isRepeatable entity))
-     :streaming? (if (nil? entity) false (.isStreaming entity))
-     :status (.getStatusCode status)
-     :protocol-version  {:name (.getProtocol protocol-version)
-                         :major (.getMajor protocol-version)
-                         :minor (.getMinor protocol-version)}
-     :reason-phrase (.getReasonPhrase status)
-     :trace-redirects (mapv str (.getRedirectLocations context))}))
+        protocol-version (.getProtocolVersion status)
+        body (:body req)
+        response
+        {:body (coerce-body-entity entity conn-mgr response)
+         :headers (parse-headers
+                   (.headerIterator response)
+                   (opt req :use-header-maps-in-response))
+         :length (if (nil? entity) 0 (.getContentLength entity))
+         :chunked? (if (nil? entity) false (.isChunked entity))
+         :repeatable? (if (nil? entity) false (.isRepeatable entity))
+         :streaming? (if (nil? entity) false (.isStreaming entity))
+         :status (.getStatusCode status)
+         :protocol-version  {:name (.getProtocol protocol-version)
+                             :major (.getMajor protocol-version)
+                             :minor (.getMinor protocol-version)}
+         :reason-phrase (.getReasonPhrase status)
+         :trace-redirects (mapv str (.getRedirectLocations context))}]
+    (if (opt req :save-request)
+      (-> response
+          (assoc :request req)
+          (assoc-in [:request :body-type] (type body))
+          (update-in [:request]
+                     #(if (opt req :debug-body)
+                        (assoc % :body-content
+                               (cond
+                                 (isa? (type (:body %)) String)
+                                 (:body %)
+
+                                 (isa? (type (:body %)) HttpEntity)
+                                 (let [baos (ByteArrayOutputStream.)]
+                                   (.writeTo ^HttpEntity (:body %) baos)
+                                   (.toString baos "UTF-8"))
+
+                                 :else nil))
+                        %))
+          (assoc-in [:request :http-req] http-req))
+      response)))
 
 (defn- get-conn-mgr
   [async? req]
@@ -418,7 +441,7 @@
              client (http-client req conn-mgr http-url proxy-ignore-hosts)]
          (try
            (build-response-map (.execute client http-req context)
-                               req conn-mgr context)
+                               req http-req conn-mgr context)
            (catch Throwable t
              (when-not (conn/reusable? conn-mgr)
                (conn/shutdown-manager conn-mgr))
@@ -437,7 +460,7 @@
                      (completed [this resp]
                        (try
                          (respond (build-response-map
-                                   resp req conn-mgr context))
+                                   resp req http-req conn-mgr context))
                          (catch Throwable t
                            (when-not (conn/reusable? conn-mgr)
                              (conn/shutdown-manager conn-mgr))
