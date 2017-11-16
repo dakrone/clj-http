@@ -621,11 +621,6 @@ Redirect Options:
 
      You may also pass in an instance of RedirectStrategy if you want a behaviour that's not implemented
 
-NOTE: The options =:force-redirects= and =:follow-redirects= (present in
-clj-http 2.x are no longer used). You can use =:graceful= to mostly emulate the
-old redirect behaviour.
-
-
 ** Cookies
 :PROPERTIES:
 :CUSTOM_ID: h-3bb89b16-4be3-455e-98ec-c5ca5830ddb9
