@@ -321,7 +321,7 @@
   (clojure.pprint/pprint (bean http-req)))
 
 (defn- build-response-map
-  [^HttpResponse response req ^HttpUriRequest http-req
+  [^HttpResponse response req ^HttpUriRequest http-req http-url
    conn-mgr ^HttpClientContext context]
   (let [^HttpEntity entity (.getEntity response)
         status (.getStatusLine response)
@@ -346,6 +346,7 @@
       (-> response
           (assoc :request req)
           (assoc-in [:request :body-type] (type body))
+          (assoc-in [:request :http-url] http-url)
           (update-in [:request]
                      #(if (opt req :debug-body)
                         (assoc % :body-content
@@ -441,7 +442,7 @@
              client (http-client req conn-mgr http-url proxy-ignore-hosts)]
          (try
            (build-response-map (.execute client http-req context)
-                               req http-req conn-mgr context)
+                               req http-req http-url conn-mgr context)
            (catch Throwable t
              (when-not (conn/reusable? conn-mgr)
                (conn/shutdown-manager conn-mgr))
@@ -460,7 +461,7 @@
                      (completed [this resp]
                        (try
                          (respond (build-response-map
-                                   resp req http-req conn-mgr context))
+                                   resp req http-req http-url conn-mgr context))
                          (catch Throwable t
                            (when-not (conn/reusable? conn-mgr)
                              (conn/shutdown-manager conn-mgr))
