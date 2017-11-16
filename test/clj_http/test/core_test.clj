@@ -135,6 +135,14 @@
     (is (= 200 (:status resp)))
     (is (= "get" (slurp-body resp)))))
 
+(deftest ^:integration save-request-option
+  (run-server)
+  (let [resp (request {:request-method :get
+                       :uri "/post"
+                       :body (util/utf8-bytes "contents")
+                       :save-request? true})]
+    (is (= "/post" (-> resp :request :uri)))))
+
 (deftest ^:integration makes-head-request
   (run-server)
   (let [resp (request {:request-method :head :uri "/head"})]
