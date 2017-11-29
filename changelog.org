@@ -10,6 +10,10 @@
 * Changelog
 List of user-visible changes that have gone into each release
 
+** 3.8.0
+Added:
+- Reintroduce the =:save-request= and =:debug-body= options
+
 ** 3.7.0
 This list contains all the changes since 3.0.0.
 
