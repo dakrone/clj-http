@@ -128,12 +128,14 @@
 (defn create-multipart-entity
   "Takes a multipart vector of maps and creates a MultipartEntity with each
   map added as a part, depending on the type of content."
-  [multipart]
-  (let [mp-entity (MultipartEntity. HttpMultipartMode/STRICT
-                                    nil
-                                    (encoding-to-charset "UTF-8"))]
-    (doseq [m multipart]
-      (let [name (or (:part-name m) (:name m))
-            part (make-multipart-body m)]
-        (.addPart mp-entity name part)))
-    mp-entity))
+  ([multipart]
+    (create-multipart-entity multipart HttpMultipartMode/STRICT))
+  ([multipart multipart-mode]
+   (let [mp-entity (MultipartEntity. multipart-mode
+                                     nil
+                                     (encoding-to-charset "UTF-8"))]
+     (doseq [m multipart]
+       (let [name (or (:part-name m) (:name m))
+             part (make-multipart-body m)]
+         (.addPart mp-entity name part)))
+     mp-entity)))
