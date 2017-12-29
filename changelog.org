@@ -13,6 +13,7 @@ List of user-visible changes that have gone into each release
 ** 4.0.0 (Unreleased)
 - Removed slingshot dependency. clj-http exceptions are now regular exceptions
 - Removed deprecated :follow-redirects & :force-redirects options
+- create-multipart-entity with two arguments arity lets the selection of HttpMultipartMode
 
 ** 3.8.0
 Added:
