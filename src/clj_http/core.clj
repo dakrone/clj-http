@@ -39,7 +39,8 @@
                                             HttpAsyncClients
                                             CloseableHttpAsyncClient)
            (org.apache.http.message BasicHttpResponse)
-           (java.util.concurrent ExecutionException)))
+           (java.util.concurrent ExecutionException)
+           (org.apache.http.entity.mime HttpMultipartMode)))
 
 (defn parse-headers
   "Takes a HeaderIterator and returns a map of names to values.
@@ -375,13 +376,14 @@
 (defn request
   ([req] (request req nil nil))
   ([{:keys [body conn-timeout conn-request-timeout connection-manager
-            cookie-store cookie-policy headers multipart query-string
-            redirect-strategy max-redirects retry-handler
+            cookie-store cookie-policy headers multipart http-multipart-mode
+            query-string redirect-strategy max-redirects retry-handler
             request-method scheme server-name server-port socket-timeout
             uri response-interceptor proxy-host proxy-port async?
             http-client-context http-request-config
             proxy-ignore-hosts proxy-user proxy-pass digest-auth ntlm-auth]
-     :as req} respond raise]
+     :or   {http-multipart-mode HttpMultipartMode/STRICT}
+     :as   req} respond raise]
    (let [req (dissoc req :async?)
          scheme (name scheme)
          http-url (str scheme "://" server-name
@@ -423,7 +425,7 @@
             (.setCredentials authscope creds)))))
      (if multipart
        (.setEntity ^HttpEntityEnclosingRequest http-req
-                   (mp/create-multipart-entity multipart))
+                   (mp/create-multipart-entity multipart http-multipart-mode))
        (when (and body (instance? HttpEntityEnclosingRequest http-req))
          (if (instance? HttpEntity body)
            (.setEntity ^HttpEntityEnclosingRequest http-req body)
