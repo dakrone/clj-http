@@ -56,13 +56,14 @@
   "Given a function that returns a new socket, create an
   SSLConnectionSocketFactory that will use that socket."
   ([socket-factory]
-   (SSLGenericSocketFactory socket-factory (SSLContexts/createDefault)))
+   (SSLGenericSocketFactory socket-factory nil))
   ([socket-factory ^SSLContext ssl-context]
-   (proxy [SSLConnectionSocketFactory] [ssl-context]
-     (connectSocket [timeout socket host remoteAddress localAddress context]
-       (let [^SSLConnectionSocketFactory this this] ;; avoid reflection
-         (proxy-super connectSocket timeout (socket-factory) host remoteAddress
-                      localAddress context))))))
+   (let [^SSLContext ssl-context' (or ssl-context (SSLContexts/createDefault))]
+     (proxy [SSLConnectionSocketFactory] [ssl-context']
+       (connectSocket [timeout socket host remoteAddress localAddress context]
+         (let [^SSLConnectionSocketFactory this this] ;; avoid reflection
+           (proxy-super connectSocket timeout (socket-factory) host remoteAddress
+                        localAddress context)))))))
 
 (defn ^PlainConnectionSocketFactory PlainGenericSocketFactory
   "Given a Function that returns a new socket, create a
