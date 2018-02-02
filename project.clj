@@ -32,7 +32,7 @@
                                   ]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
              :1.7 {:dependencies [[org.clojure/clojure "1.7.0"]]}
-             :1.9 {:dependencies [[org.clojure/clojure "1.9.0-RC2"]]}}
+             :1.9 {:dependencies [[org.clojure/clojure "1.9.0"]]}}
   :aliases {"all" ["with-profile" "dev,1.6:dev,1.7:dev,1.9:dev"]}
   :plugins [[codox "0.6.4"]]
   :test-selectors {:default  #(not (:integration %))
