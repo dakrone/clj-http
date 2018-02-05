@@ -1012,8 +1012,10 @@
    wrap-accept
    wrap-accept-encoding
    wrap-content-type
-   wrap-form-params
+   ;; nested params should happen before form params, to ensure :content-type
+   ;; does not mess with qs params
    wrap-nested-params
+   wrap-form-params
    wrap-method
    wrap-cookies
    wrap-links

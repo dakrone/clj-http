@@ -53,12 +53,12 @@
     (is (= "close" (get-in resp [:headers "connection"])))
     (is (= "get" (:body resp))))
   (let [params {:a "1" :b {:c "2"}}]
-    (doseq [[content-type read-fn]
-            [[nil (comp parse-form-params slurp)]
-             [:x-www-form-urlencoded (comp parse-form-params slurp)]
-             [:edn (comp read-string slurp)]
-             [:transit+json #(client/parse-transit % :json)]
-             [:transit+msgpack #(client/parse-transit % :msgpack)]]]
+    (doseq [[content-type read-fn raw-params]
+            [[nil slurp "a=1&b=%7B%3Ac+%222%22%7D"]
+             [:x-www-form-urlencoded slurp "a=1&b=%7B%3Ac+%222%22%7D"]
+             [:edn (comp read-string slurp) {:a "1", :b {:c "2"}}]
+             [:transit+json #(client/parse-transit % :json) {:a "1", :b {:c "2"}}]
+             [:transit+msgpack #(client/parse-transit % :msgpack) {:a "1", :b {:c "2"}}]]]
       (let [resp (request {:uri "/post"
                            :as :stream
                            :method :post
@@ -66,7 +66,8 @@
                            :form-params params})]
         (is (= 200 (:status resp)))
         (is (= "close" (get-in resp [:headers "connection"])))
-        (is (= params (read-fn (:body resp))))))))
+        (is (= raw-params (read-fn (:body resp)))
+            (str "differing params with content-type: [" content-type "]"))))))
 
 (deftest ^:integration roundtrip-async
   (run-server)
@@ -91,12 +92,12 @@
     (is (not (realized? exception))))
 
   (let [params {:a "1" :b {:c "2"}}]
-    (doseq [[content-type read-fn]
-            [[nil (comp parse-form-params slurp)]
-             [:x-www-form-urlencoded (comp parse-form-params slurp)]
-             [:edn (comp read-string slurp)]
-             [:transit+json #(client/parse-transit % :json)]
-             [:transit+msgpack #(client/parse-transit % :msgpack)]]]
+    (doseq [[content-type read-fn raw-params]
+            [[nil slurp "a=1&b=%7B%3Ac+%222%22%7D"]
+             [:x-www-form-urlencoded slurp "a=1&b=%7B%3Ac+%222%22%7D"]
+             [:edn (comp read-string slurp) {:a "1", :b {:c "2"}}]
+             [:transit+json #(client/parse-transit % :json) {:a "1", :b {:c "2"}}]
+             [:transit+msgpack #(client/parse-transit % :msgpack) {:a "1", :b {:c "2"}}]]]
       (let [resp (promise)
             exception (promise)
             _ (request {:uri "/post"
@@ -107,7 +108,7 @@
                         :async? true} resp exception)]
         (is (= 200 (:status @resp)))
         (is (= "close" (get-in @resp [:headers "connection"])))
-        (is (= params (read-fn (:body @resp))))
+        (is (= raw-params (read-fn (:body @resp))))
         (is (not (realized? exception)))))))
 
 (deftest ^:integration nil-input
@@ -163,11 +164,11 @@
   (let [client (fn [req] {:status 500})
         e-client (client/wrap-exceptions client)]
     (try
-     (e-client {})
-     (catch Exception e
-      (if (= :clj-http.client/unexceptional-status (:type (ex-data e)))
-       (is true)
-       (is false ":type selector was not caught."))))))
+      (e-client {})
+      (catch Exception e
+        (if (= :clj-http.client/unexceptional-status (:type (ex-data e)))
+          (is true)
+          (is false ":type selector was not caught."))))))
 
 (deftest throw-on-exceptional-async
   (let [client (fn [req respond raise]
@@ -1234,3 +1235,29 @@
       (is (= 200 (:status resp)))
       (is (.contains query-string "a[]=1&a[]=2&a[]=3") query-string)
       (is (.contains query-string "b[]=x&b[]=y&b[]=z") query-string))))
+
+;; See: https://github.com/dakrone/clj-http/issues/427
+(deftest t-qs-and-form-params-with-encoding
+  (let [raw-client
+        (fn [req]
+          (let [body-str (slurp (.getContent (:body req)))
+                qs (:query-string req)]
+            (is (= body-str "{\"foo\":{\"bar\":\"baz\"}}"))
+            (is (= qs "foo=%7B%3Abar+%22baz%22%7D")))
+          {:status 200})
+        client (client/wrap-request raw-client)]
+    (client {:uri "/" :method :post
+             :query-params {:foo {:bar "baz"}}
+             :form-params {:foo {:bar "baz"}}
+             :content-type :json}))
+  (let [raw-client
+        (fn [req]
+          (let [body-str (slurp (.getContent (:body req)))
+                qs (:query-string req)]
+            (is (= body-str "foo=%7B%3Abar+%22baz%22%7D"))
+            (is (= qs "foo=%7B%3Abar+%22baz%22%7D")))
+          {:status 200})
+        client (client/wrap-request raw-client)]
+    (client {:uri "/" :method :post
+             :query-params {:foo {:bar "baz"}}
+             :form-params {:foo {:bar "baz"}}})))
