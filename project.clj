@@ -27,8 +27,8 @@
                                   [ring/ring-jetty-adapter "1.6.1"]
                                   [ring/ring-devel "1.6.1"]
                                   ;; caching example deps
-                                  [org.clojure/core.cache "0.6.5"]
-                                  ]}
+                                  [org.clojure/core.cache "0.6.5"]]
+                   :plugins [[lein-ancient "0.6.15"]]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
              :1.7 {:dependencies [[org.clojure/clojure "1.7.0"]]}
              :1.9 {:dependencies [[org.clojure/clojure "1.9.0"]]}}
