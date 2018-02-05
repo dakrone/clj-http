@@ -375,8 +375,8 @@
 (defn request
   ([req] (request req nil nil))
   ([{:keys [body conn-timeout conn-request-timeout connection-manager
-            cookie-store cookie-policy headers multipart query-string
-            redirect-strategy max-redirects retry-handler
+            cookie-store cookie-policy headers multipart mime-subtype
+            query-string redirect-strategy max-redirects retry-handler
             request-method scheme server-name server-port socket-timeout
             uri response-interceptor proxy-host proxy-port async?
             http-client-context http-request-config
@@ -423,7 +423,7 @@
             (.setCredentials authscope creds)))))
      (if multipart
        (.setEntity ^HttpEntityEnclosingRequest http-req
-                   (mp/create-multipart-entity multipart req))
+                   (mp/create-multipart-entity multipart mime-subtype))
        (when (and body (instance? HttpEntityEnclosingRequest http-req))
          (if (instance? HttpEntity body)
            (.setEntity ^HttpEntityEnclosingRequest http-req body)
