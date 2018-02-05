@@ -264,13 +264,13 @@ content encodings.
 
 ;; Various options:
 (client/post "http://example.com/api"
-  {:basic-auth ["user" "pass"]
-   :body "{\"json\": \"input\"}"
-   :headers {"X-Api-Version" "2"}
-   :content-type :json
-   :socket-timeout 1000  ;; in milliseconds
-   :conn-timeout 1000    ;; in milliseconds
-   :accept :json})
+             {:basic-auth ["user" "pass"]
+              :body "{\"json\": \"input\"}"
+              :headers {"X-Api-Version" "2"}
+              :content-type :json
+              :socket-timeout 1000  ;; in milliseconds
+              :conn-timeout 1000    ;; in milliseconds
+              :accept :json})
 
 ;; Send form params as a urlencoded body (POST or PUT)
 (client/post "http://example.com" {:form-params {:foo "bar"}})
@@ -280,26 +280,26 @@ content encodings.
 
 ;; Send form params as a json encoded body (POST or PUT) with options
 (client/post "http://example.com" {:form-params {:foo "bar"}
-                               :content-type :json
-                               :json-opts {:date-format "yyyy-MM-dd"}})
+                                   :content-type :json
+                                   :json-opts {:date-format "yyyy-MM-dd"}})
 
 ;; You can also specify the encoding of form parameters
 (client/post "http://example.com" {:form-params {:foo "bar"}
-                                :form-param-encoding "ISO-8859-1"})
+                                   :form-param-encoding "ISO-8859-1"})
 
 ;; Send form params as a Transit encoded JSON body (POST or PUT) with options
 (client/post "http://example.com" {:form-params {:foo "bar"}
-                                :content-type :transit+json
-                                :transit-opts
-                                {:encode {:handlers {}}
-                                 :decode {:handlers {}}}})
+                                   :content-type :transit+json
+                                   :transit-opts
+                                   {:encode {:handlers {}}
+                                    :decode {:handlers {}}}})
 
 ;; Send form params as a Transit encoded MessagePack body (POST or PUT) with options
 (client/post "http://example.com" {:form-params {:foo "bar"}
-                                :content-type :transit+msgpack
-                                :transit-opts
-                                {:encode {:handlers {}}
-                                 :decode {:handlers {}}}})
+                                   :content-type :transit+msgpack
+                                   :transit-opts
+                                   {:encode {:handlers {}}
+                                    :decode {:handlers {}}}})
 
 ;; Multipart form uploads/posts
 ;; takes a vector of maps, to preserve the order of entities, :name
@@ -325,7 +325,6 @@ content encodings.
                                    :retry-handler (fn [ex try-count http-context]
                                                     (println "Got:" ex)
                                                     (if (> try-count 4) false true))})
-
 #+END_SRC
 
 ** DELETE
