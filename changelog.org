@@ -19,6 +19,8 @@ List of user-visible changes that have gone into each release
   context
 - Merged https://github.com/dakrone/clj-http/pull/424 to add :mime-subtype request parameter to
   override mime subtype
+- create-multipart-entity with three arguments arity lets the selection of =HttpMultipartMode=
+- new request key :http-multipart-mode which is HttpMultipartMode/STRICT by default
 
 ** 3.8.0
 - Reintroduce the =:save-request= and =:debug-body= options

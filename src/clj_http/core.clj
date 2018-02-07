@@ -39,7 +39,8 @@
                                             HttpAsyncClients
                                             CloseableHttpAsyncClient)
            (org.apache.http.message BasicHttpResponse)
-           (java.util.concurrent ExecutionException)))
+           (java.util.concurrent ExecutionException)
+           (org.apache.http.entity.mime HttpMultipartMode)))
 
 (defn parse-headers
   "Takes a HeaderIterator and returns a map of names to values.
@@ -376,9 +377,9 @@
   ([req] (request req nil nil))
   ([{:keys [body conn-timeout conn-request-timeout connection-manager
             cookie-store cookie-policy headers multipart mime-subtype
-            query-string redirect-strategy max-redirects retry-handler
-            request-method scheme server-name server-port socket-timeout
-            uri response-interceptor proxy-host proxy-port async?
+            http-multipart-mode query-string redirect-strategy max-redirects
+            retry-handler request-method scheme server-name server-port
+            socket-timeout uri response-interceptor proxy-host proxy-port async?
             http-client-context http-request-config
             proxy-ignore-hosts proxy-user proxy-pass digest-auth ntlm-auth]
      :as req} respond raise]
@@ -423,7 +424,7 @@
             (.setCredentials authscope creds)))))
      (if multipart
        (.setEntity ^HttpEntityEnclosingRequest http-req
-                   (mp/create-multipart-entity multipart mime-subtype))
+                   (mp/create-multipart-entity multipart mime-subtype http-multipart-mode))
        (when (and body (instance? HttpEntityEnclosingRequest http-req))
          (if (instance? HttpEntity body)
            (.setEntity ^HttpEntityEnclosingRequest http-req body)
