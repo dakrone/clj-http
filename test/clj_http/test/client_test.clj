@@ -25,6 +25,15 @@
   ([req respond raise]
    (client/request (merge base-req req) respond raise)))
 
+(defn parse-form-params [s]
+  (->> (str/split (form-decode-str s) #"&")
+       (map #(str/split % #"="))
+       (map #(vector
+              (map keyword (parse-nested-keys (first %)))
+              (second %)))
+       (reduce (fn [m [ks v]]
+                 (assoc-in m ks v)) {})))
+
 (defn count-release
   [count]
   (let [release* (:release client/*pooling-info*)]
