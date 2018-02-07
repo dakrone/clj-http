@@ -863,13 +863,12 @@
     request))
 
 (defn- nest-params-request
-  [{:keys [content-type] :as req}]
-  (if (or (nil? content-type)
-          (= content-type :x-www-form-urlencoded))
+  [{:keys [flatten-nested-keys] :as req}]
+  (if (seq flatten-nested-keys)
     (reduce
      nest-params
      req
-     [:query-params :form-params])
+     flatten-nested-keys)
     req))
 
 (defn wrap-nested-params
@@ -880,6 +879,29 @@
      (client (nest-params-request req)))
     ([req respond raise]
      (client (nest-params-request req) respond raise))))
+
+(defn- nested-keys-to-flatten
+  [{:keys [flatten-nested-keys
+           ignore-nested-query-string
+           flatten-nested-form-params]}]
+  (let [iqs-key (when-not ignore-nested-query-string :query-params)
+        ifp-key (when flatten-nested-form-params :form-params)]
+    (or flatten-nested-keys
+        (remove nil? (list iqs-key ifp-key)))))
+
+(defn wrap-flatten-nested-params
+  "Middleware wrapping options for whether or not to flatten `:query-params` and
+  `:form-params`. Modifies the request by adding a `:flatten-nested-keys`
+  sequence of the nested keys that will be flattened."
+  [client]
+  (fn
+    ([req]
+     (client
+      (assoc req :flatten-nested-keys (nested-keys-to-flatten req))))
+    ([req respond raise]
+     (client
+      (assoc req :flatten-nested-keys (nested-keys-to-flatten req))
+      respond raise))))
 
 (defn- url-request
   [req]
@@ -1014,6 +1036,7 @@
    wrap-content-type
    wrap-form-params
    wrap-nested-params
+   wrap-flatten-nested-params
    wrap-method
    wrap-cookies
    wrap-links

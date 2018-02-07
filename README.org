@@ -339,6 +339,19 @@ content encodings.
                                                     (if (> try-count 4) false true))})
 #+END_SRC
 
+A word about flattening nested =:query-params= and =:form-params= maps. There are essentially three
+different ways to handle flattening them:
+
+- =:ignore-nested-query-string= :: Do not handle nested query parameters specially, treat them as
+     the exact text they come in as. Defaults to *false*.
+- =:flatten-nested-form-params= :: Flatten nested (map within a map) =:form-params= before encoding
+     it as the body. Defaults to *false*, meaning form params are encoded only
+     =x-www-form-urlencoded=.
+- =:flatten-nested-keys= :: An advanced way of specifying which keys having nested maps should be
+     flattened. A middleware function checks the previous two options
+     (=:ignore-nested-query-string= and =:flatten-nested-form-params=) and modifies this to be the
+     list that will be flattened.
+
 ** DELETE
 :PROPERTIES:
 :CUSTOM_ID: h-c7165d6b-232a-439d-9390-8c05e6ef1e6f
