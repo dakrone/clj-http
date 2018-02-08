@@ -13,10 +13,19 @@ List of user-visible changes that have gone into each release
 ** 4.0.0 (Unreleased)
 - Removed slingshot dependency. clj-http exceptions are now regular exceptions
 - Removed deprecated :follow-redirects & :force-redirects options
+- Wrap nested querystring params before form params, fixing
+  https://github.com/dakrone/clj-http/issues/427
+- Merged https://github.com/dakrone/clj-http/pull/426 to allow an empty SSLGenericSocketFactory
+  context
+- Merged https://github.com/dakrone/clj-http/pull/424 to add :mime-subtype request parameter to
+  override mime subtype
+- create-multipart-entity with three arguments arity lets the selection of =HttpMultipartMode=
+- new request key :http-multipart-mode which is HttpMultipartMode/STRICT by default
 
 ** 3.8.0
-Added:
 - Reintroduce the =:save-request= and =:debug-body= options
+- Merged https://github.com/dakrone/clj-http/pull/426 to allow an empty SSLGenericSocketFactory
+  context
 
 ** 3.7.0
 This list contains all the changes since 3.0.0.

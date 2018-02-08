@@ -276,13 +276,13 @@ content encodings.
 
 ;; Various options:
 (client/post "http://example.com/api"
-  {:basic-auth ["user" "pass"]
-   :body "{\"json\": \"input\"}"
-   :headers {"X-Api-Version" "2"}
-   :content-type :json
-   :socket-timeout 1000  ;; in milliseconds
-   :conn-timeout 1000    ;; in milliseconds
-   :accept :json})
+             {:basic-auth ["user" "pass"]
+              :body "{\"json\": \"input\"}"
+              :headers {"X-Api-Version" "2"}
+              :content-type :json
+              :socket-timeout 1000  ;; in milliseconds
+              :conn-timeout 1000    ;; in milliseconds
+              :accept :json})
 
 ;; Send form params as a urlencoded body (POST or PUT)
 (client/post "http://example.com" {:form-params {:foo "bar"}})
@@ -292,34 +292,36 @@ content encodings.
 
 ;; Send form params as a json encoded body (POST or PUT) with options
 (client/post "http://example.com" {:form-params {:foo "bar"}
-                               :content-type :json
-                               :json-opts {:date-format "yyyy-MM-dd"}})
+                                   :content-type :json
+                                   :json-opts {:date-format "yyyy-MM-dd"}})
 
 ;; You can also specify the encoding of form parameters
 (client/post "http://example.com" {:form-params {:foo "bar"}
-                                :form-param-encoding "ISO-8859-1"})
+                                   :form-param-encoding "ISO-8859-1"})
 
 ;; Send form params as a Transit encoded JSON body (POST or PUT) with options
 (client/post "http://example.com" {:form-params {:foo "bar"}
-                                :content-type :transit+json
-                                :transit-opts
-                                {:encode {:handlers {}}
-                                 :decode {:handlers {}}}})
+                                   :content-type :transit+json
+                                   :transit-opts
+                                   {:encode {:handlers {}}
+                                    :decode {:handlers {}}}})
 
 ;; Send form params as a Transit encoded MessagePack body (POST or PUT) with options
 (client/post "http://example.com" {:form-params {:foo "bar"}
-                                :content-type :transit+msgpack
-                                :transit-opts
-                                {:encode {:handlers {}}
-                                 :decode {:handlers {}}}})
+                                   :content-type :transit+msgpack
+                                   :transit-opts
+                                   {:encode {:handlers {}}
+                                    :decode {:handlers {}}}})
 
 ;; Multipart form uploads/posts
 ;; takes a vector of maps, to preserve the order of entities, :name
 ;; will be used as the part name unless :part-name is specified
 (client/post "http://example.org" {:multipart [{:name "title" :content "My Awesome Picture"}
-                                              {:name "Content/type" :content "image/jpeg"}
-                                              {:name "foo.txt" :part-name "eggplant" :content "Eggplants"}
-                                              {:name "file" :content (clojure.java.io/file "pic.jpg")}]})
+                                               {:name "Content/type" :content "image/jpeg"}
+                                               {:name "foo.txt" :part-name "eggplant" :content "Eggplants"}
+                                               {:name "file" :content (clojure.java.io/file "pic.jpg")}]
+                                   ;; You can also optionally pass a :mime-subtype
+                                   :mime-subtype "foo"})
 
 ;; Multipart :content values can be one of the following:
 ;; String, InputStream, File, a byte-array, or an instance of org.apache.http.entity.mime.content.ContentBody
@@ -335,7 +337,6 @@ content encodings.
                                    :retry-handler (fn [ex try-count http-context]
                                                     (println "Got:" ex)
                                                     (if (> try-count 4) false true))})
-
 #+END_SRC
 
 ** DELETE
@@ -450,7 +451,7 @@ All exceptions thrown during the request will be passed to the raise callback.
 Output coercion with =:as :json=, =:as :json-strict=, =:as :json-strict-string-keys=, =:as :json-string-keys= or =:as :x-www-form-urlencoded= will only work with an optional dependency, see [[#optional-dependencies][Optional Dependencies]].
 
 JSON coercion defaults to only an "unexceptional" statuses, meaning status codes
-in the #{200 201 202 203 204 205 206 207 300 301 302 303 307} range. If you
+in the #{200 201 202 203 204 205 206 207 300 301 302 303 304 307} range. If you
 would like to change this, you can send the =:coerce= option, which can be set
 to:
 
@@ -710,7 +711,7 @@ files or =KeyStore= instances.
 :END:
 
 The client will throw exceptions on, well, exceptional status codes, meaning all
-HTTP responses other than =#{200 201 202 203 204 205 206 207 300 301 302 303
+HTTP responses other than =#{200 201 202 203 204 205 206 207 300 301 302 303 304
 307}=. clj-http will throw an ex-info exception that can be caught by a regular
 =(catch Exception e ...)= or in [[http://github.com/scgilardi/slingshot][Slingshot]]'s =try+= block:
 
