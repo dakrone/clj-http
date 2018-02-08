@@ -921,7 +921,7 @@
                 (fn [req] {:body nil})) {:decode-body-headers true})
         resp4 ((client/wrap-additional-header-parsing
                 (fn [req] {:headers {"content-type" "application/pdf"}
-                           :body (.getBytes text)}))
+                          :body (.getBytes text)}))
                {:decode-body-headers true})]
     (is (= {"content-type" "text/html; charset=Shift_JIS"
             "content-style-type" "text/css"
@@ -1261,3 +1261,31 @@
       (is (= 200 (:status resp)))
       (is (.contains query-string "a[]=1&a[]=2&a[]=3") query-string)
       (is (.contains query-string "b[]=x&b[]=y&b[]=z") query-string))))
+
+(deftest t-wrap-flatten-nested-params
+  (is-applied client/wrap-flatten-nested-params
+              {}
+              {:flatten-nested-keys [:query-params]})
+  (is-applied client/wrap-flatten-nested-params
+              {:flatten-nested-keys []}
+              {:flatten-nested-keys []})
+  (is-applied client/wrap-flatten-nested-params
+              {:flatten-nested-keys [:foo]}
+              {:flatten-nested-keys [:foo]})
+  (is-applied client/wrap-flatten-nested-params
+              {:ignore-nested-query-string true}
+              {:ignore-nested-query-string true
+               :flatten-nested-keys []})
+  (is-applied client/wrap-flatten-nested-params
+              {}
+              {:flatten-nested-keys '(:query-params)})
+  (is-applied client/wrap-flatten-nested-params
+              {:flatten-nested-form-params true}
+              {:flatten-nested-form-params true
+               :flatten-nested-keys '(:query-params :form-params)})
+  (is-applied client/wrap-flatten-nested-params
+              {:flatten-nested-form-params true
+               :ignore-nested-query-string true}
+              {:ignore-nested-query-string true
+               :flatten-nested-form-params true
+               :flatten-nested-keys '(:form-params)}))
