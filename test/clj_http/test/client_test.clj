@@ -1148,6 +1148,13 @@
            (:body (client/coerce-response-body {:as :x-www-form-urlencoded}
                                                www-form-urlencoded-resp))))))
 
+(deftest t-coercion-method-error
+  (let [edn-body (ByteArrayInputStream. (.getBytes "error: not found"))
+        edn-resp {:body edn-body :status 404
+                  :headers {"content-type" "application/edn"}}]
+    (is (= "error: not found"
+           (:body (client/coerce-response-body {:as :clojure} edn-resp))))))
+
 (deftest ^:integration t-with-middleware
   (run-server)
   (is (:request-time (request {:uri "/get" :method :get})))
