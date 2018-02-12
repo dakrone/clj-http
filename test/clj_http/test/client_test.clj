@@ -113,7 +113,6 @@
 
 (deftest ^:integration multipart-async
   (run-server)
-  ;; roundtrip with scheme as a keyword
   (let [resp (promise)
         exception (promise)
         _ (request {:uri "/post" :method :post
