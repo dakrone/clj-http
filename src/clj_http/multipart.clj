@@ -2,7 +2,7 @@
   "Namespace used for clj-http to create multipart entities and bodies."
   (:import (java.io File InputStream)
            (org.apache.http.entity ContentType)
-           (org.apache.http.entity.mime MultipartEntity MultipartEntityBuilder)
+           (org.apache.http.entity.mime MultipartEntityBuilder)
            (org.apache.http.entity.mime.content ContentBody
                                                 ByteArrayBody
                                                 FileBody
@@ -125,7 +125,7 @@
   content)
 
 (defn create-multipart-entity
-  "Takes a multipart vector of maps and creates a MultipartEntity with each
+  "Takes a multipart vector of maps and creates a MultipartFormEntity with each
   map added as a part, depending on the type of content."
   [multipart]
   (let [mp-builder (MultipartEntityBuilder/create)]
