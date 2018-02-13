@@ -113,9 +113,8 @@
                               socket-timeout
                               conn-request-timeout
                               max-redirects
-                              allow-circular-redirects
-                              allow-relative-redirects
-                              cookie-policy]}]
+                              cookie-policy]
+                       :as req}]
   (let [config (-> (RequestConfig/custom)
                    (.setConnectTimeout (or conn-timeout -1))
                    (.setSocketTimeout (or socket-timeout -1))
@@ -123,9 +122,10 @@
                     (or conn-request-timeout -1))
                    (.setRedirectsEnabled true)
                    (.setCircularRedirectsAllowed
-                    (boolean allow-circular-redirects))
+                    (boolean (opt req :allow-circular-redirects)))
                    (.setRelativeRedirectsAllowed
-                    ((complement false?) allow-relative-redirects))
+                    ((complement false?)
+                     (opt req :allow-relative-redirects)))
                    (.setCookieSpec (get-cookie-policy cookie-policy)))]
     (when max-redirects (.setMaxRedirects config max-redirects))
     (.build config)))
@@ -461,7 +461,7 @@
                      (failed [this ex]
                        (when-not (conn/reusable? conn-mgr)
                          (conn/shutdown-manager conn-mgr))
-                       (if (:ignore-unknown-host? req)
+                       (if (opt req :ignore-unknown-host)
                          ((:unknown-host-respond req) nil)
                          (raise ex)))
                      (completed [this resp]
