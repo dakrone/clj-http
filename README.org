@@ -59,19 +59,16 @@
 - [[#testimonials][Testimonials]]
 - [[#license][License]]
 
-* HELP WANTED
+* Help Wanted
 :PROPERTIES:
 :CUSTOM_ID: h-bfae0ecf-471b-438f-bf47-37c1aebea2a6
 :END:
-Hi Everyone,
-The tests are working now, but there is a lot of work still to be done,
-for instance, the connection manager code needs to be simplified, and another
-pass needs to be done to see if any more deprecated APIs are in use,
-so any help is appreciated!
+Hi Everyone, The tests are working now, but there's still work to be done, for instance, the
+connection manager code needs to be simplified, and another pass needs to be done to see if any more
+deprecated APIs are in use, so any help is appreciated!
 
-Additionally, there are things like reusing the httpclient between
-requests (perhaps only when a connection manager is used)
-that need to be worked out.
+Additionally, there are things like reusing the httpclient between requests (perhaps only when a
+connection manager is used) that need to be worked out.
 
 If you have interest, please do send PRs for fixing.
 
@@ -371,10 +368,17 @@ start an async request is easy, for example:
 
 All exceptions thrown during the request will be passed to the raise callback.
 
+Calls to the http methods with =:async true= return an Apache [[https://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/org/apache/http/concurrent/BasicFuture.html][BasicFuture]] that you can call =.get=
+or =.cancel= on. See the Javadocs for =BasicFuture= [[https://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/org/apache/http/concurrent/BasicFuture.html][here]].
+
 ** Coercions
 :PROPERTIES:
 :CUSTOM_ID: h-8902cd95-e01e-4d9b-9dc8-5f5c8f04504b
 :END:
+
+clj-http allows coercing the body of the request either before it is sent (input coercion), or after
+it's received (output coercion) from the server.
+
 *** Input coercion
 :PROPERTIES:
 :CUSTOM_ID: h-bed01743-2209-473d-ae86-bd187f059e0c
@@ -623,10 +627,8 @@ Redirect Options:
 
      You may also pass in an instance of RedirectStrategy if you want a behaviour that's not implemented
 
-NOTE: The options =:force-redirects= and =:follow-redirects= (present in
-clj-http 2.x are no longer used). You can use =:graceful= to mostly emulate the
-old redirect behaviour.
-
+NOTE: The options =:force-redirects= and =:follow-redirects= (present in clj-http 2.x are no longer
+used). You can use =:graceful= to mostly emulate the old redirect behaviour.
 
 ** Cookies
 :PROPERTIES:
@@ -1088,7 +1090,8 @@ The functions are run in the order they are passed in (inside a =doseq=).
 :CUSTOM_ID: h-65bbf017-2e8b-4c43-824b-24b89cc27a70
 :END:
 
-Please send a pull request or open an issue if you have any problems.
+Please send a pull request or open an issue if you have any problems. See =CONTRIBUTING.md= for more
+information.
 
 ** Faking Responses
 :PROPERTIES:
@@ -1184,7 +1187,7 @@ $ lein test
 Run all tests (including integration):
 $ lein test :all
 
-Run tests against 1.2.1, 1.3 and 1.4
+Run tests against all clojure versions
 $ lein all test
 $ lein all test :all
 #+END_SRC
@@ -1194,9 +1197,8 @@ $ lein all test :all
 :CUSTOM_ID: h-3044d1f7-6772-43c2-9ded-8c71c7f9ada2
 :END:
 
-With over [[https://clojars.org/clj-http][two million]] downloads, clj-http is a
-widely used, battle-tested clojure library. It is also included in other
-libraries (like database clients) as a low-level http wrapper.
+With over [[https://clojars.org/clj-http][three million]] downloads, clj-http is a widely used, battle-tested clojure library. It is
+also included in other libraries (like database clients) as a low-level http wrapper.
 
 Libraries using clj-http:
 
