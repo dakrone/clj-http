@@ -8,9 +8,9 @@
   :min-lein-version "2.0.0"
   :exclusions [org.clojure/clojure]
   :dependencies [[org.apache.httpcomponents/httpcore "4.4.6"]
-                 [org.apache.httpcomponents/httpclient "4.5.5"]
+                 [org.apache.httpcomponents/httpclient "4.5.3"]
                  [org.apache.httpcomponents/httpasyncclient "4.1.3"]
-                 [org.apache.httpcomponents/httpmime "4.5.5"]
+                 [org.apache.httpcomponents/httpmime "4.5.3"]
                  [commons-codec "1.10"]
                  [commons-io "2.5"]
                  [potemkin "0.4.3"]]
