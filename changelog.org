@@ -17,6 +17,8 @@ List of user-visible changes that have gone into each release
 - Added =:ignore-nested-query-string=, =:flatten-nested-form-params=, and =:flatten-nested-keys=
   options for finer-grained control over which nested parts of the request are flattened. Fixes
   https://github.com/dakrone/clj-http/issues/427
+- Added =:http-builder-fns= and =:async-http-builder-fns= to support arbitrary customizations to the
+  =HttpClientBuilder= and =HttpAsyncClientBuilder=
 
 ** 3.7.0
 This list contains all the changes since 3.0.0.
