@@ -256,7 +256,7 @@
 
 (defn- respond*
   [resp req]
-  (if (:async? req)
+  (if (opt req :async)
     ((:respond req) resp)
     resp))
 
@@ -1096,8 +1096,8 @@
      (throw (IllegalArgumentException. "Host URL cannot be nil"))))
 
 (defn- request*
-  [{:keys [async?] :as req} [respond raise]]
-  (if async?
+  [req [respond raise]]
+  (if (opt req :async)
     (if (some nil? [respond raise])
       (throw (IllegalArgumentException.
               "If :async? is true, you must pass respond and raise"))

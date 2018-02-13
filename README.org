@@ -1062,6 +1062,34 @@ which is a vector of the default middleware that clj-http uses.
 =clj-http.client/*current-middleware*= is bound to the current list of
 middleware during request time.
 
+** Modifying Apache-specific features of the =HttpClientBuilder= and =HttpAsyncClientBuilder=
+:PROPERTIES:
+:CUSTOM_ID: h:844f078c-531e-445e-b7ce-76092bcc9928
+:END:
+
+While clj-http tries to provide the features needed, there are times when it does not provide access
+to a parameter that you need. In these cases, you can use a couple of advanced parameters to provide
+arbitrary configuration functions to be run on the =HttpClientBuilder= by specifying
+=:http-builder-fns= and =:async-http-builder-fns=.
+
+Each of these variables is a sequence of functions of two arguments, the http builder
+(=HttpClientBuilder= for =:http-builder-fns= and =HttpAsyncClientBuilder= for
+=:async-http-builder-fns=) and the request map.
+
+#+BEGIN_SRC clojure
+;; A function that takes a builder and disables Apache's cookie management
+(defun my-cookie-disabler [^HttpClientBuilder builder
+                           request]
+  (when (:disable-cookies request)
+    (.disableCookieManagement builder)))
+
+;; The functions to modify the builder are passed in
+(http/post "http://www.example.org" {:http-builder-fns [my-cookie-disabler]
+                                     :disable-cookies true})
+#+END_SRC
+
+The functions are run in the order they are passed in (inside a =doseq=).
+
 * Development
 :PROPERTIES:
 :CUSTOM_ID: h-65bbf017-2e8b-4c43-824b-24b89cc27a70

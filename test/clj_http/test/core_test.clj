@@ -110,10 +110,19 @@
     [:get "/query-string"]
     {:status 200 :body (:query-string req)}))
 
+(defn add-headers-if-requested [client]
+  (fn [req]
+    (let [resp (client req)
+          add-all (-> req :headers (get "add-headers"))
+          headers (:headers resp)]
+      (if add-all
+        (assoc resp :headers (assoc headers "got" (pr-str (:headers req))))
+        resp))))
+
 (defn run-server
   []
   (defonce server
-    (ring/run-jetty #'handler {:port 18080 :join? false})))
+    (ring/run-jetty (add-headers-if-requested handler) {:port 18080 :join? false})))
 
 (defn localhost [path]
   (str "http://localhost:18080" path))
@@ -670,3 +679,30 @@
       (let [context-for-request (last (last @called-args))]
         (is (= http-context context-for-request))
         (is (= request-config (.getRequestConfig context-for-request)))))))
+
+(deftest ^:integration test-custom-http-builder-fns
+  (run-server)
+  (let [resp (client/get (localhost "/get")
+                         {:headers {"add-headers" "true"}
+                          :http-builder-fns
+                          [(fn [builder req]
+                             (.setDefaultHeaders builder (:hdrs req)))]
+                          :hdrs [(BasicHeader. "foo" "bar")]})]
+    (is (= 200 (:status resp)))
+    (is (.contains (get-in resp [:headers "got"]) "\"foo\" \"bar\"")
+        "Headers should have included the new default headers"))
+  (let [resp (promise)
+        error (promise)
+        f (client/get (localhost "/get")
+                      {:async true
+                       :headers {"add-headers" "true"}
+                       :async-http-builder-fns
+                       [(fn [builder req]
+                          (.setDefaultHeaders builder (:hdrs req)))]
+                       :hdrs [(BasicHeader. "foo" "bar")]}
+                      resp error)]
+    (.get f)
+    (is (= 200 (:status @resp)))
+    (is (.contains (get-in @resp [:headers "got"]) "\"foo\" \"bar\"")
+        "Headers should have included the new default headers")
+    (is (not (realized? error)))))
