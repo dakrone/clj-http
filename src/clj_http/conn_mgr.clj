@@ -22,41 +22,48 @@
             IOReactorConfig
             AbstractMultiworkerIOReactor$DefaultThreadFactory
             DefaultConnectingIOReactor)
-           (org.apache.http.nio.conn NoopIOSessionStrategy)))
+           (org.apache.http.nio.conn NoopIOSessionStrategy)
+           (org.apache.http.nio.protocol HttpAsyncRequestExecutor)
+           (org.apache.http.impl.nio DefaultHttpClientIODispatch)
+           (org.apache.http.config ConnectionConfig)))
 
 (def ^:private insecure-context-verifier
-  {
-   :context (-> (SSLContexts/custom)
-                (.loadTrustMaterial nil (reify TrustStrategy
-                                          (isTrusted [_ _ _] true)))
-                (.build))
-   :verifier NoopHostnameVerifier/INSTANCE})
+  (delay {
+          :context (-> (SSLContexts/custom)
+                       (.loadTrustMaterial nil (reify TrustStrategy
+                                                 (isTrusted [_ _ _] true)))
+                       (.build))
+          :verifier NoopHostnameVerifier/INSTANCE}))
 
-(def ^SSLConnectionSocketFactory insecure-socket-factory
-  (let [{:keys [context  verifier]} insecure-context-verifier]
-    (SSLConnectionSocketFactory. ^SSLContext context
-                                 ^HostnameVerifier verifier)))
+(def ^:private insecure-socket-factory
+  (delay
+   (let [{:keys [context  verifier]} @insecure-context-verifier]
+     (SSLConnectionSocketFactory. ^SSLContext context
+                                  ^HostnameVerifier verifier))))
 
-(def ^SSLIOSessionStrategy insecure-strategy
-  (let [{:keys [context  verifier]} insecure-context-verifier]
-    (SSLIOSessionStrategy. ^SSLContext context ^HostnameVerifier verifier)))
+(def ^:private insecure-strategy
+  (delay
+   (let [{:keys [context  verifier]} @insecure-context-verifier]
+     (SSLIOSessionStrategy. ^SSLContext context ^HostnameVerifier verifier))))
 
-(def ^SSLConnectionSocketFactory secure-ssl-socket-factory
+(def ^:private ^SSLConnectionSocketFactory secure-ssl-socket-factory
   (SSLConnectionSocketFactory/getSocketFactory))
 
-(def ^SSLIOSessionStrategy secure-strategy
+(def ^:private ^SSLIOSessionStrategy secure-strategy
   (SSLIOSessionStrategy/getDefaultStrategy))
 
 (defn ^SSLConnectionSocketFactory SSLGenericSocketFactory
   "Given a function that returns a new socket, create an
   SSLConnectionSocketFactory that will use that socket."
-  ([socket-factory] (SSLGenericSocketFactory socket-factory (SSLContexts/createDefault)))
+  ([socket-factory]
+   (SSLGenericSocketFactory socket-factory nil))
   ([socket-factory ^SSLContext ssl-context]
-   (proxy [SSLConnectionSocketFactory] [ssl-context]
-     (connectSocket [timeout socket host remoteAddress localAddress context]
-       (let [^SSLConnectionSocketFactory this this] ;; avoid reflection
-         (proxy-super connectSocket timeout (socket-factory) host remoteAddress
-                      localAddress context))))))
+   (let [^SSLContext ssl-context' (or ssl-context (SSLContexts/createDefault))]
+     (proxy [SSLConnectionSocketFactory] [ssl-context']
+       (connectSocket [timeout socket host remoteAddress localAddress context]
+         (let [^SSLConnectionSocketFactory this this] ;; avoid reflection
+           (proxy-super connectSocket timeout (socket-factory) host remoteAddress
+                        localAddress context)))))))
 
 (defn ^PlainConnectionSocketFactory PlainGenericSocketFactory
   "Given a Function that returns a new socket, create a
@@ -108,36 +115,46 @@
 (defn make-socks-proxied-conn-manager
   "Given an optional hostname and a port, create a connection manager that's
   proxied using a SOCKS proxy."
-  ([^String hostname ^Integer port] (make-socks-proxied-conn-manager hostname port {}))
-  ([^String hostname ^Integer port {:keys [keystore keystore-type keystore-pass trust-store trust-store-type trust-store-pass] :as opts}]
+  ([^String hostname ^Integer port]
+   (make-socks-proxied-conn-manager hostname port {}))
+  ([^String hostname ^Integer port
+    {:keys [keystore keystore-type keystore-pass
+            trust-store trust-store-type trust-store-pass] :as opts}]
    (let [socket-factory #(socks-proxied-socket hostname port)
-         ssl-context (when (some (complement nil?) [keystore keystore-type keystore-pass trust-store trust-store-type trust-store-pass])
-                           (-> opts get-keystore-context-verifier :context))
+         ssl-context (when
+                         (some (complement nil?)
+                               [keystore keystore-type keystore-pass trust-store
+                                trust-store-type trust-store-pass])
+                       (-> opts get-keystore-context-verifier :context))
          reg (-> (RegistryBuilder/create)
                  (.register "http" (PlainGenericSocketFactory socket-factory))
-                 (.register "https" (SSLGenericSocketFactory socket-factory ssl-context))
+                 (.register "https"
+                            (SSLGenericSocketFactory
+                             socket-factory ssl-context))
                  (.build))]
      (PoolingHttpClientConnectionManager. reg))))
 
-(def insecure-scheme-registry
-  (-> (RegistryBuilder/create)
-      (.register "http" PlainConnectionSocketFactory/INSTANCE)
-      (.register "https" insecure-socket-factory)
-      (.build)))
+(def ^:private insecure-scheme-registry
+  (delay
+   (-> (RegistryBuilder/create)
+       (.register "http" PlainConnectionSocketFactory/INSTANCE)
+       (.register "https" ^SSLConnectionSocketFactory @insecure-socket-factory)
+       (.build))))
 
-(def insecure-strategy-registry
-  (-> (RegistryBuilder/create)
-      (.register "http" NoopIOSessionStrategy/INSTANCE)
-      (.register "https" insecure-strategy)
-      (.build)))
+(def ^:private insecure-strategy-registry
+  (delay
+   (-> (RegistryBuilder/create)
+       (.register "http" NoopIOSessionStrategy/INSTANCE)
+       (.register "https" ^SSLIOSessionStrategy @insecure-strategy)
+       (.build))))
 
-(def regular-scheme-registry
+(def ^:private regular-scheme-registry
   (-> (RegistryBuilder/create)
       (.register "http" (PlainConnectionSocketFactory/getSocketFactory))
       (.register "https" secure-ssl-socket-factory)
       (.build)))
 
-(def regular-strategy-registry
+(def ^:private regular-strategy-registry
   (-> (RegistryBuilder/create)
       (.register "http" NoopIOSessionStrategy/INSTANCE)
       (.register "https" secure-strategy)
@@ -170,7 +187,7 @@
     (BasicHttpClientConnectionManager. (get-keystore-scheme-registry req))
 
     (opt req :insecure) (BasicHttpClientConnectionManager.
-                         insecure-scheme-registry)
+                         @insecure-scheme-registry)
 
     :else (BasicHttpClientConnectionManager. regular-scheme-registry)))
 
@@ -200,7 +217,7 @@
                              (get-keystore-strategy-registry req)
 
                              (opt req :insecure)
-                             insecure-strategy-registry
+                             @insecure-strategy-registry
 
                              :else regular-strategy-registry)
         io-reactor (make-ioreactor {:shutdown-grace-period 1})]
@@ -218,7 +235,7 @@
   timeout value."
   [{:keys [timeout keystore trust-store] :as config}]
   (let [registry (cond
-                   (opt config :insecure) insecure-scheme-registry
+                   (opt config :insecure) @insecure-scheme-registry
 
                    (or keystore trust-store)
                    (get-keystore-scheme-registry config)
@@ -271,14 +288,19 @@
 (defn- ^PoolingNHttpClientConnectionManager make-reusable-async-conn-manager*
   [{:keys [timeout keystore trust-store io-config] :as config}]
   (let [registry (cond
-                   (opt config :insecure) insecure-strategy-registry
+                   (opt config :insecure) @insecure-strategy-registry
 
                    (or keystore trust-store)
                    (get-keystore-scheme-registry config)
 
-                   :else regular-strategy-registry)]
+                   :else regular-strategy-registry)
+        io-reactor (make-ioreactor io-config)
+        protocol-handler (HttpAsyncRequestExecutor.)
+        io-event-dispatch (DefaultHttpClientIODispatch. protocol-handler
+                                                        ConnectionConfig/DEFAULT)]
+    (future (.execute io-reactor io-event-dispatch))
     (proxy [PoolingNHttpClientConnectionManager ReuseableAsyncConnectionManager]
-        [(make-ioreactor io-config) nil registry nil nil timeout
+        [io-reactor nil registry nil nil timeout
          java.util.concurrent.TimeUnit/SECONDS])))
 
 (defn ^PoolingNHttpClientConnectionManager make-reuseable-async-conn-manager

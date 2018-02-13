@@ -39,7 +39,8 @@
                                             HttpAsyncClients
                                             CloseableHttpAsyncClient)
            (org.apache.http.message BasicHttpResponse)
-           (java.util.concurrent ExecutionException)))
+           (java.util.concurrent ExecutionException)
+           (org.apache.http.entity.mime HttpMultipartMode)))
 
 (defn parse-headers
   "Takes a HeaderIterator and returns a map of names to values.
@@ -72,7 +73,8 @@
             num-redirects (count (.getRedirectLocations typed-context))]
         (if (<= max-redirects num-redirects)
           false
-          (.isRedirected DefaultRedirectStrategy/INSTANCE request response typed-context))))))
+          (.isRedirected DefaultRedirectStrategy/INSTANCE
+                         request response typed-context))))))
 
 (defn get-redirect-strategy [redirect-strategy]
   (case redirect-strategy
@@ -320,24 +322,48 @@
   (clojure.pprint/pprint (bean http-req)))
 
 (defn- build-response-map
-  [^HttpResponse response req conn-mgr ^HttpClientContext context]
+  [^HttpResponse response req ^HttpUriRequest http-req http-url
+   conn-mgr ^HttpClientContext context]
   (let [^HttpEntity entity (.getEntity response)
         status (.getStatusLine response)
-        protocol-version (.getProtocolVersion status)]
-    {:body (coerce-body-entity entity conn-mgr response)
-     :headers (parse-headers
-               (.headerIterator response)
-               (opt req :use-header-maps-in-response))
-     :length (if (nil? entity) 0 (.getContentLength entity))
-     :chunked? (if (nil? entity) false (.isChunked entity))
-     :repeatable? (if (nil? entity) false (.isRepeatable entity))
-     :streaming? (if (nil? entity) false (.isStreaming entity))
-     :status (.getStatusCode status)
-     :protocol-version  {:name (.getProtocol protocol-version)
-                         :major (.getMajor protocol-version)
-                         :minor (.getMinor protocol-version)}
-     :reason-phrase (.getReasonPhrase status)
-     :trace-redirects (mapv str (.getRedirectLocations context))}))
+        protocol-version (.getProtocolVersion status)
+        body (:body req)
+        response
+        {:body (coerce-body-entity entity conn-mgr response)
+         :headers (parse-headers
+                   (.headerIterator response)
+                   (opt req :use-header-maps-in-response))
+         :length (if (nil? entity) 0 (.getContentLength entity))
+         :chunked? (if (nil? entity) false (.isChunked entity))
+         :repeatable? (if (nil? entity) false (.isRepeatable entity))
+         :streaming? (if (nil? entity) false (.isStreaming entity))
+         :status (.getStatusCode status)
+         :protocol-version  {:name (.getProtocol protocol-version)
+                             :major (.getMajor protocol-version)
+                             :minor (.getMinor protocol-version)}
+         :reason-phrase (.getReasonPhrase status)
+         :trace-redirects (mapv str (.getRedirectLocations context))}]
+    (if (opt req :save-request)
+      (-> response
+          (assoc :request req)
+          (assoc-in [:request :body-type] (type body))
+          (assoc-in [:request :http-url] http-url)
+          (update-in [:request]
+                     #(if (opt req :debug-body)
+                        (assoc % :body-content
+                               (cond
+                                 (isa? (type (:body %)) String)
+                                 (:body %)
+
+                                 (isa? (type (:body %)) HttpEntity)
+                                 (let [baos (ByteArrayOutputStream.)]
+                                   (.writeTo ^HttpEntity (:body %) baos)
+                                   (.toString baos "UTF-8"))
+
+                                 :else nil))
+                        %))
+          (assoc-in [:request :http-req] http-req))
+      response)))
 
 (defn- get-conn-mgr
   [async? req]
@@ -350,10 +376,10 @@
 (defn request
   ([req] (request req nil nil))
   ([{:keys [body conn-timeout conn-request-timeout connection-manager
-            cookie-store cookie-policy headers multipart query-string
-            redirect-strategy max-redirects retry-handler
-            request-method scheme server-name server-port socket-timeout
-            uri response-interceptor proxy-host proxy-port async?
+            cookie-store cookie-policy headers multipart mime-subtype
+            http-multipart-mode query-string redirect-strategy max-redirects
+            retry-handler request-method scheme server-name server-port
+            socket-timeout uri response-interceptor proxy-host proxy-port async?
             http-client-context http-request-config
             proxy-ignore-hosts proxy-user proxy-pass digest-auth ntlm-auth]
      :as req} respond raise]
@@ -367,8 +393,10 @@
                       (get-conn-mgr async? req))
          proxy-ignore-hosts (or proxy-ignore-hosts
                                 #{"localhost" "127.0.0.1"})
-         ^RequestConfig request-config (or http-request-config (request-config req))
-         ^HttpClientContext context (http-context request-config http-client-context)
+         ^RequestConfig request-config (or http-request-config
+                                           (request-config req))
+         ^HttpClientContext context (http-context
+                                     request-config http-client-context)
          ^HttpUriRequest http-req (http-request-for
                                    request-method http-url body)]
      (when-not (conn/reusable? conn-mgr)
@@ -396,7 +424,7 @@
             (.setCredentials authscope creds)))))
      (if multipart
        (.setEntity ^HttpEntityEnclosingRequest http-req
-                   (mp/create-multipart-entity multipart))
+                   (mp/create-multipart-entity multipart mime-subtype http-multipart-mode))
        (when (and body (instance? HttpEntityEnclosingRequest http-req))
          (if (instance? HttpEntity body)
            (.setEntity ^HttpEntityEnclosingRequest http-req body)
@@ -415,7 +443,7 @@
              client (http-client req conn-mgr http-url proxy-ignore-hosts)]
          (try
            (build-response-map (.execute client http-req context)
-                               req conn-mgr context)
+                               req http-req http-url conn-mgr context)
            (catch Throwable t
              (when-not (conn/reusable? conn-mgr)
                (conn/shutdown-manager conn-mgr))
@@ -434,7 +462,7 @@
                      (completed [this resp]
                        (try
                          (respond (build-response-map
-                                   resp req conn-mgr context))
+                                   resp req http-req http-url conn-mgr context))
                          (catch Throwable t
                            (when-not (conn/reusable? conn-mgr)
                              (conn/shutdown-manager conn-mgr))

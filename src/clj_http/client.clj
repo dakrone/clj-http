@@ -8,8 +8,7 @@
             [clj-http.util :refer [opt] :as util]
             [clojure.stacktrace :refer [root-cause]]
             [clojure.string :as str]
-            [clojure.walk :refer [keywordize-keys prewalk]]
-            [slingshot.slingshot :refer [throw+]])
+            [clojure.walk :refer [keywordize-keys prewalk]])
   (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream)
            (java.net URL UnknownHostException)
            (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
@@ -102,9 +101,10 @@
   "Resolve and apply Transit's JSON/MessagePack decoding."
   [in type & [opts]]
   {:pre [transit-enabled?]}
-  (let [reader (ns-resolve 'cognitect.transit 'reader)
-        read (ns-resolve 'cognitect.transit 'read)]
-    (read (reader in type (transit-read-opts opts)))))
+  (when (pos? (.available in))
+    (let [reader (ns-resolve 'cognitect.transit 'reader)
+          read (ns-resolve 'cognitect.transit 'read)]
+      (read (reader in type (transit-read-opts opts))))))
 
 (defn ^:dynamic transit-encode
   "Resolve and apply Transit's JSON/MessagePack encoding."
@@ -235,11 +235,11 @@
       resp
       (let [data (assoc resp :type ::unexceptional-status)]
         (if (opt req :throw-entire-message)
-          (throw+ data "clj-http: status %d %s" (:status %) resp)
-          (throw+ data "clj-http: status %s" (:status %)))))))
+          (throw (ex-info (format "clj-http: status %d %s" status resp) data))
+          (throw (ex-info (format "clj-http: status %s" status) data)))))))
 
 (defn wrap-exceptions
-  "Middleware that throws a slingshot exception if the response is not a
+  "Middleware that throws a ex-info exception if the response is not a
   regular response. If :throw-entire-message? is set to true, the entire
   response is used as the message, instead of just the status number."
   [client]
@@ -252,120 +252,13 @@
                (response (exceptions-response req resp)))
              raise))))
 
-(declare wrap-redirects)
 (declare reuse-pool)
-
-(defn- follow-redirect-request
-  [req redirect trace-redirects resp]
-  (-> req
-      (merge (parse-url redirect))
-      (dissoc :query-params)
-      (assoc :url redirect)
-      (assoc :trace-redirects trace-redirects)
-      (reuse-pool resp)))
-
-(defn follow-redirect
-  "Attempts to follow the redirects from the \"location\" header, if no such
-  header exists (bad server!), returns the response without following the
-  request."
-  [client {:keys [uri url scheme server-name server-port async? respond raise]
-           :as req}
-   {:keys [trace-redirects ^InputStream body] :as resp}]
-  (let [url (or url (str (name scheme) "://" server-name
-                         (when server-port (str ":" server-port)) uri))]
-    (if-let [raw-redirect (get-in resp [:headers "location"])]
-      (let [redirect (str (URL. (URL. url) raw-redirect))]
-        (try (.close body) (catch Exception _))
-        (if-not async?
-          ((wrap-redirects client)
-           (follow-redirect-request req redirect trace-redirects resp))
-          (if (some nil? [respond raise])
-            (raise
-             (IllegalArgumentException.
-              "If :async? is true, you must set :respond and :raise"))
-            ((wrap-redirects client)
-             (follow-redirect-request req redirect trace-redirects resp)
-             respond raise))))
-      ;; Oh well, we tried, but if no location is set, return the response
-      (if-not async?
-        resp
-        (respond resp)))))
 
 (defn- respond*
   [resp req]
   (if (:async? req)
     ((:respond req) resp)
     resp))
-
-(defn- redirects-response
-  [client
-   {:keys [request-method max-redirects redirects-count trace-redirects url]
-    :or {redirects-count 1 trace-redirects []
-         ;; max-redirects default taken from Firefox
-         max-redirects 20}
-    :as req} {:keys [status] :as resp}]
-  (let [resp-r (assoc resp :trace-redirects
-                      (if url
-                        (conj trace-redirects url)
-                        trace-redirects))]
-    (cond
-      (false? (opt req :follow-redirects))
-      (respond* resp req)
-      (not (redirect? resp-r))
-      (respond* resp-r req)
-      (and max-redirects (> redirects-count max-redirects))
-      (if (opt req :throw-exceptions)
-        (throw+ resp-r "Too many redirects: %s" redirects-count)
-        (respond* resp-r req))
-      (= 303 status)
-      (follow-redirect client (assoc req :request-method :get
-                                     :redirects-count (inc redirects-count))
-                       resp-r)
-      (#{301 302} status)
-      (cond
-        (#{:get :head} request-method)
-        (follow-redirect client (assoc req :redirects-count
-                                       (inc redirects-count)) resp-r)
-        (opt req :force-redirects)
-        (follow-redirect client (assoc req
-                                       :request-method :get
-                                       :redirects-count (inc redirects-count))
-                         resp-r)
-        :else
-        (respond* resp-r req))
-      (= 307 status)
-      (if (or (#{:get :head} request-method)
-              (opt req :force-redirects))
-        (follow-redirect client (assoc req :redirects-count
-                                       (inc redirects-count)) resp-r)
-        (respond* resp-r req))
-      :else
-      (respond* resp-r req))))
-
-(defn ^:deprecated wrap-redirects
-  "Middleware that follows redirects in the response. A slingshot exception is
-  thrown if too many redirects occur. Options
-
-  :follow-redirects - default:true, whether to follow redirects
-  :max-redirects - default:20, maximum number of redirects to follow
-  :force-redirects - default:false, force redirecting methods to GET requests
-
-  In the response:
-
-  :redirects-count - number of redirects
-  :trace-redirects - vector of sites the request was redirected from"
-  [client]
-  (fn
-    ([req]
-     (redirects-response client req (client req)))
-    ([req respond raise]
-     (client req
-             #(redirects-response client
-                                  (assoc req :async? true
-                                         :respond respond
-                                         :raise raise)
-                                  %)
-             raise))))
 
 ;; Multimethods for Content-Encoding dispatch automatically
 ;; decompressing response bodies
@@ -462,7 +355,8 @@
                                 (read-string (String. ^"[B" body charset)))))))
 
 (defn coerce-transit-body
-  [{:keys [transit-opts coerce] :as request} {:keys [body status] :as resp} type & [charset]]
+  [{:keys [transit-opts coerce] :as request}
+   {:keys [body status] :as resp} type & [charset]]
   (let [^String charset (or charset (-> resp :content-type-params :charset)
                             "UTF-8")
         body (util/force-byte-array body)]
@@ -470,14 +364,17 @@
       (if transit-enabled?
         (cond
           (= coerce :always)
-          (assoc resp :body (parse-transit (ByteArrayInputStream. body) type transit-opts))
+          (assoc resp :body (parse-transit
+                             (ByteArrayInputStream. body) type transit-opts))
 
           (and (unexceptional-status? status)
                (or (nil? coerce) (= coerce :unexceptional)))
-          (assoc resp :body (parse-transit (ByteArrayInputStream. body) type transit-opts))
+          (assoc resp :body (parse-transit
+                             (ByteArrayInputStream. body) type transit-opts))
 
           (and (not (unexceptional-status? status)) (= coerce :exceptional))
-          (assoc resp :body (parse-transit (ByteArrayInputStream. body) type transit-opts))
+          (assoc resp :body (parse-transit
+                             (ByteArrayInputStream. body) type transit-opts))
 
           :else (assoc resp :body (String. ^"[B" body charset)))
         (assoc resp :body (String. ^"[B" body charset)))

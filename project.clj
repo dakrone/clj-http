@@ -1,4 +1,4 @@
-(defproject clj-http "3.7.0"
+(defproject clj-http "4.0.0-SNAPSHOT"
   :description "A Clojure HTTP library wrapping the Apache HttpComponents client."
   :url "https://github.com/dakrone/clj-http/"
   :license {:name "The MIT License"
@@ -13,7 +13,6 @@
                  [org.apache.httpcomponents/httpmime "4.5.5"]
                  [commons-codec "1.10"]
                  [commons-io "2.5"]
-                 [slingshot "0.12.2"]
                  [potemkin "0.4.3"]]
   :profiles {:dev {:dependencies [;; optional deps
                                   [cheshire "5.7.1"]
@@ -28,11 +27,12 @@
                                   [ring/ring-jetty-adapter "1.6.1"]
                                   [ring/ring-devel "1.6.1"]
                                   ;; caching example deps
-                                  [org.clojure/core.cache "0.6.5"]
-                                  ]}
+                                  [org.clojure/core.cache "0.6.5"]]
+                   :plugins [[lein-ancient "0.6.15"]]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
-             :1.7 {:dependencies [[org.clojure/clojure "1.7.0"]]}}
-  :aliases {"all" ["with-profile" "dev,1.6:dev,1.7:dev"]}
+             :1.7 {:dependencies [[org.clojure/clojure "1.7.0"]]}
+             :1.9 {:dependencies [[org.clojure/clojure "1.9.0"]]}}
+  :aliases {"all" ["with-profile" "dev,1.6:dev,1.7:dev,1.9:dev"]}
   :plugins [[codox "0.6.4"]]
   :test-selectors {:default  #(not (:integration %))
                    :integration :integration

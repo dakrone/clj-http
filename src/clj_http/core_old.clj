@@ -235,7 +235,7 @@
     (add-client-params!
      http-client
      ;; merge in map of specified timeouts, to
-     ;; support backward compatiblity.
+     ;; support backward compatibility.
      (merge {CoreConnectionPNames/SO_TIMEOUT socket-timeout
              CoreConnectionPNames/CONNECTION_TIMEOUT conn-timeout}
             client-params))
@@ -285,7 +285,7 @@
           (.addHeader http-req header-n (str header-v))))
       (if multipart
         (.setEntity ^HttpEntityEnclosingRequest http-req
-                    (mp/create-multipart-entity multipart))
+                    (mp/create-multipart-entity multipart req))
         (when (and body (instance? HttpEntityEnclosingRequest http-req))
           (if (instance? HttpEntity body)
             (.setEntity ^HttpEntityEnclosingRequest http-req body)

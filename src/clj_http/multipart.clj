@@ -3,6 +3,7 @@
   (:import (java.io File InputStream)
            (org.apache.http.entity ContentType)
            (org.apache.http.entity.mime MultipartEntityBuilder)
+           (org.apache.http.entity.mime HttpMultipartMode)
            (org.apache.http.entity.mime.content ContentBody
                                                 ByteArrayBody
                                                 FileBody
@@ -117,7 +118,7 @@
      content (ContentType/create "text/plain" (encoding-to-charset encoding)))
 
     content
-    (StringBody. content (ContentType/create "text/plain" Consts/ASCII))))
+    (StringBody. content (ContentType/create "text/plain" Consts/UTF_8))))
 
 (defmethod make-multipart-body ContentBody
   ;; Use provided org.apache.http.entity.mime.content.ContentBody directly
@@ -125,12 +126,19 @@
   content)
 
 (defn create-multipart-entity
-  "Takes a multipart vector of maps and creates a MultipartFormEntity with each
-  map added as a part, depending on the type of content."
-  [multipart]
-  (let [mp-builder (MultipartEntityBuilder/create)]
+  "Takes a multipart vector of maps and creates a MultipartEntity with each map
+  added as a part, depending on the type of content. If a mime-subtype or
+  multipart-mode are specified, they are set on the multipart builder, otherwise
+  'form-data' and strict mode are used."
+  [multipart mime-subtype multipart-mode]
+  (let [mp-entity (doto (MultipartEntityBuilder/create)
+                    (.setCharset (encoding-to-charset "UTF-8"))
+                    (.setMimeSubtype (or mime-subtype "form-data")))]
+    (if multipart-mode
+      (.setMode mp-entity multipart-mode)
+      (.setStrictMode mp-entity))
     (doseq [m multipart]
       (let [name (or (:part-name m) (:name m))
             part (make-multipart-body m)]
-        (.addPart mp-builder name part)))
-    (.build mp-builder)))
+        (.addPart mp-entity name part)))
+    (.build mp-entity)))

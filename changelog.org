@@ -10,6 +10,43 @@
 * Changelog
 List of user-visible changes that have gone into each release
 
+** 4.0.0 (Unreleased)
+- Removed slingshot dependency. clj-http exceptions are now regular exceptions
+- Removed deprecated :follow-redirects & :force-redirects options
+- Wrap nested querystring params before form params, fixing
+  https://github.com/dakrone/clj-http/issues/427
+- Merged https://github.com/dakrone/clj-http/pull/426 to allow an empty SSLGenericSocketFactory
+  context
+- Merged https://github.com/dakrone/clj-http/pull/424 to add :mime-subtype request parameter to
+  override mime subtype
+- create-multipart-entity with three arguments arity lets the selection of =HttpMultipartMode=
+- new request key :http-multipart-mode which is HttpMultipartMode/STRICT by default
+
+** 3.8.0
+- Reintroduce the =:save-request= and =:debug-body= options
+- Merged https://github.com/dakrone/clj-http/pull/426 to allow an empty SSLGenericSocketFactory
+  context
+
+** 3.7.0
+This list contains all the changes since 3.0.0.
+
+Added:
+- HttpRequestInterceptor support 155bd23
+- protocol-version and reason-phrase f430517
+- support for async HTTP requests (like Ring) 44d10ec
+- support for different multi-param encoding (:repeating, :array, :indexed) cddeb3e
+- Add unparse function aec7dd1
+- Added :redirect-strategy :graceful
+- Allow RequestConfig and HttpClientContext to be injected feb3c48
+
+Removed:
+- :save-request
+
+Changed:
+- re-written middleware using apache http client 4.5
+- Fix retry-handler to be added in correct place a2c31f5
+- POST Mutipart: Use charset "UTF-8" instead of "ASCII" as default charset to support internationalization 983508f
+
 ** 2.0.0
 - merged https://github.com/dakrone/clj-http/pull/274 to update Potemkin so it
   supports Clojure 1.7.0 correctly

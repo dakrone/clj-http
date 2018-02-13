@@ -9,51 +9,60 @@
 
 * Table of Contents                                                     :TOC:
 :PROPERTIES:
-:CUSTOM_ID: h:aaf075ea-2f0e-4a45-871a-0f89c838fb4b
+:CUSTOM_ID: h-aaf075ea-2f0e-4a45-871a-0f89c838fb4b
 :END:
- - [[#help-wanted][HELP WANTED]]
- - [[#introduction][Introduction]]
-   - [[#overview][Overview]]
-   - [[#philosophy][Philosophy]]
- - [[#installation][Installation]]
- - [[#towards-a-300-release][Towards a 3.0.0 release]]
- - [[#quickstart][Quickstart]]
-   - [[#head][HEAD]]
-   - [[#get][GET]]
-   - [[#put][PUT]]
-   - [[#post][POST]]
-   - [[#delete][DELETE]]
-   - [[#async-http-request][Async HTTP Request]]
-   - [[#coercions][Coercions]]
-   - [[#headers][Headers]]
-   - [[#meta-tag-headers][Meta Tag Headers]]
-   - [[#link-headers][Link Headers]]
-   - [[#redirects][Redirects]]
-   - [[#cookies][Cookies]]
-   - [[#exceptions][Exceptions]]
-   - [[#decompression][Decompression]]
-   - [[#debugging][Debugging]]
- - [[#authentication][Authentication]]
-   - [[#basic-auth][Basic Auth]]
-   - [[#digest-auth][Digest Auth]]
-   - [[#oauth2][oAuth2]]
- - [[#advanced-usage][Advanced Usage]]
-   - [[#raw-request][Raw Request]]
-   - [[#persistent-connections][Persistent Connections]]
-   - [[#proxies][Proxies]]
-   - [[#custom-middleware][Custom Middleware]]
- - [[#development][Development]]
-   - [[#faking-responses][Faking Responses]]
-   - [[#optional-dependencies][Optional Dependencies]]
-   - [[#clj-http-lite][clj-http-lite]]
-   - [[#troubleshooting][Troubleshooting]]
- - [[#tests][Tests]]
- - [[#testimonials][Testimonials]]
- - [[#license][License]]
+- [[#help-wanted][HELP WANTED]]
+- [[#branches][Branches]]
+- [[#introduction][Introduction]]
+  - [[#overview][Overview]]
+  - [[#philosophy][Philosophy]]
+- [[#installation][Installation]]
+- [[#quickstart][Quickstart]]
+  - [[#head][HEAD]]
+  - [[#get][GET]]
+  - [[#put][PUT]]
+  - [[#post][POST]]
+  - [[#delete][DELETE]]
+  - [[#async-http-request][Async HTTP Request]]
+  - [[#coercions][Coercions]]
+    - [[#input-coercion][Input coercion]]
+    - [[#output-coercion][Output coercion]]
+  - [[#headers][Headers]]
+  - [[#query-string-parameters][Query-string parameters]]
+  - [[#meta-tag-headers][Meta Tag Headers]]
+  - [[#link-headers][Link Headers]]
+  - [[#redirects][Redirects]]
+  - [[#cookies][Cookies]]
+    - [[#cookiestores][Cookiestores]]
+    - [[#keystores-trust-stores][Keystores, Trust-stores]]
+  - [[#exceptions][Exceptions]]
+  - [[#decompression][Decompression]]
+  - [[#debugging][Debugging]]
+- [[#authentication][Authentication]]
+  - [[#basic-auth][Basic Auth]]
+  - [[#digest-auth][Digest Auth]]
+  - [[#ntlm-auth][NTLM Auth]]
+  - [[#oauth2][oAuth2]]
+- [[#advanced-usage][Advanced Usage]]
+  - [[#raw-request][Raw Request]]
+    - [[#boolean-options][Boolean options]]
+  - [[#persistent-connections][Persistent Connections]]
+  - [[#proxies][Proxies]]
+  - [[#custom-middleware][Custom Middleware]]
+- [[#development][Development]]
+  - [[#faking-responses][Faking Responses]]
+  - [[#optional-dependencies][Optional Dependencies]]
+  - [[#clj-http-lite][clj-http-lite]]
+  - [[#troubleshooting][Troubleshooting]]
+    - [[#verifyerror-class-orgcodehausjacksonsmilesmileparser-overrides-final-method-getbinaryvalue][VerifyError class org.codehaus.jackson.smile.SmileParser overrides final method getBinaryValue...]]
+    - [[#nohttpresponseexception--due-to-stale-connections][NoHttpResponseException ... due to stale connections**]]
+- [[#tests][Tests]]
+- [[#testimonials][Testimonials]]
+- [[#license][License]]
 
 * HELP WANTED
 :PROPERTIES:
-:CUSTOM_ID: h:bfae0ecf-471b-438f-bf47-37c1aebea2a6
+:CUSTOM_ID: h-bfae0ecf-471b-438f-bf47-37c1aebea2a6
 :END:
 Hi Everyone,
 The tests are working now, but there is a lot of work still to be done,
@@ -67,14 +76,25 @@ that need to be worked out.
 
 If you have interest, please do send PRs for fixing.
 
+* Branches
+:PROPERTIES:
+:CUSTOM_ID: h-e390585c-cbd8-4e94-b36b-4e9c27c16720
+:END:
+
+There are branches for the major version numbers:
+
+- 2.x
+- 3.x
+- master (which is 4.x)
+
 * Introduction
 :PROPERTIES:
-:CUSTOM_ID: h:d893078a-b20b-4086-9272-3d9c28c86846
+:CUSTOM_ID: h-d893078a-b20b-4086-9272-3d9c28c86846
 :END:
 
 ** Overview
 :PROPERTIES:
-:CUSTOM_ID: h:d8b17d06-124e-44fd-9c86-0399f39b0254
+:CUSTOM_ID: h-d8b17d06-124e-44fd-9c86-0399f39b0254
 :END:
 
 clj-http is an HTTP library wrapping the [[http://hc.apache.org/][Apache HttpComponents]] client. This
@@ -84,7 +104,7 @@ library has taken over from mmcgrana's clj-http.
 
 ** Philosophy
 :PROPERTIES:
-:CUSTOM_ID: h:aa21d07d-333b-4ff2-93a9-ffdca31d8949
+:CUSTOM_ID: h-aa21d07d-333b-4ff2-93a9-ffdca31d8949
 :END:
 
 The design of =clj-http= is inspired by the [[https://github.com/ring-clojure/ring][Ring]] protocol for Clojure HTTP
@@ -99,7 +119,7 @@ function.
 
 * Installation
 :PROPERTIES:
-:CUSTOM_ID: h:ddfce0e2-6797-4774-add5-d5cf5bfaaa17
+:CUSTOM_ID: h-ddfce0e2-6797-4774-add5-d5cf5bfaaa17
 :END:
 
 =clj-http= is available as a Maven artifact from [[http://clojars.org/clj-http][Clojars]].
@@ -118,33 +138,9 @@ If you need an older version, a 2.x release is also available.
 
 clj-http supports clojure 1.6.0 and higher.
 
-* Towards a 3.0.0 release
-:PROPERTIES:
-:CUSTOM_ID: h:adb56cf4-1034-4d81-965e-880c7315860c
-:END:
-So there is a 2.0 branch which is based on the latest stable version of
-clj-http. Master, on the other hand, is a rewrite of the =core.clj= for the new
-Apache changes (starting with 4.0 I believe) to use non-deprecated methods.
-There are a number of things that need to be accomplished in order for it to be
-releasable in a non-snapshot version (3.0.0+ is already on Clojars)
-
-Here are the tests that need to pass:
-
-- [X] =lein test clj-http.test.client-test :all=
-- [X] =lein test clj-http.test.conn-mgr-test :all=
-- [X] =lein test clj-http.test.cookies-test :all=
-- [X] =lein test clj-http.test.core-test :all=
-- [X] =lein test clj-http.test.headers-test :all=
-- [X] =lein test clj-http.test.links-test :all=
-- [X] =lein test clj-http.test.multipart-test :all=
-- [X] =lein test clj-http.test.util-test :all=
-
-There are still a few tests that are commented out. Any help or PRs is greatly
-appreciated.
-
 * Quickstart
 :PROPERTIES:
-:CUSTOM_ID: h:65f0132e-1f96-4711-a84e-973817f37dd3
+:CUSTOM_ID: h-65f0132e-1f96-4711-a84e-973817f37dd3
 :END:
 
 The main HTTP client functionality is provided by the =clj-http.client= namespace.
@@ -168,7 +164,7 @@ response maps]]:
 
 ** HEAD
 :PROPERTIES:
-:CUSTOM_ID: h:79d1bb5f-c695-46a6-af4e-a64ca599c978
+:CUSTOM_ID: h-79d1bb5f-c695-46a6-af4e-a64ca599c978
 :END:
 
 #+BEGIN_SRC clojure
@@ -181,7 +177,7 @@ response maps]]:
 
 ** GET
 :PROPERTIES:
-:CUSTOM_ID: h:89c164fb-85c2-4953-a8c4-a50867adf42a
+:CUSTOM_ID: h-89c164fb-85c2-4953-a8c4-a50867adf42a
 :END:
 
 Example requests:
@@ -218,13 +214,13 @@ Example requests:
 (client/get "https://alioth.debian.org" {:insecure? true})
 
 ;; If you don't want to follow-redirects automatically:
-(client/get "http://example.com/redirects-somewhere" {:follow-redirects false})
+(client/get "http://example.com/redirects-somewhere" {:redirect-strategy :none})
 
 ;; Only follow a certain number of redirects:
 (client/get "http://example.com/redirects-somewhere" {:max-redirects 5})
 
-;; Throw an exception if redirected too many times:
-(client/get "http://example.com/redirects-somewhere" {:max-redirects 5 :throw-exceptions true})
+;; Avoid throwing exceptions if redirected too many times:
+(client/get "http://example.com/redirects-somewhere" {:max-redirects 5 :redirect-strategy :graceful})
 
 ;; Throw an exception if the get takes too long. Timeouts in milliseconds.
 (client/get "http://example.com/redirects-somewhere" {:socket-timeout 1000 :conn-timeout 1000})
@@ -262,7 +258,7 @@ content encodings.
 
 ** PUT
 :PROPERTIES:
-:CUSTOM_ID: h:1582cd6e-a6e8-49c8-96e3-28eee6128c31
+:CUSTOM_ID: h-1582cd6e-a6e8-49c8-96e3-28eee6128c31
 :END:
 
 #+BEGIN_SRC clojure
@@ -273,20 +269,20 @@ content encodings.
 
 ** POST
 :PROPERTIES:
-:CUSTOM_ID: h:32c8ca7a-0ef2-41b8-8158-20b0e2945e5d
+:CUSTOM_ID: h-32c8ca7a-0ef2-41b8-8158-20b0e2945e5d
 :END:
 
 #+BEGIN_SRC clojure
 
 ;; Various options:
 (client/post "http://example.com/api"
-  {:basic-auth ["user" "pass"]
-   :body "{\"json\": \"input\"}"
-   :headers {"X-Api-Version" "2"}
-   :content-type :json
-   :socket-timeout 1000  ;; in milliseconds
-   :conn-timeout 1000    ;; in milliseconds
-   :accept :json})
+             {:basic-auth ["user" "pass"]
+              :body "{\"json\": \"input\"}"
+              :headers {"X-Api-Version" "2"}
+              :content-type :json
+              :socket-timeout 1000  ;; in milliseconds
+              :conn-timeout 1000    ;; in milliseconds
+              :accept :json})
 
 ;; Send form params as a urlencoded body (POST or PUT)
 (client/post "http://example.com" {:form-params {:foo "bar"}})
@@ -296,34 +292,36 @@ content encodings.
 
 ;; Send form params as a json encoded body (POST or PUT) with options
 (client/post "http://example.com" {:form-params {:foo "bar"}
-                               :content-type :json
-                               :json-opts {:date-format "yyyy-MM-dd"}})
+                                   :content-type :json
+                                   :json-opts {:date-format "yyyy-MM-dd"}})
 
 ;; You can also specify the encoding of form parameters
 (client/post "http://example.com" {:form-params {:foo "bar"}
-                                :form-param-encoding "ISO-8859-1"})
+                                   :form-param-encoding "ISO-8859-1"})
 
 ;; Send form params as a Transit encoded JSON body (POST or PUT) with options
 (client/post "http://example.com" {:form-params {:foo "bar"}
-                                :content-type :transit+json
-                                :transit-opts
-                                {:encode {:handlers {}}
-                                 :decode {:handlers {}}}})
+                                   :content-type :transit+json
+                                   :transit-opts
+                                   {:encode {:handlers {}}
+                                    :decode {:handlers {}}}})
 
 ;; Send form params as a Transit encoded MessagePack body (POST or PUT) with options
 (client/post "http://example.com" {:form-params {:foo "bar"}
-                                :content-type :transit+msgpack
-                                :transit-opts
-                                {:encode {:handlers {}}
-                                 :decode {:handlers {}}}})
+                                   :content-type :transit+msgpack
+                                   :transit-opts
+                                   {:encode {:handlers {}}
+                                    :decode {:handlers {}}}})
 
 ;; Multipart form uploads/posts
 ;; takes a vector of maps, to preserve the order of entities, :name
 ;; will be used as the part name unless :part-name is specified
 (client/post "http://example.org" {:multipart [{:name "title" :content "My Awesome Picture"}
-                                              {:name "Content/type" :content "image/jpeg"}
-                                              {:name "foo.txt" :part-name "eggplant" :content "Eggplants"}
-                                              {:name "file" :content (clojure.java.io/file "pic.jpg")}]})
+                                               {:name "Content/type" :content "image/jpeg"}
+                                               {:name "foo.txt" :part-name "eggplant" :content "Eggplants"}
+                                               {:name "file" :content (clojure.java.io/file "pic.jpg")}]
+                                   ;; You can also optionally pass a :mime-subtype
+                                   :mime-subtype "foo"})
 
 ;; Multipart :content values can be one of the following:
 ;; String, InputStream, File, a byte-array, or an instance of org.apache.http.entity.mime.content.ContentBody
@@ -339,12 +337,11 @@ content encodings.
                                    :retry-handler (fn [ex try-count http-context]
                                                     (println "Got:" ex)
                                                     (if (> try-count 4) false true))})
-
 #+END_SRC
 
 ** DELETE
 :PROPERTIES:
-:CUSTOM_ID: h:c7165d6b-232a-439d-9390-8c05e6ef1e6f
+:CUSTOM_ID: h-c7165d6b-232a-439d-9390-8c05e6ef1e6f
 :END:
 
 #+BEGIN_SRC clojure
@@ -355,7 +352,7 @@ content encodings.
 
 ** Async HTTP Request
 :PROPERTIES:
-:CUSTOM_ID: h:0e3eb987-5b2b-4874-97ef-b834394d083d
+:CUSTOM_ID: h-0e3eb987-5b2b-4874-97ef-b834394d083d
 :END:
 The new async HTTP request API is a Ring-style async API.
 All options for synchronous request can use in asynchronous requests.
@@ -375,11 +372,11 @@ All exceptions thrown during the request will be passed to the raise callback.
 
 ** Coercions
 :PROPERTIES:
-:CUSTOM_ID: h:8902cd95-e01e-4d9b-9dc8-5f5c8f04504b
+:CUSTOM_ID: h-8902cd95-e01e-4d9b-9dc8-5f5c8f04504b
 :END:
 *** Input coercion
 :PROPERTIES:
-:CUSTOM_ID: h:bed01743-2209-473d-ae86-bd187f059e0c
+:CUSTOM_ID: h-bed01743-2209-473d-ae86-bd187f059e0c
 :END:
 
 #+BEGIN_SRC clojure
@@ -409,7 +406,7 @@ All exceptions thrown during the request will be passed to the raise callback.
 
 *** Output coercion
 :PROPERTIES:
-:CUSTOM_ID: h:0c8966a6-f220-4f1e-a79e-a520fb313f9e
+:CUSTOM_ID: h-0c8966a6-f220-4f1e-a79e-a520fb313f9e
 :END:
 
 #+BEGIN_SRC clojure
@@ -454,7 +451,7 @@ All exceptions thrown during the request will be passed to the raise callback.
 Output coercion with =:as :json=, =:as :json-strict=, =:as :json-strict-string-keys=, =:as :json-string-keys= or =:as :x-www-form-urlencoded= will only work with an optional dependency, see [[#optional-dependencies][Optional Dependencies]].
 
 JSON coercion defaults to only an "unexceptional" statuses, meaning status codes
-in the #{200 201 202 203 204 205 206 207 300 301 302 303 307} range. If you
+in the #{200 201 202 203 204 205 206 207 300 301 302 303 304 307} range. If you
 would like to change this, you can send the =:coerce= option, which can be set
 to:
 
@@ -468,7 +465,7 @@ The =:coerce= setting defaults to =:unexceptional=.
 
 ** Headers
 :PROPERTIES:
-:CUSTOM_ID: h:ef64574f-f9dc-4356-95b7-d55cc6737b44
+:CUSTOM_ID: h-ef64574f-f9dc-4356-95b7-d55cc6737b44
 :END:
 
 clj-http's treatment of headers is a little more permissive than the [[https://github.com/ring-clojure/ring/blob/master/SPEC][ring spec]]
@@ -495,7 +492,7 @@ disabled by using with-middleware to specify different behavior.
 
 ** Query-string parameters
 :PROPERTIES:
-:CUSTOM_ID: h:dd49992c-a516-4af0-9735-4f4340773361
+:CUSTOM_ID: h-dd49992c-a516-4af0-9735-4f4340773361
 :END:
 
 There are three different ways that query string parameters for array values can
@@ -522,7 +519,7 @@ controlled by the ~:multi-param-style~ option:
 
 ** Meta Tag Headers
 :PROPERTIES:
-:CUSTOM_ID: h:01663a63-8bc8-45da-8a3d-341402f3f3fa
+:CUSTOM_ID: h-01663a63-8bc8-45da-8a3d-341402f3f3fa
 :END:
 
 HTML 4.01 allows using the tag ~<meta http-equiv="..." />~ and HTML 5 allows
@@ -586,7 +583,7 @@ clj-http will automatically disable the =:decode-body-headers= option.
 
 ** Link Headers
 :PROPERTIES:
-:CUSTOM_ID: h:f7464c54-4928-474f-9132-08e6b6f3c19d
+:CUSTOM_ID: h-f7464c54-4928-474f-9132-08e6b6f3c19d
 :END:
 
 clj-http parses any [[http://tools.ietf.org/html/rfc5988][link headers]] returned in the response, and adds them to the
@@ -601,25 +598,38 @@ APIs:
 
 ** Redirects
 :PROPERTIES:
-:CUSTOM_ID: h:71c966ae-f764-4bd7-801c-0f3c8413c502
+:CUSTOM_ID: h-71c966ae-f764-4bd7-801c-0f3c8413c502
 :END:
 
 clj-http conforms its behaviour regarding automatic redirects to the [[https://tools.ietf.org/html/rfc2616#section-10.3][RFC]].
 
 It means that redirects on status =301=, =302= and =307= are not redirected on
 methods other than =GET= and =HEAD=. If you want a behaviour closer to what most
-browser have, you can set =:force-redirects= to =true= in your request to have
+browser have, you can set =:redirect-strategy= to =:lax= in your request to have
 automatic redirection work on all methods by transforming the method of the
 request to =GET=.
 
+Redirect Options:
+
+- =:trace-redirects= :: If true, clj-http will enhance the response object with a
+     list of redirected URLs with key: =:trace-redirects=.
+- =:redirect-strategy= :: Sets the redirect strategy for clj-http. Accepts the following:
+  - =:none=     - Perform no redirects
+  - =:default=  - See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/client/DefaultRedirectStrategy.html
+  - =:lax=      - See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/client/LaxRedirectStrategy.html
+  - =:graceful= - Similar to =:default=, but does not throw exceptions when max redirects is reached. This is the redirects behaviour in 2.x
+  - =nil=       - When nil, assumes =:default=
+
+     You may also pass in an instance of RedirectStrategy if you want a behaviour that's not implemented
+
 ** Cookies
 :PROPERTIES:
-:CUSTOM_ID: h:3bb89b16-4be3-455e-98ec-c5ca5830ddb9
+:CUSTOM_ID: h-3bb89b16-4be3-455e-98ec-c5ca5830ddb9
 :END:
 
 *** Cookiestores
 :PROPERTIES:
-:CUSTOM_ID: h:1d86fe30-f690-4c2a-9a1c-231669f4591a
+:CUSTOM_ID: h-1d86fe30-f690-4c2a-9a1c-231669f4591a
 :END:
 
 clj-http can simplify the maintenance of cookies across requests if it is
@@ -651,7 +661,7 @@ each request, specify the cookie-store with the =:cookie-store= option:
                                          :cookie-store my-cs}))
 #+END_SRC
 
-You can also us the =get-cookies= function to retrieve the cookies
+You can also use the =get-cookies= function to retrieve the cookies
 from a cookie store:
 
 #+BEGIN_SRC clojure
@@ -678,7 +688,7 @@ from a cookie store:
 
 *** Keystores, Trust-stores
 :PROPERTIES:
-:CUSTOM_ID: h:7968467a-1441-4a73-9307-9a7a5fd8e733
+:CUSTOM_ID: h-7968467a-1441-4a73-9307-9a7a5fd8e733
 :END:
 
 You can also specify your own keystore/trust-store to be used:
@@ -697,13 +707,13 @@ files or =KeyStore= instances.
 
 ** Exceptions
 :PROPERTIES:
-:CUSTOM_ID: h:ed9e04f1-1c7b-4c2e-9259-94d2a3e65a89
+:CUSTOM_ID: h-ed9e04f1-1c7b-4c2e-9259-94d2a3e65a89
 :END:
 
 The client will throw exceptions on, well, exceptional status codes, meaning all
-HTTP responses other than =#{200 201 202 203 204 205 206 207 300 301 302 303
-307}=. clj-http will throw a [[http://github.com/scgilardi/slingshot][Slingshot]] Stone that can be caught by a regular
-=(catch Exception e ...)= or in Slingshot's =try+= block:
+HTTP responses other than =#{200 201 202 203 204 205 206 207 300 301 302 303 304
+307}=. clj-http will throw an ex-info exception that can be caught by a regular
+=(catch Exception e ...)= or in [[http://github.com/scgilardi/slingshot][Slingshot]]'s =try+= block:
 
 #+BEGIN_SRC clojure
 (client/get "http://example.com/broken")
@@ -750,7 +760,7 @@ How to use with Slingshot:
 
 ** Decompression
 :PROPERTIES:
-:CUSTOM_ID: h:f780c96c-90be-4d83-9b53-227a9e5942ab
+:CUSTOM_ID: h-f780c96c-90be-4d83-9b53-227a9e5942ab
 :END:
 
 By default, clj-http will add the ={"Accept-Encoding" "gzip, deflate"}= header
@@ -779,7 +789,7 @@ is enabled.
 
 ** Debugging
 :PROPERTIES:
-:CUSTOM_ID: h:d2043bd3-5d97-416a-858d-a7936ff61c50
+:CUSTOM_ID: h-d2043bd3-5d97-416a-858d-a7936ff61c50
 :END:
 
 There are four debugging methods you can use:
@@ -808,12 +818,12 @@ There are four debugging methods you can use:
 
 * Authentication
 :PROPERTIES:
-:CUSTOM_ID: h:87f38469-36b4-44c6-ae74-0d8f5e80c2ed
+:CUSTOM_ID: h-87f38469-36b4-44c6-ae74-0d8f5e80c2ed
 :END:
 
 ** Basic Auth
 :PROPERTIES:
-:CUSTOM_ID: h:d3ea348f-88ed-4193-bb16-d8d5accdc2aa
+:CUSTOM_ID: h-d3ea348f-88ed-4193-bb16-d8d5accdc2aa
 :END:
 
 #+BEGIN_SRC clojure
@@ -825,7 +835,7 @@ There are four debugging methods you can use:
 
 ** Digest Auth
 :PROPERTIES:
-:CUSTOM_ID: h:d1904589-e71e-43db-8b93-0f94ccecaabe
+:CUSTOM_ID: h-d1904589-e71e-43db-8b93-0f94ccecaabe
 :END:
 
 #+BEGIN_SRC clojure
@@ -834,9 +844,20 @@ There are four debugging methods you can use:
 
 #+END_SRC
 
+** NTLM Auth
+:PROPERTIES:
+:CUSTOM_ID: h-AE80FFDC-2016-4883-9512-2BE16640339D
+:END:
+
+#+BEGIN_SRC clojure
+
+(client/get "http://example.com/protected" {:ntlm-auth ["user" "pass" "host" "domain"]})
+
+#+END_SRC
+
 ** oAuth2
 :PROPERTIES:
-:CUSTOM_ID: h:dd077440-a1de-437e-b34e-5d6d0d1da4bd
+:CUSTOM_ID: h-dd077440-a1de-437e-b34e-5d6d0d1da4bd
 :END:
 
 #+BEGIN_SRC clojure
@@ -847,12 +868,12 @@ There are four debugging methods you can use:
 
 * Advanced Usage
 :PROPERTIES:
-:CUSTOM_ID: h:d52ca837-a575-402f-81fe-53241d85f2db
+:CUSTOM_ID: h-d52ca837-a575-402f-81fe-53241d85f2db
 :END:
 
 ** Raw Request
 :PROPERTIES:
-:CUSTOM_ID: h:0d2eadbf-c1ad-4514-a932-9d173582a790
+:CUSTOM_ID: h-0d2eadbf-c1ad-4514-a932-9d173582a790
 :END:
 
 A more general =request= function is also available, which is useful as a
@@ -866,7 +887,7 @@ primitive for building higher-level interfaces:
 
 *** Boolean options
 :PROPERTIES:
-:CUSTOM_ID: h:a37c718c-43bb-43ce-936a-21ef65147295
+:CUSTOM_ID: h-a37c718c-43bb-43ce-936a-21ef65147295
 :END:
 
 Since 0.9.0, all boolean options can be expressed as either ={:debug true}= or
@@ -874,7 +895,7 @@ Since 0.9.0, all boolean options can be expressed as either ={:debug true}= or
 
 ** Persistent Connections
 :PROPERTIES:
-:CUSTOM_ID: h:4e9f116d-c293-4a0c-8e11-435c440bfe97
+:CUSTOM_ID: h-4e9f116d-c293-4a0c-8e11-435c440bfe97
 :END:
 
 clj-http can use persistent connections to speed up connections if multiple
@@ -923,14 +944,14 @@ named =wrap-async-pooling= to the default middleware list. This middleware's
 behaviour depends on =*pooling-info*= binding or =:polling-info= in options map.
 The =pooling-info= contains =:conn-mgr=, =:allocate= and =:release=.
 =:conn-mgr= is the connection manager used in the pooling context, =:allocate=
-is a function will be invoked when request start and =:release= will be invoked
-when request finished.
+is a function that will be invoked when the request starts and =:release= will be invoked
+when the request is finished.
 
-=with-async-connection-pool= use the =wrap-async-pooling= to manage the
-connection manager, you can also implement your manage strategy.
+=with-async-connection-pool= uses the =wrap-async-pooling= to manage the
+connection manager; you can also implement your own manage strategy.
 
 If you would prefer to handle managing the connection manager yourself, you can
-create a connection manager yourself and specify it for each request:
+create a connection manager and specify it for each request:
 
 #+BEGIN_SRC clojure
 (def cm (clj-http.conn-mgr/make-reusable-conn-manager {:timeout 2 :threads 3}))
@@ -948,11 +969,11 @@ create a connection manager yourself and specify it for each request:
 See the docstring on =make-reusable-conn-manager= for options and default
 values.
 
-In current version, pooled async request CANNOT specify connection manager.
+In the current version, pooled async request CANNOT specify connection manager.
 
 ** Proxies
 :PROPERTIES:
-:CUSTOM_ID: h:49f9ca81-0bad-4cd8-87ac-c09a85fa5500
+:CUSTOM_ID: h-49f9ca81-0bad-4cd8-87ac-c09a85fa5500
 :END:
 
 A proxy can be specified by setting the Java properties: =<scheme>.proxyHost=
@@ -1009,7 +1030,7 @@ You can also store the proxied connection manager and reuse it later.
 
 ** Custom Middleware
 :PROPERTIES:
-:CUSTOM_ID: h:c51cba6c-5c1b-4941-93c3-f769bb533562
+:CUSTOM_ID: h-c51cba6c-5c1b-4941-93c3-f769bb533562
 :END:
 
 Sometime it is desirable to run a request with some middleware enabled and some
@@ -1030,14 +1051,14 @@ middleware during request time.
 
 * Development
 :PROPERTIES:
-:CUSTOM_ID: h:65bbf017-2e8b-4c43-824b-24b89cc27a70
+:CUSTOM_ID: h-65bbf017-2e8b-4c43-824b-24b89cc27a70
 :END:
 
 Please send a pull request or open an issue if you have any problems.
 
 ** Faking Responses
 :PROPERTIES:
-:CUSTOM_ID: h:c3d9c7e0-cc3f-47bf-91e3-b12567b08eb6
+:CUSTOM_ID: h-c3d9c7e0-cc3f-47bf-91e3-b12567b08eb6
 :END:
 
 If you need to fake clj-http responses (for things like testing and such), check
@@ -1045,7 +1066,7 @@ out the [[https://github.com/myfreeweb/clj-http-fake][clj-http-fake]] library.
 
 ** Optional Dependencies
 :PROPERTIES:
-:CUSTOM_ID: h:f1fbdad3-cf40-41e0-8ae0-8716419be228
+:CUSTOM_ID: h-f1fbdad3-cf40-41e0-8ae0-8716419be228
 :END:
 
 In 2.0.0+ clj-http's optional dependencies at excluded by default, in order to
@@ -1068,7 +1089,7 @@ without them.
 
 ** clj-http-lite
 :PROPERTIES:
-:CUSTOM_ID: h:ba6b263b-74a5-40f3-afc1-b0d785554c2b
+:CUSTOM_ID: h-ba6b263b-74a5-40f3-afc1-b0d785554c2b
 :END:
 
 Like clj-http but need something more lightweight without as many external
@@ -1077,11 +1098,11 @@ drop-in replacement for clj-http.
 
 ** Troubleshooting
 :PROPERTIES:
-:CUSTOM_ID: h:c543201e-a0e5-4e84-8eb2-6bf3e21a3140
+:CUSTOM_ID: h-c543201e-a0e5-4e84-8eb2-6bf3e21a3140
 :END:
 *** VerifyError class org.codehaus.jackson.smile.SmileParser overrides final method getBinaryValue...
 :PROPERTIES:
-:CUSTOM_ID: h:c3a8ebc3-a247-4327-8b71-0097d1380873
+:CUSTOM_ID: h-c3a8ebc3-a247-4327-8b71-0097d1380873
 :END:
 
 This is actually caused by your project attempting to use [[https://github.com/mmcgrana/clj-json/][clj-json]] and [[https://github.com/dakrone/cheshire][cheshire]]
@@ -1104,7 +1125,7 @@ and clj-json can now live together without causing problems.
 
 *** NoHttpResponseException ... due to stale connections**
 :PROPERTIES:
-:CUSTOM_ID: h:9d7cf050-ed5b-4d23-8b02-97a9b9c94737
+:CUSTOM_ID: h-9d7cf050-ed5b-4d23-8b02-97a9b9c94737
 :END:
 
 Persistent connections kept alive by the connection manager become stale: the
@@ -1117,7 +1138,7 @@ This can be solved by using (with-connection-pool) as described in the
 
 * Tests
 :PROPERTIES:
-:CUSTOM_ID: h:a52feb3d-d966-4287-a07e-ad7aa7918fd5
+:CUSTOM_ID: h-a52feb3d-d966-4287-a07e-ad7aa7918fd5
 :END:
 
 To run the tests:
@@ -1136,7 +1157,7 @@ $ lein all test :all
 
 * Testimonials
 :PROPERTIES:
-:CUSTOM_ID: h:3044d1f7-6772-43c2-9ded-8c71c7f9ada2
+:CUSTOM_ID: h-3044d1f7-6772-43c2-9ded-8c71c7f9ada2
 :END:
 
 With over [[https://clojars.org/clj-http][two million]] downloads, clj-http is a
@@ -1156,7 +1177,7 @@ Libraries inspired by clj-http:
 
 * License
 :PROPERTIES:
-:CUSTOM_ID: h:2de3db75-7a1b-42b8-ad3b-6ef27fc2a5ea
+:CUSTOM_ID: h-2de3db75-7a1b-42b8-ad3b-6ef27fc2a5ea
 :END:
 
 Released under the MIT License:

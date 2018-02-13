@@ -135,6 +135,14 @@
     (is (= 200 (:status resp)))
     (is (= "get" (slurp-body resp)))))
 
+(deftest ^:integration save-request-option
+  (run-server)
+  (let [resp (request {:request-method :post
+                       :uri "/post"
+                       :body (util/utf8-bytes "contents")
+                       :save-request? true})]
+    (is (= "/post" (-> resp :request :uri)))))
+
 (deftest ^:integration makes-head-request
   (run-server)
   (let [resp (request {:request-method :head :uri "/head"})]
@@ -304,7 +312,9 @@
                           :allow-circular-redirects true})]
     (is (= 302 (:status resp)))
     (is (= 3 (count (:trace-redirects resp))))
-    (is (=  ["http://localhost:18080/redirect" "http://localhost:18080/redirect" "http://localhost:18080/redirect"]
+    (is (=  ["http://localhost:18080/redirect"
+             "http://localhost:18080/redirect"
+             "http://localhost:18080/redirect"]
             (:trace-redirects resp))))
 
   (is (thrown-with-msg? Exception #"Maximum redirects \(2\) exceeded"
@@ -346,14 +356,17 @@
   (let [transit-json-resp (client/get (localhost "/transit-json") {:as :auto})
         transit-msgpack-resp (client/get (localhost "/transit-msgpack")
                                          {:as :auto})
-        bad-status-resp-default (client/get (localhost "/transit-json-bad")
-                                    {:throw-exceptions false :as :transit+json})
-        bad-status-resp-always (client/get (localhost "/transit-json-bad")
-                                     {:throw-exceptions false :as :transit+json
-                                      :coerce :always})
-        bad-status-resp-exceptional (client/get (localhost "/transit-json-bad")
-                                     {:throw-exceptions false :as :transit+json
-                                      :coerce :exceptional})
+        bad-status-resp-default
+        (client/get (localhost "/transit-json-bad")
+                    {:throw-exceptions false :as :transit+json})
+        bad-status-resp-always
+        (client/get (localhost "/transit-json-bad")
+                    {:throw-exceptions false :as :transit+json
+                     :coerce :always})
+        bad-status-resp-exceptional
+        (client/get (localhost "/transit-json-bad")
+                    {:throw-exceptions false :as :transit+json
+                     :coerce :exceptional})
         empty-resp (client/get (localhost "/transit-json-empty")
                                {:throw-exceptions false :as :transit+json})]
     (is (= 200
@@ -369,7 +382,7 @@
            (:body transit-msgpack-resp)))
 
     (is (nil? (:body empty-resp)))
-    
+
     (is (= "[\"^ \", \"~:foo\",\"bar\"]"
            (:body bad-status-resp-default)))
     (is (= {:foo "bar"}
@@ -642,16 +655,18 @@
         real-http-client core/http-client
         http-context (HttpClientContext/create)
         request-config (.build (RequestConfig/custom))]
-    (with-redefs [core/http-client (fn [& args]
-                                     (proxy [org.apache.http.impl.client.CloseableHttpClient] []
-                                       (execute [http-req context]
-                                         (swap! called-args conj [http-req context])
-                                         (.execute (apply real-http-client args) http-req context))))]
+    (with-redefs
+      [core/http-client
+       (fn [& args]
+         (proxy [org.apache.http.impl.client.CloseableHttpClient] []
+           (execute [http-req context]
+             (swap! called-args conj [http-req context])
+             (.execute (apply real-http-client args) http-req context))))]
       (client/request {:method :get
                        :url "http://localhost:18080/get"
                        :http-client-context http-context
                        :http-request-config request-config})
 
       (let [context-for-request (last (last @called-args))]
-      (is (= http-context context-for-request))
-      (is (= request-config (.getRequestConfig context-for-request)))))))
+        (is (= http-context context-for-request))
+        (is (= request-config (.getRequestConfig context-for-request)))))))
