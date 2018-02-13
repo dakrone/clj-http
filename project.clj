@@ -7,25 +7,25 @@
   :global-vars {*warn-on-reflection* false}
   :min-lein-version "2.0.0"
   :exclusions [org.clojure/clojure]
-  :dependencies [[org.apache.httpcomponents/httpcore "4.4.6"]
-                 [org.apache.httpcomponents/httpclient "4.5.3"]
+  :dependencies [[org.apache.httpcomponents/httpcore "4.4.9"]
+                 [org.apache.httpcomponents/httpclient "4.5.5"]
                  [org.apache.httpcomponents/httpasyncclient "4.1.3"]
-                 [org.apache.httpcomponents/httpmime "4.5.3"]
-                 [commons-codec "1.10"]
-                 [commons-io "2.5"]
-                 [potemkin "0.4.3"]]
+                 [org.apache.httpcomponents/httpmime "4.5.5"]
+                 [commons-codec "1.11"]
+                 [commons-io "2.6"]
+                 [potemkin "0.4.4"]]
   :profiles {:dev {:dependencies [;; optional deps
-                                  [cheshire "5.7.1"]
+                                  [cheshire "5.8.0"]
                                   [crouton "0.1.2"]
-                                  [org.clojure/tools.reader "0.10.0"]
+                                  [org.clojure/tools.reader "1.2.1"]
                                   [com.cognitect/transit-clj "0.8.300"]
-                                  [ring/ring-codec "1.0.1"]
+                                  [ring/ring-codec "1.1.0"]
                                   ;; other (testing) deps
                                   [org.clojure/clojure "1.8.0"]
-                                  [org.clojure/tools.logging "0.3.1"]
+                                  [org.clojure/tools.logging "0.4.0"]
                                   [log4j "1.2.17"]
-                                  [ring/ring-jetty-adapter "1.6.1"]
-                                  [ring/ring-devel "1.6.1"]
+                                  [ring/ring-jetty-adapter "1.6.3"]
+                                  [ring/ring-devel "1.6.3"]
                                   ;; caching example deps
                                   [org.clojure/core.cache "0.6.5"]]
                    :plugins [[lein-ancient "0.6.15"]]}
