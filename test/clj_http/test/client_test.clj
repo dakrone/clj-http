@@ -53,7 +53,7 @@
     (is (= 200 (:status resp)))
     (is (= "close" (get-in resp [:headers "connection"])))
     (is (= "get" (:body resp))))
-  (let [params {:a "1" :b {:c "2"}}]
+  (let [params {:a "1" :b "2"}]
     (doseq [[content-type read-fn]
             [[nil (comp parse-form-params slurp)]
              [:x-www-form-urlencoded (comp parse-form-params slurp)]
@@ -67,7 +67,8 @@
                            :form-params params})]
         (is (= 200 (:status resp)))
         (is (= "close" (get-in resp [:headers "connection"])))
-        (is (= params (read-fn (:body resp))))))))
+        (is (= params (read-fn (:body resp)))
+            (str "failed with content-type [" content-type "]"))))))
 
 (deftest ^:integration roundtrip-async
   (run-server)
@@ -91,7 +92,7 @@
     (is (= "get" (:body @resp)))
     (is (not (realized? exception))))
 
-  (let [params {:a "1" :b {:c "2"}}]
+  (let [params {:a "1" :b "2"}]
     (doseq [[content-type read-fn]
             [[nil (comp parse-form-params slurp)]
              [:x-www-form-urlencoded (comp parse-form-params slurp)]
@@ -104,6 +105,7 @@
                         :as :stream
                         :method :post
                         :content-type content-type
+                        :flatten-nested-keys []
                         :form-params params
                         :async? true} resp exception)]
         (is (= 200 (:status @resp)))
@@ -1162,13 +1164,38 @@
 
 (deftest apply-on-nested-params
   (testing "nested parameter maps"
-    (are [in out] (is-applied client/wrap-nested-params
-                              {:query-params in :form-params in}
-                              {:query-params out :form-params out})
-      {"foo" "bar"} {"foo" "bar"}
-      {"x" {"y" "z"}} {"x[y]" "z"}
-      {"a" {"b" {"c" "d"}}} {"a[b][c]" "d"}
-      {"a" "b", "c" "d"} {"a" "b", "c" "d"}))
+    (is-applied (comp client/wrap-form-params
+                      client/wrap-nested-params)
+                {:query-params {"foo" "bar"}
+                 :form-params {"foo" "bar"}
+                 :flatten-nested-keys [:query-params :form-params]}
+                {:query-params {"foo" "bar"}
+                 :form-params {"foo" "bar"}
+                 :flatten-nested-keys [:query-params :form-params]})
+    (is-applied (comp client/wrap-form-params
+                      client/wrap-nested-params)
+                {:query-params {"x" {"y" "z"}}
+                 :form-params {"x" {"y" "z"}}
+                 :flatten-nested-keys [:query-params]}
+                {:query-params {"x[y]" "z"}
+                 :form-params {"x" {"y" "z"}}
+                 :flatten-nested-keys [:query-params]})
+    (is-applied (comp client/wrap-form-params
+                      client/wrap-nested-params)
+                {:query-params {"a" {"b" {"c" "d"}}}
+                 :form-params {"a" {"b" {"c" "d"}}}
+                 :flatten-nested-keys [:form-params]}
+                {:query-params {"a" {"b" {"c" "d"}}}
+                 :form-params {"a[b][c]" "d"}
+                 :flatten-nested-keys [:form-params]})
+    (is-applied (comp client/wrap-form-params
+                      client/wrap-nested-params)
+                {:query-params {"a" {"b" {"c" "d"}}}
+                 :form-params {"a" {"b" {"c" "d"}}}
+                 :flatten-nested-keys [:query-params :form-params]}
+                {:query-params {"a[b][c]" "d"}
+                 :form-params {"a[b][c]" "d"}
+                 :flatten-nested-keys [:query-params :form-params]}))
 
   (testing "not creating empty param maps"
     (is-applied client/wrap-query-params {} {})))
@@ -1242,7 +1269,7 @@
                 (fn [req] {:body nil})) {:decode-body-headers true})
         resp4 ((client/wrap-additional-header-parsing
                 (fn [req] {:headers {"content-type" "application/pdf"}
-                           :body (.getBytes text)}))
+                          :body (.getBytes text)}))
                {:decode-body-headers true})]
     (is (= {"content-type" "text/html; charset=Shift_JIS"
             "content-style-type" "text/css"
@@ -1582,3 +1609,40 @@
       (is (= 200 (:status resp)))
       (is (.contains query-string "a[]=1&a[]=2&a[]=3") query-string)
       (is (.contains query-string "b[]=x&b[]=y&b[]=z") query-string))))
+
+(deftest t-wrap-flatten-nested-params
+  (is-applied client/wrap-flatten-nested-params
+              {}
+              {:flatten-nested-keys [:query-params]})
+  (is-applied client/wrap-flatten-nested-params
+              {:flatten-nested-keys []}
+              {:flatten-nested-keys []})
+  (is-applied client/wrap-flatten-nested-params
+              {:flatten-nested-keys [:foo]}
+              {:flatten-nested-keys [:foo]})
+  (is-applied client/wrap-flatten-nested-params
+              {:ignore-nested-query-string true}
+              {:ignore-nested-query-string true
+               :flatten-nested-keys []})
+  (is-applied client/wrap-flatten-nested-params
+              {}
+              {:flatten-nested-keys '(:query-params)})
+  (is-applied client/wrap-flatten-nested-params
+              {:flatten-nested-form-params true}
+              {:flatten-nested-form-params true
+               :flatten-nested-keys '(:query-params :form-params)})
+  (is-applied client/wrap-flatten-nested-params
+              {:flatten-nested-form-params true
+               :ignore-nested-query-string true}
+              {:ignore-nested-query-string true
+               :flatten-nested-form-params true
+               :flatten-nested-keys '(:form-params)})
+  (try
+    ((client/wrap-flatten-nested-params identity)
+     {:flatten-nested-form-params true
+      :ignore-nested-query-string true
+      :flatten-nested-keys [:thing :bar]})
+    (catch IllegalArgumentException e
+      (is (= (.getMessage e)
+             (str "only :flatten-nested-keys or :ignore-nested-query-string/"
+                  ":flatten-nested-keys may be specified, not both"))))))
