@@ -881,11 +881,15 @@
      (client (nest-params-request req) respond raise))))
 
 (defn- nested-keys-to-flatten
-  [{:keys [flatten-nested-keys
-           ignore-nested-query-string
-           flatten-nested-form-params]}]
-  (let [iqs-key (when-not ignore-nested-query-string :query-params)
-        ifp-key (when flatten-nested-form-params :form-params)]
+  [{:keys [flatten-nested-keys] :as req}]
+  (when (and (not (nil? (opt req :ignore-nested-query-string)))
+             (not (nil? (opt req :flatten-nested-form-params)))
+             flatten-nested-keys)
+    (throw (IllegalArgumentException.
+            (str "only :flatten-nested-keys or :ignore-nested-query-string/"
+                 ":flatten-nested-keys may be specified, not both"))))
+  (let [iqs-key (when-not (opt req :ignore-nested-query-string) :query-params)
+        ifp-key (when (opt req :flatten-nested-form-params) :form-params)]
     (or flatten-nested-keys
         (remove nil? (list iqs-key ifp-key)))))
 
