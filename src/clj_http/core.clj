@@ -156,7 +156,8 @@
 
 (defn http-client [{:keys [redirect-strategy retry-handler uri
                            request-interceptor response-interceptor
-                           proxy-host proxy-port]}
+                           proxy-host proxy-port http-builder-fns]
+                    :as req}
                    conn-mgr http-url proxy-ignore-host]
   ;; have to let first, otherwise we get a reflection warning on (.build)
   (let [^HttpClientBuilder builder (-> (HttpClients/custom)
@@ -183,11 +184,14 @@
                  (process [resp ctx]
                    (response-interceptor
                     resp ctx)))))
+    (doseq [http-builder-fn http-builder-fns]
+      (http-builder-fn builder req))
     (.build builder)))
 
 (defn http-async-client [{:keys [redirect-strategy uri
                                  request-interceptor response-interceptor
-                                 proxy-host proxy-port] :as req}
+                                 proxy-host proxy-port async-http-builder-fns]
+                          :as req}
                          conn-mgr http-url proxy-ignore-host]
   ;; have to let first, otherwise we get a reflection warning on (.build)
   (let [^HttpAsyncClientBuilder builder (-> (HttpAsyncClients/custom)
@@ -217,6 +221,8 @@
                  (process [resp ctx]
                    (response-interceptor
                     resp ctx)))))
+    (doseq [async-http-builder-fn async-http-builder-fns]
+      (async-http-builder-fn builder req))
     (.build builder)))
 
 (defn http-get []
@@ -379,11 +385,11 @@
             cookie-store cookie-policy headers multipart mime-subtype
             http-multipart-mode query-string redirect-strategy max-redirects
             retry-handler request-method scheme server-name server-port
-            socket-timeout uri response-interceptor proxy-host proxy-port async?
+            socket-timeout uri response-interceptor proxy-host proxy-port
             http-client-context http-request-config
             proxy-ignore-hosts proxy-user proxy-pass digest-auth ntlm-auth]
      :as req} respond raise]
-   (let [req (dissoc req :async?)
+   (let [async? (opt req :async)
          scheme (name scheme)
          http-url (str scheme "://" server-name
                        (when server-port (str ":" server-port))
