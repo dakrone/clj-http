@@ -113,6 +113,24 @@
         (is (= params (read-fn (:body @resp))))
         (is (not (realized? exception)))))))
 
+(deftest ^:integration multipart-async
+  (run-server)
+  (let [resp (promise)
+        exception (promise)
+        _ (request {:uri "/post" :method :post
+                       :async? true
+                       :multipart [{:name "title" :content "some-file"}
+                                   {:name "Content/Type" :content "text/plain"}
+                                   {:name "file"
+                                    :content (clojure.java.io/file
+                                               "test-resources/m.txt")}]}
+                      resp
+                      exception
+                      )]
+    (is (= 200 (:status @resp)))
+    (is (not (realized? exception)))
+    #_(when (realized? exception) (prn @exception))))
+
 (deftest ^:integration nil-input
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
                         (client/get nil)))
