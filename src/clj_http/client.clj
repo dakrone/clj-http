@@ -882,8 +882,8 @@
 
 (defn- nested-keys-to-flatten
   [{:keys [flatten-nested-keys] :as req}]
-  (when (and (not (nil? (opt req :ignore-nested-query-string)))
-             (not (nil? (opt req :flatten-nested-form-params)))
+  (when (and (or (not (nil? (opt req :ignore-nested-query-string)))
+                 (not (nil? (opt req :flatten-nested-form-params))))
              flatten-nested-keys)
     (throw (IllegalArgumentException.
             (str "only :flatten-nested-keys or :ignore-nested-query-string/"
