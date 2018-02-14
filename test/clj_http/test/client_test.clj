@@ -1660,6 +1660,16 @@
      {:flatten-nested-form-params true
       :ignore-nested-query-string true
       :flatten-nested-keys [:thing :bar]})
+    (is false "should have thrown exception")
+    (catch IllegalArgumentException e
+      (is (= (.getMessage e)
+             (str "only :flatten-nested-keys or :ignore-nested-query-string/"
+                  ":flatten-nested-keys may be specified, not both")))))
+  (try
+    ((client/wrap-flatten-nested-params identity)
+     {:ignore-nested-query-string true
+      :flatten-nested-keys [:thing :bar]})
+    (is false "should have thrown exception")
     (catch IllegalArgumentException e
       (is (= (.getMessage e)
              (str "only :flatten-nested-keys or :ignore-nested-query-string/"
