@@ -10,7 +10,8 @@
            (java.util Locale)
            (org.apache.http HttpEntity HeaderIterator HttpHost HttpRequest
                             HttpEntityEnclosingRequest HttpResponse
-                            HttpRequestInterceptor HttpResponseInterceptor)
+                            HttpRequestInterceptor HttpResponseInterceptor
+                            ProtocolException)
            (org.apache.http.auth UsernamePasswordCredentials AuthScope
                                  NTCredentials)
            (org.apache.http.client HttpRequestRetryHandler RedirectStrategy
@@ -23,6 +24,7 @@
                                            CloseableHttpResponse
                                            HttpUriRequest HttpRequestBase)
            (org.apache.http.client.protocol HttpClientContext)
+           (org.apache.http.client.utils URIUtils)
            (org.apache.http.config RegistryBuilder)
            (org.apache.http.conn.routing HttpRoute HttpRoutePlanner)
            (org.apache.http.conn.ssl BrowserCompatHostnameVerifier
@@ -60,33 +62,70 @@
                    (headers/assoc-join hs k v))
                  (headers/header-map)))))
 
-(def graceful-redirect-strategy
-  (reify RedirectStrategy
-    (getRedirect [this request response context]
-      (.getRedirect DefaultRedirectStrategy/INSTANCE request response context))
+(defn graceful-redirect-strategy
+  "Similar to the default redirect strategy, however, does not throw an error
+  when the maximum number of redirects has been reached. Still supports
+  validating that the new redirect host is not empty."
+  [req]
+  (let [validate? (opt req :validate-redirects)]
+    (reify RedirectStrategy
+      (getRedirect [this request response context]
+        (let [new-request (.getRedirect DefaultRedirectStrategy/INSTANCE
+                                        request response context)]
+          (when (or validate? (nil? validate?))
+            (let [uri (.getURI new-request)
+                  new-host (URIUtils/extractHost uri)]
+              (when (nil? new-host)
+                (throw
+                 (ProtocolException.
+                  (str "Redirect URI does not specify a valid host name: "
+                       uri))))))
+          new-request))
 
-    (isRedirected [this request response context]
-      (let [^HttpClientContext typed-context context
-            max-redirects (-> (.getRequestConfig typed-context)
-                              .getMaxRedirects)
-            num-redirects (count (.getRedirectLocations typed-context))]
-        (if (<= max-redirects num-redirects)
-          false
-          (.isRedirected DefaultRedirectStrategy/INSTANCE
-                         request response typed-context))))))
+      (isRedirected [this request response context]
+        (let [^HttpClientContext typed-context context
+              max-redirects (-> (.getRequestConfig typed-context)
+                                .getMaxRedirects)
+              num-redirects (count (.getRedirectLocations typed-context))]
+          (if (<= max-redirects num-redirects)
+            false
+            (.isRedirected DefaultRedirectStrategy/INSTANCE
+                           request response typed-context)))))))
 
-(defn get-redirect-strategy [redirect-strategy]
+(defn default-redirect-strategy [^RedirectStrategy original req]
+  "Proxies calls to whatever original redirect strategy is passed in, however,
+  if :validate-redirects is set in the request, checks that the redirected host
+  is not empty."
+  (let [validate? (opt req :validate-redirects)]
+    (reify RedirectStrategy
+      (getRedirect [this request response context]
+        (let [new-request (.getRedirect original request response context)]
+          (when (or validate? (nil? validate?))
+            (let [uri (.getURI new-request)
+                  new-host (URIUtils/extractHost uri)]
+              (when (nil? new-host)
+                (throw
+                 (ProtocolException.
+                  (str "Redirect URI does not specify a valid host name: "
+                       uri))))))
+          new-request))
+
+      (isRedirected [this request response context]
+        (.isRedirected original request response context)))))
+
+(defn get-redirect-strategy [{:keys [redirect-strategy] :as req}]
   (case redirect-strategy
     :none (reify RedirectStrategy
             (getRedirect [this request response context] nil)
             (isRedirected [this request response context] false))
 
-    ;; Like default, but does not
-    :graceful graceful-redirect-strategy
+    ;; Like default, but does not throw exceptions when max redirects is
+    ;; reached.
+    :graceful (graceful-redirect-strategy req)
 
-    :default (DefaultRedirectStrategy/INSTANCE)
-    :lax (LaxRedirectStrategy.)
-    nil (DefaultRedirectStrategy/INSTANCE)
+    :default (default-redirect-strategy DefaultRedirectStrategy/INSTANCE req)
+    :lax (default-redirect-strategy (LaxRedirectStrategy.) req)
+    nil (default-redirect-strategy DefaultRedirectStrategy/INSTANCE req)
 
     ;; use directly as reifed RedirectStrategy
     redirect-strategy))
@@ -153,17 +192,16 @@
       (DefaultProxyRoutePlanner. (construct-http-host proxy-host proxy-port))
       (SystemDefaultRoutePlanner. (ProxySelector/getDefault)))))
 
-(defn http-client [{:keys [redirect-strategy retry-handler uri
-                           request-interceptor response-interceptor
-                           proxy-host proxy-port http-builder-fns]
+(defn http-client [{:keys [retry-handler uri request-interceptor
+                           response-interceptor proxy-host proxy-port
+                           http-builder-fns]
                     :as req}
                    conn-mgr http-url proxy-ignore-host]
   ;; have to let first, otherwise we get a reflection warning on (.build)
   (let [^HttpClientBuilder builder (-> (HttpClients/custom)
                                        (.setConnectionManager conn-mgr)
                                        (.setRedirectStrategy
-                                        (get-redirect-strategy
-                                         redirect-strategy))
+                                        (get-redirect-strategy req))
                                        (add-retry-handler retry-handler)
                                        ;; By default, get the proxy settings
                                        ;; from the jvm or system properties
@@ -187,8 +225,7 @@
       (http-builder-fn builder req))
     (.build builder)))
 
-(defn http-async-client [{:keys [redirect-strategy uri
-                                 request-interceptor response-interceptor
+(defn http-async-client [{:keys [uri request-interceptor response-interceptor
                                  proxy-host proxy-port async-http-builder-fns]
                           :as req}
                          conn-mgr http-url proxy-ignore-host]
@@ -196,8 +233,7 @@
   (let [^HttpAsyncClientBuilder builder (-> (HttpAsyncClients/custom)
                                             (.setConnectionManager conn-mgr)
                                             (.setRedirectStrategy
-                                             (get-redirect-strategy
-                                              redirect-strategy))
+                                             (get-redirect-strategy req))
                                             ;; By default, get the proxy
                                             ;; settings from the jvm or system
                                             ;; properties
