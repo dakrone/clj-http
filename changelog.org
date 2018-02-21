@@ -19,6 +19,8 @@ List of user-visible changes that have gone into each release
   https://github.com/dakrone/clj-http/issues/427
 - Added =:http-builder-fns= and =:async-http-builder-fns= to support arbitrary customizations to the
   =HttpClientBuilder= and =HttpAsyncClientBuilder=
+- Fixed an issue where redirects to a bad location could cause the async client to hang -
+  https://github.com/dakrone/clj-http/pull/435
 
 ** 3.7.0
 This list contains all the changes since 3.0.0.
