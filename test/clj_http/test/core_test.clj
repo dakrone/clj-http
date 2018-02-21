@@ -8,6 +8,7 @@
             [clojure.test :refer :all]
             [ring.adapter.jetty :as ring])
   (:import (java.io ByteArrayInputStream)
+           (java.util.concurrent TimeoutException TimeUnit)
            (org.apache.http.params CoreConnectionPNames CoreProtocolPNames)
            (org.apache.http.message BasicHeader BasicHeaderIterator)
            (org.apache.http.client.methods HttpPost)
@@ -15,7 +16,7 @@
            (org.apache.http.client.config RequestConfig)
            (org.apache.http.client.params CookiePolicy ClientPNames)
            (org.apache.http HttpRequest HttpResponse HttpConnection
-                            HttpInetConnection HttpVersion)
+                            HttpInetConnection HttpVersion ProtocolException)
            (org.apache.http.protocol HttpContext ExecutionContext)
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.client.params ClientPNames)
@@ -48,6 +49,8 @@
     [:get "/redirect"]
     {:status 302
      :headers {"location" "http://localhost:18080/redirect"}}
+    [:get "/bad-redirect"]
+    {:status 301 :headers {"location" "https:///"}}
     [:get "/redirect-to-get"]
     {:status 302
      :headers {"location" "http://localhost:18080/get"}}
@@ -706,3 +709,48 @@
     (is (.contains (get-in @resp [:headers "got"]) "\"foo\" \"bar\"")
         "Headers should have included the new default headers")
     (is (not (realized? error)))))
+
+(deftest ^:integration test-bad-redirects
+  (run-server)
+  (try
+    (client/get (localhost "/bad-redirect"))
+    (is false "should have thrown an exception")
+    (catch ProtocolException e
+      (is (.contains
+           (.getMessage e)
+           "Redirect URI does not specify a valid host name: https:///"))))
+  ;; async version
+  (let [e (atom nil)
+        latch (promise)]
+    (try
+      (.get
+       (client/get (localhost "/bad-redirect") {:async true}
+                   (fn [resp]
+                     (is false
+                         (str "should not have been called but got" resp)))
+                   (fn [err]
+                     (reset! e err)
+                     (deliver latch true)
+                     nil)))
+      (catch Exception error
+        (is (.contains
+             (.getMessage error)
+             "Redirect URI does not specify a valid host name: https:///"))))
+    @latch
+    (is (.contains
+         (.getMessage @e)
+         "Redirect URI does not specify a valid host name: https:///")))
+  (try
+    (.get (client/get
+           (localhost "/bad-redirect")
+           {:async true
+            :validate-redirects false}
+           (fn [resp]
+             (is false
+                 (str "should not have been called but got" resp)))
+           (fn [err]
+             (is false
+                 (str "should not have been called but got" err))))
+          1 TimeUnit/SECONDS)
+    (is false "should have thrown a timeout exception")
+    (catch TimeoutException te)))

@@ -637,7 +637,11 @@ Redirect Options:
   - =:graceful= - Similar to =:default=, but does not throw exceptions when max redirects is reached. This is the redirects behaviour in 2.x
   - =nil=       - When nil, assumes =:default=
 
-     You may also pass in an instance of RedirectStrategy if you want a behaviour that's not implemented
+You may also pass in an instance of RedirectStrategy (in the =:redirect-strategy= key) if you want a
+behavior that's not implemented.
+
+Additionally, clj-http will attempt to validate that a redirect host is not invalid, you can disable
+this by setting =:validate-redirects false= in the request (the default is true)
 
 NOTE: The options =:force-redirects= and =:follow-redirects= (present in clj-http 2.x are no longer
 used). You can use =:graceful= to mostly emulate the old redirect behaviour.
