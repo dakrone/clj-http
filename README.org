@@ -715,6 +715,9 @@ from a cookie store:
 :CUSTOM_ID: h-7968467a-1441-4a73-9307-9a7a5fd8e733
 :END:
 
+Need more docs on this? See the [[SSL.org][SSL documentation]] if you want to use your own self-signed
+certificate.
+
 You can also specify your own keystore/trust-store to be used:
 
 #+BEGIN_SRC clojure
