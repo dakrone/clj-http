@@ -5,20 +5,19 @@
   (:import (java.io ByteArrayInputStream ByteArrayOutputStream)
            (java.net Socket Proxy Proxy$Type InetSocketAddress)
            (java.security KeyStore)
-           (org.apache.commons.io IOUtils)
-           (org.apache.http.config RegistryBuilder Registry)
-           (org.apache.http.conn HttpClientConnectionManager)
-           (org.apache.http.conn.ssl DefaultHostnameVerifier
-                                     NoopHostnameVerifier
-                                     SSLConnectionSocketFactory
-                                     SSLContexts
-                                     TrustStrategy)
-           (org.apache.http.conn.socket PlainConnectionSocketFactory)
-           (org.apache.http.impl.conn BasicHttpClientConnectionManager
-                                      PoolingHttpClientConnectionManager)
-           (org.apache.http.impl.nio.conn PoolingNHttpClientConnectionManager)
+           (org.apache.hc.core5.http.config RegistryBuilder Registry)
+           (org.apache.hc.client5.http.io HttpClientConnectionManager)
+           (org.apache.hc.client5.http.ssl DefaultHostnameVerifier
+                                           NoopHostnameVerifier
+                                           SSLConnectionSocketFactory)
+           (org.apache.hc.core5.ssl SSLContexts
+                                    TrustStrategy)
+           (org.apache.hc.client5.http.socket PlainConnectionSocketFactory)
+           (org.apache.hc.client5.http.impl.io BasicHttpClientConnectionManager
+                                               PoolingHttpClientConnectionManager)
+           ;; (org.apache.http.impl.nio.conn PoolingNHttpClientConnectionManager)
            (javax.net.ssl SSLContext HostnameVerifier)
-           (org.apache.http.nio.conn NHttpClientConnectionManager)
+           ;; (org.apache.http.nio.conn NHttpClientConnectionManager)
            (org.apache.http.nio.conn.ssl SSLIOSessionStrategy)
            (org.apache.http.impl.nio.reactor
             IOReactorConfig
