@@ -178,6 +178,7 @@
     {:scheme (keyword (.getProtocol url-parsed))
      :server-name (.getHost url-parsed)
      :server-port (when-pos (.getPort url-parsed))
+     :url url
      :uri (url-encode-illegal-characters (.getPath url-parsed))
      :user-info (if-let [user-info (.getUserInfo url-parsed)]
                   (util/url-decode user-info))

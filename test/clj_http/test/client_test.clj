@@ -623,7 +623,9 @@
   (is (= nil  (-> "http://example.com/" client/parse-url :server-port)))
   (is (= 8080 (-> "http://example.com:8080/" client/parse-url :server-port)))
   (is (= nil  (-> "https://example.com/" client/parse-url :server-port)))
-  (is (= 8443 (-> "https://example.com:8443/" client/parse-url :server-port))))
+  (is (= 8443 (-> "https://example.com:8443/" client/parse-url :server-port)))
+  (is (= "https://example.com:8443/"
+         (-> "https://example.com:8443/" client/parse-url :url))))
 
 (deftest decode-credentials-from-url
   (is (= "fred's diner:fred's password"
