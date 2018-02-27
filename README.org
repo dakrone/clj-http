@@ -199,13 +199,18 @@ Example requests:
                               "http.protocol.version" HttpVersion/HTTP_1_0
                               "http.useragent" "clj-http"}})
 
-;; Set your own cookie policy
-(client/post "http://example.com"
-             {:client-params {:cookie-policy (fn [cookie origin] (your-validation cookie origin))}})
-
 ;; Completely ignore cookies:
-(client/post "http://example.com"
-             {:client-params {:cookie-policy (constantly nil)}})
+(client/post "http://example.com" {:cookie-policy :none})
+;; There are also multiple ways to handle cookies
+(client/post "http://example.com" {:cookie-policy :default})
+(client/post "http://example.com" {:cookie-policy :netscape})
+(client/post "http://example.com" {:cookie-policy :standard})
+(client/post "http://example.com" {:cookie-policy :standard-strict})
+
+;; See core/get-cookie-policy to extend with your own policy if desired:
+(defn my-cookie-policy [cookie origin] (your-validation cookie origin))
+(defmethod get-cookie-policy :custom [req] my-cookie-policy)
+(client/post "http://example.com" {:cookie-policy :custom})
 
 ;; Need to contact a server with an untrusted SSL cert?
 (client/get "https://alioth.debian.org" {:insecure? true})

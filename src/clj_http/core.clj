@@ -140,14 +140,24 @@
          (handler e cnt context)))))
   builder)
 
-(defn get-cookie-policy [cookie-policy]
-  (case cookie-policy
-    :none CookieSpecs/IGNORE_COOKIES
-    :default CookieSpecs/DEFAULT
-    :netscape CookieSpecs/NETSCAPE
-    :standard CookieSpecs/STANDARD
-    :standard-strict CookieSpecs/STANDARD_STRICT
-    CookieSpecs/DEFAULT))
+(defmulti get-cookie-policy
+  "Method to retrieve the cookie policy that should be used for the request.
+  This is a multimethod that may be extended to return your own cookie policy.
+  Dispatches based on the `:cookie-policy` key in the request map."
+  (fn get-cookie-dispatch [request] (:cookie-policy request)))
+
+(defmethod get-cookie-policy :none none-cookie-policy
+  [_] CookieSpecs/IGNORE_COOKIES)
+(defmethod get-cookie-policy :default default-cookie-policy
+  [_] CookieSpecs/DEFAULT)
+(defmethod get-cookie-policy nil nil-cookie-policy
+  [_] CookieSpecs/DEFAULT)
+(defmethod get-cookie-policy :netscape netscape-cookie-policy
+  [_] CookieSpecs/NETSCAPE)
+(defmethod get-cookie-policy :standard standard-cookie-policy
+  [_] CookieSpecs/STANDARD)
+(defmethod get-cookie-policy :stardard-strict standard-strict-cookie-policy
+  [_] CookieSpecs/STANDARD_STRICT)
 
 (defn request-config [{:keys [conn-timeout
                               socket-timeout
@@ -166,7 +176,7 @@
                    (.setRelativeRedirectsAllowed
                     ((complement false?)
                      (opt req :allow-relative-redirects)))
-                   (.setCookieSpec (get-cookie-policy cookie-policy)))]
+                   (.setCookieSpec (get-cookie-policy req)))]
     (when max-redirects (.setMaxRedirects config max-redirects))
     (.build config)))
 
