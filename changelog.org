@@ -21,6 +21,9 @@ List of user-visible changes that have gone into each release
   =HttpClientBuilder= and =HttpAsyncClientBuilder=
 - Fixed an issue where redirects to a bad location could cause the async client to hang -
   https://github.com/dakrone/clj-http/pull/435
+- =client/parse-url= now includes the original URL in the =:url= key
+- =core/get-cookie-policy= is now a multimethod. This allows users to customize the return of their
+  own cookie validation method.
 
 ** 3.7.0
 This list contains all the changes since 3.0.0.
