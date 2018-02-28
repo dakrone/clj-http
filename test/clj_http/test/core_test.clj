@@ -29,6 +29,9 @@
     {:status 200 :body "get"}
     [:get "/empty"]
     {:status 200 :body nil}
+    [:get "/empty-gzip"]
+    {:status 200 :body nil
+     :headers {"content-encoding" "gzip"}}
     [:get "/clojure"]
     {:status 200 :body "{:foo \"bar\" :baz 7M :eggplant {:quux #{1 2 3}}}"
      :headers {"content-type" "application/clojure"}}
@@ -635,6 +638,14 @@
 (deftest ^:integration t-empty-response-coercion
   (run-server)
   (let [resp (client/get (localhost "/empty") {:as :clojure})]
+    (is (= (:body resp) nil)))
+    (let [resp (client/get (localhost "/empty") {:as :json})]
+    (is (= (:body resp) nil)))
+  (let [resp (client/get (localhost "/empty-gzip")
+                         {:as :clojure})]
+    (is (= (:body resp) nil)))
+  (let [resp (client/get (localhost "/empty-gzip")
+                         {:as :json})]
     (is (= (:body resp) nil))))
 
 (deftest ^:integration t-trace-redirects
