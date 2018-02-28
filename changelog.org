@@ -24,6 +24,8 @@ List of user-visible changes that have gone into each release
 - =client/parse-url= now includes the original URL in the =:url= key
 - =core/get-cookie-policy= is now a multimethod. This allows users to customize the return of their
   own cookie validation method.
+- Empty responses with coercion no longer throw exceptions when processing empty gzipped response
+  streams. Fixes https://github.com/dakrone/clj-http/issues/257
 
 ** 3.7.0
 This list contains all the changes since 3.0.0.

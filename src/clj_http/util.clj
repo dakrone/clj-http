@@ -5,7 +5,7 @@
   (:import (org.apache.commons.codec.binary Base64)
            (org.apache.commons.io IOUtils)
            (java.io BufferedInputStream ByteArrayInputStream
-                    ByteArrayOutputStream)
+                    ByteArrayOutputStream EOFException)
            (java.net URLEncoder URLDecoder)
            (java.util.zip InflaterInputStream DeflaterInputStream
                           GZIPInputStream GZIPOutputStream)))
@@ -62,8 +62,18 @@
   "force b as byte array if it is an InputStream, also close the stream"
   ^bytes [b]
   (if (instance? java.io.InputStream b)
-    (try (IOUtils/toByteArray ^java.io.InputStream b)
-         (finally (.close ^java.io.InputStream b)))
+    (try
+      (let [^byte first-byte (try
+                               (unchecked-byte (.read b))
+                               (catch EOFException e -1))]
+        (if (= -1 first-byte)
+          (byte-array 0)
+          (let [rest-bytes (IOUtils/toByteArray ^java.io.InputStream b)
+                barray (byte-array (inc (count rest-bytes)))]
+            (aset-byte barray 0 first-byte)
+            (System/arraycopy rest-bytes 0 barray 1 (count rest-bytes))
+            barray)))
+      (finally (.close ^java.io.InputStream b)))
     b))
 
 (defn inflate
