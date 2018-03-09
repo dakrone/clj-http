@@ -2,7 +2,8 @@
   "Utility methods for Scheme registries and HTTP connection managers"
   (:require [clj-http.util :refer [opt]]
             [clojure.java.io :as io])
-  (:import (java.net Socket Proxy Proxy$Type InetSocketAddress)
+  (:import (java.io ByteArrayOutputStream)
+           (java.net Socket Proxy Proxy$Type InetSocketAddress)
            (java.security KeyStore)
            (org.apache.http.config RegistryBuilder Registry)
            (org.apache.http.conn HttpClientConnectionManager)
@@ -78,6 +79,24 @@
   [^String hostname ^Integer port]
   (Socket. (Proxy. Proxy$Type/SOCKS (InetSocketAddress. hostname port))))
 
+(defn capturing-socket
+  "Create a java.net.Socket that will capture data sent in and out of it."
+  [baos bais]
+  (proxy [java.net.Socket] []
+    (getInputStream []
+      ;; TODO: implement capturing the read data
+      (proxy-super getInputStream))
+    (getOutputStream []
+      (let [stream (proxy-super getOutputStream)]
+        (proxy [java.io.FilterOutputStream] [stream]
+          (write
+            ([b]
+             (.write baos b)
+             (proxy-super write b))
+            ([b off len]
+             (.write baos b off len)
+             (proxy-super write b off len))))))))
+
 (defn ^KeyStore get-keystore*
   [keystore-file keystore-type ^String keystore-pass]
   (when keystore-file
@@ -133,6 +152,17 @@
                              socket-factory ssl-context))
                  (.build))]
      (PoolingHttpClientConnectionManager. reg))))
+
+(defn make-capturing-socket-conn-manager
+  "Given an optional hostname and a port, create a connection manager captures
+  Socket data."
+  [baos bais]
+  (let [socket-factory #(capturing-socket baos bais)
+        reg (-> (RegistryBuilder/create)
+                (.register "http" (PlainGenericSocketFactory socket-factory))
+                (.register "https" (SSLGenericSocketFactory socket-factory nil))
+                (.build))]
+    (BasicHttpClientConnectionManager. reg)))
 
 (def ^:private insecure-scheme-registry
   (delay
