@@ -10,12 +10,16 @@
 * Changelog
 List of user-visible changes that have gone into each release
 
-** 3.x
-
 ** 3.8.0
 - Reintroduce the =:save-request= and =:debug-body= options
+- +Wrap nested querystring params before form params, fixing
+  https://github.com/dakrone/clj-http/issues/427+ Reverted, see further below
 - Merged https://github.com/dakrone/clj-http/pull/426 to allow an empty SSLGenericSocketFactory
   context
+- Merged https://github.com/dakrone/clj-http/pull/424 to add :mime-subtype request parameter to
+  override mime subtype
+- create-multipart-entity with three arguments arity lets the selection of =HttpMultipartMode=
+- new request key :http-multipart-mode which is HttpMultipartMode/STRICT by default
 - Added =:ignore-nested-query-string=, =:flatten-nested-form-params=, and =:flatten-nested-keys=
   options for finer-grained control over which nested parts of the request are flattened. Fixes
   https://github.com/dakrone/clj-http/issues/427
