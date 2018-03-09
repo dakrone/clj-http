@@ -18,7 +18,7 @@
   :profiles {:dev {:dependencies [;; optional deps
                                   [cheshire "5.8.0"]
                                   [crouton "0.1.2"]
-                                  [org.clojure/tools.reader "1.2.1"]
+                                  [org.clojure/tools.reader "1.2.2"]
                                   [com.cognitect/transit-clj "0.8.300"]
                                   [ring/ring-codec "1.1.0"]
                                   ;; other (testing) deps
@@ -28,7 +28,7 @@
                                   [ring/ring-jetty-adapter "1.6.3"]
                                   [ring/ring-devel "1.6.3"]
                                   ;; caching example deps
-                                  [org.clojure/core.cache "0.6.5"]]
+                                  [org.clojure/core.cache "0.7.1"]]
                    :plugins [[lein-ancient "0.6.15"]]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
              :1.7 {:dependencies [[org.clojure/clojure "1.7.0"]]}
