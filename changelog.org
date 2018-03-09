@@ -13,6 +13,9 @@ List of user-visible changes that have gone into each release
 ** 4.0.0 (Unreleased)
 - Removed slingshot dependency. clj-http exceptions are now regular exceptions
 - Removed deprecated :follow-redirects & :force-redirects options
+
+** 3.8.0
+- Reintroduce the =:save-request= and =:debug-body= options
 - +Wrap nested querystring params before form params, fixing
   https://github.com/dakrone/clj-http/issues/427+ Reverted, see further below
 - Merged https://github.com/dakrone/clj-http/pull/426 to allow an empty SSLGenericSocketFactory
@@ -33,11 +36,6 @@ List of user-visible changes that have gone into each release
   own cookie validation method.
 - Empty responses with coercion no longer throw exceptions when processing empty gzipped response
   streams. Fixes https://github.com/dakrone/clj-http/issues/257
-
-** 3.8.0
-- Reintroduce the =:save-request= and =:debug-body= options
-- Merged https://github.com/dakrone/clj-http/pull/426 to allow an empty SSLGenericSocketFactory
-  context
 
 ** 3.7.0
 This list contains all the changes since 3.0.0.
