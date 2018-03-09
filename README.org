@@ -80,9 +80,9 @@ If you have interest, please do send PRs for fixing.
 
 There are branches for the major version numbers:
 
-- 2.x
-- 3.x
-- master (which is 4.x)
+- 2.x (no longer maintained except for security issues)
+- 3.x (current stable releases)
+- master (which is 4.x, unreleased)
 
 * Introduction
 :PROPERTIES:
