@@ -2,7 +2,7 @@
   (:require [cheshire.core :as json]
             [clj-http.client :as client]
             [clj-http.conn-mgr :as conn]
-            [clj-http.test.core-test :refer [run-server]]
+            [clj-http.test.core-test :refer [run-server localhost]]
             [clj-http.util :as util]
             [clojure.string :as str]
             [clojure.java.io :refer [resource]]
@@ -10,8 +10,9 @@
             [cognitect.transit :as transit]
             [ring.util.codec :refer [form-decode-str]]
             [ring.middleware.nested-params :refer [parse-nested-keys]])
-  (:import (java.net UnknownHostException)
-           (java.io ByteArrayInputStream)
+  (:import (java.io ByteArrayInputStream)
+           (java.nio.charset StandardCharsets)
+           (java.net UnknownHostException)
            (org.apache.http HttpEntity)))
 
 (def base-req
@@ -117,15 +118,14 @@
   (let [resp (promise)
         exception (promise)
         _ (request {:uri "/post" :method :post
-                       :async? true
-                       :multipart [{:name "title" :content "some-file"}
-                                   {:name "Content/Type" :content "text/plain"}
-                                   {:name "file"
-                                    :content (clojure.java.io/file
-                                               "test-resources/m.txt")}]}
-                      resp
-                      exception
-                      )]
+                    :async? true
+                    :multipart [{:name "title" :content "some-file"}
+                                {:name "Content/Type" :content "text/plain"}
+                                {:name "file"
+                                 :content (clojure.java.io/file
+                                           "test-resources/m.txt")}]}
+                   resp
+                   exception)]
     (is (= 200 (:status @resp)))
     (is (not (realized? exception)))
     #_(when (realized? exception) (prn @exception))))
@@ -941,7 +941,7 @@
                 (fn [req] {:body nil})) {:decode-body-headers true})
         resp4 ((client/wrap-additional-header-parsing
                 (fn [req] {:headers {"content-type" "application/pdf"}
-                          :body (.getBytes text)}))
+                           :body (.getBytes text)}))
                {:decode-body-headers true})]
     (is (= {"content-type" "text/html; charset=Shift_JIS"
             "content-style-type" "text/css"
@@ -1328,3 +1328,64 @@
       (is (= (.getMessage e)
              (str "only :flatten-nested-keys or :ignore-nested-query-string/"
                   ":flatten-nested-keys may be specified, not both"))))))
+
+(deftest ^:integration t-socket-capture
+  (run-server)
+  (let [resp (client/post (localhost "/post")
+                          {:capture-socket true
+                           :body "This is a test"
+                           :headers {"content-type" "application/fun"}})
+        raw (:raw-socket-str resp)
+        test-fn (fn [raw]
+                  (is (.contains raw "POST /post HTTP/1.1"))
+                  (is (.contains raw "Connection: close"))
+                  (is (.contains raw "content-type: application/fun"))
+                  (is (.contains raw "accept-encoding: gzip, deflate"))
+                  (is (.contains raw "Content-Length: 14"))
+                  (is (.contains raw "Host: ")) ;; Host might not be "localhost"
+                  ;; Might be a different java version
+                  (is (.contains raw "User-Agent: Apache-HttpClient/4"))
+                  (is (.contains raw "\r\n\r\nThis is a test")))]
+    (is (= 200 (:status resp)))
+    (is (= "close" (get-in resp [:headers "connection"])))
+    (test-fn (:raw-socket-str resp))
+    (test-fn (String. (:raw-socket-bytes resp) StandardCharsets/UTF_8)))
+  (testing "failure cases"
+    (try
+      (client/get (localhost "/get")
+                  {:capture-socket true
+                   :insecure true})
+      (is false "should have failed")
+      (catch Exception e
+        (is (.contains
+             (.getMessage e)
+             (str "capturing sockets cannot be used with custom or "
+                  "insecure connection manager")))))
+    (try
+      (client/get (localhost "/get")
+                  {:capture-socket true
+                   :connection-manager 'foo})
+      (is false "should have failed")
+      (catch Exception e
+        (is (.contains
+             (.getMessage e)
+             (str "capturing sockets cannot be used with custom or "
+                  "insecure connection manager")))))
+    (try
+      (binding [conn/*connection-manager* 'foo]
+        (client/get (localhost "/get") {:capture-socket true}))
+      (is false "should have failed")
+      (catch Exception e
+        (is (.contains
+             (.getMessage e)
+             (str "capturing sockets cannot be used with custom or "
+                  "insecure connection manager")))))
+    (try
+      (client/get (localhost "/get") {:capture-socket true :async true}
+                  identity identity)
+      (is false "should have failed")
+      (catch Exception e
+        (is (.contains
+             (.getMessage e)
+             (str "capturing socket traffic does not currently "
+                  "work with async requests")))))))
