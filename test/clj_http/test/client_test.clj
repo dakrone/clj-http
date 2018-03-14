@@ -118,15 +118,14 @@
   (let [resp (promise)
         exception (promise)
         _ (request {:uri "/post" :method :post
-                       :async? true
-                       :multipart [{:name "title" :content "some-file"}
-                                   {:name "Content/Type" :content "text/plain"}
-                                   {:name "file"
-                                    :content (clojure.java.io/file
-                                               "test-resources/m.txt")}]}
-                      resp
-                      exception
-                      )]
+                    :async? true
+                    :multipart [{:name "title" :content "some-file"}
+                                {:name "Content/Type" :content "text/plain"}
+                                {:name "file"
+                                 :content (clojure.java.io/file
+                                           "test-resources/m.txt")}]}
+                   resp
+                   exception)]
     (is (= 200 (:status @resp)))
     (is (not (realized? exception)))
     #_(when (realized? exception) (prn @exception))))
@@ -942,7 +941,7 @@
                 (fn [req] {:body nil})) {:decode-body-headers true})
         resp4 ((client/wrap-additional-header-parsing
                 (fn [req] {:headers {"content-type" "application/pdf"}
-                          :body (.getBytes text)}))
+                           :body (.getBytes text)}))
                {:decode-body-headers true})]
     (is (= {"content-type" "text/html; charset=Shift_JIS"
             "content-style-type" "text/css"
