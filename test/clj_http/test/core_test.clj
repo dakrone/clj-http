@@ -1,6 +1,7 @@
 (ns clj-http.test.core-test
   (:require [cheshire.core :as json]
             [clj-http.client :as client]
+            [clj-http.conn-mgr :as conn]
             [clj-http.core :as core]
             [clj-http.util :as util]
             [clojure.java.io :refer [file]]
@@ -639,7 +640,7 @@
   (run-server)
   (let [resp (client/get (localhost "/empty") {:as :clojure})]
     (is (= (:body resp) nil)))
-    (let [resp (client/get (localhost "/empty") {:as :json})]
+  (let [resp (client/get (localhost "/empty") {:as :json})]
     (is (= (:body resp) nil)))
   (let [resp (client/get (localhost "/empty-gzip")
                          {:as :clojure})]
@@ -675,11 +676,11 @@
 (deftest ^:integration t-override-request-config
   (run-server)
   (let [called-args (atom [])
-        real-http-client core/http-client
+        real-http-client core/build-http-client
         http-context (HttpClientContext/create)
         request-config (.build (RequestConfig/custom))]
     (with-redefs
-      [core/http-client
+      [core/build-http-client
        (fn [& args]
          (proxy [org.apache.http.impl.client.CloseableHttpClient] []
            (execute [http-req context]
@@ -765,3 +766,25 @@
           1 TimeUnit/SECONDS)
     (is false "should have thrown a timeout exception")
     (catch TimeoutException te)))
+
+(deftest ^:integration test-reusable-http-client
+  (let [cm (conn/make-reuseable-async-conn-manager {})
+        hc (core/build-async-http-client {} cm)]
+    (client/get (localhost "/json")
+                {:connection-manager cm
+                 :http-client hc
+                 :as :json
+                 :async true}
+                (fn [resp]
+                  (is (= 200 (:status resp)))
+                  (is (= {:foo "bar"} (:body resp))))
+                (fn [e] (is false (str "failed with " e)))))
+  (let [cm (conn/make-reusable-conn-manager {})
+        hc (:http-client (client/get (localhost "/get")
+                                     {:connection-manager cm}))
+        resp (client/get (localhost "/json")
+                         {:connection-manager cm
+                          :http-client hc
+                          :as :json})]
+    (is (= 200 (:status resp)))
+    (is (= {:foo "bar"} (:body resp)))))

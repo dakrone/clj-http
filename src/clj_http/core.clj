@@ -196,17 +196,23 @@
   "Return an HttpRoutePlanner that either use the supplied proxy settings
   if any, or the JVM/system proxy settings otherwise"
   [^String proxy-host ^Long proxy-port proxy-ignore-hosts http-url]
-  (let [url (URL. http-url)]
-    (if (and (not (contains? (set proxy-ignore-hosts) (.getHost url)))
-             proxy-host)
+  (let [ignore-proxy? (and http-url
+                           (contains? (set proxy-ignore-hosts)
+                                      (.getHost (URL. http-url))))]
+    (if (and proxy-host (not ignore-proxy?))
       (DefaultProxyRoutePlanner. (construct-http-host proxy-host proxy-port))
       (SystemDefaultRoutePlanner. (ProxySelector/getDefault)))))
 
-(defn http-client [{:keys [retry-handler uri request-interceptor
-                           response-interceptor proxy-host proxy-port
-                           http-builder-fns]
-                    :as req}
-                   conn-mgr http-url proxy-ignore-host]
+(defn build-http-client
+  "Builds an Apache `HttpClient` from a clj-http request map. Optional arguments
+  `http-url` and `proxy-ignore-hosts` are used to specify the host and a list of
+  hostnames to ignore for any proxy settings. They can be safely ignored if not
+  using proxies."
+  [{:keys [retry-handler request-interceptor
+           response-interceptor proxy-host proxy-port
+           http-builder-fns]
+    :as req}
+   conn-mgr & [http-url proxy-ignore-hosts]]
   ;; have to let first, otherwise we get a reflection warning on (.build)
   (let [^HttpClientBuilder builder (-> (HttpClients/custom)
                                        (.setConnectionManager conn-mgr)
@@ -218,7 +224,7 @@
                                        (.setRoutePlanner
                                         (get-route-planner
                                          proxy-host proxy-port
-                                         proxy-ignore-host http-url)))]
+                                         proxy-ignore-hosts http-url)))]
     (when request-interceptor
       (.addInterceptorLast
        builder (proxy [HttpRequestInterceptor] []
@@ -235,10 +241,15 @@
       (http-builder-fn builder req))
     (.build builder)))
 
-(defn http-async-client [{:keys [uri request-interceptor response-interceptor
-                                 proxy-host proxy-port async-http-builder-fns]
-                          :as req}
-                         conn-mgr http-url proxy-ignore-host]
+(defn build-async-http-client
+  "Builds an Apache `HttpAsyncClient` from a clj-http request map. Optional
+  arguments `http-url` and `proxy-ignore-hosts` are used to specify the host
+  and a list of hostnames to ignore for any proxy settings. They can be safely
+  ignored if not using proxies."
+  [{:keys [request-interceptor response-interceptor
+           proxy-host proxy-port async-http-builder-fns]
+    :as req}
+   conn-mgr & [http-url proxy-ignore-hosts]]
   ;; have to let first, otherwise we get a reflection warning on (.build)
   (let [^HttpAsyncClientBuilder builder (-> (HttpAsyncClients/custom)
                                             (.setConnectionManager conn-mgr)
@@ -250,7 +261,7 @@
                                             (.setRoutePlanner
                                              (get-route-planner
                                               proxy-host proxy-port
-                                              proxy-ignore-host http-url)))]
+                                              proxy-ignore-hosts http-url)))]
     (when (conn/reusable? conn-mgr)
       (.setConnectionManagerShared builder true))
 
@@ -374,13 +385,14 @@
 
 (defn- build-response-map
   [^HttpResponse response req ^HttpUriRequest http-req http-url
-   conn-mgr ^HttpClientContext context]
+   conn-mgr ^HttpClientContext context ^CloseableHttpClient client]
   (let [^HttpEntity entity (.getEntity response)
         status (.getStatusLine response)
         protocol-version (.getProtocolVersion status)
         body (:body req)
         response
         {:body (coerce-body-entity entity conn-mgr response)
+         :http-client client
          :headers (parse-headers
                    (.headerIterator response)
                    (opt req :use-header-maps-in-response))
@@ -431,7 +443,7 @@
             redirect-strategy max-redirects retry-handler
             request-method scheme server-name server-port socket-timeout
             uri response-interceptor proxy-host proxy-port
-            http-client-context http-request-config
+            http-client-context http-request-config http-client
             proxy-ignore-hosts proxy-user proxy-pass digest-auth ntlm-auth]
      :as req} respond raise]
    (let [async? (opt req :async)
@@ -491,16 +503,17 @@
      (when (opt req :debug) (print-debug! req http-req))
      (if-not async?
        (let [^CloseableHttpClient
-             client (http-client req conn-mgr http-url proxy-ignore-hosts)]
+             client (or http-client
+                        (build-http-client req conn-mgr http-url proxy-ignore-hosts))]
          (try
            (build-response-map (.execute client http-req context)
-                               req http-req http-url conn-mgr context)
+                               req http-req http-url conn-mgr context client)
            (catch Throwable t
              (when-not (conn/reusable? conn-mgr)
                (conn/shutdown-manager conn-mgr))
              (throw t))))
        (let [^CloseableHttpAsyncClient client
-             (http-async-client req conn-mgr http-url proxy-ignore-hosts)]
+             (build-async-http-client req conn-mgr http-url proxy-ignore-hosts)]
          (.start client)
          (.execute client http-req context
                    (reify org.apache.http.concurrent.FutureCallback
@@ -513,7 +526,8 @@
                      (completed [this resp]
                        (try
                          (respond (build-response-map
-                                   resp req http-req http-url conn-mgr context))
+                                   resp req http-req http-url
+                                   conn-mgr context client))
                          (catch Throwable t
                            (when-not (conn/reusable? conn-mgr)
                              (conn/shutdown-manager conn-mgr))
