@@ -11,6 +11,7 @@
             [clojure.walk :refer [keywordize-keys prewalk]])
   (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream)
            (java.net URL UnknownHostException)
+           (java.nio.charset StandardCharsets)
            (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
                                    InputStreamEntity FileEntity StringEntity)
            (org.apache.http.impl.conn PoolingHttpClientConnectionManager)
@@ -1019,6 +1020,45 @@
                (throw ex)))))
        (client req respond raise)))))
 
+(defn check-conflicting-socket-capture-opts
+  "Checks whether the request has multually exclusive options for socket capturing."
+  [req]
+  (when (util/opt req :capture-socket)
+    (when (or (some req #{:connection-manager :insecure})
+              conn/*connection-manager*)
+      (throw
+       (IllegalArgumentException.
+        (str "capturing sockets cannot be used with custom or "
+             "insecure connection manager"))))))
+
+(defn wrap-capture-socket-traffic
+  "Middleware that uses a Socket proxy that can capture raw bytes being sent,
+  returning them in a :raw-socket-str and :raw-socket-bytes parameters in the
+  response."
+  [client]
+  (fn wrap-capture-socket-traffic-fn
+    ([req]
+     (check-conflicting-socket-capture-opts req)
+     (if (util/opt req :capture-socket)
+       (let [baos (ByteArrayOutputStream.)
+             cm (conn/make-capturing-socket-conn-manager baos)
+             resp (client (assoc req :connection-manager cm))
+             bytes (.toByteArray baos)
+             charset (or (:body-encoding req)
+                         (:character-encoding req)
+                         StandardCharsets/UTF_8)]
+         (assoc resp
+                :raw-socket-bytes bytes
+                :raw-socket-str (String. bytes charset)))
+       (client req)))
+    ([req respond raise]
+     (if (util/opt req :capture-socket)
+       (throw
+        (IllegalArgumentException.
+         (str "capturing socket traffic does not currently "
+              "work with async requests")))
+       (client req respond raise)))))
+
 (def default-middleware
   "The default list of middleware clj-http uses for wrapping requests."
   [wrap-request-timing
@@ -1035,6 +1075,7 @@
    ;; headers can be used if desired
    wrap-additional-header-parsing
    wrap-output-coercion
+   wrap-capture-socket-traffic
    wrap-exceptions
    wrap-accept
    wrap-accept-encoding

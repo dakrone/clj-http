@@ -2,9 +2,10 @@
   "Utility methods for Scheme registries and HTTP connection managers"
   (:require [clj-http.util :refer [opt]]
             [clojure.java.io :as io])
-  (:import (java.io ByteArrayOutputStream)
+  (:import (java.io ByteArrayInputStream ByteArrayOutputStream)
            (java.net Socket Proxy Proxy$Type InetSocketAddress)
            (java.security KeyStore)
+           (org.apache.commons.io IOUtils)
            (org.apache.http.config RegistryBuilder Registry)
            (org.apache.http.conn HttpClientConnectionManager)
            (org.apache.http.conn.ssl DefaultHostnameVerifier
@@ -81,20 +82,21 @@
 
 (defn capturing-socket
   "Create a java.net.Socket that will capture data sent in and out of it."
-  [baos bais]
+  [output-stream]
   (proxy [java.net.Socket] []
+    ;; TODO: implement capturing the read data, currently I don't know of a good
+    ;; way to proxy reading input into an arbitrary place
     (getInputStream []
-      ;; TODO: implement capturing the read data
       (proxy-super getInputStream))
     (getOutputStream []
       (let [stream (proxy-super getOutputStream)]
         (proxy [java.io.FilterOutputStream] [stream]
           (write
             ([b]
-             (.write baos b)
+             (.write output-stream b)
              (proxy-super write b))
             ([b off len]
-             (.write baos b off len)
+             (.write output-stream b off len)
              (proxy-super write b off len))))))))
 
 (defn ^KeyStore get-keystore*
@@ -155,9 +157,10 @@
 
 (defn make-capturing-socket-conn-manager
   "Given an optional hostname and a port, create a connection manager captures
-  Socket data."
-  [baos bais]
-  (let [socket-factory #(capturing-socket baos bais)
+  Socket data. `output` should be an `OutputStream` where all output from this
+  factory will be sent."
+  [output]
+  (let [socket-factory #(capturing-socket output)
         reg (-> (RegistryBuilder/create)
                 (.register "http" (PlainGenericSocketFactory socket-factory))
                 (.register "https" (SSLGenericSocketFactory socket-factory nil))
