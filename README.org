@@ -1030,6 +1030,53 @@ values.
 
 In the current version, pooled async request CANNOT specify connection manager.
 
+** Re-using =HttpClient= between requests
+:PROPERTIES:
+:CUSTOM_ID: h-b79b07fb-d024-49a2-a7f7-53863d1b8d6d
+:END:
+
+In some cases, you may want to re-use the same =HttpClient= object between requests, either so you
+don't have to build it every time, or because you make some configuration change to the request.
+clj-http will return the built HTTP client in =:http-client= which you can then specify in
+subsequent requests (with =:http-client=). Note that in order to reuse the client a connection
+manager must be used.
+
+#+BEGIN_SRC clojure
+;; Re-use the HttpClient clj-http builds for you:
+(let [cm (conn/make-reusable-conn-manager {})
+      resp (client/get "http://example.com" {:connection-manager cm})
+      hclient (:http-client resp)]
+  (client/get "http://example.com/1"
+              {:connection-manager cm :http-client hclient})
+  (client/get "http://example.com/2"
+              {:connection-manager cm :http-client hclient})
+  (client/get "http://example.com/3"
+              {:connection-manager cm :http-client hclient}))
+
+;; You can also build your own, using clj-http's helper or manually building it:
+(let [cm (conn/make-reusable-conn-manager {})
+      hclient (core/build-http-client {} cm "https://example.com" false)]
+  (client/get "http://example.com/1"
+              {:connection-manager cm :http-client hclient})
+  (client/get "http://example.com/2"
+              {:connection-manager cm :http-client hclient})
+  (client/get "http://example.com/3"
+              {:connection-manager cm :http-client hclient}))
+
+;; Async http clients may also be created and re-used:
+(let [acm (conn/make-reuseable-async-conn-manager {})
+      ahclient (core/build-async-http-client {} acm "https://example.com" false)]
+  (client/get "http://example.com/1"
+              {:connection-manager cm :http-client ahclient}
+              handle-response handle-failure)
+  (client/get "http://example.com/2"
+              {:connection-manager cm :http-client ahclient}
+              handle-response handle-failure)
+  (client/get "http://example.com/3"
+              {:connection-manager cm :http-client ahclient}
+              handle-response handle-failure))
+#+END_SRC
+
 ** Proxies
 :PROPERTIES:
 :CUSTOM_ID: h-49f9ca81-0bad-4cd8-87ac-c09a85fa5500

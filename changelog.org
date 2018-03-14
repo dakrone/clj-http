@@ -14,6 +14,10 @@ List of user-visible changes that have gone into each release
 - Removed slingshot dependency. clj-http exceptions are now regular exceptions
 - Removed deprecated :follow-redirects & :force-redirects options
 
+** 3.9.0
+- Add support for reusable http clients, returning the client in =:http-client= and allowing one to
+  be specified (with the same setting) - https://github.com/dakrone/clj-http/issues/441
+
 ** 3.8.0
 - Reintroduce the =:save-request= and =:debug-body= options
 - +Wrap nested querystring params before form params, fixing
