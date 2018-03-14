@@ -848,6 +848,33 @@ There are four debugging methods you can use:
 (client/get "http://example.org" {:response-interceptor (fn [resp ctx] (println ctx))})
 #+END_SRC
 
+Additionally, to debug what data is being sent on the =Socket= when a request is make, clj-http
+provides the =:capture-socket= option:
+
+#+BEGIN_SRC clojure
+(-> (client/post "http://localhost:9200/_search"
+                 {:capture-socket true ;; turn on the capture
+                  :headers {"content-type" "application/json"}
+                  :body "{\"query\": {\"match_all\":{}}}"})
+    ;; Both :raw-socket-str and :raw-socket-bytes are returned with the response
+    :raw-socket-str
+    println)
+;;; Which outputs something such as:
+;; POST /_search HTTP/1.1
+;; Connection: close
+;; content-type: application/json
+;; accept-encoding: gzip, deflate
+;; Content-Length: 27
+;; Host: localhost:9200
+;; User-Agent: Apache-HttpClient/4.5.5 (Java/9.0.1)
+;;
+;; {"query": {"match_all":{}}}
+;; nil
+#+END_SRC
+
+There are currently limitations with =:capture-socket=, a custom connection manager or the
+=:insecure= option cannot be used, and async requests are not yet supported.
+
 * Authentication
 :PROPERTIES:
 :CUSTOM_ID: h-87f38469-36b4-44c6-ae74-0d8f5e80c2ed
