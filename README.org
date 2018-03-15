@@ -23,6 +23,7 @@
   - [[#post][POST]]
   - [[#delete][DELETE]]
   - [[#async-http-request][Async HTTP Request]]
+    - [[#cancelling-requests][Cancelling Requests]]
   - [[#coercions][Coercions]]
     - [[#input-coercion][Input coercion]]
     - [[#output-coercion][Output coercion]]
@@ -373,8 +374,26 @@ start an async request is easy, for example:
 
 All exceptions thrown during the request will be passed to the raise callback.
 
+*** Cancelling requests
+:PROPERTIES:
+:CUSTOM_ID: cancelling-requests
+:END:
+
 Calls to the http methods with =:async true= return an Apache [[https://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/org/apache/http/concurrent/BasicFuture.html][BasicFuture]] that you can call =.get=
-or =.cancel= on. See the Javadocs for =BasicFuture= [[https://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/org/apache/http/concurrent/BasicFuture.html][here]].
+or =.cancel= on. See the Javadocs for =BasicFuture= [[https://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/org/apache/http/concurrent/BasicFuture.html][here]]. For instance:
+
+#+BEGIN_SRC clojure
+(import '(java.util.concurrent TimeoutException TimeUnit))
+
+(let [future (client/get "http://example.com/slow-url"
+                         {:async true :oncancel #(println "request was cancelled")}
+                         #(println :got %) #(println :err %))]
+  (try
+    (.get future 1 TimeUnit/SECONDS)
+    (catch TimeoutException e
+      ;; Cancel the request, it's taken too long
+      (.cancel future true))))
+#+END_SRC
 
 ** Coercions
 :PROPERTIES:
