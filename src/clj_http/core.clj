@@ -534,7 +534,10 @@
                              (conn/shutdown-manager conn-mgr))
                            (raise t))))
                      (cancelled [this]
-                       (if-let [oncancel (:oncancel req)]
+                       ;; Run the :oncancel function if available
+                       (when-let [oncancel (:oncancel req)]
                          (oncancel))
+                       ;; Attempt to abort the execution of the request
+                       (.abort http-req)
                        (when-not (conn/reusable? conn-mgr)
                          (conn/shutdown-manager conn-mgr))))))))))
