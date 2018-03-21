@@ -11,7 +11,6 @@
 :PROPERTIES:
 :CUSTOM_ID: h-aaf075ea-2f0e-4a45-871a-0f89c838fb4b
 :END:
-- [[#help-wanted][HELP WANTED]]
 - [[#introduction][Introduction]]
   - [[#overview][Overview]]
   - [[#philosophy][Philosophy]]
@@ -59,19 +58,6 @@
 - [[#tests][Tests]]
 - [[#testimonials][Testimonials]]
 - [[#license][License]]
-
-* Help Wanted
-:PROPERTIES:
-:CUSTOM_ID: h-bfae0ecf-471b-438f-bf47-37c1aebea2a6
-:END:
-Hi Everyone, The tests are working now, but there's still work to be done, for instance, the
-connection manager code needs to be simplified, and another pass needs to be done to see if any more
-deprecated APIs are in use, so any help is appreciated!
-
-Additionally, there are things like reusing the httpclient between requests (perhaps only when a
-connection manager is used) that need to be worked out.
-
-If you have interest, please do send PRs for fixing.
 
 * Introduction
 :PROPERTIES:
