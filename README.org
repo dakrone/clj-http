@@ -840,7 +840,7 @@ is enabled.
 
 ** Debugging
 :PROPERTIES:
-:CUSTOM_ID: h-d2043bd3-5d97-416a-858d-a7936ff61c50
+:CUSTOM_ID: debugging
 :END:
 
 There are four debugging methods you can use:
@@ -867,7 +867,7 @@ There are four debugging methods you can use:
 (client/get "http://example.org" {:response-interceptor (fn [resp ctx] (println ctx))})
 #+END_SRC
 
-Additionally, to debug what data is being sent on the =Socket= when a request is make, clj-http
+To debug what data is being sent on the =Socket= when a request is make, clj-http
 provides the =:capture-socket= option:
 
 #+BEGIN_SRC clojure
@@ -893,6 +893,73 @@ provides the =:capture-socket= option:
 
 There are currently limitations with =:capture-socket=, a custom connection manager or the
 =:insecure= option cannot be used, and async requests are not yet supported.
+
+*** Logging
+:PROPERTIES:
+:CUSTOM_ID: h-0d505652-d453-48a2-a868-46aef2b8af66
+:END:
+
+Finally, if you want to access the logging that the Apache client does internally, you can set up
+your dependencies to add the [[https://logging.apache.org/log4j/2.x/][log4j2]] libraries and configure the logging for clj-http. In order to do
+this, you'll need to add
+
+#+BEGIN_SRC clojure
+[org.apache.logging.log4j/log4j-api "2.11.0"]
+[org.apache.logging.log4j/log4j-core "2.11.0"]
+[org.apache.logging.log4j/log4j-1.2-api "2.11.0"]
+#+END_SRC
+
+To your =project.clj= and have a usable log4j2.properties. I have provided one in
+=resources/log4j2.properties=. Make sure to set:
+
+#+BEGIN_SRC fundamental
+rootLogger.level = debug
+#+END_SRC
+
+If you want to see debug information (or "trace" for trace logging). When you perform a request you
+should see something akin to this in the logs:
+
+#+BEGIN_SRC fundamental
+[2018-03-20T20:36:34,635][DEBUG][o.a.h.c.p.RequestAddCookies] CookieSpec selected: default
+[2018-03-20T20:36:34,635][DEBUG][o.a.h.c.p.RequestAuthCache] Auth cache not set in the context
+[2018-03-20T20:36:34,635][DEBUG][o.a.h.i.c.BasicHttpClientConnectionManager] Get connection for route {s}->https://example.com:443
+[2018-03-20T20:36:34,636][DEBUG][o.a.h.i.c.DefaultManagedHttpClientConnection] http-outgoing-1: set socket timeout to 0
+[2018-03-20T20:36:34,636][DEBUG][o.a.h.i.e.MainClientExec ] Opening connection {s}->https://example.com:443
+[2018-03-20T20:36:34,644][DEBUG][o.a.h.i.c.DefaultHttpClientConnectionOperator] Connecting to example.com/10.0.0.1:443
+[2018-03-20T20:36:34,644][DEBUG][o.a.h.c.s.SSLConnectionSocketFactory] Connecting socket to example.com/10.0.0.1:443 with timeout 0
+[2018-03-20T20:36:34,692][DEBUG][o.a.h.c.s.SSLConnectionSocketFactory] Enabled protocols: [TLSv1, TLSv1.1, TLSv1.2]
+[2018-03-20T20:36:34,693][DEBUG][o.a.h.c.s.SSLConnectionSocketFactory] Enabled cipher suites:[TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, ... etc ...]
+[2018-03-20T20:36:34,693][DEBUG][o.a.h.c.s.SSLConnectionSocketFactory] Starting handshake
+[2018-03-20T20:36:34,841][DEBUG][o.a.h.c.s.SSLConnectionSocketFactory] Secure session established
+[2018-03-20T20:36:34,842][DEBUG][o.a.h.c.s.SSLConnectionSocketFactory]  negotiated protocol: TLSv1.2
+[2018-03-20T20:36:34,842][DEBUG][o.a.h.c.s.SSLConnectionSocketFactory]  negotiated cipher suite: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+[2018-03-20T20:36:34,843][DEBUG][o.a.h.c.s.SSLConnectionSocketFactory]  peer principal: CN=example.com
+[2018-03-20T20:36:34,843][DEBUG][o.a.h.c.s.SSLConnectionSocketFactory]  peer alternative names: [example.com, www.example.com]
+[2018-03-20T20:36:34,843][DEBUG][o.a.h.c.s.SSLConnectionSocketFactory]  issuer principal: CN=Let's Encrypt Authority X3, O=Let's Encrypt, C=US
+[2018-03-20T20:36:34,844][DEBUG][o.a.h.i.c.DefaultHttpClientConnectionOperator] Connection established 192.168.0.29:36792<->10.0.0.1:443
+[2018-03-20T20:36:34,844][DEBUG][o.a.h.i.e.MainClientExec ] Executing request POST /post HTTP/1.1
+[2018-03-20T20:36:34,844][DEBUG][o.a.h.i.e.MainClientExec ] Target auth state: UNCHALLENGED
+[2018-03-20T20:36:34,844][DEBUG][o.a.h.i.e.MainClientExec ] Proxy auth state: UNCHALLENGED
+[2018-03-20T20:36:34,845][DEBUG][o.a.h.headers            ] http-outgoing-1 >> POST /post HTTP/1.1
+[2018-03-20T20:36:34,845][DEBUG][o.a.h.headers            ] http-outgoing-1 >> Connection: close
+[2018-03-20T20:36:34,845][DEBUG][o.a.h.headers            ] http-outgoing-1 >> accept-encoding: gzip, deflate
+[2018-03-20T20:36:34,845][DEBUG][o.a.h.headers            ] http-outgoing-1 >> Content-Length: 14
+[2018-03-20T20:36:34,845][DEBUG][o.a.h.headers            ] http-outgoing-1 >> Content-Type: text/plain; charset=UTF-8
+[2018-03-20T20:36:34,846][DEBUG][o.a.h.headers            ] http-outgoing-1 >> Host: example.com
+[2018-03-20T20:36:34,846][DEBUG][o.a.h.headers            ] http-outgoing-1 >> User-Agent: Apache-HttpClient/4.5.5 (Java/9.0.1)
+[2018-03-20T20:36:34,846][DEBUG][o.a.h.wire               ] http-outgoing-1 >> "POST /post HTTP/1.1[\r][\n]"
+[2018-03-20T20:36:34,846][DEBUG][o.a.h.wire               ] http-outgoing-1 >> "Connection: close[\r][\n]"
+[2018-03-20T20:36:34,846][DEBUG][o.a.h.wire               ] http-outgoing-1 >> "accept-encoding: gzip, deflate[\r][\n]"
+[2018-03-20T20:36:34,847][DEBUG][o.a.h.wire               ] http-outgoing-1 >> "Content-Length: 14[\r][\n]"
+[2018-03-20T20:36:34,847][DEBUG][o.a.h.wire               ] http-outgoing-1 >> "Content-Type: text/plain; charset=UTF-8[\r][\n]"
+[2018-03-20T20:36:34,847][DEBUG][o.a.h.wire               ] http-outgoing-1 >> "Host: example.com[\r][\n]"
+etc etc it will go on forever and be very verbose
+#+END_SRC
+
+This provides both the data sent and received on the wire for debugging purposes.
+
+I've also provided an example for changing the log level from clojure in
+=examples/logging-apache-requests.clj=.
 
 * Authentication
 :PROPERTIES:

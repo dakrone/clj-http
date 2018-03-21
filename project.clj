@@ -14,6 +14,7 @@
                  [commons-codec "1.11"]
                  [commons-io "2.6"]
                  [potemkin "0.4.4"]]
+  :resource-paths ["resources"]
   :profiles {:dev {:dependencies [;; optional deps
                                   [cheshire "5.8.0"]
                                   [crouton "0.1.2"]
@@ -23,11 +24,14 @@
                                   ;; other (testing) deps
                                   [org.clojure/clojure "1.9.0"]
                                   [org.clojure/tools.logging "0.4.0"]
-                                  [log4j "1.2.17"]
                                   [ring/ring-jetty-adapter "1.6.3"]
                                   [ring/ring-devel "1.6.3"]
                                   ;; caching example deps
-                                  [org.clojure/core.cache "0.7.1"]]
+                                  [org.clojure/core.cache "0.7.1"]
+                                  ;; logging
+                                  [org.apache.logging.log4j/log4j-api "2.11.0"]
+                                  [org.apache.logging.log4j/log4j-core "2.11.0"]
+                                  [org.apache.logging.log4j/log4j-1.2-api "2.11.0"]]
                    :plugins [[lein-ancient "0.6.15"]]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
              :1.7 {:dependencies [[org.clojure/clojure "1.7.0"]]}
