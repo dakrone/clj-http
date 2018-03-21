@@ -9,6 +9,7 @@
             [clojure.test :refer :all]
             [ring.adapter.jetty :as ring])
   (:import (java.io ByteArrayInputStream)
+           (java.net SocketTimeoutException)
            (java.util.concurrent TimeoutException TimeUnit)
            (org.apache.http.params CoreConnectionPNames CoreProtocolPNames)
            (org.apache.http.message BasicHeader BasicHeaderIterator)
@@ -21,8 +22,10 @@
            (org.apache.http.protocol HttpContext ExecutionContext)
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.client.params ClientPNames)
-           (java.net SocketTimeoutException)
+           (org.apache.logging.log4j LogManager)
            (sun.security.provider.certpath SunCertPathBuilderException)))
+
+(defonce logger (LogManager/getLogger "clj-http.test.core-test"))
 
 (defn handler [req]
   (condp = [(:request-method req) (:uri req)]

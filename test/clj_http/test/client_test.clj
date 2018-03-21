@@ -13,7 +13,10 @@
             [slingshot.slingshot :refer [try+]])
   (:import (java.net UnknownHostException)
            (java.io ByteArrayInputStream)
-           (org.apache.http HttpEntity)))
+           (org.apache.http HttpEntity)
+           (org.apache.logging.log4j LogManager)))
+
+(defonce logger (LogManager/getLogger "clj-http.test.client-test"))
 
 (def base-req
   {:scheme :http

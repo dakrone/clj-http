@@ -38,3 +38,5 @@ http.log
 # Intellij Idea
 /*.iml
 /.idea
+
+log/
