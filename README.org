@@ -58,6 +58,7 @@
     - [[#nohttpresponseexception--due-to-stale-connections][NoHttpResponseException ... due to stale connections**]]
 - [[#tests][Tests]]
 - [[#testimonials][Testimonials]]
+- [[#other-middleware][Other Middleware]]
 - [[#license][License]]
 
 * Branches
@@ -1380,6 +1381,15 @@ Libraries inspired by clj-http:
 
 - [[https://github.com/mpenet/jet][jet]]
 - [[https://github.com/hiredman/clj-http-lite][clj-http-lite]]
+
+* Other libraries providing middleware
+:PROPERTIES:
+:CUSTOM_ID: other-middleware
+:END:
+
+- [[https://github.com/sharetribe/aws-sig4][aws-sig4]] :: a pure clojure implementation of AWS v4 signature request signing as middleware
+
+(feel free to open a PR or issue if you'd like to add middleware here)
 
 * License
 :PROPERTIES:
