@@ -14,6 +14,7 @@ List of user-visible changes that have gone into each release
 - Add support for reusable http clients, returning the client in =:http-client= and allowing one to
   be specified (with the same setting) - https://github.com/dakrone/clj-http/issues/441
 - Cancelling the =Future= returned from an async http request now also aborts the HttpRequest object
+- Async connection managers no longer put the connection manager in an illegal ACTIVE state [[https://github.com/dakrone/clj-http/issues/443][#443]]
 
 ** 3.8.0
 - Reintroduce the =:save-request= and =:debug-body= options

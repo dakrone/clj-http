@@ -38,11 +38,6 @@
        (reduce (fn [m [ks v]]
                  (assoc-in m ks v)) {})))
 
-(defn count-release
-  [count]
-  (let [release* (:release client/*pooling-info*)]
-    (fn [] (swap! count dec) (release*))))
-
 (deftest ^:integration roundtrip
   (run-server)
   ;; roundtrip with scheme as a keyword
@@ -1358,126 +1353,96 @@
   (run-server)
   (client/with-async-connection-pool {}
     (let [resp1 (promise) resp2 (promise)
-          exce1 (promise) exce2 (promise)
-          count (atom 2)]
-      (binding [client/*pooling-info*
-                (assoc client/*pooling-info* :release (count-release count))]
-        (request {:async? true :uri "/get" :method :get} resp1 exce1)
-        (request {:async? true :uri "/get" :method :get} resp2 exce2)
-        (is (= 200 (:status @resp1) (:status @resp2)))
-        (is (:pooling-info @resp1))
-        (is (:pooling-info @resp2))
-        (is (not (realized? exce2)))
-        (is (not (realized? exce1)))
-        (is (= 0 @count))))))
+          exce1 (promise) exce2 (promise)]
+      (request {:async? true :uri "/get" :method :get} resp1 exce1)
+      (request {:async? true :uri "/get" :method :get} resp2 exce2)
+      (is (= 200 (:status @resp1) (:status @resp2)))
+      (is (not (realized? exce2)))
+      (is (not (realized? exce1))))))
 
 (deftest ^:integration t-with-async-pool-sleep
   (run-server)
   (client/with-async-connection-pool {}
     (let [resp1 (promise) resp2 (promise)
-          exce1 (promise) exce2 (promise)
-          count (atom 2)]
-      (binding [client/*pooling-info*
-                (assoc client/*pooling-info* :release (count-release count))]
-        (request {:async? true :uri "/get" :method :get} resp1 exce1)
-        (Thread/sleep 500)
-        (request {:async? true :uri "/get" :method :get} resp2 exce2)
-        (is (= 200 (:status @resp1) (:status @resp2)))
-        (is (:pooling-info @resp1))
-        (is (:pooling-info @resp2))
-        (is (not (realized? exce2)))
-        (is (not (realized? exce1)))
-        (is (= 0 @count))))))
+          exce1 (promise) exce2 (promise)]
+      (request {:async? true :uri "/get" :method :get} resp1 exce1)
+      (Thread/sleep 500)
+      (request {:async? true :uri "/get" :method :get} resp2 exce2)
+      (is (= 200 (:status @resp1) (:status @resp2)))
+      (is (not (realized? exce2)))
+      (is (not (realized? exce1))))))
 
 (deftest ^:integration t-async-pool-wrap-exception
   (run-server)
   (client/with-async-connection-pool {}
     (let [resp1 (promise) resp2 (promise)
           exce1 (promise) exce2 (promise) count (atom 2)]
-      (binding [client/*pooling-info*
-                (assoc client/*pooling-info* :release (count-release count))]
-        (request {:async? true :uri "/error" :method :get} resp1 exce1)
-        (Thread/sleep 500)
-        (request {:async? true :uri "/get" :method :get} resp2 exce2)
-        (is (realized? exce1))
-        (is (not (realized? exce2)))
-        (is (= 200 (:status @resp2)))
-        (is (= 0 @count))))))
+      (request {:async? true :uri "/error" :method :get} resp1 exce1)
+      (Thread/sleep 500)
+      (request {:async? true :uri "/get" :method :get} resp2 exce2)
+      (is (realized? exce1))
+      (is (not (realized? exce2)))
+      (is (= 200 (:status @resp2))))))
 
 (deftest ^:integration t-async-pool-exception-when-start
   (run-server)
   (client/with-async-connection-pool {}
     (let [resp1 (promise) resp2 (promise)
           exce1 (promise) exce2 (promise)
-          count (atom 2)
           middleware (fn [client]
                        (fn [req resp raise] (throw (Exception.))))]
       (client/with-additional-middleware
         [middleware]
-        (binding [client/*pooling-info*
-                  (assoc client/*pooling-info* :release (count-release count))]
-          (try (request {:async? true :uri "/error" :method :get} resp1 exce1)
-               (catch Throwable ex))
-          (Thread/sleep 500)
-          (try (request {:async? true :uri "/get" :method :get} resp2 exce2)
-               (catch Throwable ex))
-          (is (not (realized? exce1)))
-          (is (not (realized? exce2)))
-          (is (not (realized? resp1)))
-          (is (not (realized? resp2)))
-          (is (= 0 @count)))))))
+        (try (request {:async? true :uri "/error" :method :get} resp1 exce1)
+             (catch Throwable ex))
+        (Thread/sleep 500)
+        (try (request {:async? true :uri "/get" :method :get} resp2 exce2)
+             (catch Throwable ex))
+        (is (not (realized? exce1)))
+        (is (not (realized? exce2)))
+        (is (not (realized? resp1)))
+        (is (not (realized? resp2)))))))
 
 (deftest ^:integration t-reuse-async-pool
   (run-server)
   (client/with-async-connection-pool {}
     (let [resp1 (promise) resp2 (promise)
-          exce1 (promise) exce2 (promise)
-          count (atom 2)]
-      (binding [client/*pooling-info*
-                (assoc client/*pooling-info* :release (count-release count))]
-        (request {:async? true :uri "/get" :method :get}
-                 (fn [resp]
-                   (resp1 resp)
-                   (request (client/reuse-pool
-                             {:async? true
-                              :uri "/get"
-                              :method :get}
-                             resp)
-                            resp2
-                            exce2))
-                 exce1)
-        (is (= 200 (:status @resp1) (:status @resp2)))
-        (is (:pooling-info @resp1))
-        (is (:pooling-info @resp2))
-        (is (not (realized? exce2)))
-        (is (not (realized? exce1)))
-        (is (= 0 @count))))))
+          exce1 (promise) exce2 (promise)]
+      (request {:async? true :uri "/get" :method :get}
+               (fn [resp]
+                 (resp1 resp)
+                 (request (client/reuse-pool
+                           {:async? true
+                            :uri "/get"
+                            :method :get}
+                           resp)
+                          resp2
+                          exce2))
+               exce1)
+      (is (= 200 (:status @resp1) (:status @resp2)))
+      (is (not (realized? exce2)))
+      (is (not (realized? exce1))))))
 
 (deftest ^:integration t-async-pool-redirect-to-get
   (run-server)
   (client/with-async-connection-pool {}
-    (let [resp (promise) exce (promise) count (atom 2)]
-      (binding [client/*pooling-info*
-                (assoc client/*pooling-info* :release (count-release count))]
-        (request {:async? true :uri "/redirect-to-get"
-                  :method :get :redirect-strategy :default} resp exce)
-        (is (= 200 (:status @resp)))
-        (is (:pooling-info @resp))
-        (is (not (realized? exce)))
-        (is (= 1 @count))))))
+    (let [resp (promise)
+          exce (promise)]
+      (request {:async? true :uri "/redirect-to-get"
+                :method :get :redirect-strategy :default} resp exce)
+      (is (= 200 (:status @resp)))
+      (is (not (realized? exce))))))
 
 (deftest ^:integration t-async-pool-max-redirect
   (run-server)
   (client/with-async-connection-pool {}
-    (let [resp (promise) exce (promise) count (atom 21)]
-      (binding [client/*pooling-info*
-                (assoc client/*pooling-info* :release (count-release count))]
-        (request {:async? true :uri "/redirect" :method :get
-                  :redirect-strategy :default
-                  :throw-exceptions true} resp exce)
-        (is @exce)
-        (is (not (realized? resp)))
-        (is (= 20 @count))))))
+    (let [resp (promise)
+          exce (promise)]
+      (request {:async? true :uri "/redirect" :method :get
+                :redirect-strategy :default
+                :throw-exceptions true} resp exce)
+      (is @exce)
+      (is (not (realized? resp))))))
 
 (deftest test-url-encode-path
   (is (= (client/url-encode-illegal-characters "?foo bar+baz[]75")

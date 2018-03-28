@@ -1029,16 +1029,22 @@ reuse the pool context, just use =reuse-pool=.
         exce2))
 #+END_SRC
 
-To implement the persistent connections of async requests, we add a middleware
-named =wrap-async-pooling= to the default middleware list. This middleware's
-behaviour depends on =*pooling-info*= binding or =:polling-info= in options map.
-The =pooling-info= contains =:conn-mgr=, =:allocate= and =:release=.
-=:conn-mgr= is the connection manager used in the pooling context, =:allocate=
-is a function that will be invoked when the request starts and =:release= will be invoked
-when the request is finished.
+There are many advanced options available when creating asynchronous connection pools that can be
+configured by passing an =:io-config= map in the connection manager parameters. It supports:
 
-=with-async-connection-pool= uses the =wrap-async-pooling= to manage the
-connection manager; you can also implement your own manage strategy.
+- =:connect-timeout=
+- =:interest-op-queued=
+- =:io-thread-count=
+- =:rcv-buf-size=
+- =:select-interval=
+- =:shutdown-grace-period=
+- =:snd-buf-size=
+- =:so-keep-alive=
+- =:so-linger=
+- =:so-timeout=
+- =:tcp-no-delay=
+
+See the docstring on =with-async-connection-pool= for more information about these options.
 
 If you would prefer to handle managing the connection manager yourself, you can
 create a connection manager and specify it for each request:
