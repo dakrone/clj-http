@@ -976,50 +976,6 @@
                #(respond (request-timing-response % start))
                raise)))))
 
-(defn- async-pooling-request
-  [req release]
-  (let [handler (:oncancel req)]
-    (assoc req :oncancel
-           (fn []
-             (release)
-             (when handler
-               (handler))))))
-
-(def ^:dynamic *pooling-info*
-  "The pooling-info used in pooling function"
-  nil)
-
-(defn wrap-async-pooling
-  "Middleware that handle pooling async request. It use the value of key
-  :pooling-info, the value is a map contains three key-value
-
-  :conn-mgr - connection manager used by the HttpAsyncClient
-  :allocate - a function with no args, will be invoked when connection allocate
-  :release  - a function with no args, will be invoked when connection finished
-
-  You must shutdown the conn-mgr when you don't need it."
-  [client]
-  (fn
-    ([req]
-     (client req))
-    ([req respond raise]
-     (if-let [pooling-info (or *pooling-info* (:pooling-info req))]
-       (let [{:keys [allocate release conn-mgr]} pooling-info]
-         (binding [conn/*async-connection-manager* conn-mgr]
-           (allocate)
-           (try
-             (client (async-pooling-request req release)
-                     (fn [resp]
-                       (respond (assoc resp :pooling-info pooling-info))
-                       (release))
-                     (fn [ex]
-                       (release)
-                       (raise ex)))
-             (catch Throwable ex
-               (release)
-               (throw ex)))))
-       (client req respond raise)))))
-
 (defn check-conflicting-socket-capture-opts
   "Checks whether the request has multually exclusive options for socket capturing."
   [req]
@@ -1062,7 +1018,6 @@
 (def default-middleware
   "The default list of middleware clj-http uses for wrapping requests."
   [wrap-request-timing
-   wrap-async-pooling
    wrap-header-map
    wrap-query-params
    wrap-basic-auth
@@ -1276,32 +1231,46 @@
     options))
 
 (defmacro with-async-connection-pool
+  "Macro to execute the body using a connection manager. Creates a
+  PoolingNHttpClientConnectionManager to use for all requests within the body of
+  the expression. An option map is allowed to set options for the connection
+  manager.
+
+  Handles the same options as `with-connection-pool` plus:
+  :io-config which should be a map containing some of the following keys:
+
+  :connect-timeout - int the default connect timeout value for connection
+    requests (default 0, meaning no timeout)
+  :interest-op-queued - boolean, whether or not I/O interest operations are to
+    be queued and executed asynchronously or to be applied to the underlying
+    SelectionKey immediately (default false)
+  :io-thread-count - int, the number of I/O dispatch threads to be used
+    (default is the number of available processors)
+  :rcv-buf-size - int the default value of the SO_RCVBUF parameter for
+    newly created sockets (default is 0, meaning the system default)
+  :select-interval - long, time interval in milliseconds at which to check for
+    timed out sessions and session requests (default 1000)
+  :shutdown-grace-period - long, grace period in milliseconds to wait for
+    individual worker threads to terminate cleanly (default 500)
+  :snd-buf-size - int, the default value of the SO_SNDBUF parameter for
+    newly created sockets (default is 0, meaning the system default)
+  :so-keep-alive - boolean, the default value of the SO_KEEPALIVE parameter for
+    newly created sockets (default false)
+  :so-linger - int, the default value of the SO_LINGER parameter for
+    newly created sockets (default -1)
+  :so-timeout - int, the default socket timeout value for I/O operations
+    (default 0, meaning no timeout)
+  :tcp-no-delay - boolean, the default value of the TCP_NODELAY parameter for
+    newly created sockets (default true)
+
+  If the value 'nil' is specified or the value is not set, the default value
+  will be used."
   [opts & body]
-  `(let [cm# (conn/make-reuseable-async-conn-manager ~opts)
-         count# (atom 0)
-         all-requested# (atom false)
-         p-info# {:conn-mgr cm#
-                  :allocate (fn [] (swap! count# inc))
-                  :release  (fn [] (swap! count# dec))}
-         ;; A http client hold the conn-mgr and start the io-reactor.
-         ;; In this context any other client's ConnectionManagerShared will be
-         ;; set to true.
-         holder-client# (-> (HttpAsyncClients/custom)
-                            (.setConnectionManager cm#)
-                            (.build)
-                            (.start))]
-     (add-watch count# :close-conn-mgr
-                (fn [key# identity# old# new#]
-                  (if (and (not= old# new#) (<= new# 0) @all-requested#)
-                    (.shutdown
-                     ^PoolingNHttpClientConnectionManager
-                     cm#))))
-     (binding [*pooling-info* p-info#]
+  `(let [cm# (conn/make-reuseable-async-conn-manager ~opts)]
+     (binding [conn/*async-connection-manager* cm#]
        (try
          ~@body
          (finally
-           (swap! all-requested# not)
-           (if (= 0 @count#)
-             (.shutdown
-              ^PoolingNHttpClientConnectionManager
-              cm#)))))))
+           (.shutdown
+            ^PoolingNHttpClientConnectionManager
+            cm#))))))
