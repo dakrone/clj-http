@@ -14,19 +14,22 @@
                                     TrustStrategy)
            (org.apache.hc.client5.http.socket PlainConnectionSocketFactory)
            (org.apache.hc.client5.http.impl.io BasicHttpClientConnectionManager
-                                               PoolingHttpClientConnectionManager)
+                                               PoolingHttpClientConnectionManager
+                                               PoolingHttpClientConnectionManagerBuilder)
+           (org.apache.hc.client5.http.impl.nio PoolingAsyncClientConnectionManager
+                                                PoolingAsyncClientConnectionManagerBuilder)
            ;; (org.apache.http.impl.nio.conn PoolingNHttpClientConnectionManager)
            (javax.net.ssl SSLContext HostnameVerifier)
            ;; (org.apache.http.nio.conn NHttpClientConnectionManager)
-           (org.apache.http.nio.conn.ssl SSLIOSessionStrategy)
-           (org.apache.http.impl.nio.reactor
+           ;; (org.apache.http.nio.conn.ssl SSLIOSessionStrategy)
+           #_(org.apache.http.impl.nio.reactor
             IOReactorConfig
             AbstractMultiworkerIOReactor$DefaultThreadFactory
             DefaultConnectingIOReactor)
-           (org.apache.http.nio.conn NoopIOSessionStrategy)
-           (org.apache.http.nio.protocol HttpAsyncRequestExecutor)
-           (org.apache.http.impl.nio DefaultHttpClientIODispatch)
-           (org.apache.http.config ConnectionConfig)))
+           #_(org.apache.http.nio.conn NoopIOSessionStrategy)
+           #_(org.apache.http.nio.protocol HttpAsyncRequestExecutor)
+           #_(org.apache.http.impl.nio DefaultHttpClientIODispatch)
+           #_(org.apache.http.config ConnectionConfig)))
 
 (def ^:private insecure-context-verifier
   (delay {
@@ -42,7 +45,7 @@
      (SSLConnectionSocketFactory. ^SSLContext context
                                   ^HostnameVerifier verifier))))
 
-(def ^:private insecure-strategy
+#_(def ^:private insecure-strategy
   (delay
    (let [{:keys [context  verifier]} @insecure-context-verifier]
      (SSLIOSessionStrategy. ^SSLContext context ^HostnameVerifier verifier))))
@@ -50,7 +53,7 @@
 (def ^:private ^SSLConnectionSocketFactory secure-ssl-socket-factory
   (SSLConnectionSocketFactory/getSocketFactory))
 
-(def ^:private ^SSLIOSessionStrategy secure-strategy
+#_(def ^:private ^SSLIOSessionStrategy secure-strategy
   (SSLIOSessionStrategy/getDefaultStrategy))
 
 (defn ^SSLConnectionSocketFactory SSLGenericSocketFactory
@@ -173,11 +176,11 @@
        (.register "https" ^SSLConnectionSocketFactory @insecure-socket-factory)
        (.build))))
 
-(def ^:private insecure-strategy-registry
+#_(def ^:private insecure-strategy-registry
   (delay
    (-> (RegistryBuilder/create)
        (.register "http" NoopIOSessionStrategy/INSTANCE)
-       (.register "https" ^SSLIOSessionStrategy @insecure-strategy)
+
        (.build))))
 
 (def ^:private regular-scheme-registry
@@ -186,7 +189,7 @@
       (.register "https" secure-ssl-socket-factory)
       (.build)))
 
-(def ^:private regular-strategy-registry
+#_(def ^:private regular-strategy-registry
   (-> (RegistryBuilder/create)
       (.register "http" NoopIOSessionStrategy/INSTANCE)
       (.register "https" secure-strategy)
@@ -202,7 +205,7 @@
         (.register "https" factory)
         (.build))))
 
-(defn ^Registry get-keystore-strategy-registry
+#_(defn ^Registry get-keystore-strategy-registry
   [req]
   (let [{:keys [context verifier]} (get-keystore-context-verifier req)
         strategy (SSLIOSessionStrategy. ^SSLContext context
@@ -223,7 +226,7 @@
 
     :else (BasicHttpClientConnectionManager. regular-scheme-registry)))
 
-(defn- ^DefaultConnectingIOReactor make-ioreactor
+#_(defn- ^DefaultConnectingIOReactor make-ioreactor
   [{:keys [connect-timeout interest-op-queued io-thread-count rcv-buf-size
            select-interval shutdown-grace-period snd-buf-size
            so-keep-alive so-linger so-timeout tcp-no-delay]}]
@@ -241,10 +244,11 @@
     (if-some [v tcp-no-delay] (.setTcpNoDelay c v) c)
     (DefaultConnectingIOReactor. (.build c))))
 
-(defn ^PoolingNHttpClientConnectionManager
+(defn ^PoolingAsyncClientConnectionManager
   make-regular-async-conn-manager
   [{:keys [keystore trust-store] :as req}]
-  (let [^Registry registry (cond
+  (PoolingAsyncClientConnectionManagerBuilder/create)
+  #_(let [^Registry registry (cond
                              (or keystore trust-store)
                              (get-keystore-strategy-registry req)
 
@@ -260,13 +264,14 @@
 
 ;; need the fully qualified class name because this fn is later used in a
 ;; macro from a different ns
-(defn ^org.apache.http.impl.conn.PoolingHttpClientConnectionManager
+(defn ^PoolingHttpClientConnectionManager
   make-reusable-conn-manager*
   "Given an timeout and optional insecure? flag, create a
   PoolingHttpClientConnectionManager with <timeout> seconds set as the
   timeout value."
   [{:keys [timeout keystore trust-store] :as config}]
-  (let [registry (cond
+  (PoolingHttpClientConnectionManagerBuilder/create)
+  #_(let [registry (cond
                    (opt config :insecure) @insecure-scheme-registry
 
                    (or keystore trust-store)
@@ -317,9 +322,10 @@
       (.setDefaultMaxPerRoute conn-man default-per-route))
     conn-man))
 
-(defn- ^PoolingNHttpClientConnectionManager make-reusable-async-conn-manager*
+(defn- ^PoolingAsyncClientConnectionManager make-reusable-async-conn-manager*
   [{:keys [timeout keystore trust-store io-config] :as config}]
-  (let [registry (cond
+  (PoolingAsyncClientConnectionManagerBuilder/create)
+  #_(let [registry (cond
                    (opt config :insecure) @insecure-strategy-registry
 
                    (or keystore trust-store)
@@ -335,7 +341,7 @@
         [io-reactor nil registry nil nil timeout
          java.util.concurrent.TimeUnit/SECONDS])))
 
-(defn ^PoolingNHttpClientConnectionManager make-reuseable-async-conn-manager
+(defn ^PoolingAsyncClientConnectionManager make-reuseable-async-conn-manager
   "Creates a default pooling async connection manager with the specified
   options. Handles the same options as make-reusable-conn-manager plus
   :io-config which should be a map containing some of the following keys:
@@ -383,11 +389,11 @@
   "Shut down the given connection manager, if it is not nil"
   class)
 (defmethod shutdown-manager nil [conn-mgr] nil)
-(defmethod shutdown-manager org.apache.http.conn.HttpClientConnectionManager
-  [^HttpClientConnectionManager  conn-mgr] (.shutdown conn-mgr))
+(defmethod shutdown-manager PoolingHttpClientConnectionManager
+  [^PoolingHttpClientConnectionManager  conn-mgr] (.shutdown conn-mgr))
 (defmethod shutdown-manager
-  org.apache.http.nio.conn.NHttpClientConnectionManager
-  [^NHttpClientConnectionManager conn-mgr] (.shutdown conn-mgr))
+  PoolingAsyncClientConnectionManager
+  [^PoolingAsyncClientConnectionManager conn-mgr] (.shutdown conn-mgr))
 
 (def ^:dynamic *connection-manager*
   "connection manager to be rebound during request execution"
