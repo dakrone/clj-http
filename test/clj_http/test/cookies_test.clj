@@ -28,24 +28,19 @@
     nil nil
     "" nil
     "example-cookie=example-value;Path=/"
-    ["example-cookie"
-     {:discard true :path "/" :secure false
-      :value "example-value" :version 0}]
+    ["example-cookie" {:path "/" :secure false :value "example-value"}]
     "example-cookie=example-value;Domain=.example.com;Path=/"
     ["example-cookie"
-     {:discard true :domain "example.com" :secure false :path "/"
-      :value "example-value" :version 0}]))
+     {:domain "example.com" :secure false :path "/" :value "example-value"}]))
 
 (deftest test-decode-cookies-with-seq
   (let [cookies (decode-cookies [(str "ring-session=" session)])]
     (is (map? cookies))
     (is (= 1 (count cookies)))
     (let [cookie (get cookies "ring-session")]
-      (is (= true (:discard cookie)))
       (is (nil? (:domain cookie)))
       (is (= "/" (:path cookie)))
-      (is (= session (:value cookie)))
-      (is (= 0 (:version cookie))))))
+      (is (= session (:value cookie))))))
 
 (deftest test-decode-cookies-with-string
   (let [cookies (decode-cookies
@@ -53,23 +48,18 @@
     (is (map? cookies))
     (is (= 1 (count cookies)))
     (let [cookie (get cookies "ring-session")]
-      (is (= true (:discard cookie)))
       (is (nil? (:domain cookie)))
       (is (= "/" (:path cookie)))
-      (is (= session (:value cookie)))
-      (is (= 0 (:version cookie))))))
+      (is (= session (:value cookie))))))
 
 (deftest test-decode-cookie-header
   (are [response expected]
     (is (= expected (decode-cookie-header response)))
     {:headers {"set-cookie" "a=1"}}
-    {:cookies {"a" {:discard true :path "/" :secure false
-                    :value "1" :version 0}} :headers {}}
-    {:headers {"set-cookie"
-               (str "ring-session=" session ";Path=/")}}
+    {:cookies {"a" {:path "/" :secure false :value "1"}} :headers {}}
+    {:headers {"set-cookie" (str "ring-session=" session ";Path=/")}}
     {:cookies {"ring-session"
-               {:discard true :path "/" :secure false
-                :value session :version 0}} :headers {}}))
+               {:path "/" :secure false :value session}} :headers {}}))
 
 (deftest test-encode-cookie
   (are [cookie expected]
@@ -170,9 +160,9 @@
     (is (= "example-value" (:value content)))))
 
 (deftest test-wrap-cookies
-  (is (= {:cookies {"example-cookie" {:discard true :domain "example.com"
+  (is (= {:cookies {"example-cookie" {:domain "example.com"
                                       :path "/" :value "example-value"
-                                      :version 0 :secure false}} :headers {}}
+                                      :secure false}} :headers {}}
          ((wrap-cookies
            (fn [request]
              (is (= (get (:headers request) "Cookie") "a=1;b=2"))
