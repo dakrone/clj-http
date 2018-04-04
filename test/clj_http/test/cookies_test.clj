@@ -119,13 +119,8 @@
     (is (= session (.getValue cookie)))
     (is (= "/" (.getPath cookie)))
     (is (= "example.com" (.getDomain cookie)))
-    (is (nil? (.getComment cookie)))
-    (is (nil? (.getCommentURL cookie)))
-    (is (not (.isPersistent cookie)))
     (is (nil? (.getExpiryDate cookie)))
-    (is (nil? (seq (.getPorts cookie))))
-    (is (not (.isSecure cookie)))
-    (is (= 0 (.getVersion cookie)))))
+    (is (not (.isSecure cookie)))))
 
 (deftest test-to-basic-client-cookie-with-full-cookie
   (let [cookie (to-basic-client-cookie
@@ -133,24 +128,14 @@
                  {:value session
                   :path "/"
                   :domain "example.com"
-                  :comment "Example Comment"
-                  :comment-url "http://example.com/cookies"
-                  :discard true
                   :expires (java.util.Date. (long 0))
-                  :ports [80 8080]
-                  :secure true
-                  :version 0}])]
+                  :secure true}])]
     (is (= "ring-session" (.getName cookie)))
     (is (= session (.getValue cookie)))
     (is (= "/" (.getPath cookie)))
     (is (= "example.com" (.getDomain cookie)))
-    (is (= "Example Comment" (.getComment cookie)))
-    (is (= "http://example.com/cookies" (.getCommentURL cookie)))
-    (is (not (.isPersistent cookie)))
     (is (= (java.util.Date. (long 0)) (.getExpiryDate cookie)))
-    (is (= [80 8080] (seq (.getPorts cookie))))
-    (is (.isSecure cookie))
-    (is (= 0 (.getVersion cookie)))))
+    (is (.isSecure cookie))))
 
 (deftest test-to-basic-client-cookie-with-symbol-as-name
   (let [cookie (to-basic-client-cookie
@@ -165,38 +150,23 @@
            (.setDomain "example.com")
            (.setPath "/")))]
     (is (= "example-cookie" name))
-    (is (nil? (:comment content)))
-    (is (nil? (:comment-url content)))
-    (is (:discard content))
     (is (= "example.com" (:domain content)))
     (is (nil? (:expires content)))
-    (is (nil? (:ports content)))
     (is (not (:secure content)))
-    (is (= 0 (:version content)))
     (is (= "example-value" (:value content)))))
 
 (deftest test-to-cookie-with-full-cookie
   (let [[name content]
         (to-cookie
          (doto (BasicClientCookie. "example-cookie" "example-value")
-           (.setComment "Example Comment")
-           (.setCommentURL "http://example.com/cookies")
-           (.setDiscard true)
            (.setDomain "example.com")
            (.setExpiryDate (java.util.Date. (long 0)))
            (.setPath "/")
-           (.setPorts (int-array [80 8080]))
-           (.setSecure true)
-           (.setVersion 1)))]
+           (.setSecure true)))]
     (is (= "example-cookie" name))
-    (is (= "Example Comment" (:comment content)))
-    (is (= "http://example.com/cookies" (:comment-url content)))
-    (is (= true (:discard content)))
     (is (= "example.com" (:domain content)))
     (is (= (java.util.Date. (long 0)) (:expires content)))
-    (is (= [80 8080] (:ports content)))
     (is (= true (:secure content)))
-    (is (= 1 (:version content)))
     (is (= "example-value" (:value content)))))
 
 (deftest test-wrap-cookies

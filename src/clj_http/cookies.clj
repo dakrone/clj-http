@@ -15,8 +15,8 @@
 
 (defn cookie-spec ^CookieSpec []
   (.create
-   (RFC6265CookieSpecProvider.
-    (BasicHttpContext.))))
+   (RFC6265CookieSpecProvider.)
+   (BasicHttpContext.)))
 
 (defn compact-map
   "Removes all map entries where value is nil."
@@ -34,32 +34,22 @@
   [cookie]
   [(.getName cookie)
    (compact-map
-    {:comment (.getComment cookie)
-     :comment-url (.getCommentURL cookie)
-     :discard (not (.isPersistent cookie))
-     :domain (.getDomain cookie)
+    {:domain (.getDomain cookie)
      :expires (when (.getExpiryDate cookie) (.getExpiryDate cookie))
      :path (.getPath cookie)
-     :ports (when (.getPorts cookie) (seq (.getPorts cookie)))
      :secure (.isSecure cookie)
-     :value (.getValue cookie)
-     :version (.getVersion cookie)})])
+     :value (.getValue cookie)})])
 
 (defn ^BasicClientCookie
   to-basic-client-cookie
-  "Converts a cookie seq into a BasicClientCookie2."
+  "Converts a cookie seq into a BasicClientCookie."
   [[cookie-name cookie-content]]
   (doto (BasicClientCookie. (name cookie-name)
                             (name (:value cookie-content)))
-    (.setComment (:comment cookie-content))
-    (.setCommentURL (:comment-url cookie-content))
-    (.setDiscard (:discard cookie-content true))
     (.setDomain (:domain cookie-content))
     (.setExpiryDate (:expires cookie-content))
     (.setPath (:path cookie-content))
-    (.setPorts (int-array (:ports cookie-content)))
-    (.setSecure (:secure cookie-content false))
-    (.setVersion (:version cookie-content 0))))
+    (.setSecure (:secure cookie-content false))))
 
 (defn decode-cookie
   "Decode the Set-Cookie string into a cookie seq."
