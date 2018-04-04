@@ -2,7 +2,7 @@
   (:require [clj-http.cookies :refer :all]
             [clj-http.util :refer :all]
             [clojure.test :refer :all])
-  (:import (org.apache.http.impl.cookie BasicClientCookie BasicClientCookie2)))
+  (:import (org.apache.hc.client5.http.impl.cookie BasicClientCookie)))
 
 (defn refer-private [ns]
   (doseq [[symbol var] (ns-interns ns)]
@@ -178,7 +178,7 @@
 (deftest test-to-cookie-with-full-cookie
   (let [[name content]
         (to-cookie
-         (doto (BasicClientCookie2. "example-cookie" "example-value")
+         (doto (BasicClientCookie. "example-cookie" "example-value")
            (.setComment "Example Comment")
            (.setCommentURL "http://example.com/cookies")
            (.setDiscard true)

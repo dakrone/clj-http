@@ -13,7 +13,7 @@
   (:import (java.io ByteArrayInputStream)
            (java.nio.charset StandardCharsets)
            (java.net UnknownHostException)
-           (org.apache.http HttpEntity)
+           (org.apache.hc.core5.http HttpEntity)
            (org.apache.logging.log4j LogManager)))
 
 (defonce logger (LogManager/getLogger "clj-http.test.client-test"))

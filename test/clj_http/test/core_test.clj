@@ -11,17 +11,15 @@
   (:import (java.io ByteArrayInputStream)
            (java.net SocketTimeoutException)
            (java.util.concurrent TimeoutException TimeUnit)
-           (org.apache.http.params CoreConnectionPNames CoreProtocolPNames)
-           (org.apache.http.message BasicHeader BasicHeaderIterator)
-           (org.apache.http.client.methods HttpPost)
-           (org.apache.http.client.protocol HttpClientContext)
-           (org.apache.http.client.config RequestConfig)
-           (org.apache.http.client.params CookiePolicy ClientPNames)
-           (org.apache.http HttpRequest HttpResponse HttpConnection
-                            HttpInetConnection HttpVersion ProtocolException)
-           (org.apache.http.protocol HttpContext ExecutionContext)
-           (org.apache.http.impl.client DefaultHttpClient)
-           (org.apache.http.client.params ClientPNames)
+           (org.apache.hc.core5.http.message BasicHeader BasicHeaderIterator)
+           (org.apache.hc.client5.http.classic.methods HttpPost)
+           (org.apache.hc.core5.http.protocol HttpCoreContext)
+           (org.apache.hc.client5.http.protocol HttpClientContext)
+           (org.apache.hc.client5.http.impl.classic CloseableHttpClient)
+           (org.apache.hc.client5.http.config RequestConfig)
+           (org.apache.hc.core5.http HttpRequest HttpResponse HttpConnection
+                                     ProtocolException)
+           (org.apache.hc.core5.http.protocol HttpContext)
            (org.apache.logging.log4j LogManager)
            (sun.security.provider.certpath SunCertPathBuilderException)))
 
@@ -516,8 +514,8 @@
          (localhost "/redirect-to-get")
          {:response-interceptor
           (fn [^HttpResponse resp ^HttpContext ctx]
-            (let [^HttpInetConnection conn
-                  (.getAttribute ctx ExecutionContext/HTTP_CONNECTION)]
+            (let [conn
+                  (.getAttribute ctx "http.connection")]
               (swap! saved-ctx conj {:remote-port (.getRemotePort conn)
                                      :http-conn conn})))})]
     (is (= 200 status))
@@ -555,6 +553,7 @@
 ;;         (is (= v (.getParameter setps k)))))))
 
 ;; Regression, get notified if something changes
+#_
 (deftest ^:integration t-known-client-params-are-unchanged
   (let [params ["http.socket.timeout" CoreConnectionPNames/SO_TIMEOUT
                 "http.connection.timeout"
@@ -612,8 +611,9 @@
                                                   :uri "/timeout"}))
           is-pool-timeout-error?
           (fn [req-fut]
-            (instance? org.apache.http.conn.ConnectionPoolTimeoutException
-                       (try @req-fut (catch Exception e (.getCause e)))))
+            #_(instance? org.apache.http.conn.ConnectionPoolTimeoutException
+                         (try @req-fut (catch Exception e (.getCause e))))
+            (try @req-fut (catch Exception e (.getCause e))))
           req1 (async-request)
           req2 (async-request)
           timeout-error1 (is-pool-timeout-error? req1)
@@ -685,7 +685,7 @@
     (with-redefs
       [core/build-http-client
        (fn [& args]
-         (proxy [org.apache.http.impl.client.CloseableHttpClient] []
+         (proxy [CloseableHttpClient] []
            (execute [http-req context]
              (swap! called-args conj [http-req context])
              (.execute (apply real-http-client args) http-req context))))]

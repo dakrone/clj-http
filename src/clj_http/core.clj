@@ -8,39 +8,40 @@
   (:import (java.io ByteArrayOutputStream FilterInputStream InputStream)
            (java.net URI URL ProxySelector InetAddress)
            (java.util Locale)
-           (org.apache.http HttpEntity HeaderIterator HttpHost HttpRequest
-                            HttpEntityEnclosingRequest HttpResponse
-                            HttpRequestInterceptor HttpResponseInterceptor
-                            ProtocolException)
-           (org.apache.http.auth UsernamePasswordCredentials AuthScope
-                                 NTCredentials)
-           (org.apache.http.client HttpRequestRetryHandler RedirectStrategy
-                                   CredentialsProvider)
-           (org.apache.http.client.config RequestConfig CookieSpecs)
-           (org.apache.http.client.methods HttpDelete HttpGet HttpPost HttpPut
-                                           HttpOptions HttpPatch
-                                           HttpHead
-                                           HttpEntityEnclosingRequestBase
-                                           CloseableHttpResponse
-                                           HttpUriRequest HttpRequestBase)
-           (org.apache.http.client.protocol HttpClientContext)
-           (org.apache.http.client.utils URIUtils)
-           (org.apache.http.config RegistryBuilder)
-           (org.apache.http.conn.routing HttpRoute HttpRoutePlanner)
-           (org.apache.http.conn.ssl BrowserCompatHostnameVerifier
-                                     SSLConnectionSocketFactory SSLContexts)
-           (org.apache.http.conn.socket PlainConnectionSocketFactory)
-           (org.apache.http.entity ByteArrayEntity StringEntity)
-           (org.apache.http.impl.client BasicCredentialsProvider
-                                        CloseableHttpClient HttpClients
-                                        DefaultRedirectStrategy
-                                        LaxRedirectStrategy HttpClientBuilder)
-           (org.apache.http.impl.conn SystemDefaultRoutePlanner
-                                      DefaultProxyRoutePlanner)
-           (org.apache.http.impl.nio.client HttpAsyncClientBuilder
-                                            HttpAsyncClients
-                                            CloseableHttpAsyncClient)
-           (org.apache.http.message BasicHttpResponse)
+           (org.apache.hc.core5.http HttpEntity HttpHost HttpRequest
+                                     HttpResponse HttpRequestInterceptor
+                                     HttpResponseInterceptor
+                                     ProtocolException)
+           (org.apache.hc.client5.http.auth CredentialsProvider
+                                            UsernamePasswordCredentials AuthScope
+                                            NTCredentials)
+           (org.apache.hc.client5.http HttpRequestRetryHandler HttpRoute)
+           (org.apache.hc.client5.http.protocol RedirectStrategy)
+           (org.apache.hc.client5.http.config RequestConfig CookieSpecs)
+           (org.apache.hc.client5.http.impl.classic CloseableHttpResponse
+                                                    CloseableHttpClient
+                                                    HttpClients
+                                                    HttpClientBuilder)
+           (org.apache.hc.client5.http.classic.methods HttpDelete HttpGet HttpPost HttpPut
+                                                       HttpOptions HttpPatch
+                                                       HttpHead
+                                                       HttpUriRequest HttpUriRequestBase)
+           (org.apache.hc.client5.http.protocol HttpClientContext)
+           (org.apache.hc.client5.http.utils URIUtils)
+           (org.apache.hc.core5.http.config RegistryBuilder)
+           (org.apache.hc.client5.http.routing HttpRoutePlanner)
+           (org.apache.hc.client5.http.ssl DefaultHostnameVerifier SSLConnectionSocketFactory)
+           (org.apache.hc.core5.ssl SSLContexts)
+           (org.apache.hc.client5.http.socket PlainConnectionSocketFactory)
+           (org.apache.hc.core5.http.io.entity ByteArrayEntity StringEntity)
+           (org.apache.hc.client5.http.impl DefaultRedirectStrategy)
+           (org.apache.hc.client5.http.impl.auth BasicCredentialsProvider)
+           (org.apache.hc.client5.http.impl.routing SystemDefaultRoutePlanner
+                                                    DefaultProxyRoutePlanner)
+           (org.apache.hc.client5.http.impl.async HttpAsyncClientBuilder
+                                                  HttpAsyncClients
+                                                  CloseableHttpAsyncClient)
+           (org.apache.hc.core5.http.message BasicHttpResponse)
            (java.util.concurrent ExecutionException)
            (org.apache.http.entity.mime HttpMultipartMode)))
 
@@ -50,7 +51,7 @@
   If a name appears more than once (like `set-cookie`) then the value
   will be a vector containing the values in the order they appeared
   in the headers."
-  [^HeaderIterator headers & [use-header-maps-in-response?]]
+  [headers & [use-header-maps-in-response?]]
   (if-not use-header-maps-in-response?
     (->> (headers/header-iterator-seq headers)
          (map (fn [[k v]]
@@ -63,7 +64,7 @@
                    (headers/assoc-join hs k v))
                  (headers/header-map)))))
 
-(defn graceful-redirect-strategy
+#_(defn graceful-redirect-strategy
   "Similar to the default redirect strategy, however, does not throw an error
   when the maximum number of redirects has been reached. Still supports
   validating that the new redirect host is not empty."
@@ -93,7 +94,7 @@
             (.isRedirected DefaultRedirectStrategy/INSTANCE
                            request response typed-context)))))))
 
-(defn default-redirect-strategy [^RedirectStrategy original req]
+#_(defn default-redirect-strategy [^RedirectStrategy original req]
   "Proxies calls to whatever original redirect strategy is passed in, however,
   if :validate-redirects is set in the request, checks that the redirected host
   is not empty."
@@ -117,16 +118,18 @@
 (defn get-redirect-strategy [{:keys [redirect-strategy] :as req}]
   (case redirect-strategy
     :none (reify RedirectStrategy
-            (getRedirect [this request response context] nil)
+            (getLocationURI [this request response context] nil)
             (isRedirected [this request response context] false))
 
     ;; Like default, but does not throw exceptions when max redirects is
     ;; reached.
-    :graceful (graceful-redirect-strategy req)
+    ;; :graceful (graceful-redirect-strategy req)
 
-    :default (default-redirect-strategy DefaultRedirectStrategy/INSTANCE req)
-    :lax (default-redirect-strategy (LaxRedirectStrategy.) req)
-    nil (default-redirect-strategy DefaultRedirectStrategy/INSTANCE req)
+    :default DefaultRedirectStrategy/INSTANCE
+    ;; :default (default-redirect-strategy DefaultRedirectStrategy/INSTANCE req)
+    ;; :lax (default-redirect-strategy (LaxRedirectStrategy.) req)
+    nil DefaultRedirectStrategy/INSTANCE
+    ;; nil (default-redirect-strategy DefaultRedirectStrategy/INSTANCE req)
 
     ;; use directly as reifed RedirectStrategy
     redirect-strategy))
@@ -152,8 +155,8 @@
   [_] CookieSpecs/DEFAULT)
 (defmethod get-cookie-policy nil nil-cookie-policy
   [_] CookieSpecs/DEFAULT)
-(defmethod get-cookie-policy :netscape netscape-cookie-policy
-  [_] CookieSpecs/NETSCAPE)
+(defmethod get-cookie-policy :ignore netscape-cookie-policy
+  [_] CookieSpecs/IGNORE_COOKIES)
 (defmethod get-cookie-policy :standard standard-cookie-policy
   [_] CookieSpecs/STANDARD)
 (defmethod get-cookie-policy :stardard-strict standard-strict-cookie-policy
@@ -288,7 +291,7 @@
 (defn make-proxy-method-with-body
   [method]
   (fn [url]
-    (doto (proxy [HttpEntityEnclosingRequestBase] []
+    (doto (proxy [HttpUriRequestBase] [method url]
             (getMethod [] (.toUpperCase (name method) Locale/ROOT)))
       (.setURI (URI. url)))))
 
@@ -300,7 +303,7 @@
 
 (def ^:dynamic *cookie-store* nil)
 
-(defn make-proxy-method [method url]
+#_(defn make-proxy-method [method url]
   (doto (proxy [HttpRequestBase] []
           (getMethod
             []
@@ -326,7 +329,7 @@
     :patch   (if body
                (proxy-patch-with-body http-url)
                (HttpPatch. http-url))
-    (if body
+    #_(if body
       ((make-proxy-method-with-body request-method) http-url)
       (make-proxy-method request-method http-url))))
 
@@ -487,12 +490,19 @@
           (doto (credentials-provider)
             (.setCredentials authscope creds)))))
      (if multipart
-       (.setEntity ^HttpEntityEnclosingRequest http-req
+       (.setEntity http-req
                    (mp/create-multipart-entity multipart mime-subtype http-multipart-mode))
-       (when (and body (instance? HttpEntityEnclosingRequest http-req))
+       (do
+         #_(when (and body (instance? HttpEntityEnclosingRequest http-req))
+           (if (instance? HttpEntity body)
+             (.setEntity ^HttpEntityEnclosingRequest http-req body)
+             (.setEntity ^HttpEntityEnclosingRequest http-req
+                         (if (string? body)
+                           (StringEntity. ^String body "UTF-8")
+                           (ByteArrayEntity. body)))))
          (if (instance? HttpEntity body)
-           (.setEntity ^HttpEntityEnclosingRequest http-req body)
-           (.setEntity ^HttpEntityEnclosingRequest http-req
+           (.setEntity http-req body)
+           (.setEntity http-req
                        (if (string? body)
                          (StringEntity. ^String body "UTF-8")
                          (ByteArrayEntity. body))))))
@@ -517,7 +527,7 @@
              (build-async-http-client req conn-mgr http-url proxy-ignore-hosts)]
          (.start client)
          (.execute client http-req context
-                   (reify org.apache.http.concurrent.FutureCallback
+                   (reify org.apache.hc.core5.concurrent.FutureCallback
                      (failed [this ex]
                        (when-not (conn/reusable? conn-mgr)
                          (conn/shutdown-manager conn-mgr))

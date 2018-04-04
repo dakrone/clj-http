@@ -12,11 +12,11 @@
   (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream)
            (java.net URL UnknownHostException)
            (java.nio.charset StandardCharsets)
-           (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
-                                   InputStreamEntity FileEntity StringEntity)
-           (org.apache.http.impl.conn PoolingHttpClientConnectionManager)
-           (org.apache.http.impl.nio.conn PoolingNHttpClientConnectionManager)
-           (org.apache.http.impl.nio.client HttpAsyncClients))
+           (org.apache.hc.core5.http.io.entity BufferedHttpEntity ByteArrayEntity
+                                               InputStreamEntity FileEntity StringEntity)
+           (org.apache.hc.client5.http.impl.io PoolingHttpClientConnectionManager)
+           (org.apache.hc.client5.http.impl.nio PoolingAsyncClientConnectionManager)
+           (org.apache.hc.client5.http.impl.async HttpAsyncClients))
   (:refer-clojure :exclude [get update]))
 
 ;; Cheshire is an optional dependency, so we check for it at compile time.
@@ -1272,5 +1272,5 @@
          ~@body
          (finally
            (.shutdown
-            ^PoolingNHttpClientConnectionManager
+            ^PoolingAsyncClientConnectionManager
             cm#))))))
