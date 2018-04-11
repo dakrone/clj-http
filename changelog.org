@@ -21,6 +21,11 @@ List of user-visible changes that have gone into each release
   be specified (with the same setting) - https://github.com/dakrone/clj-http/issues/441
 - Cancelling the =Future= returned from an async http request now also aborts the HttpRequest object
 - Async connection managers no longer put the connection manager in an illegal ACTIVE state [[https://github.com/dakrone/clj-http/issues/443][#443]]
+- Added the =:cookie-spec= and =:cookie-policy-registry= options for specifying a custom cookie spec
+  for parsing cookies. Since clj-http doesn't rely on Apache's cookies handling, this is for
+  advanced users who wish to add their own cookie validation, or use Apache's handling instead of
+  clj-http's. It also allows a user who wants to registry a custom spec to reuse the spec without
+  creating it for every request. Semi-related to https://github.com/dakrone/clj-http/issues/444
 
 ** 3.8.0
 - Reintroduce the =:save-request= and =:debug-body= options
