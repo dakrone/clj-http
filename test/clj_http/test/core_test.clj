@@ -13,9 +13,11 @@
            (java.util.concurrent TimeoutException TimeUnit)
            (org.apache.hc.core5.http.message BasicHeader BasicHeaderIterator)
            (org.apache.hc.client5.http.classic.methods HttpPost)
+           (org.apache.hc.client5.http.cookie MalformedCookieException)
            (org.apache.hc.core5.http.protocol HttpCoreContext)
            (org.apache.hc.client5.http.protocol HttpClientContext)
            (org.apache.hc.client5.http.impl.classic CloseableHttpClient)
+           (org.apache.hc.client5.http.impl.cookie CookieSpecBase RFC6265CookieSpecProvider)
            (org.apache.hc.client5.http.config RequestConfig)
            (org.apache.hc.core5.http HttpRequest HttpResponse HttpConnection
                                      ProtocolException)
@@ -116,7 +118,15 @@
     [:propfind "/propfind-with-body"]
     {:status 200 :body (:body req)}
     [:get "/query-string"]
-    {:status 200 :body (:query-string req)}))
+    {:status 200 :body (:query-string req)}
+    [:get "/cookie"]
+    {:status 200 :body "yay" :headers {"Set-Cookie" "foo=bar"}}
+    [:get "/bad-cookie"]
+    {:status 200 :body "yay"
+     :headers
+     {"Set-Cookie"
+      (str "DD-PSHARD=3; expires=\"Thu, 12-Apr-2018 06:40:25 GMT\"; "
+           "Max-Age=604800; Path=/; secure; HttpOnly")}}))
 
 (defn add-headers-if-requested [client]
   (fn [req]
@@ -771,6 +781,7 @@
     (catch TimeoutException te)))
 
 (deftest ^:integration test-reusable-http-client
+  (run-server)
   (let [cm (conn/make-reuseable-async-conn-manager {})
         hc (core/build-async-http-client {} cm)]
     (client/get (localhost "/json")
@@ -791,3 +802,33 @@
                           :as :json})]
     (is (= 200 (:status resp)))
     (is (= {:foo "bar"} (:body resp)))))
+
+(deftest ^:integration t-cookies-spec
+  (run-server)
+  (try
+    (client/get (localhost "/bad-cookie"))
+    (is false "should have failed")
+    (catch MalformedCookieException e))
+  (client/get (localhost "/bad-cookie") {:decode-cookies false})
+  (let [validated (atom false)
+        spec-provider (RFC6265CookieSpecProvider.)
+        resp (client/get (localhost "/cookie")
+                         {:cookie-spec
+                          (fn [http-context]
+                            (proxy [CookieSpecBase] []
+                              ;; Version and version header
+                              (getVersion [] 0)
+                              (getVersionHeader [] nil)
+                              ;; parse headers into cookie objects
+                              (parse [header cookie-origin]
+                                (.parse (.create spec-provider http-context)
+                                        header cookie-origin))
+                              ;; Validate a cookie, throwing MalformedCookieException if the
+                              ;; cookies isn't valid
+                              (validate [cookie cookie-origin]
+                                (reset! validated true))
+                              ;; Determine if a cookie matches the target location
+                              (match [cookie cookie-origin] true)
+                              ;; Format a list of cookies into a list of headers
+                              (formatCookies [cookies] (java.util.ArrayList.))))})]
+    (is (= @validated true))))

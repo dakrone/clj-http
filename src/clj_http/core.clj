@@ -18,6 +18,7 @@
            (org.apache.hc.client5.http HttpRequestRetryHandler HttpRoute)
            (org.apache.hc.client5.http.protocol RedirectStrategy)
            (org.apache.hc.client5.http.config RequestConfig CookieSpecs)
+           (org.apache.hc.client5.http.cookie CookieSpecProvider)
            (org.apache.hc.client5.http.impl.classic CloseableHttpResponse
                                                     CloseableHttpClient
                                                     HttpClients
@@ -44,6 +45,8 @@
            (org.apache.hc.core5.http.message BasicHttpResponse)
            (java.util.concurrent ExecutionException)
            (org.apache.http.entity.mime HttpMultipartMode)))
+
+(def CUSTOM_COOKIE_POLICY "_custom")
 
 (defn parse-headers
   "Takes a HeaderIterator and returns a map of names to values.
@@ -143,6 +146,18 @@
          (handler e cnt context)))))
   builder)
 
+(defn create-custom-cookie-policy-registry
+  "Given a function that will take an HttpContext and return a CookieSpec,
+  create a new Registry for the cookie policy under the CUSTOM_COOKIE_POLICY
+  string."
+  [cookie-spec-fn]
+  (-> (RegistryBuilder/create)
+      (.register CUSTOM_COOKIE_POLICY
+                 (proxy [CookieSpecProvider] []
+                   (create [context]
+                     (cookie-spec-fn context))))
+      (.build)))
+
 (defmulti get-cookie-policy
   "Method to retrieve the cookie policy that should be used for the request.
   This is a multimethod that may be extended to return your own cookie policy.
@@ -166,7 +181,7 @@
                               socket-timeout
                               conn-request-timeout
                               max-redirects
-                              cookie-policy]
+                              cookie-spec]
                        :as req}]
   (let [config (-> (RequestConfig/custom)
                    (.setConnectTimeout (or conn-timeout -1))
@@ -178,8 +193,10 @@
                     (boolean (opt req :allow-circular-redirects)))
                    (.setRelativeRedirectsAllowed
                     ((complement false?)
-                     (opt req :allow-relative-redirects)))
-                   (.setCookieSpec (get-cookie-policy req)))]
+                     (opt req :allow-relative-redirects))))]
+    (if cookie-spec
+      (.setCookieSpec config CUSTOM_COOKIE_POLICY)
+      (.setCookieSpec config (get-cookie-policy req)))
     (when max-redirects (.setMaxRedirects config max-redirects))
     (.build config)))
 
@@ -214,7 +231,8 @@
   using proxies."
   [{:keys [retry-handler request-interceptor
            response-interceptor proxy-host proxy-port
-           http-builder-fns]
+           http-builder-fns cookie-spec
+           cookie-policy-registry]
     :as req}
    conn-mgr & [http-url proxy-ignore-hosts]]
   ;; have to let first, otherwise we get a reflection warning on (.build)
@@ -229,6 +247,13 @@
                                         (get-route-planner
                                          proxy-host proxy-port
                                          proxy-ignore-hosts http-url)))]
+    (when (or cookie-policy-registry cookie-spec)
+      (if cookie-policy-registry
+        ;; They have a custom registry they'd like to re-use, so use that
+        (.setDefaultCookieSpecRegistry builder cookie-policy-registry)
+        ;; They have only a one-time function for cookie spec, so use that
+        (.setDefaultCookieSpecRegistry
+         builder (create-custom-cookie-policy-registry cookie-spec))))
     (when request-interceptor
       (.addInterceptorLast
        builder (proxy [HttpRequestInterceptor] []
