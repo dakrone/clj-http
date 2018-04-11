@@ -183,10 +183,59 @@ Example requests:
 (client/post "http://example.com" {:cookie-policy :standard})
 (client/post "http://example.com" {:cookie-policy :standard-strict})
 
-;; See core/get-cookie-policy to extend with your own policy if desired:
-(defn my-cookie-policy [cookie origin] (your-validation cookie origin))
-(defmethod get-cookie-policy :custom [req] my-cookie-policy)
-(client/post "http://example.com" {:cookie-policy :custom})
+;; Cookies can be completely configurable with a custom spec by adding a
+;; function to return a cookie spec for parsing the cookie. For example, if you
+;; wanted to configure a spec provider to have a certain compatibility level:
+(client/post "http://example.com"
+             {:cookie-spec
+              (fn [http-context]
+                (println "generating a new cookie spec")
+                (.create
+                 (org.apache.http.impl.cookie.RFC6265CookieSpecProvider.
+                  org.apache.http.impl.cookie.RFC6265CookieSpecProvider$CompatibilityLevel/IE_MEDIUM_SECURITY
+                  (PublicSuffixMatcherLoader/getDefault))
+                 http-context))})
+;; Or a version with relaxed compatibility
+(client/post "http://example.com"
+             {:cookie-spec
+              (fn [http-context]
+                (println "generating a new cookie spec")
+                (.create
+                 (org.apache.http.impl.cookie.RFC6265CookieSpecProvider.
+                  org.apache.http.impl.cookie.RFC6265CookieSpecProvider$CompatibilityLevel/RELAXED
+                  (PublicSuffixMatcherLoader/getDefault))
+                 http-context))})
+
+;; Sometimes you want to do your own validation or something, which you can do
+;; by proxying the CookieSpecBase. Note that this doesn't actually return the
+;; cookies, because clj-http does its own cookie parsing. If you want to store
+;; the cookies from these methods you'll need to use a cookie store or put it in
+;; some datastructure yourself.
+(client/post "http://example.com"
+             {:cookie-spec
+              (fn [http-context]
+                (proxy [org.apache.http.impl.cookie.CookieSpecBase] []
+                  ;; Version and version header
+                  (getVersion [] 0)
+                  (getVersionHeader [] nil)
+                  ;; parse headers into cookie objects
+                  (parse [header cookie-origin] (java.util.ArrayList.))
+                  ;; Validate a cookie, throwing MalformedCookieException if the
+                  ;; cookies isn't valid
+                  (validate [cookie cookie-origin]
+                    (println "validating:" cookie))
+                  ;; Determine if a cookie matches the target location
+                  (match [cookie cookie-origin] true)
+                  ;; Format a list of cookies into a list of headers
+                  (formatCookies [cookies] (java.util.ArrayList.))))})
+
+;; If you have created your own registry for cookie policies, you can provide
+;; :cookie-policy-registry to use it. See
+;; clj-http.core/create-custom-cookie-policy-registry for an example of a custom
+;; registry
+(client/post "http://example.com"
+             {:cookie-policy-registry my-custom-policy-registry
+              :cookie-policy "my-policy"})
 
 ;; Need to contact a server with an untrusted SSL cert?
 (client/get "https://alioth.debian.org" {:insecure? true})
