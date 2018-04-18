@@ -388,12 +388,19 @@
 (defmulti shutdown-manager
   "Shut down the given connection manager, if it is not nil"
   class)
+
 (defmethod shutdown-manager nil [conn-mgr] nil)
+
 (defmethod shutdown-manager PoolingHttpClientConnectionManager
   [^PoolingHttpClientConnectionManager  conn-mgr] (.shutdown conn-mgr))
+
 (defmethod shutdown-manager
   PoolingAsyncClientConnectionManager
   [^PoolingAsyncClientConnectionManager conn-mgr] (.shutdown conn-mgr))
+
+(defmethod shutdown-manager
+  BasicHttpClientConnectionManager
+  [^BasicHttpClientConnectionManager conn-mgr] (.close conn-mgr))
 
 (def ^:dynamic *connection-manager*
   "connection manager to be rebound during request execution"

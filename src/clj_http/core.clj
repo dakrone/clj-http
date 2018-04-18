@@ -8,6 +8,7 @@
   (:import (java.io ByteArrayOutputStream FilterInputStream InputStream)
            (java.net URI URL ProxySelector InetAddress)
            (java.util Locale)
+           (java.util.concurrent TimeUnit)
            (org.apache.hc.core5.http HttpEntity HttpHost HttpRequest
                                      HttpResponse HttpRequestInterceptor
                                      HttpResponseInterceptor
@@ -184,16 +185,22 @@
                               cookie-spec]
                        :as req}]
   (let [config (-> (RequestConfig/custom)
-                   (.setConnectTimeout (or conn-timeout -1))
-                   (.setSocketTimeout (or socket-timeout -1))
-                   (.setConnectionRequestTimeout
-                    (or conn-request-timeout -1))
+
                    (.setRedirectsEnabled true)
                    (.setCircularRedirectsAllowed
                     (boolean (opt req :allow-circular-redirects)))
-                   (.setRelativeRedirectsAllowed
+                   #_(.setRelativeRedirectsAllowed
                     ((complement false?)
                      (opt req :allow-relative-redirects))))]
+    (and conn-timeout
+         (.setConnectTimeout
+          config conn-timeout TimeUnit/MILLISECONDS))
+    (and socket-timeout
+         (.setSocketTimeout
+          config socket-timeout))
+    (and conn-request-timeout
+         (.setConnectionRequestTimeout
+          config conn-request-timeout TimeUnit/MILLISECONDS))
     (if cookie-spec
       (.setCookieSpec config CUSTOM_COOKIE_POLICY)
       (.setCookieSpec config (get-cookie-policy req)))
@@ -416,8 +423,8 @@
   [^HttpResponse response req ^HttpUriRequest http-req http-url
    conn-mgr ^HttpClientContext context ^CloseableHttpClient client]
   (let [^HttpEntity entity (.getEntity response)
-        status (.getStatusLine response)
-        protocol-version (.getProtocolVersion status)
+        status (.getCode response)
+        protocol-version (.getVersion response)
         body (:body req)
         response
         {:body (coerce-body-entity entity conn-mgr response)
@@ -429,12 +436,12 @@
          :chunked? (if (nil? entity) false (.isChunked entity))
          :repeatable? (if (nil? entity) false (.isRepeatable entity))
          :streaming? (if (nil? entity) false (.isStreaming entity))
-         :status (.getStatusCode status)
-         :protocol-version  {:name (.getProtocol protocol-version)
-                             :major (.getMajor protocol-version)
-                             :minor (.getMinor protocol-version)}
-         :reason-phrase (.getReasonPhrase status)
-         :trace-redirects (mapv str (.getRedirectLocations context))}]
+         :status status
+         :protocol-version {:name (.getProtocol protocol-version)
+                            :major (.getMajor protocol-version)
+                            :minor (.getMinor protocol-version)}
+         :reason-phrase (.getReasonPhrase response)
+         #_:trace-redirects #_(mapv str (.getRedirectLocations context))}]
     (if (opt req :save-request)
       (-> response
           (assoc :request req)
@@ -527,10 +534,11 @@
                            (ByteArrayEntity. body)))))
          (if (instance? HttpEntity body)
            (.setEntity http-req body)
-           (.setEntity http-req
-                       (if (string? body)
-                         (StringEntity. ^String body "UTF-8")
-                         (ByteArrayEntity. body))))))
+           (when body
+             (.setEntity http-req
+                         (if (string? body)
+                           (StringEntity. ^String body "UTF-8")
+                           (ByteArrayEntity. body)))))))
      (doseq [[header-n header-v] headers]
        (if (coll? header-v)
          (doseq [header-vth header-v]
