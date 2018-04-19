@@ -9,6 +9,7 @@
   :exclusions [org.clojure/clojure]
   :dependencies [[org.apache.httpcomponents/httpcore "4.4.9"]
                  [org.apache.httpcomponents/httpclient "4.5.5"]
+                 [org.apache.httpcomponents/httpclient-cache "4.5.5"]
                  [org.apache.httpcomponents/httpasyncclient "4.1.3"]
                  [org.apache.httpcomponents/httpmime "4.5.5"]
                  [commons-codec "1.11"]
