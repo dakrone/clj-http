@@ -306,7 +306,7 @@
   [{:keys [retry-handler request-interceptor
            response-interceptor proxy-host proxy-port
            http-builder-fns cookie-spec
-           cookie-policy-registry]
+           cookie-policy-registry ntlm-auth]
     :as req}
    caching?
    conn-mgr
@@ -326,6 +326,12 @@
                                         (get-route-planner
                                          proxy-host proxy-port
                                          proxy-ignore-hosts http-url)))]
+    (when-let [[user password host domain] ntlm-auth]
+      (.setDefaultCredentialsProvider
+       builder
+       (doto (BasicCredentialsProvider.)
+         (.setCredentials AuthScope/ANY
+                          (NTCredentials. user password host domain)))))
     (when cache?
       (.setCacheConfig builder (build-cache-config req)))
     (when (or cookie-policy-registry cookie-spec)
@@ -588,12 +594,6 @@
         (doto (credentials-provider)
           (.setCredentials (AuthScope. nil -1 nil)
                            (UsernamePasswordCredentials. user pass)))))
-     (when-let [[user password host domain] ntlm-auth]
-       (.setCredentialsProvider
-        context
-        (doto (credentials-provider)
-          (.setCredentials (AuthScope. nil -1 nil)
-                           (NTCredentials. user password host domain)))))
      (when (and proxy-user proxy-pass)
        (let [authscope (AuthScope. proxy-host proxy-port)
              creds (UsernamePasswordCredentials. proxy-user proxy-pass)]
