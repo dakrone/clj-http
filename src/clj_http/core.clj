@@ -37,6 +37,9 @@
                                         CloseableHttpClient HttpClients
                                         DefaultRedirectStrategy
                                         LaxRedirectStrategy HttpClientBuilder)
+           (org.apache.http.client.cache HttpCacheContext)
+           (org.apache.http.impl.client.cache CacheConfig
+                                              CachingHttpClientBuilder)
            (org.apache.http.impl.cookie DefaultCookieSpecProvider)
            (org.apache.http.impl.conn SystemDefaultRoutePlanner
                                       DefaultProxyRoutePlanner)
@@ -222,6 +225,78 @@
       (DefaultProxyRoutePlanner. (construct-http-host proxy-host proxy-port))
       (SystemDefaultRoutePlanner. (ProxySelector/getDefault)))))
 
+(defn build-cache-config
+  "Given a request with :cache-config as a map or a CacheConfig object, return a
+  CacheConfig object, or nil if no cache config is found. If :cache-config is a
+  map, it checks for the following options:
+  - :allow-303-caching
+  - :asynchronous-worker-idle-lifetime-secs
+  - :asynchronous-workers-core
+  - :asynchronous-workers-max
+  - :heuristic-caching-enabled
+  - :heuristic-coefficient
+  - :heuristic-default-lifetime
+  - :max-cache-entries
+  - :max-object-size
+  - :max-update-retries
+  - :never-cache-http10-responses-with-query-string
+  - :revalidation-queue-size
+  - :shared-cache
+  - :weak-etag-on-put-delete-allowed"
+  [request]
+  (when-let [cc (:cache-config request)]
+    (if (instance? CacheConfig cc)
+      cc
+      (let [config (CacheConfig/custom)
+            {:keys [allow-303-caching
+                    asynchronous-worker-idle-lifetime-secs
+                    asynchronous-workers-core
+                    asynchronous-workers-max
+                    heuristic-caching-enabled
+                    heuristic-coefficient
+                    heuristic-default-lifetime
+                    max-cache-entries
+                    max-object-size
+                    max-update-retries
+                    never-cache-http10-responses-with-query-string
+                    revalidation-queue-size
+                    shared-cache
+                    weak-etag-on-put-delete-allowed]} cc]
+        (when (boolean? allow-303-caching)
+          (.setAllow303Caching config allow-303-caching))
+        (when asynchronous-worker-idle-lifetime-secs
+          (.setAsynchronousWorkerIdleLifetimeSecs
+           config asynchronous-worker-idle-lifetime-secs))
+        (when asynchronous-workers-core
+          (.setAsynchronousWorkersCore config asynchronous-workers-core))
+        (when asynchronous-workers-max
+          (.setAsynchronousWorkersMax config asynchronous-workers-max))
+        (when (boolean? heuristic-caching-enabled)
+          (.setHeuristicCachingEnabled config heuristic-caching-enabled))
+        (when heuristic-coefficient
+          (.setHeuristicCoefficient config heuristic-coefficient))
+        (when heuristic-default-lifetime
+          (.setHeuristicDefaultLifetime config heuristic-default-lifetime))
+        (when max-cache-entries
+          (.setMaxCacheEntries config max-cache-entries))
+        (when max-object-size
+          (.setMaxObjectSize config max-object-size))
+        (when max-update-retries
+          (.setMaxUpdateRetries config max-update-retries))
+        ;; I would add this option, but there is a bug in 4.x CacheConfig that
+        ;; it does not actually correctly use the object from the builder.
+        ;; It's fixed in 5.0 however
+        ;; (when (boolean? never-cache-http10-responses-with-query-string)
+        ;;   (.setNeverCacheHTTP10ResponsesWithQueryString
+        ;;    config never-cache-http10-responses-with-query-string))
+        (when revalidation-queue-size
+          (.setRevalidationQueueSize config revalidation-queue-size))
+        (when (boolean? shared-cache)
+          (.setSharedCache config shared-cache))
+        (when (boolean? weak-etag-on-put-delete-allowed)
+          (.setWeakETagOnPutDeleteAllowed config weak-etag-on-put-delete-allowed))
+        (.build config)))))
+
 (defn build-http-client
   "Builds an Apache `HttpClient` from a clj-http request map. Optional arguments
   `http-url` and `proxy-ignore-hosts` are used to specify the host and a list of
@@ -232,9 +307,14 @@
            http-builder-fns cookie-spec
            cookie-policy-registry]
     :as req}
-   conn-mgr & [http-url proxy-ignore-hosts]]
+   caching?
+   conn-mgr
+   & [http-url proxy-ignore-hosts]]
   ;; have to let first, otherwise we get a reflection warning on (.build)
-  (let [^HttpClientBuilder builder (-> (HttpClients/custom)
+  (let [cache? (opt req :cache)
+        ^HttpClientBuilder builder (-> (if caching?
+                                         (CachingHttpClientBuilder/create)
+                                         (HttpClients/custom))
                                        (.setConnectionManager conn-mgr)
                                        (.setRedirectStrategy
                                         (get-redirect-strategy req))
@@ -245,6 +325,8 @@
                                         (get-route-planner
                                          proxy-host proxy-port
                                          proxy-ignore-hosts http-url)))]
+    (when cache?
+      (.setCacheConfig builder (build-cache-config req)))
     (when (or cookie-policy-registry cookie-spec)
       (if cookie-policy-registry
         ;; They have a custom registry they'd like to re-use, so use that
@@ -356,9 +438,11 @@
       ((make-proxy-method-with-body request-method) http-url)
       (make-proxy-method request-method http-url))))
 
-(defn ^HttpClientContext http-context [request-config http-client-context]
+(defn ^HttpClientContext http-context [caching? request-config http-client-context]
   (let [^HttpClientContext typed-context (or http-client-context
-                                             (HttpClientContext/create))]
+                                             (if caching?
+                                               (HttpCacheContext/create)
+                                               (HttpClientContext/create)))]
     (doto typed-context
       (.setRequestConfig request-config))))
 
@@ -432,7 +516,10 @@
                              :major (.getMajor protocol-version)
                              :minor (.getMinor protocol-version)}
          :reason-phrase (.getReasonPhrase status)
-         :trace-redirects (mapv str (.getRedirectLocations context))}]
+         :trace-redirects (mapv str (.getRedirectLocations context))
+         :cached (when (instance? HttpCacheContext context)
+                   (when-let [cache-resp (.getCacheResponseStatus context)]
+                     (-> cache-resp str keyword)))}]
     (if (opt req :save-request)
       (-> response
           (assoc :request req)
@@ -474,6 +561,7 @@
             proxy-ignore-hosts proxy-user proxy-pass digest-auth ntlm-auth]
      :as req} respond raise]
    (let [async? (opt req :async)
+         cache? (opt req :cache)
          scheme (name scheme)
          http-url (str scheme "://" server-name
                        (when server-port (str ":" server-port))
@@ -485,8 +573,8 @@
                                 #{"localhost" "127.0.0.1"})
          ^RequestConfig request-config (or http-request-config
                                            (request-config req))
-         ^HttpClientContext context (http-context
-                                     request-config http-client-context)
+         ^HttpClientContext context
+         (http-context cache? request-config http-client-context)
          ^HttpUriRequest http-req (http-request-for
                                    request-method http-url body)]
      (when-not (conn/reusable? conn-mgr)
@@ -529,9 +617,10 @@
          (.addHeader http-req header-n (str header-v))))
      (when (opt req :debug) (print-debug! req http-req))
      (if-not async?
-       (let [^CloseableHttpClient
-             client (or http-client
-                        (build-http-client req conn-mgr http-url proxy-ignore-hosts))]
+       (let [^CloseableHttpClient client
+             (or http-client
+                 (build-http-client req cache?
+                                    conn-mgr http-url proxy-ignore-hosts))]
          (try
            (build-response-map (.execute client http-req context)
                                req http-req http-url conn-mgr context client)
@@ -541,6 +630,9 @@
              (throw t))))
        (let [^CloseableHttpAsyncClient client
              (build-async-http-client req conn-mgr http-url proxy-ignore-hosts)]
+         (when cache?
+           (throw (IllegalArgumentException.
+                   "caching is not yet supported for async clients")))
          (.start client)
          (.execute client http-req context
                    (reify org.apache.http.concurrent.FutureCallback

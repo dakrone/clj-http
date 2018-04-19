@@ -37,6 +37,7 @@
   - [[#exceptions][Exceptions]]
   - [[#decompression][Decompression]]
   - [[#debugging][Debugging]]
+- [[#caching][Caching]]
 - [[#authentication][Authentication]]
   - [[#basic-auth][Basic Auth]]
   - [[#digest-auth][Digest Auth]]
@@ -954,6 +955,62 @@ This provides both the data sent and received on the wire for debugging purposes
 
 I've also provided an example for changing the log level from clojure in
 =examples/logging-apache-requests.clj=.
+
+* Caching
+:PROPERTIES:
+:CUSTOM_ID: h-2c4ee611-ca22-432e-9c33-18040566661e
+:END:
+
+clj-http supports Apache's caching client, essentially it "provides an HTTP/1.1-compliant caching
+layer to be used with HttpClient--the Java equivalent of a browser cache." (see [[https://hc.apache.org/httpcomponents-client-ga/tutorial/html/caching.html][the explanation in
+the apache docs]]). In order to use the cache, a reusable connection manager *and* http-client must be
+used.
+
+An example of basic usage with the default options:
+
+#+BEGIN_SRC clojure
+(let [cm (conn/make-reusable-conn-manager {})
+      client (:http-client (http/get "http://example.com"
+                                     {:connection-manager cm :cache true}))]
+  (http/get "http://example.com"
+            {:connection-manager cm :http-client client :cache true})
+  (http/get "http://example.com"
+            {:connection-manager cm :http-client client :cache true})
+  (http/get "http://example.com"
+            {:connection-manager cm :http-client client :cache true}))
+#+END_SRC
+
+You can build your own cache config by providing either a map of caching configuration options, or
+by providing a =CacheConfig= object, as seen below:
+
+#+BEGIN_SRC clojure
+(let [cm (conn/make-reusable-conn-manager {})
+      cache-config (core/build-cache-config
+                    {:cache-config {:max-object-size 4096}})
+      client (:http-client (http/get "http://example.com"
+                                     {:connection-manager cm :cache true}))]
+  (http/get "http://example.com"
+            ;; Use the default cache config settings
+            {:connection-manager cm :http-client client :cache true})
+  (http/get "http://example.com"
+            {:connection-manager cm :http-client client :cache true
+             ;; Provide cache configuration options as a map
+             :cache-config {:max-object-size 9152
+                            :max-cache-entries 100}})
+  (http/get "http://example.com"
+            {:connection-manager cm :http-client client :cache true
+             ;; Provide the cache configuration as a CacheConfig object
+             :cache-config cache-config}))
+#+END_SRC
+
+In the response, clj-http provides the =:cached= key to indicate whether the response was cached,
+missed, etc:
+
+- nil :: Caching was not used for this request
+- =:CACHE_HIT= :: A response was generated from the cache with no requests sent upstream.
+- =:CACHE_MISS= :: The response came from an upstream server.
+- =:CACHE_MODULE_RESPONSE= :: The response was generated directly by the caching module.
+- =:VALIDATED= :: The response was generated from the cache after validating the entry with the origin server.
 
 * Authentication
 :PROPERTIES:

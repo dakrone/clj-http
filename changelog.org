@@ -10,7 +10,7 @@
 * Changelog
 List of user-visible changes that have gone into each release
 
-** 3.9.0
+** 3.9.0 (Unreleased)
 - Add support for reusable http clients, returning the client in =:http-client= and allowing one to
   be specified (with the same setting) - https://github.com/dakrone/clj-http/issues/441
 - Cancelling the =Future= returned from an async http request now also aborts the HttpRequest object
@@ -20,6 +20,10 @@ List of user-visible changes that have gone into each release
   advanced users who wish to add their own cookie validation, or use Apache's handling instead of
   clj-http's. It also allows a user who wants to registry a custom spec to reuse the spec without
   creating it for every request. Semi-related to https://github.com/dakrone/clj-http/issues/444
+- Added support for caching HTTP responses from a server. This can dramatically speed up requests to
+  the same URL. Filling and invalidating the cache is handled by Apache's httpclient-cache project,
+  with configuration exposed under the =:cache= and =:cache-config= parameters in the option map.
+  https://github.com/dakrone/clj-http/issues/445
 
 ** 3.8.0
 - Reintroduce the =:save-request= and =:debug-body= options
