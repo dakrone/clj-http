@@ -262,7 +262,7 @@
                     revalidation-queue-size
                     shared-cache
                     weak-etag-on-put-delete-allowed]} cc]
-        (when (boolean? allow-303-caching)
+        (when (instance? Boolean allow-303-caching)
           (.setAllow303Caching config allow-303-caching))
         (when asynchronous-worker-idle-lifetime-secs
           (.setAsynchronousWorkerIdleLifetimeSecs
@@ -271,7 +271,7 @@
           (.setAsynchronousWorkersCore config asynchronous-workers-core))
         (when asynchronous-workers-max
           (.setAsynchronousWorkersMax config asynchronous-workers-max))
-        (when (boolean? heuristic-caching-enabled)
+        (when (instance? Boolean heuristic-caching-enabled)
           (.setHeuristicCachingEnabled config heuristic-caching-enabled))
         (when heuristic-coefficient
           (.setHeuristicCoefficient config heuristic-coefficient))
@@ -291,9 +291,9 @@
         ;;    config never-cache-http10-responses-with-query-string))
         (when revalidation-queue-size
           (.setRevalidationQueueSize config revalidation-queue-size))
-        (when (boolean? shared-cache)
+        (when (instance? Boolean shared-cache)
           (.setSharedCache config shared-cache))
-        (when (boolean? weak-etag-on-put-delete-allowed)
+        (when (instance? Boolean weak-etag-on-put-delete-allowed)
           (.setWeakETagOnPutDeleteAllowed config weak-etag-on-put-delete-allowed))
         (.build config)))))
 
