@@ -27,9 +27,7 @@
                                   ;; other (testing) deps
                                   [org.clojure/clojure "1.9.0"]
                                   [org.clojure/tools.logging "0.4.0"]
-                                  [ring/ring-jetty-adapter "1.6.3"
-                                   :exclusions [[org.eclipse.jetty/jetty-server]]]
-                                  [org.eclipse.jetty/jetty-server "9.4.9.v20180320"]
+                                  [ring/ring-jetty-adapter "1.6.3"]
                                   [ring/ring-devel "1.6.3"]
                                   ;; caching example deps
                                   [org.clojure/core.cache "0.7.1"]
