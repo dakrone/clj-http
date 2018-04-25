@@ -7,6 +7,4 @@ branches:
     # 'master' is the new apache 5 client, and not passing yet
     # - master
 jdk:
-  - openjdk7
-  - oraclejdk7
   - oraclejdk8
