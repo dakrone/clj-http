@@ -13,7 +13,7 @@
            (org.apache.hc.core5.http.message BasicHeader)
            (org.apache.hc.core5.http.protocol BasicHttpContext)))
 
-(defn cookie-spec ^CookieSpec []
+(defn cookie-spec ^org.apache.hc.client5.http.cookie.CookieSpec []
   (.create
    (RFC6265CookieSpecProvider.)
    (BasicHttpContext.)))

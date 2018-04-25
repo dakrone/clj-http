@@ -31,6 +31,9 @@
   (condp = [(:request-method req) (:uri req)]
     [:get "/get"]
     {:status 200 :body "get"}
+    [:get "/dont-cache"]
+    {:status 200 :body "nocache"
+     :headers {"cache-control" "private"}}
     [:get "/empty"]
     {:status 200 :body nil}
     [:get "/empty-gzip"]
@@ -832,3 +835,60 @@
                               ;; Format a list of cookies into a list of headers
                               (formatCookies [cookies] (java.util.ArrayList.))))})]
     (is (= @validated true))))
+
+
+(deftest t-cache-config
+  (let [cc (core/build-cache-config
+            {:cache-config {:allow-303-caching true
+                            :asynchronous-workers 2
+                            :heuristic-caching-enabled true
+                            :heuristic-coefficient 1.5
+                            :heuristic-default-lifetime 12
+                            :max-cache-entries 100
+                            :max-object-size 123
+                            :max-update-retries 3
+                            :never-cache-http10-responses-with-query-string false
+                            :shared-cache false
+                            :weak-etag-on-put-delete-allowed true}})]
+    (is (= true (.is303CachingEnabled cc)))
+    (is (= 2 (.getAsynchronousWorkers cc)))
+    (is (= true (.isHeuristicCachingEnabled cc)))
+    (is (= 1.5 (.getHeuristicCoefficient cc)))
+    (is (= 12 (.getHeuristicDefaultLifetime cc)))
+    (is (= 100 (.getMaxCacheEntries cc)))
+    (is (= 123 (.getMaxObjectSize cc)))
+    (is (= 3 (.getMaxUpdateRetries cc)))
+    (is (= false (.isNeverCacheHTTP10ResponsesWithQuery cc)))
+    (is (= false (.isSharedCache cc)))
+    (is (= true (.isWeakETagOnPutDeleteAllowed cc)))))
+
+(deftest ^:integration t-client-caching
+  (run-server)
+  (let [cm (conn/make-reusable-conn-manager {})
+        r1 (client/get (localhost "/get")
+                       {:connection-manager cm :cache true})
+        client (:http-client r1)
+        r2 (client/get (localhost "/get")
+                       {:connection-manager cm :http-client client :cache true})
+        r3 (client/get (localhost "/get")
+                       {:connection-manager cm :http-client client :cache true})
+        r4 (client/get (localhost "/get")
+                       {:connection-manager cm :http-client client :cache true})]
+    (is (= :CACHE_MISS (:cached r1)))
+    (is (= :VALIDATED (:cached r2)))
+    (is (= :VALIDATED (:cached r3)))
+    (is (= :VALIDATED (:cached r4))))
+  (let [cm (conn/make-reusable-conn-manager {})
+        r1 (client/get (localhost "/dont-cache")
+                       {:connection-manager cm :cache true})
+        client (:http-client r1)
+        r2 (client/get (localhost "/dont-cache")
+                       {:connection-manager cm :http-client client :cache true})
+        r3 (client/get (localhost "/dont-cache")
+                       {:connection-manager cm :http-client client :cache true})
+        r4 (client/get (localhost "/dont-cache")
+                       {:connection-manager cm :http-client client :cache true})]
+    (is (= :CACHE_MISS (:cached r1)))
+    (is (= :CACHE_MISS (:cached r2)))
+    (is (= :CACHE_MISS (:cached r3)))
+    (is (= :CACHE_MISS (:cached r4)))))
