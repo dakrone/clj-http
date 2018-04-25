@@ -1,15 +1,15 @@
 (ns clj-http.multipart
   "Namespace used for clj-http to create multipart entities and bodies."
   (:import (java.io File InputStream)
-           (org.apache.http.entity ContentType)
-           (org.apache.http.entity.mime MultipartEntityBuilder)
-           (org.apache.http.entity.mime HttpMultipartMode)
-           (org.apache.http.entity.mime.content ContentBody
-                                                ByteArrayBody
-                                                FileBody
-                                                InputStreamBody
-                                                StringBody)
-           (org.apache.http Consts)))
+           (java.nio.charset Charset)
+           (org.apache.hc.client5.http.entity.mime ByteArrayBody
+                                                   ContentBody
+                                                   FileBody
+                                                   HttpMultipartMode
+                                                   InputStreamBody
+                                                   MultipartEntityBuilder
+                                                   StringBody)
+           (org.apache.hc.core5.http ContentType)))
 
 ;; we don't need to make a fake byte-array every time, only once
 (def byte-array-type (type (byte-array 0)))
@@ -118,7 +118,7 @@
      content (ContentType/create "text/plain" (encoding-to-charset encoding)))
 
     content
-    (StringBody. content (ContentType/create "text/plain" Consts/UTF_8))))
+    (StringBody. content (ContentType/create "text/plain" (Charset/forName "UTF-8")))))
 
 (defmethod make-multipart-body ContentBody
   ;; Use provided org.apache.http.entity.mime.content.ContentBody directly

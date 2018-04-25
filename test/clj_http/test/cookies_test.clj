@@ -2,7 +2,7 @@
   (:require [clj-http.cookies :refer :all]
             [clj-http.util :refer :all]
             [clojure.test :refer :all])
-  (:import (org.apache.http.impl.cookie BasicClientCookie BasicClientCookie2)))
+  (:import (org.apache.hc.client5.http.impl.cookie BasicClientCookie)))
 
 (defn refer-private [ns]
   (doseq [[symbol var] (ns-interns ns)]
@@ -28,24 +28,19 @@
     nil nil
     "" nil
     "example-cookie=example-value;Path=/"
-    ["example-cookie"
-     {:discard true :path "/" :secure false
-      :value "example-value" :version 0}]
+    ["example-cookie" {:path "/" :secure false :value "example-value"}]
     "example-cookie=example-value;Domain=.example.com;Path=/"
     ["example-cookie"
-     {:discard true :domain "example.com" :secure false :path "/"
-      :value "example-value" :version 0}]))
+     {:domain "example.com" :secure false :path "/" :value "example-value"}]))
 
 (deftest test-decode-cookies-with-seq
   (let [cookies (decode-cookies [(str "ring-session=" session)])]
     (is (map? cookies))
     (is (= 1 (count cookies)))
     (let [cookie (get cookies "ring-session")]
-      (is (= true (:discard cookie)))
       (is (nil? (:domain cookie)))
       (is (= "/" (:path cookie)))
-      (is (= session (:value cookie)))
-      (is (= 0 (:version cookie))))))
+      (is (= session (:value cookie))))))
 
 (deftest test-decode-cookies-with-string
   (let [cookies (decode-cookies
@@ -53,23 +48,18 @@
     (is (map? cookies))
     (is (= 1 (count cookies)))
     (let [cookie (get cookies "ring-session")]
-      (is (= true (:discard cookie)))
       (is (nil? (:domain cookie)))
       (is (= "/" (:path cookie)))
-      (is (= session (:value cookie)))
-      (is (= 0 (:version cookie))))))
+      (is (= session (:value cookie))))))
 
 (deftest test-decode-cookie-header
   (are [response expected]
     (is (= expected (decode-cookie-header response)))
     {:headers {"set-cookie" "a=1"}}
-    {:cookies {"a" {:discard true :path "/" :secure false
-                    :value "1" :version 0}} :headers {}}
-    {:headers {"set-cookie"
-               (str "ring-session=" session ";Path=/")}}
+    {:cookies {"a" {:path "/" :secure false :value "1"}} :headers {}}
+    {:headers {"set-cookie" (str "ring-session=" session ";Path=/")}}
     {:cookies {"ring-session"
-               {:discard true :path "/" :secure false
-                :value session :version 0}} :headers {}}))
+               {:path "/" :secure false :value session}} :headers {}}))
 
 (deftest test-encode-cookie
   (are [cookie expected]
@@ -119,13 +109,8 @@
     (is (= session (.getValue cookie)))
     (is (= "/" (.getPath cookie)))
     (is (= "example.com" (.getDomain cookie)))
-    (is (nil? (.getComment cookie)))
-    (is (nil? (.getCommentURL cookie)))
-    (is (not (.isPersistent cookie)))
     (is (nil? (.getExpiryDate cookie)))
-    (is (nil? (seq (.getPorts cookie))))
-    (is (not (.isSecure cookie)))
-    (is (= 0 (.getVersion cookie)))))
+    (is (not (.isSecure cookie)))))
 
 (deftest test-to-basic-client-cookie-with-full-cookie
   (let [cookie (to-basic-client-cookie
@@ -133,24 +118,14 @@
                  {:value session
                   :path "/"
                   :domain "example.com"
-                  :comment "Example Comment"
-                  :comment-url "http://example.com/cookies"
-                  :discard true
                   :expires (java.util.Date. (long 0))
-                  :ports [80 8080]
-                  :secure true
-                  :version 0}])]
+                  :secure true}])]
     (is (= "ring-session" (.getName cookie)))
     (is (= session (.getValue cookie)))
     (is (= "/" (.getPath cookie)))
     (is (= "example.com" (.getDomain cookie)))
-    (is (= "Example Comment" (.getComment cookie)))
-    (is (= "http://example.com/cookies" (.getCommentURL cookie)))
-    (is (not (.isPersistent cookie)))
     (is (= (java.util.Date. (long 0)) (.getExpiryDate cookie)))
-    (is (= [80 8080] (seq (.getPorts cookie))))
-    (is (.isSecure cookie))
-    (is (= 0 (.getVersion cookie)))))
+    (is (.isSecure cookie))))
 
 (deftest test-to-basic-client-cookie-with-symbol-as-name
   (let [cookie (to-basic-client-cookie
@@ -165,44 +140,29 @@
            (.setDomain "example.com")
            (.setPath "/")))]
     (is (= "example-cookie" name))
-    (is (nil? (:comment content)))
-    (is (nil? (:comment-url content)))
-    (is (:discard content))
     (is (= "example.com" (:domain content)))
     (is (nil? (:expires content)))
-    (is (nil? (:ports content)))
     (is (not (:secure content)))
-    (is (= 0 (:version content)))
     (is (= "example-value" (:value content)))))
 
 (deftest test-to-cookie-with-full-cookie
   (let [[name content]
         (to-cookie
-         (doto (BasicClientCookie2. "example-cookie" "example-value")
-           (.setComment "Example Comment")
-           (.setCommentURL "http://example.com/cookies")
-           (.setDiscard true)
+         (doto (BasicClientCookie. "example-cookie" "example-value")
            (.setDomain "example.com")
            (.setExpiryDate (java.util.Date. (long 0)))
            (.setPath "/")
-           (.setPorts (int-array [80 8080]))
-           (.setSecure true)
-           (.setVersion 1)))]
+           (.setSecure true)))]
     (is (= "example-cookie" name))
-    (is (= "Example Comment" (:comment content)))
-    (is (= "http://example.com/cookies" (:comment-url content)))
-    (is (= true (:discard content)))
     (is (= "example.com" (:domain content)))
     (is (= (java.util.Date. (long 0)) (:expires content)))
-    (is (= [80 8080] (:ports content)))
     (is (= true (:secure content)))
-    (is (= 1 (:version content)))
     (is (= "example-value" (:value content)))))
 
 (deftest test-wrap-cookies
-  (is (= {:cookies {"example-cookie" {:discard true :domain "example.com"
+  (is (= {:cookies {"example-cookie" {:domain "example.com"
                                       :path "/" :value "example-value"
-                                      :version 0 :secure false}} :headers {}}
+                                      :secure false}} :headers {}}
          ((wrap-cookies
            (fn [request]
              (is (= (get (:headers request) "Cookie") "a=1;b=2"))
