@@ -3,7 +3,9 @@ lein: lein
 script: lein all do clean, test
 branches:
   only:
-    - master
+    - 3.x
+    # 'master' is the new apache 5 client, and not passing yet
+    # - master
 jdk:
   - openjdk7
   - oraclejdk7
