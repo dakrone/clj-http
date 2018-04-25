@@ -13,7 +13,7 @@
            (org.apache.http Header)
            (org.apache.http.protocol BasicHttpContext)))
 
-(defn cookie-spec ^CookieSpec []
+(defn cookie-spec ^org.apache.http.cookie.CookieSpec []
   (.create
    (BrowserCompatSpecFactory.)
    (BasicHttpContext.)))

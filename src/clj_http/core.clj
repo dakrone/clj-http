@@ -100,10 +100,11 @@
             (.isRedirected DefaultRedirectStrategy/INSTANCE
                            request response typed-context)))))))
 
-(defn default-redirect-strategy [^RedirectStrategy original req]
+(defn default-redirect-strategy
   "Proxies calls to whatever original redirect strategy is passed in, however,
   if :validate-redirects is set in the request, checks that the redirected host
   is not empty."
+  [^RedirectStrategy original req]
   (let [validate? (opt req :validate-redirects)]
     (reify RedirectStrategy
       (getRedirect [this request response context]
