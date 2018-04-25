@@ -61,6 +61,18 @@
 - [[#other-middleware][Other Middleware]]
 - [[#license][License]]
 
+
+* Branches
+:PROPERTIES:
+:CUSTOM_ID: h-e390585c-cbd8-4e94-b36b-4e9c27c16720
+:END:
+
+There are branches for the major version numbers:
+
+- 2.x (no longer maintained except for security issues)
+- 3.x (current stable releases)
+- master (which is 4.x, unreleased, based on version 5 of the apache http client)
+
 * Introduction
 :PROPERTIES:
 :CUSTOM_ID: h-d893078a-b20b-4086-9272-3d9c28c86846
@@ -110,7 +122,8 @@ If you need an older version, a 2.x release is also available.
 [clj-http "2.3.0"]
 #+END_SRC
 
-clj-http supports clojure 1.6.0 and higher.
+clj-http 3.x supports clojure 1.6.0 and higher.
+clj-http 4.x will support clojure 1.7.0 and higher.
 
 * Quickstart
 :PROPERTIES:
