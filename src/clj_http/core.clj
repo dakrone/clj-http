@@ -286,7 +286,7 @@
         ;; I would add this option, but there is a bug in 4.x CacheConfig that
         ;; it does not actually correctly use the object from the builder.
         ;; It's fixed in 5.0 however
-        (when (boolean? never-cache-http10-responses-with-query-string)
+        (when (instance? Boolean never-cache-http10-responses-with-query-string)
           (.setNeverCacheHTTP10ResponsesWithQueryString
            config never-cache-http10-responses-with-query-string))
         (when (instance? Boolean shared-cache)
