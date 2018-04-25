@@ -71,7 +71,7 @@ There are branches for the major version numbers:
 
 - 2.x (no longer maintained except for security issues)
 - 3.x (current stable releases)
-- master (which is 4.x, unreleased)
+- master (which is 4.x, unreleased, based on version 5 of the apache http client)
 
 * Introduction
 :PROPERTIES:
@@ -122,7 +122,8 @@ If you need an older version, a 2.x release is also available.
 [clj-http "2.3.0"]
 #+END_SRC
 
-clj-http supports clojure 1.6.0 and higher.
+clj-http 3.x supports clojure 1.6.0 and higher.
+clj-http 4.x will support clojure 1.7.0 and higher.
 
 * Quickstart
 :PROPERTIES:

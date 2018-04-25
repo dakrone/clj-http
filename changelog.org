@@ -11,6 +11,8 @@
 List of user-visible changes that have gone into each release
 
 ** 4.0.0 (Unreleased)
+- Apache HTTP Client version 5 is now used - this is a major breaking change for almost all of the
+  internals of clj-http.
 - Removed slingshot dependency. clj-http exceptions are now regular exceptions
 - Removed deprecated :follow-redirects & :force-redirects options
 - Added an option to capture socket data as it is written out -
