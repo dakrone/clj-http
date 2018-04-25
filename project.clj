@@ -22,7 +22,7 @@
                                   [crouton "0.1.2" :exclusions [[org.jsoup/jsoup]]]
                                   [org.jsoup/jsoup "1.11.3"]
                                   [org.clojure/tools.reader "1.2.2"]
-                                  [com.cognitect/transit-clj "0.8.309"]
+                                  [com.cognitect/transit-clj "0.8.300"]
                                   [ring/ring-codec "1.1.1"]
                                   ;; other (testing) deps
                                   [org.clojure/clojure "1.9.0"]
