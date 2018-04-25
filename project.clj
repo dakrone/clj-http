@@ -7,13 +7,9 @@
   :global-vars {*warn-on-reflection* false}
   :min-lein-version "2.0.0"
   :exclusions [org.clojure/clojure]
-  :dependencies [
-                 ;; [org.apache.httpcomponents/httpcore "4.4.9"]
-                 [org.apache.httpcomponents.core5/httpcore5 "5.0-beta2"]
-                 ;; [org.apache.httpcomponents/httpclient "4.5.5"]
+  :dependencies [[org.apache.httpcomponents.core5/httpcore5 "5.0-beta2"]
                  [org.apache.httpcomponents.client5/httpclient5 "5.0-beta1"]
                  [org.apache.httpcomponents.client5/httpclient5-cache "5.0-beta1"]
-                 ;; [org.apache.httpcomponents/httpasyncclient "4.1.3"]
                  [org.apache.httpcomponents/httpmime "4.5.5" :exclusions
                   [org.apache.httpcomponents/httpclient]]
                  [commons-codec "1.11"]
