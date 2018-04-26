@@ -12,6 +12,7 @@
   (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream)
            (java.net URL UnknownHostException)
            (java.nio.charset StandardCharsets)
+           (org.apache.hc.core5.http ContentType)
            (org.apache.hc.core5.http.io.entity BufferedHttpEntity ByteArrayEntity
                                                InputStreamEntity FileEntity StringEntity)
            (org.apache.hc.client5.http.impl.io PoolingHttpClientConnectionManager)
@@ -487,14 +488,20 @@
       (string? body)
       (-> req (assoc :body (maybe-wrap-entity
                             req (StringEntity. ^String body
-                                               ^String body-encoding))
+                                               StandardCharsets/UTF_8
+                                               ;; TODO: use ContentType here
+                                               ;;^String body-encoding
+                                               ))
                      :character-encoding (or body-encoding
                                              "UTF-8")))
       (instance? File body)
       (-> req (assoc :body
                      (maybe-wrap-entity
                       req (FileEntity. ^File body
-                                       ^String body-encoding))))
+                                       StandardCharsets/UTF_8
+                                       ;; TODO: use ContentType here
+                                       ;;^String body-encoding
+                                       ))))
 
       ;; A length of -1 instructs HttpClient to use chunked encoding.
       (instance? InputStream body)
