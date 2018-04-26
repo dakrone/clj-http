@@ -247,7 +247,8 @@
 (defn ^PoolingAsyncClientConnectionManager
   make-regular-async-conn-manager
   [{:keys [keystore trust-store] :as req}]
-  (PoolingAsyncClientConnectionManagerBuilder/create)
+  ;; TODO: there are no longer un-reusable async connection managers, so this can go away
+  (.build (PoolingAsyncClientConnectionManagerBuilder/create))
   #_(let [^Registry registry (cond
                              (or keystore trust-store)
                              (get-keystore-strategy-registry req)
@@ -270,7 +271,7 @@
   PoolingHttpClientConnectionManager with <timeout> seconds set as the
   timeout value."
   [{:keys [timeout keystore trust-store] :as config}]
-  (PoolingHttpClientConnectionManagerBuilder/create)
+  (.build (PoolingHttpClientConnectionManagerBuilder/create))
   #_(let [registry (cond
                    (opt config :insecure) @insecure-scheme-registry
 
@@ -283,6 +284,7 @@
 
 (defn reusable? [conn-mgr]
   (or (instance? PoolingHttpClientConnectionManager conn-mgr)
+      (instance? PoolingAsyncClientConnectionManager conn-mgr)
       (instance? ReuseableAsyncConnectionManager conn-mgr)))
 
 (defn ^PoolingHttpClientConnectionManager make-reusable-conn-manager
@@ -324,7 +326,7 @@
 
 (defn- ^PoolingAsyncClientConnectionManager make-reusable-async-conn-manager*
   [{:keys [timeout keystore trust-store io-config] :as config}]
-  (PoolingAsyncClientConnectionManagerBuilder/create)
+  (.build (PoolingAsyncClientConnectionManagerBuilder/create))
   #_(let [registry (cond
                    (opt config :insecure) @insecure-strategy-registry
 

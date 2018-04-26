@@ -573,6 +573,9 @@
                        (when query-string (str "?" query-string)))
          conn-mgr (or connection-manager
                       (get-conn-mgr async? req))
+         ;; Has an async connection manager been manually specified?
+         async-conn-mgr-reusable? (boolean (or connection-manager
+                                               conn/*async-connection-manager*))
          proxy-ignore-hosts (or proxy-ignore-hosts
                                 #{"localhost" "127.0.0.1"})
          ^RequestConfig request-config (or http-request-config
@@ -581,7 +584,9 @@
          (http-context cache? request-config http-client-context)
          ^HttpUriRequest http-req (http-request-for
                                    request-method http-url body)]
-     (when-not (conn/reusable? conn-mgr)
+     ;; Either it's not async and not reusable, or it's regular and not reusable
+     (when (not (or (and async? (async-conn-mgr-reusable?))
+                    (conn/reusable? conn-mgr)))
        (.addHeader http-req "Connection" "close"))
      (when-let [cookie-jar (or cookie-store *cookie-store*)]
        (.setCookieStore context cookie-jar))
@@ -623,6 +628,8 @@
          (.addHeader http-req header-n (str header-v))))
      (when (opt req :debug) (print-debug! req http-req))
      (if-not async?
+
+       ;; Synchronous version
        (let [^CloseableHttpClient client
              (or http-client
                  (build-http-client req cache?
@@ -634,6 +641,8 @@
              (when-not (conn/reusable? conn-mgr)
                (conn/shutdown-manager conn-mgr))
              (throw t))))
+
+       ;; Async version
        (let [^CloseableHttpAsyncClient client
              (build-async-http-client req conn-mgr http-url proxy-ignore-hosts)]
          (when cache?

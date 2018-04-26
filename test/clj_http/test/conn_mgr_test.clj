@@ -143,5 +143,5 @@
         async-reusable (conn-mgr/make-reuseable-async-conn-manager {})]
     (is (false? (conn-mgr/reusable? regular)))
     (is (true? (conn-mgr/reusable? regular-reusable)))
-    (is (false? (conn-mgr/reusable? async)))
+    (is (true? (conn-mgr/reusable? async)))
     (is (true? (conn-mgr/reusable? async-reusable)))))
