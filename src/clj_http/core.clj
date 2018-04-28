@@ -124,23 +124,25 @@
         (.isRedirected original request response context)))))
 
 (defn get-redirect-strategy [{:keys [redirect-strategy] :as req}]
-  (case redirect-strategy
-    :none (reify RedirectStrategy
-            (getLocationURI [this request response context] nil)
-            (isRedirected [this request response context] false))
+  (if (instance? RedirectStrategy redirect-strategy)
+    redirect-strategy
+    (case redirect-strategy
+      :none (reify RedirectStrategy
+              (getLocationURI [this request response context] nil)
+              (isRedirected [this request response context] false))
 
-    ;; Like default, but does not throw exceptions when max redirects is
-    ;; reached.
-    ;; :graceful (graceful-redirect-strategy req)
+      ;; Like default, but does not throw exceptions when max redirects is
+      ;; reached.
+      ;; :graceful (graceful-redirect-strategy req)
 
-    :default DefaultRedirectStrategy/INSTANCE
-    ;; :default (default-redirect-strategy DefaultRedirectStrategy/INSTANCE req)
-    ;; :lax (default-redirect-strategy (LaxRedirectStrategy.) req)
-    nil DefaultRedirectStrategy/INSTANCE
-    ;; nil (default-redirect-strategy DefaultRedirectStrategy/INSTANCE req)
+      :default DefaultRedirectStrategy/INSTANCE
+      ;; :default (default-redirect-strategy DefaultRedirectStrategy/INSTANCE req)
+      ;; :lax (default-redirect-strategy (LaxRedirectStrategy.) req)
+      nil DefaultRedirectStrategy/INSTANCE
+      ;; nil (default-redirect-strategy DefaultRedirectStrategy/INSTANCE req)
 
-    ;; use directly as reifed RedirectStrategy
-    redirect-strategy))
+      ;; use default
+      DefaultRedirectStrategy/INSTANCE)))
 
 (defn ^HttpClientBuilder add-retry-handler [^HttpClientBuilder builder handler]
   (when handler
