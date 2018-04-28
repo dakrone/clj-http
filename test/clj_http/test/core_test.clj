@@ -737,7 +737,7 @@
     (is (.contains (get-in @resp [:headers "got"]) "\"foo\" \"bar\"")
         "Headers should have included the new default headers")
     (is (not (realized? error)))))
-
+#_
 (deftest ^:integration test-bad-redirects
   (run-server)
   (try
