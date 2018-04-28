@@ -198,15 +198,16 @@
                    #_(.setRelativeRedirectsAllowed
                     ((complement false?)
                      (opt req :allow-relative-redirects))))]
-    (and conn-timeout
-         (.setConnectTimeout
-          config conn-timeout TimeUnit/MILLISECONDS))
-    (and socket-timeout
-         (.setSocketTimeout
-          config socket-timeout))
-    (and conn-request-timeout
-         (.setConnectionRequestTimeout
-          config conn-request-timeout TimeUnit/MILLISECONDS))
+    ;; TODO: these need to move to the connection manager
+    ;; (and conn-timeout
+    ;;      (.setConnectTimeout
+    ;;       config conn-timeout TimeUnit/MILLISECONDS))
+    ;; (and socket-timeout
+    ;;      (.setSocketTimeout
+    ;;       config ^int (int socket-timeout)))
+    ;; (and conn-request-timeout
+    ;;      (.setConnectionRequestTimeout
+    ;;       config conn-request-timeout TimeUnit/MILLISECONDS))
     (if cookie-spec
       (.setCookieSpec config CUSTOM_COOKIE_POLICY)
       (.setCookieSpec config (get-cookie-policy req)))
