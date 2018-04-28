@@ -18,7 +18,9 @@ List of user-visible changes that have gone into each release
 - Added an option to capture socket data as it is written out -
   https://github.com/dakrone/clj-http/pull/440
 
-** 3.9.0 (Unreleased)
+** 3.10.0 (Unreleased)
+
+** 3.9.0
 - Add support for reusable http clients, returning the client in =:http-client= and allowing one to
   be specified (with the same setting) - https://github.com/dakrone/clj-http/issues/441
 - Cancelling the =Future= returned from an async http request now also aborts the HttpRequest object

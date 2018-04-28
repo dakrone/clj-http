@@ -70,7 +70,7 @@
 There are branches for the major version numbers:
 
 - 2.x (no longer maintained except for security issues)
-- 3.x (current stable releases)
+- 3.x (current stable releases and the main Github branch)
 - master (which is 4.x, unreleased, based on version 5 of the apache http client)
 
 * Introduction
@@ -113,7 +113,7 @@ function.
 With Leiningen/Boot:
 
 #+BEGIN_SRC clojure
-[clj-http "3.8.0"]
+[clj-http "3.9.0"]
 #+END_SRC
 
 If you need an older version, a 2.x release is also available.
