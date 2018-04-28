@@ -7,6 +7,10 @@
 #+HTML_HEAD: <style type="text/css"> body {margin-right:15%; margin-left:15%;} </style>
 #+LANGUAGE: en
 
+[[https://secure.travis-ci.org/dakrone/clj-http.png]]
+
+[[https://gitter.im/clj-http?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge][https://badges.gitter.im/Join%20Chat.svg]]
+
 * Table of Contents                                                     :TOC:
 :PROPERTIES:
 :CUSTOM_ID: h-aaf075ea-2f0e-4a45-871a-0f89c838fb4b
@@ -85,8 +89,6 @@ There are branches for the major version numbers:
 
 clj-http is an HTTP library wrapping the [[http://hc.apache.org/][Apache HttpComponents]] client. This
 library has taken over from mmcgrana's clj-http.
-
-[[https://secure.travis-ci.org/dakrone/clj-http.png]]
 
 ** Philosophy
 :PROPERTIES:
