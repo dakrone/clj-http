@@ -585,7 +585,7 @@
          ^HttpUriRequest http-req (http-request-for
                                    request-method http-url body)]
      ;; Either it's not async and not reusable, or it's regular and not reusable
-     (when (not (or (and async? (async-conn-mgr-reusable?))
+     (when (not (or (and async? async-conn-mgr-reusable?)
                     (conn/reusable? conn-mgr)))
        (.addHeader http-req "Connection" "close"))
      (when-let [cookie-jar (or cookie-store *cookie-store*)]
