@@ -400,9 +400,10 @@
 (defn make-proxy-method-with-body
   [method]
   (fn [url]
-    (doto (proxy [HttpUriRequestBase] [method url]
-            (getMethod [] (.toUpperCase (name method) Locale/ROOT)))
-      (.setURI (URI. url)))))
+    (let [new-uri (URI. url)
+          method-name (name method)]
+      (proxy [HttpUriRequestBase] [method-name new-uri]
+        (getMethod [] (.toUpperCase method-name Locale/ROOT))))))
 
 (def proxy-delete-with-body (make-proxy-method-with-body :delete))
 (def proxy-get-with-body (make-proxy-method-with-body :get))
