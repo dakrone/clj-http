@@ -12,6 +12,9 @@
 [[https://gitter.im/clj-http?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge][https://badges.gitter.im/Join%20Chat.svg]]
 
 * Table of Contents                                                     :TOC:
+
+  #+ATTR_HTML: title="Join the chat at https://gitter.im/clj-http/Lobby"
+  [[https://gitter.im/clj-http/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge][file:https://badges.gitter.im/clj-http/Lobby.svg]]
 :PROPERTIES:
 :CUSTOM_ID: h-aaf075ea-2f0e-4a45-871a-0f89c838fb4b
 :END:
