@@ -394,11 +394,11 @@
 (defmethod shutdown-manager nil [conn-mgr] nil)
 
 (defmethod shutdown-manager PoolingHttpClientConnectionManager
-  [^PoolingHttpClientConnectionManager  conn-mgr] (.shutdown conn-mgr))
+  [^PoolingHttpClientConnectionManager  conn-mgr] (.close conn-mgr))
 
 (defmethod shutdown-manager
   PoolingAsyncClientConnectionManager
-  [^PoolingAsyncClientConnectionManager conn-mgr] (.shutdown conn-mgr))
+  [^PoolingAsyncClientConnectionManager conn-mgr] (.close conn-mgr))
 
 (defmethod shutdown-manager
   BasicHttpClientConnectionManager

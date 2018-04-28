@@ -979,7 +979,7 @@
         "connection should remain open")
     (is (= "close" (get-in resp2 [:headers "connection"]))
         "connection should be closed")
-    (.shutdown cm)))
+    (conn/shutdown-manager cm)))
 
 (deftest ^:integration t-reusable-async-conn-mgrs
   (run-server)
@@ -999,7 +999,7 @@
         "connection should be closed")
     (is (not (realized? exce2)))
     (is (not (realized? exce1)))
-    (.shutdown cm)))
+    (conn/shutdown-manager cm)))
 
 (deftest ^:integration t-with-async-pool
   (run-server)

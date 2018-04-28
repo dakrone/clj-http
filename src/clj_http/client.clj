@@ -1224,9 +1224,9 @@
        (try
          ~@body
          (finally
-           (.shutdown
+           (conn/shutdown-manager
             ^PoolingHttpClientConnectionManager
-            conn/*connection-manager*))))))
+            cm#))))))
 
 (defn reuse-pool
   "A helper function takes a request options map and a response map respond
@@ -1278,6 +1278,6 @@
        (try
          ~@body
          (finally
-           (.shutdown
+           (conn/shutdown-manager
             ^PoolingAsyncClientConnectionManager
             cm#))))))
