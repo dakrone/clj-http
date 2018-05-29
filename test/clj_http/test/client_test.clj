@@ -525,6 +525,12 @@
     (is (thrown-with-msg? Exception #":body"
                           (e-client {:throw-entire-message? true})))))
 
+(deftest throw-on-custom-exceptional
+  (let [client (fn [req] {:status 201})
+        e-client (client/wrap-exceptions client)]
+    (is (thrown-with-msg? Exception #"201"
+                          (e-client {:unexceptional-status #{200}})))))
+
 (deftest throw-type-field
   (let [client (fn [req] {:status 500})
         e-client (client/wrap-exceptions client)]
@@ -564,6 +570,12 @@
         e-client (client/wrap-exceptions client)
         resp (e-client {})]
     (is (= 200 (:status resp)))))
+
+(deftest pass-on-custom-non-exceptional
+  (let [client (fn [req] {:status 500})
+        e-client (client/wrap-exceptions client)
+        resp (e-client {:unexceptional-status #{200 500}})]
+    (is (= 500 (:status resp)))))
 
 (deftest pass-on-non-exceptional-async
   (let [client (fn [req respond raise] (respond {:status 200}))
