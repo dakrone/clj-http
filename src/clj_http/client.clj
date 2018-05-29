@@ -205,6 +205,10 @@
 (def unexceptional-status?
   #{200 201 202 203 204 205 206 207 300 301 302 303 304 307})
 
+(defn unexceptional-status-for-request?
+  [req status]
+  ((:unexceptional-status req unexceptional-status?) status))
+
 ;; helper methods to determine realm of a response
 (defn success?
   [{:keys [status]}]
@@ -232,7 +236,7 @@
 
 (defn- exceptions-response
   [req {:keys [status] :as resp}]
-  (if (unexceptional-status? status)
+  (if (unexceptional-status-for-request? req status)
     resp
     (if (false? (opt req :throw-exceptions))
       resp
@@ -327,7 +331,8 @@
           (assoc resp :body (ByteArrayInputStream. body)))))
 
 (defn coerce-json-body
-  [{:keys [coerce]} {:keys [body status] :as resp} keyword? strict? & [charset]]
+  [{:keys [coerce] :as request}
+   {:keys [body status] :as resp} keyword? strict? & [charset]]
   (let [^String charset (or charset (-> resp :content-type-params :charset)
                             "UTF-8")
         body (util/force-byte-array body)
@@ -337,11 +342,12 @@
         (= coerce :always)
         (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
 
-        (and (unexceptional-status? status)
+        (and (unexceptional-status-for-request? request status)
              (or (nil? coerce) (= coerce :unexceptional)))
         (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
 
-        (and (not (unexceptional-status? status)) (= coerce :exceptional))
+        (and (not (unexceptional-status-for-request? request status))
+             (= coerce :exceptional))
         (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
 
         :else (assoc resp :body (String. ^"[B" body charset)))
@@ -370,12 +376,13 @@
           (assoc resp :body (parse-transit
                              (ByteArrayInputStream. body) type transit-opts))
 
-          (and (unexceptional-status? status)
+          (and (unexceptional-status-for-request? request status)
                (or (nil? coerce) (= coerce :unexceptional)))
           (assoc resp :body (parse-transit
                              (ByteArrayInputStream. body) type transit-opts))
 
-          (and (not (unexceptional-status? status)) (= coerce :exceptional))
+          (and (not (unexceptional-status-for-request? request status))
+               (= coerce :exceptional))
           (assoc resp :body (parse-transit
                              (ByteArrayInputStream. body) type transit-opts))
 
