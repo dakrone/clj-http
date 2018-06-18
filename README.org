@@ -586,7 +586,7 @@ they are:
 - Array style
 - Indexed array style
 
-Here is an example of the input and output for the ~:query_string~ parameter,
+Here is an example of the input and output for the ~:query-params~ parameter,
 controlled by the ~:multi-param-style~ option:
 
 #+BEGIN_SRC clojure
