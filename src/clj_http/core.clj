@@ -630,7 +630,9 @@
                (conn/shutdown-manager conn-mgr))
              (throw t))))
        (let [^CloseableHttpAsyncClient client
-             (build-async-http-client req conn-mgr http-url proxy-ignore-hosts)]
+             (or http-client
+                 (build-async-http-client req conn-mgr http-url proxy-ignore-hosts))]
+
          (when cache?
            (throw (IllegalArgumentException.
                    "caching is not yet supported for async clients")))
