@@ -1,6 +1,9 @@
 (ns clj-http.test.util-test
   (:require [clj-http.util :refer :all]
-            [clojure.test :refer :all]))
+            [clojure.test :refer :all]
+            [clojure.java.io :as io])
+  (:import (org.apache.commons.io IOUtils)
+           (org.apache.commons.io.input NullInputStream)))
 
 (deftest test-lower-case-keys
   (are [map expected]
@@ -41,3 +44,12 @@
     "text/html; charset=ISO-8859-4"
     {:content-type :text/html
      :content-type-params {:charset "ISO-8859-4"}}))
+
+(deftest test-force-byte-array
+  (testing "empty InputStream returns empty byte-array"
+    (is (= 0 (alength (force-byte-array (NullInputStream. 0))))))
+  (testing "InputStream contain bytes for JPEG file is coereced properly"
+    (let [jpg-path "test-resources/small.jpg"]
+      ;; coerce to seq to force byte-by-byte comparison
+      (is (= (seq (IOUtils/toByteArray (io/input-stream jpg-path)))
+             (seq (force-byte-array (io/input-stream jpg-path))))))))
