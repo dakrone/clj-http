@@ -4,7 +4,7 @@
             [clojure.java.io :as io])
   (:import (java.net Socket Proxy Proxy$Type InetSocketAddress)
            (java.security KeyStore)
-           (org.apache.http.config RegistryBuilder Registry)
+           (org.apache.http.config RegistryBuilder Registry SocketConfig)
            (org.apache.http.conn HttpClientConnectionManager)
            (org.apache.http.conn.ssl DefaultHostnameVerifier
                                      NoopHostnameVerifier
@@ -181,15 +181,22 @@
         (.build))))
 
 (defn ^BasicHttpClientConnectionManager make-regular-conn-manager
-  [{:keys [keystore trust-store] :as req}]
-  (cond
-    (or keystore trust-store)
-    (BasicHttpClientConnectionManager. (get-keystore-scheme-registry req))
+  [{:keys [keystore trust-store socket-timeout] :as req}]
+  (let [conn-manager (cond
+                       (or keystore trust-store)
+                       (BasicHttpClientConnectionManager. (get-keystore-scheme-registry req))
 
-    (opt req :insecure) (BasicHttpClientConnectionManager.
-                         @insecure-scheme-registry)
+                       (opt req :insecure) (BasicHttpClientConnectionManager.
+                                            @insecure-scheme-registry)
 
-    :else (BasicHttpClientConnectionManager. regular-scheme-registry)))
+                       :else (BasicHttpClientConnectionManager. regular-scheme-registry))]
+    (when socket-timeout
+      (.setSocketConfig conn-manager
+                        (-> (.getSocketConfig conn-manager)
+                            (SocketConfig/copy)
+                            (.setSocketTimeout socket-timeout) ;modify only the socket-timeout
+                            (.build))))
+    conn-manager))
 
 (defn- ^DefaultConnectingIOReactor make-ioreactor
   [{:keys [connect-timeout interest-op-queued io-thread-count rcv-buf-size
