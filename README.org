@@ -728,7 +728,7 @@ provided with a _cookie store_.
 #+BEGIN_SRC clojure
 (binding [clj-http.core/*cookie-store* (clj-http.cookies/cookie-store)]
   (client/post "http://example.com/login" {:form-params {:username "..."
-                                                      :password "..."}})
+                                                         :password "..."}})
   (client/get "http://example.com/secured-page")
   ...)
 #+END_SRC
@@ -745,10 +745,10 @@ each request, specify the cookie-store with the =:cookie-store= option:
 #+BEGIN_SRC clojure
 (let [my-cs (clj-http.cookies/cookie-store)]
   (client/post "http://example.com/login" {:form-params {:username "..."
-                                                      :password "..."}
-                                        :cookie-store my-cs})
+                                                         :password "..."}
+                                           :cookie-store my-cs})
   (client/post "http://example.com/update" {:body my-data
-                                         :cookie-store my-cs}))
+                                            :cookie-store my-cs}))
 #+END_SRC
 
 You can also use the =get-cookies= function to retrieve the cookies
