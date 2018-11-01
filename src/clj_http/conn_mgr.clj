@@ -194,7 +194,7 @@
       (.setSocketConfig conn-manager
                         (-> (.getSocketConfig conn-manager)
                             (SocketConfig/copy)
-                            (.setSocketTimeout socket-timeout) ;modify only the socket-timeout
+                            (.setSoTimeout socket-timeout) ;modify only the socket-timeout
                             (.build))))
     conn-manager))
 
