@@ -313,21 +313,21 @@
    & [http-url proxy-ignore-hosts]]
   ;; have to let first, otherwise we get a reflection warning on (.build)
   (let [cache? (opt req :cache)
-        ^HttpClientBuilder builder (-> (if caching?
-                                         (CachingHttpClientBuilder/create)
-                                         (HttpClients/custom))
-                                       (.setConnectionManager conn-mgr)
-                                       (.setRedirectStrategy
-                                        (get-redirect-strategy req))
-                                       (add-retry-handler retry-handler)
-                                       ;; By default, get the proxy settings
-                                       ;; from the jvm or system properties
-                                       (.setRoutePlanner
-                                        (get-route-planner
-                                         proxy-host proxy-port
-                                         proxy-ignore-hosts http-url)))]
+        builder (-> (if caching?
+                      ^HttpClientBuilder (CachingHttpClientBuilder/create)
+                      ^HttpClientBuilder (HttpClients/custom))
+                    (.setConnectionManager conn-mgr)
+                    (.setRedirectStrategy
+                     (get-redirect-strategy req))
+                    (add-retry-handler retry-handler)
+                    ;; By default, get the proxy settings
+                    ;; from the jvm or system properties
+                    (.setRoutePlanner
+                     (get-route-planner
+                      proxy-host proxy-port
+                      proxy-ignore-hosts http-url)))]
     (when cache?
-      (.setCacheConfig builder (build-cache-config req)))
+      (.setCacheConfig ^CachingHttpClientBuilder builder (build-cache-config req)))
     (when (or cookie-policy-registry cookie-spec)
       (if cookie-policy-registry
         ;; They have a custom registry they'd like to re-use, so use that
@@ -519,7 +519,7 @@
          :reason-phrase (.getReasonPhrase status)
          :trace-redirects (mapv str (.getRedirectLocations context))
          :cached (when (instance? HttpCacheContext context)
-                   (when-let [cache-resp (.getCacheResponseStatus context)]
+                   (when-let [cache-resp (.getCacheResponseStatus ^HttpCacheContext context)]
                      (-> cache-resp str keyword)))}]
     (if (opt req :save-request)
       (-> response
