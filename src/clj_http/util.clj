@@ -25,12 +25,12 @@
 (defn url-decode
   "Returns the form-url-decoded version of the given string, using either a
   specified encoding or UTF-8 by default."
-  [encoded & [encoding]]
+  [^String encoded & [^String encoding]]
   (URLDecoder/decode encoded (or encoding "UTF-8")))
 
 (defn url-encode
   "Returns an UTF-8 URL encoded version of the given string."
-  [unencoded & [encoding]]
+  [^String unencoded & [^String encoding]]
   (URLEncoder/encode unencoded (or encoding "UTF-8")))
 
 (defn base64-encode
@@ -64,7 +64,7 @@
   (if (instance? java.io.InputStream b)
     (try
       (let [^int first-byte (try
-                              (.read b)
+                              (.read ^java.io.InputStream b)
                                (catch EOFException e -1))]
         (if (= -1 first-byte)
           (byte-array 0)
