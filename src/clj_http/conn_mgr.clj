@@ -298,7 +298,7 @@
                    (opt config :insecure) @insecure-strategy-registry
 
                    (or keystore trust-store)
-                   (get-keystore-scheme-registry config)
+                   (get-keystore-strategy-registry config)
 
                    :else regular-strategy-registry)
         io-reactor (make-ioreactor io-config)
