@@ -5,6 +5,10 @@
             [clojure.test :refer :all]
             [ring.adapter.jetty :as ring])
   (:import (java.security KeyStore)
+           (javax.net.ssl KeyManager
+                          KeyManagerFactory
+                          TrustManager
+                          TrustManagerFactory)
            (org.apache.http.impl.conn BasicHttpClientConnectionManager)
            (org.apache.http.conn.ssl SSLConnectionSocketFactory
                                      DefaultHostnameVerifier
@@ -61,6 +65,43 @@
         ssl-session-strategy (.lookup strategy-registry "https")]
     (is (instance? NoopIOSessionStrategy noop-session-strategy))
     (is (instance? SSLIOSessionStrategy ssl-session-strategy))))
+
+(def array-of-trust-manager
+  (let [ks (conn-mgr/get-keystore "test-resources/keystore" nil "keykey")
+        tmf (doto (TrustManagerFactory/getInstance (TrustManagerFactory/getDefaultAlgorithm))
+              (.init ks))]
+    (.getTrustManagers tmf)))
+
+(def array-of-key-manager
+  (let [ks (conn-mgr/get-keystore "test-resources/keystore" nil "keykey")
+        tmf (doto (KeyManagerFactory/getInstance (KeyManagerFactory/getDefaultAlgorithm))
+              (.init ks (.toCharArray "keykey")))]
+    (.getKeyManagers tmf)))
+
+(deftest managers-scheme-factory
+  (doseq [[trust-managers key-managers] [[array-of-trust-manager array-of-key-manager]
+                                         [(seq array-of-trust-manager) (seq array-of-key-manager)]
+                                         [(first (seq array-of-trust-manager)) (first (seq array-of-key-manager))]]]
+    (let [scheme-registry (conn-mgr/get-managers-scheme-registry
+                           {:trust-managers trust-managers
+                            :key-managers key-managers})
+          plain-socket-factory (.lookup scheme-registry "http")
+          ssl-socket-factory (.lookup scheme-registry "https")]
+      (is (instance? PlainConnectionSocketFactory plain-socket-factory))
+      (is (instance? SSLConnectionSocketFactory ssl-socket-factory)))))
+
+(deftest managers-session-strategy
+  (doseq [[trust-managers key-managers] [[array-of-trust-manager array-of-key-manager]
+                                         [(seq array-of-trust-manager) (seq array-of-key-manager)]
+                                         [(first (seq array-of-trust-manager)) (first (seq array-of-key-manager))]]]
+    (let [strategy-registry (conn-mgr/get-managers-strategy-registry
+                             {:trust-managers trust-managers
+                              :key-managers key-managers})
+          noop-session-strategy (.lookup strategy-registry "http")
+          ssl-session-strategy (.lookup strategy-registry "https")]
+      (is (instance? NoopIOSessionStrategy noop-session-strategy))
+      (is (instance? SSLIOSessionStrategy ssl-session-strategy)))))
+
 
 (deftest ^:integration ssl-client-cert-get
   (let [server (ring/run-jetty secure-handler

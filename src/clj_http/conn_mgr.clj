@@ -4,6 +4,8 @@
             [clojure.java.io :as io])
   (:import (java.net Socket Proxy Proxy$Type InetSocketAddress)
            (java.security KeyStore)
+           (javax.net.ssl KeyManager
+                          TrustManager)
            (org.apache.http.config RegistryBuilder Registry SocketConfig)
            (org.apache.http.conn HttpClientConnectionManager)
            (org.apache.http.conn.ssl DefaultHostnameVerifier
@@ -112,6 +114,28 @@
                  NoopHostnameVerifier/INSTANCE
                  (DefaultHostnameVerifier.))}))
 
+(defn get-managers-context-verifier
+  "Given an instance or seqable data structure of TrustManager or KeyManager
+  will create and return an SSLContexts object including the resulting managers"
+  [{:keys [trust-managers key-managers]
+    :as req}]
+  (let [x-or-xs->x-array (fn [type x-or-xs]
+                           (cond
+                             (seqable? x-or-xs)
+                             (into-array type (seq x-or-xs))
+
+                             :else
+                             (into-array type [x-or-xs])))
+        trust-managers (when trust-managers
+                         (x-or-xs->x-array TrustManager trust-managers))
+        key-managers (when key-managers
+                       (x-or-xs->x-array KeyManager key-managers))]
+    {:context (doto (.build (SSLContexts/custom))
+                (.init key-managers trust-managers nil))
+     :verifier (if (opt req :insecure)
+                 NoopHostnameVerifier/INSTANCE
+                 (DefaultHostnameVerifier.))}))
+
 (defn make-socks-proxied-conn-manager
   "Given an optional hostname and a port, create a connection manager that's
   proxied using a SOCKS proxy."
@@ -119,12 +143,16 @@
    (make-socks-proxied-conn-manager hostname port {}))
   ([^String hostname ^Integer port
     {:keys [keystore keystore-type keystore-pass
-            trust-store trust-store-type trust-store-pass] :as opts}]
+            trust-store trust-store-type trust-store-pass
+            trust-managers key-managers] :as opts}]
    (let [socket-factory #(socks-proxied-socket hostname port)
-         ssl-context (when
-                         (some (complement nil?)
-                               [keystore keystore-type keystore-pass trust-store
-                                trust-store-type trust-store-pass])
+         ssl-context (cond
+                       (or trust-managers key-managers)
+                       (-> opts get-managers-context-verifier :context)
+
+                       (some (complement nil?)
+                             [keystore keystore-type keystore-pass trust-store
+                              trust-store-type trust-store-pass])
                        (-> opts get-keystore-context-verifier :context))
          reg (-> (RegistryBuilder/create)
                  (.register "http" (PlainGenericSocketFactory socket-factory))
@@ -160,29 +188,56 @@
       (.register "https" secure-strategy)
       (.build)))
 
-(defn ^Registry get-keystore-scheme-registry
-  [req]
-  (let [{:keys [context verifier]} (get-keystore-context-verifier req)
-        factory (SSLConnectionSocketFactory. ^SSLContext context
+(defn ^Registry get-custom-scheme-registry
+  [{:keys [context verifier]}]
+  (let [factory (SSLConnectionSocketFactory. ^SSLContext context
                                              ^HostnameVerifier verifier)]
     (-> (RegistryBuilder/create)
         (.register "http" (PlainConnectionSocketFactory/getSocketFactory))
         (.register "https" factory)
         (.build))))
 
-(defn ^Registry get-keystore-strategy-registry
-  [req]
-  (let [{:keys [context verifier]} (get-keystore-context-verifier req)
-        strategy (SSLIOSessionStrategy. ^SSLContext context
+(defn ^Registry get-custom-strategy-registry
+  [{:keys [context verifier]}]
+  (let [strategy (SSLIOSessionStrategy. ^SSLContext context
                                         ^HostnameVerifier verifier)]
     (-> (RegistryBuilder/create)
         (.register "http" NoopIOSessionStrategy/INSTANCE)
         (.register "https" strategy)
         (.build))))
 
+(defn ^Registry get-keystore-scheme-registry
+  [req]
+  (-> req
+      get-keystore-context-verifier
+      get-custom-scheme-registry))
+
+(defn ^Registry get-keystore-strategy-registry
+  [req]
+  (-> req
+      get-keystore-context-verifier
+      get-custom-strategy-registry))
+
+(defn ^Registry get-managers-scheme-registry
+  [req]
+  (-> req
+      get-managers-context-verifier
+      get-custom-scheme-registry))
+
+(defn ^Registry get-managers-strategy-registry
+  [req]
+  (-> req
+      get-managers-context-verifier
+      get-custom-strategy-registry))
+
 (defn ^BasicHttpClientConnectionManager make-regular-conn-manager
-  [{:keys [keystore trust-store socket-timeout] :as req}]
+  [{:keys [keystore trust-store
+           key-managers trust-managers
+           socket-timeout] :as req}]
   (let [conn-manager (cond
+                       (or key-managers trust-managers)
+                       (BasicHttpClientConnectionManager. (get-managers-scheme-registry req))
+
                        (or keystore trust-store)
                        (BasicHttpClientConnectionManager. (get-keystore-scheme-registry req))
 
@@ -218,8 +273,12 @@
 
 (defn ^PoolingNHttpClientConnectionManager
   make-regular-async-conn-manager
-  [{:keys [keystore trust-store] :as req}]
+  [{:keys [keystore trust-store
+           key-managers trust-managers] :as req}]
   (let [^Registry registry (cond
+                             (or key-managers trust-managers)
+                             (get-managers-strategy-registry req)
+
                              (or keystore trust-store)
                              (get-keystore-strategy-registry req)
 
@@ -240,9 +299,14 @@
   "Given an timeout and optional insecure? flag, create a
   PoolingHttpClientConnectionManager with <timeout> seconds set as the
   timeout value."
-  [{:keys [timeout keystore trust-store] :as config}]
+  [{:keys [timeout
+           keystore trust-store
+           key-managers trust-managers] :as config}]
   (let [registry (cond
                    (opt config :insecure) @insecure-scheme-registry
+
+                   (or key-managers trust-managers)
+                   (get-managers-scheme-registry config)
 
                    (or keystore trust-store)
                    (get-keystore-scheme-registry config)
@@ -274,7 +338,13 @@
   :trust-store - trust store file to be used for connection manager
   :trust-store-pass - trust store password
 
-  Note that :insecure? and :keystore/:trust-store options are mutually exclusive
+  :key-managers - KeyManager objects to be used for connection manager
+  :trust-managers - TrustManager objects to be used for connection manager
+
+  Note that :insecure? and :keystore/:trust-store/:key-managers/:trust-managers options are mutually exclusive
+
+  Note that :key-managers/:trust-managers have precedence over :keystore/:trust-store options
+
 
   If the value 'nil' is specified or the value is not set, the default value
   will be used."
@@ -293,9 +363,13 @@
     conn-man))
 
 (defn- ^PoolingNHttpClientConnectionManager make-reusable-async-conn-manager*
-  [{:keys [timeout keystore trust-store io-config] :as config}]
+  [{:keys [timeout keystore trust-store io-config
+           key-managers trust-managers] :as config}]
   (let [registry (cond
                    (opt config :insecure) @insecure-strategy-registry
+
+                   (or key-managers trust-managers)
+                   (get-managers-scheme-registry config)
 
                    (or keystore trust-store)
                    (get-keystore-scheme-registry config)
