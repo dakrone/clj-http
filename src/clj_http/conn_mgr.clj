@@ -121,7 +121,7 @@
     :as req}]
   (let [x-or-xs->x-array (fn [type x-or-xs]
                            (cond
-                             (or (-> x-or-xs .getClass .isArray)
+                             (or (-> x-or-xs class .isArray)
                                  (sequential? x-or-xs))
                              (into-array type (seq x-or-xs))
 
