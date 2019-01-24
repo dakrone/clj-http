@@ -11,6 +11,8 @@
 List of user-visible changes that have gone into each release
 
 ** 3.10.0 (Unreleased)
+- Add trust-manager and key-managers support to the client -
+  https://github.com/dakrone/clj-http/pull/469
 
 ** 3.9.0
 - Add support for reusable http clients, returning the client in =:http-client= and allowing one to
