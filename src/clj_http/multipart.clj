@@ -132,7 +132,7 @@
   'form-data' and strict mode are used."
   [multipart mime-subtype multipart-mode]
   (let [mp-entity (doto (MultipartEntityBuilder/create)
-                    (.setCharset (encoding-to-charset "UTF-8"))
+                    (.setStrictMode)
                     (.setMimeSubtype (or mime-subtype "form-data")))]
     (if multipart-mode
       (.setMode mp-entity multipart-mode)
