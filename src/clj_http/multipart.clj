@@ -131,7 +131,6 @@
   [multipart {:keys [mime-subtype]}]
   (let [mp-entity (doto (MultipartEntityBuilder/create)
                     (.setStrictMode)
-                    (.setCharset (encoding-to-charset "UTF-8"))
                     (.setMimeSubtype (or mime-subtype "form-data")))]
     (doseq [m multipart]
       (let [name (or (:part-name m) (:name m))
