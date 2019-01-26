@@ -8,7 +8,8 @@
                                                    FileBody
                                                    InputStreamBody
                                                    StringBody)
-           (org.apache.hc.core5.http ContentType)))
+           (org.apache.hc.core5.http ContentType)
+           (org.apache.hc.core5.http.io.entity EntityUtils)))
 
 (defn body-str [^StringBody body]
   (-> body .getReader slurp))
@@ -177,3 +178,8 @@
         (is (= (Charset/forName "ascii") (body-charset body)))
         (is (= test-file (.getFile body) ))
         (is (= "testname" (.getFilename body)))))))
+
+(deftest test-multipart-content-charset
+  (testing "charset is nil for all multipart requests"
+    (let [mp-entity (create-multipart-entity [] nil)]
+      (is (nil? (.getCharset (EntityUtils/getContentType mp-entity)))))))
