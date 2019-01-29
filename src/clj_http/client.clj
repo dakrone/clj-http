@@ -443,6 +443,18 @@
           (instance? (Class/forName "[B") body)
           (assoc resp :body (ByteArrayInputStream. body)))))
 
+(defn- response-charset [response]
+  (or (-> response :content-type-params :charset)
+      "UTF-8"))
+
+(defn- can-parse-body? [{:keys [coerce] :as request} {:keys [status] :as _response}]
+  (or (= coerce :always)
+      (and (unexceptional-status-for-request? request status)
+           (or (nil? coerce)
+               (= coerce :unexceptional)))
+      (and (not (unexceptional-status-for-request? request status))
+           (= coerce :exceptional))))
+
 (defn- decode-json-body [body keyword? strict? charset]
   (if strict?
     ;; OPTIMIZE: When/if Cheshire gets a parse-stream-strict this won't need to go through String:
@@ -453,18 +465,10 @@
         nil))))
 
 (defn coerce-json-body
-  [{:keys [coerce] :as request}
-   {:keys [body status] :as resp} keyword? strict? & [charset]]
-  (let [charset (or charset
-                    (-> resp :content-type-params :charset)
-                    "UTF-8")
+  [request {:keys [body] :as resp} keyword? strict? & [charset]]
+  (let [charset (or charset (response-charset resp))
         body (if json-enabled?
-               (if (or (= coerce :always)
-                       (and (unexceptional-status-for-request? request status)
-                            (or (nil? coerce)
-                                (= coerce :unexceptional)))
-                       (and (not (unexceptional-status-for-request? request status))
-                            (= coerce :exceptional)))
+               (if (can-parse-body? request resp)
                  (decode-json-body body keyword? strict? charset)
                  (util/force-string body charset))
                (util/force-string body charset))]
@@ -481,31 +485,15 @@
                                 (read-string (String. ^"[B" body charset)))))))
 
 (defn coerce-transit-body
-  [{:keys [transit-opts coerce] :as request}
-   {:keys [body status] :as resp} type & [charset]]
-  (let [^String charset (or charset (-> resp :content-type-params :charset)
-                            "UTF-8")
-        body (util/force-byte-array body)]
-    (if-not (empty? body)
-      (if transit-enabled?
-        (cond
-          (= coerce :always)
-          (assoc resp :body (parse-transit
-                             (ByteArrayInputStream. body) type transit-opts))
-
-          (and (unexceptional-status-for-request? request status)
-               (or (nil? coerce) (= coerce :unexceptional)))
-          (assoc resp :body (parse-transit
-                             (ByteArrayInputStream. body) type transit-opts))
-
-          (and (not (unexceptional-status-for-request? request status))
-               (= coerce :exceptional))
-          (assoc resp :body (parse-transit
-                             (ByteArrayInputStream. body) type transit-opts))
-
-          :else (assoc resp :body (String. ^"[B" body charset)))
-        (assoc resp :body (String. ^"[B" body charset)))
-      (assoc resp :body nil))))
+  [{:keys [transit-opts] :as request}
+   {:keys [body] :as resp} type & [charset]]
+  (let [charset (or charset (response-charset resp))
+        body (if transit-enabled?
+               (if (can-parse-body? request resp)
+                 (parse-transit (util/force-stream body) type transit-opts)
+                 (util/force-string body charset))
+               nil)]
+    (assoc resp :body body)))
 
 (defn coerce-form-urlencoded-body
   [request {:keys [body] :as resp}]
