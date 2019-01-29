@@ -76,6 +76,15 @@
       (finally (.close ^java.io.InputStream b)))
     b))
 
+(def ^:private ByteArray (Class/forName "[B"))
+
+(defn force-stream
+  "Force b as InputStream if it is a ByteArray."
+  ^java.io.InputStream [b]
+  (if (instance? ByteArray b)
+    (ByteArrayInputStream. b)
+    b))
+
 (defn inflate
   "Returns a zlib inflate'd version of the given byte array or InputStream."
   [b]
