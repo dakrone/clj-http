@@ -6,11 +6,12 @@
             [clj-http.headers :refer [wrap-header-map]]
             [clj-http.links :refer [wrap-links]]
             [clj-http.util :refer [opt] :as util]
+            [clojure.java.io :as io]
             [clojure.stacktrace :refer [root-cause]]
             [clojure.string :as str]
             [clojure.walk :refer [keywordize-keys prewalk]]
             [slingshot.slingshot :refer [throw+]])
-  (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream)
+  (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream EOFException)
            (java.net URL UnknownHostException)
            (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
                                    InputStreamEntity FileEntity StringEntity)
@@ -135,6 +136,12 @@
   [& args]
   {:pre [json-enabled?]}
   (apply (ns-resolve (symbol "cheshire.core") (symbol "decode-strict")) args))
+
+(defn ^:dynamic json-decode-stream
+  "Resolve and apply cheshire's json stream decoding dynamically."
+  [& args]
+  {:pre [json-enabled?]}
+  (apply (ns-resolve (symbol "cheshire.core") (symbol "decode-stream")) args))
 
 (defn ^:dynamic form-decode
   "Resolve and apply ring-codec's form decoding dynamically."
@@ -436,28 +443,32 @@
           (instance? (Class/forName "[B") body)
           (assoc resp :body (ByteArrayInputStream. body)))))
 
+(defn- decode-json-body [body keyword? strict? charset]
+  (if strict?
+    ;; OPTIMIZE: When/if Cheshire gets a parse-stream-strict this won't need to go through String:
+    (json-decode-strict (util/force-string body charset) keyword?)
+    (try
+      (json-decode-stream (io/reader (util/force-stream body)) keyword?)
+      (catch EOFException _
+        nil))))
+
 (defn coerce-json-body
   [{:keys [coerce] :as request}
    {:keys [body status] :as resp} keyword? strict? & [charset]]
-  (let [^String charset (or charset (-> resp :content-type-params :charset)
-                            "UTF-8")
-        body (util/force-byte-array body)
-        decode-func (if strict? json-decode-strict json-decode)]
-    (if json-enabled?
-      (cond
-        (= coerce :always)
-        (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
-
-        (and (unexceptional-status-for-request? request status)
-             (or (nil? coerce) (= coerce :unexceptional)))
-        (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
-
-        (and (not (unexceptional-status-for-request? request status))
-             (= coerce :exceptional))
-        (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
-
-        :else (assoc resp :body (String. ^"[B" body charset)))
-      (assoc resp :body (String. ^"[B" body charset)))))
+  (let [charset (or charset
+                    (-> resp :content-type-params :charset)
+                    "UTF-8")
+        body (if json-enabled?
+               (if (or (= coerce :always)
+                       (and (unexceptional-status-for-request? request status)
+                            (or (nil? coerce)
+                                (= coerce :unexceptional)))
+                       (and (not (unexceptional-status-for-request? request status))
+                            (= coerce :exceptional)))
+                 (decode-json-body body keyword? strict? charset)
+                 (util/force-string body charset))
+               (util/force-string body charset))]
+    (assoc resp :body body)))
 
 (defn coerce-clojure-body
   [request {:keys [body] :as resp}]

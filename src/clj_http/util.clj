@@ -4,7 +4,7 @@
             [clojure.walk :refer [postwalk]])
   (:import (org.apache.commons.codec.binary Base64)
            (org.apache.commons.io IOUtils)
-           (java.io BufferedInputStream ByteArrayInputStream
+           (java.io InputStream BufferedInputStream ByteArrayInputStream
                     ByteArrayOutputStream EOFException)
            (java.net URLEncoder URLDecoder)
            (java.util.zip InflaterInputStream DeflaterInputStream
@@ -43,7 +43,7 @@
   [b]
   (when b
     (cond
-      (instance? java.io.InputStream b)
+      (instance? InputStream b)
       (GZIPInputStream. b)
       :else
       (IOUtils/toByteArray (GZIPInputStream. (ByteArrayInputStream. b))))))
@@ -58,11 +58,20 @@
       (.close gos)
       (.toByteArray baos))))
 
+(def ^:private ByteArray (Class/forName "[B"))
+
+(defn force-stream
+  "Force b as InputStream if it is a ByteArray."
+  ^InputStream [b]
+  (if (instance? ByteArray b)
+    (ByteArrayInputStream. b)
+    b))
+
 (defn force-byte-array
   "force b as byte array if it is an InputStream, also close the stream"
   ^bytes [b]
-  (if (instance? java.io.InputStream b)
-    (let [^java.io.InputStream bs b]
+  (if (instance? InputStream b)
+    (let [^InputStream bs b]
       (try
         (IOUtils/toByteArray bs)
         (catch EOFException _
@@ -71,14 +80,18 @@
           (.close bs))))
     b))
 
-(def ^:private ByteArray (Class/forName "[B"))
-
-(defn force-stream
-  "Force b as InputStream if it is a ByteArray."
-  ^java.io.InputStream [b]
-  (if (instance? ByteArray b)
-    (ByteArrayInputStream. b)
-    b))
+(defn force-string
+  "Convert s (a ByteArray or InputStream) to String."
+  ^String [s ^String charset]
+  (if (instance? InputStream s)
+    (let [^InputStream bs s]
+      (try
+        (IOUtils/toString bs)
+        (catch EOFException _
+          "")
+        (finally
+          (.close bs))))
+    (IOUtils/toString ^"[B" s charset)))
 
 (defn inflate
   "Returns a zlib inflate'd version of the given byte array or InputStream."
@@ -87,7 +100,7 @@
     ;; This weirdness is because HTTP servers lie about what kind of deflation
     ;; they're using, so we try one way, then if that doesn't work, reset and
     ;; try the other way
-    (let [stream (BufferedInputStream. (if (instance? java.io.InputStream b)
+    (let [stream (BufferedInputStream. (if (instance? InputStream b)
                                          b
                                          (ByteArrayInputStream. b)))
           _ (.mark stream 512)
