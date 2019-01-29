@@ -475,14 +475,14 @@
     (assoc resp :body body)))
 
 (defn coerce-clojure-body
-  [request {:keys [body] :as resp}]
-  (let [^String charset (or (-> resp :content-type-params :charset) "UTF-8")
-        body            (util/force-byte-array body)]
+  [_request {:keys [body] :as resp}]
+  (let [charset (response-charset resp)
+        body            (util/force-string body charset)]
     (assoc resp :body (cond
                         (empty? body) nil
-                        edn-enabled? (parse-edn (String. ^"[B" body charset))
+                        edn-enabled? (parse-edn body)
                         :else (binding [*read-eval* false]
-                                (read-string (String. ^"[B" body charset)))))))
+                                (read-string body))))))
 
 (defn coerce-transit-body
   [{:keys [transit-opts] :as request}
@@ -496,13 +496,12 @@
     (assoc resp :body body)))
 
 (defn coerce-form-urlencoded-body
-  [request {:keys [body] :as resp}]
-  (let [^String charset (or (-> resp :content-type-params :charset) "UTF-8")
-        body-bytes (util/force-byte-array body)]
-    (if ring-codec-enabled?
-      (assoc resp :body (-> (String. ^"[B" body-bytes charset)
-                            form-decode keywordize-keys))
-      (assoc resp :body (String. ^"[B" body-bytes charset)))))
+  [_request {:keys [body] :as resp}]
+  (let [charset (response-charset resp)
+        body (util/force-string body charset)]
+    (assoc resp :body (if ring-codec-enabled?
+                        (-> body form-decode keywordize-keys)
+                        body))))
 
 (defmulti coerce-content-type (fn [req resp] (:content-type resp)))
 
@@ -560,10 +559,7 @@
 
 (defmethod coerce-response-body :default
   [{:keys [as]} {:keys [body] :as resp}]
-  (let [body-bytes (util/force-byte-array body)]
-    (cond
-      (string? as)  (assoc resp :body (String. ^"[B" body-bytes ^String as))
-      :else (assoc resp :body (String. ^"[B" body-bytes "UTF-8")))))
+  (assoc resp :body (util/force-string body (if (string? as) as "UTF-8"))))
 
 (defn- output-coercion-response
   [req {:keys [body] :as resp}]
