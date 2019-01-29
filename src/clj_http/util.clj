@@ -62,18 +62,13 @@
   "force b as byte array if it is an InputStream, also close the stream"
   ^bytes [b]
   (if (instance? java.io.InputStream b)
-    (try
-      (let [^int first-byte (try
-                              (.read ^java.io.InputStream b)
-                               (catch EOFException e -1))]
-        (if (= -1 first-byte)
-          (byte-array 0)
-          (let [rest-bytes (IOUtils/toByteArray ^java.io.InputStream b)
-                barray (byte-array (inc (count rest-bytes)))]
-            (aset-byte barray 0 (unchecked-byte first-byte))
-            (System/arraycopy rest-bytes 0 barray 1 (count rest-bytes))
-            barray)))
-      (finally (.close ^java.io.InputStream b)))
+    (let [^java.io.InputStream bs b]
+      (try
+        (IOUtils/toByteArray bs)
+        (catch EOFException _
+          (byte-array 0))
+        (finally
+          (.close bs))))
     b))
 
 (def ^:private ByteArray (Class/forName "[B"))
