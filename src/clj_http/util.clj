@@ -58,14 +58,12 @@
       (.close gos)
       (.toByteArray baos))))
 
-(def ^:private ByteArray (Class/forName "[B"))
-
 (defn force-stream
   "Force b as InputStream if it is a ByteArray."
   ^InputStream [b]
-  (if (instance? ByteArray b)
-    (ByteArrayInputStream. b)
-    b))
+  (if (instance? InputStream b)
+    b
+    (ByteArrayInputStream. b)))
 
 (defn force-byte-array
   "force b as byte array if it is an InputStream, also close the stream"

@@ -434,14 +434,10 @@
 (defmulti coerce-response-body (fn [req _] (:as req)))
 
 (defmethod coerce-response-body :byte-array [_ resp]
-  (assoc resp :body (util/force-byte-array (:body resp))))
+  (update resp :body util/force-byte-array))
 
 (defmethod coerce-response-body :stream [_ resp]
-  (let [body (:body resp)]
-    (cond (instance? InputStream body) resp
-          ;; This shouldn't happen, but we plan for it anyway
-          (instance? (Class/forName "[B") body)
-          (assoc resp :body (ByteArrayInputStream. body)))))
+  (update resp :body util/force-stream))
 
 (defn- response-charset [response]
   (or (-> response :content-type-params :charset)
