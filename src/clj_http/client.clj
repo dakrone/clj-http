@@ -11,7 +11,7 @@
             [clojure.string :as str]
             [clojure.walk :refer [keywordize-keys prewalk]]
             [slingshot.slingshot :refer [throw+]])
-  (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream EOFException)
+  (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream EOFException BufferedReader)
            (java.net URL UnknownHostException)
            (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
                                    InputStreamEntity FileEntity StringEntity)
@@ -459,10 +459,15 @@
   (if strict?
     ;; OPTIMIZE: When/if Cheshire gets a parse-stream-strict this won't need to go through String:
     (json-decode-strict (util/force-string body charset) keyword?)
-    (try
-      (json-decode-stream (io/reader (util/force-stream body)) keyword?)
-      (catch EOFException _
-        nil))))
+    (let [^BufferedReader br (io/reader (util/force-stream body))]
+      (try
+        (.mark br 1)
+        (let [^int first-char (try (.read br) (catch EOFException _ -1))]
+          (case first-char
+            -1 nil
+            (do (.reset br)
+                (json-decode-stream br keyword?))))
+        (finally (.close br))))))
 
 (defn coerce-json-body
   [request {:keys [body] :as resp} keyword? strict? & [charset]]

@@ -5,7 +5,7 @@
   (:import (org.apache.commons.codec.binary Base64)
            (org.apache.commons.io IOUtils)
            (java.io InputStream BufferedInputStream ByteArrayInputStream
-                    ByteArrayOutputStream EOFException)
+                    ByteArrayOutputStream EOFException PushbackInputStream)
            (java.net URLEncoder URLDecoder)
            (java.util.zip InflaterInputStream DeflaterInputStream
                           GZIPInputStream GZIPOutputStream)))
@@ -71,26 +71,28 @@
   "force b as byte array if it is an InputStream, also close the stream"
   ^bytes [b]
   (if (instance? InputStream b)
-    (let [^InputStream bs b]
+    (let [^PushbackInputStream bs (PushbackInputStream. b)]
       (try
-        (IOUtils/toByteArray bs)
-        (catch EOFException _
-          (byte-array 0))
-        (finally
-          (.close bs))))
+        (let [^int first-byte (try (.read bs) (catch EOFException _ -1))]
+          (case first-byte
+            -1 (byte-array 0)
+            (do (.unread bs first-byte)
+                (IOUtils/toByteArray bs))))
+        (finally (.close bs))))
     b))
 
 (defn force-string
   "Convert s (a ByteArray or InputStream) to String."
   ^String [s ^String charset]
   (if (instance? InputStream s)
-    (let [^InputStream bs s]
+    (let [^PushbackInputStream bs (PushbackInputStream. s)]
       (try
-        (IOUtils/toString bs)
-        (catch EOFException _
-          "")
-        (finally
-          (.close bs))))
+        (let [^int first-byte (try (.read bs) (catch EOFException _ -1))]
+          (case first-byte
+            -1 ""
+            (do (.unread bs first-byte)
+                (IOUtils/toString bs charset))))
+        (finally (.close bs))))
     (IOUtils/toString ^"[B" s charset)))
 
 (defn inflate
