@@ -6,11 +6,12 @@
             [clj-http.headers :refer [wrap-header-map]]
             [clj-http.links :refer [wrap-links]]
             [clj-http.util :refer [opt] :as util]
+            [clojure.java.io :as io]
             [clojure.stacktrace :refer [root-cause]]
             [clojure.string :as str]
             [clojure.walk :refer [keywordize-keys prewalk]]
             [slingshot.slingshot :refer [throw+]])
-  (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream)
+  (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream EOFException BufferedReader)
            (java.net URL UnknownHostException)
            (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
                                    InputStreamEntity FileEntity StringEntity)
@@ -135,6 +136,12 @@
   [& args]
   {:pre [json-enabled?]}
   (apply (ns-resolve (symbol "cheshire.core") (symbol "decode-strict")) args))
+
+(defn ^:dynamic json-decode-stream
+  "Resolve and apply cheshire's json stream decoding dynamically."
+  [& args]
+  {:pre [json-enabled?]}
+  (apply (ns-resolve (symbol "cheshire.core") (symbol "decode-stream")) args))
 
 (defn ^:dynamic form-decode
   "Resolve and apply ring-codec's form decoding dynamically."
@@ -428,83 +435,75 @@
 (defmulti coerce-response-body (fn [req _] (:as req)))
 
 (defmethod coerce-response-body :byte-array [_ resp]
-  (assoc resp :body (util/force-byte-array (:body resp))))
+  (update resp :body util/force-byte-array))
 
 (defmethod coerce-response-body :stream [_ resp]
-  (let [body (:body resp)]
-    (cond (instance? InputStream body) resp
-          ;; This shouldn't happen, but we plan for it anyway
-          (instance? (Class/forName "[B") body)
-          (assoc resp :body (ByteArrayInputStream. body)))))
+  (update resp :body util/force-stream))
+
+(defn- response-charset [response]
+  (or (-> response :content-type-params :charset)
+      "UTF-8"))
+
+(defn- can-parse-body? [{:keys [coerce] :as request} {:keys [status] :as _response}]
+  (or (= coerce :always)
+      (and (unexceptional-status-for-request? request status)
+           (or (nil? coerce)
+               (= coerce :unexceptional)))
+      (and (not (unexceptional-status-for-request? request status))
+           (= coerce :exceptional))))
+
+(defn- decode-json-body [body keyword? strict? charset]
+  (if strict?
+    ;; OPTIMIZE: When/if Cheshire gets a parse-stream-strict this won't need to go through String:
+    (json-decode-strict (util/force-string body charset) keyword?)
+    (let [^BufferedReader br (io/reader (util/force-stream body))]
+      (try
+        (.mark br 1)
+        (let [^int first-char (try (.read br) (catch EOFException _ -1))]
+          (case first-char
+            -1 nil
+            (do (.reset br)
+                (json-decode-stream br keyword?))))
+        (finally (.close br))))))
 
 (defn coerce-json-body
-  [{:keys [coerce] :as request}
-   {:keys [body status] :as resp} keyword? strict? & [charset]]
-  (let [^String charset (or charset (-> resp :content-type-params :charset)
-                            "UTF-8")
-        body (util/force-byte-array body)
-        decode-func (if strict? json-decode-strict json-decode)]
-    (if json-enabled?
-      (cond
-        (= coerce :always)
-        (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
-
-        (and (unexceptional-status-for-request? request status)
-             (or (nil? coerce) (= coerce :unexceptional)))
-        (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
-
-        (and (not (unexceptional-status-for-request? request status))
-             (= coerce :exceptional))
-        (assoc resp :body (decode-func (String. ^"[B" body charset) keyword?))
-
-        :else (assoc resp :body (String. ^"[B" body charset)))
-      (assoc resp :body (String. ^"[B" body charset)))))
+  [request {:keys [body] :as resp} keyword? strict? & [charset]]
+  (let [charset (or charset (response-charset resp))
+        body (if json-enabled?
+               (if (can-parse-body? request resp)
+                 (decode-json-body body keyword? strict? charset)
+                 (util/force-string body charset))
+               (util/force-string body charset))]
+    (assoc resp :body body)))
 
 (defn coerce-clojure-body
-  [request {:keys [body] :as resp}]
-  (let [^String charset (or (-> resp :content-type-params :charset) "UTF-8")
-        body            (util/force-byte-array body)]
+  [_request {:keys [body] :as resp}]
+  (let [charset (response-charset resp)
+        body            (util/force-string body charset)]
     (assoc resp :body (cond
                         (empty? body) nil
-                        edn-enabled? (parse-edn (String. ^"[B" body charset))
+                        edn-enabled? (parse-edn body)
                         :else (binding [*read-eval* false]
-                                (read-string (String. ^"[B" body charset)))))))
+                                (read-string body))))))
 
 (defn coerce-transit-body
-  [{:keys [transit-opts coerce] :as request}
-   {:keys [body status] :as resp} type & [charset]]
-  (let [^String charset (or charset (-> resp :content-type-params :charset)
-                            "UTF-8")
-        body (util/force-byte-array body)]
-    (if-not (empty? body)
-      (if transit-enabled?
-        (cond
-          (= coerce :always)
-          (assoc resp :body (parse-transit
-                             (ByteArrayInputStream. body) type transit-opts))
-
-          (and (unexceptional-status-for-request? request status)
-               (or (nil? coerce) (= coerce :unexceptional)))
-          (assoc resp :body (parse-transit
-                             (ByteArrayInputStream. body) type transit-opts))
-
-          (and (not (unexceptional-status-for-request? request status))
-               (= coerce :exceptional))
-          (assoc resp :body (parse-transit
-                             (ByteArrayInputStream. body) type transit-opts))
-
-          :else (assoc resp :body (String. ^"[B" body charset)))
-        (assoc resp :body (String. ^"[B" body charset)))
-      (assoc resp :body nil))))
+  [{:keys [transit-opts] :as request}
+   {:keys [body] :as resp} type & [charset]]
+  (let [charset (or charset (response-charset resp))
+        body (if transit-enabled?
+               (if (can-parse-body? request resp)
+                 (parse-transit (util/force-stream body) type transit-opts)
+                 (util/force-string body charset))
+               nil)]
+    (assoc resp :body body)))
 
 (defn coerce-form-urlencoded-body
-  [request {:keys [body] :as resp}]
-  (let [^String charset (or (-> resp :content-type-params :charset) "UTF-8")
-        body-bytes (util/force-byte-array body)]
-    (if ring-codec-enabled?
-      (assoc resp :body (-> (String. ^"[B" body-bytes charset)
-                            form-decode keywordize-keys))
-      (assoc resp :body (String. ^"[B" body-bytes charset)))))
+  [_request {:keys [body] :as resp}]
+  (let [charset (response-charset resp)
+        body (util/force-string body charset)]
+    (assoc resp :body (if ring-codec-enabled?
+                        (-> body form-decode keywordize-keys)
+                        body))))
 
 (defmulti coerce-content-type (fn [req resp] (:content-type resp)))
 
@@ -562,10 +561,7 @@
 
 (defmethod coerce-response-body :default
   [{:keys [as]} {:keys [body] :as resp}]
-  (let [body-bytes (util/force-byte-array body)]
-    (cond
-      (string? as)  (assoc resp :body (String. ^"[B" body-bytes ^String as))
-      :else (assoc resp :body (String. ^"[B" body-bytes "UTF-8")))))
+  (assoc resp :body (util/force-string body (if (string? as) as "UTF-8"))))
 
 (defn- output-coercion-response
   [req {:keys [body] :as resp}]

@@ -4,8 +4,8 @@
             [clojure.walk :refer [postwalk]])
   (:import (org.apache.commons.codec.binary Base64)
            (org.apache.commons.io IOUtils)
-           (java.io BufferedInputStream ByteArrayInputStream
-                    ByteArrayOutputStream EOFException)
+           (java.io InputStream BufferedInputStream ByteArrayInputStream
+                    ByteArrayOutputStream EOFException PushbackInputStream)
            (java.net URLEncoder URLDecoder)
            (java.util.zip InflaterInputStream DeflaterInputStream
                           GZIPInputStream GZIPOutputStream)))
@@ -43,7 +43,7 @@
   [b]
   (when b
     (cond
-      (instance? java.io.InputStream b)
+      (instance? InputStream b)
       (GZIPInputStream. b)
       :else
       (IOUtils/toByteArray (GZIPInputStream. (ByteArrayInputStream. b))))))
@@ -58,23 +58,40 @@
       (.close gos)
       (.toByteArray baos))))
 
+(defn force-stream
+  "Force b as InputStream if it is a ByteArray."
+  ^InputStream [b]
+  (if (instance? InputStream b)
+    b
+    (ByteArrayInputStream. b)))
+
 (defn force-byte-array
   "force b as byte array if it is an InputStream, also close the stream"
   ^bytes [b]
-  (if (instance? java.io.InputStream b)
-    (try
-      (let [^int first-byte (try
-                              (.read ^java.io.InputStream b)
-                               (catch EOFException e -1))]
-        (if (= -1 first-byte)
-          (byte-array 0)
-          (let [rest-bytes (IOUtils/toByteArray ^java.io.InputStream b)
-                barray (byte-array (inc (count rest-bytes)))]
-            (aset-byte barray 0 (unchecked-byte first-byte))
-            (System/arraycopy rest-bytes 0 barray 1 (count rest-bytes))
-            barray)))
-      (finally (.close ^java.io.InputStream b)))
+  (if (instance? InputStream b)
+    (let [^PushbackInputStream bs (PushbackInputStream. b)]
+      (try
+        (let [^int first-byte (try (.read bs) (catch EOFException _ -1))]
+          (case first-byte
+            -1 (byte-array 0)
+            (do (.unread bs first-byte)
+                (IOUtils/toByteArray bs))))
+        (finally (.close bs))))
     b))
+
+(defn force-string
+  "Convert s (a ByteArray or InputStream) to String."
+  ^String [s ^String charset]
+  (if (instance? InputStream s)
+    (let [^PushbackInputStream bs (PushbackInputStream. s)]
+      (try
+        (let [^int first-byte (try (.read bs) (catch EOFException _ -1))]
+          (case first-byte
+            -1 ""
+            (do (.unread bs first-byte)
+                (IOUtils/toString bs charset))))
+        (finally (.close bs))))
+    (IOUtils/toString ^"[B" s charset)))
 
 (defn inflate
   "Returns a zlib inflate'd version of the given byte array or InputStream."
@@ -83,7 +100,7 @@
     ;; This weirdness is because HTTP servers lie about what kind of deflation
     ;; they're using, so we try one way, then if that doesn't work, reset and
     ;; try the other way
-    (let [stream (BufferedInputStream. (if (instance? java.io.InputStream b)
+    (let [stream (BufferedInputStream. (if (instance? InputStream b)
                                          b
                                          (ByteArrayInputStream. b)))
           _ (.mark stream 512)
