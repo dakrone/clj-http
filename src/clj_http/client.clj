@@ -207,7 +207,8 @@
 
 (defn unexceptional-status-for-request?
   [req status]
-  ((:unexceptional-status req unexceptional-status?) status))
+  ((or (:unexceptional-status req) unexceptional-status?)
+   status))
 
 ;; helper methods to determine realm of a response
 (defn success?
