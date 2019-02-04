@@ -2,9 +2,10 @@
   (:require [clj-http.multipart :refer :all]
             [clojure.test :refer :all])
   (:import (java.io File ByteArrayOutputStream ByteArrayInputStream)
+           (java.nio.charset Charset)
            (org.apache.http.entity.mime.content FileBody StringBody ContentBody
                                                 ByteArrayBody InputStreamBody)
-           (java.nio.charset Charset)))
+           (org.apache.http.util EntityUtils)))
 
 (defn body-str [^StringBody body]
   (-> body .getReader slurp))
@@ -173,3 +174,8 @@
         (is (= (Charset/forName "ascii") (body-charset body)))
         (is (= test-file (.getFile body) ))
         (is (= "testname" (.getFilename body)))))))
+
+(deftest test-multipart-content-charset
+  (testing "charset is nil for all multipart requests"
+    (let [mp-entity (create-multipart-entity [] nil)]
+      (is (nil? (EntityUtils/getContentCharSet mp-entity))))))
