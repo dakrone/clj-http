@@ -212,10 +212,13 @@
   Note that where Ring uses InputStreams for the request and response bodies,
   the clj-http uses ByteArrays for the bodies."
   [{:keys [request-method scheme server-name server-port uri query-string
-           headers body multipart socket-timeout conn-timeout proxy-host
+           headers body multipart socket-timeout connection-timeout proxy-host
            proxy-ignore-hosts proxy-port proxy-user proxy-pass as cookie-store
            retry-handler response-interceptor digest-auth ntlm-auth
-           connection-manager client-params]
+           connection-manager client-params
+           ; deprecated
+           conn-timeout
+           ]
     :as req}]
   (let [^ClientConnectionManager conn-mgr
         (or connection-manager
@@ -237,7 +240,8 @@
      ;; merge in map of specified timeouts, to
      ;; support backward compatibility.
      (merge {CoreConnectionPNames/SO_TIMEOUT socket-timeout
-             CoreConnectionPNames/CONNECTION_TIMEOUT conn-timeout}
+             CoreConnectionPNames/CONNECTION_TIMEOUT (or connection-timeout
+                                                         conn-timeout)}
             client-params))
 
     (when-let [[user pass] digest-auth]
