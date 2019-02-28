@@ -559,7 +559,7 @@
             cookie-store cookie-policy headers multipart query-string
             redirect-strategy max-redirects retry-handler
             request-method scheme server-name server-port socket-timeout
-            uri response-interceptor proxy-host proxy-port proxy-scheme
+            uri response-interceptor proxy-host proxy-port
             http-client-context http-request-config http-client
             proxy-ignore-hosts proxy-user proxy-pass digest-auth ntlm-auth]
      :as req} respond raise]

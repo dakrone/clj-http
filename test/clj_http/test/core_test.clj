@@ -179,7 +179,8 @@
 (deftest ^:integration makes-get-request-with-proxy
   (run-server)
   (let [resp (request {:request-method :get :uri "/get"
-                       :proxy-host "localhost" :proxy-port "18081" :proxy-scheme "https"})]
+                       :proxy-host "localhost" :proxy-port 18081 :proxy-scheme "http"
+                       :proxy-ignore-hosts #{"fake-host"}})]
     (is (= 200 (:status resp)))
     (is (= "get" (slurp-body resp)))))
 
