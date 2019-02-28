@@ -27,7 +27,8 @@
                                         RFC6265CookieSpecProvider$CompatibilityLevel)
            (org.apache.http.client.params ClientPNames)
            (org.apache.logging.log4j LogManager)
-           (sun.security.provider.certpath SunCertPathBuilderException)))
+           (sun.security.provider.certpath SunCertPathBuilderException)
+           (org.mockserver.integration ClientAndServer)))
 
 (defonce logger (LogManager/getLogger "clj-http.test.core-test"))
 
@@ -149,6 +150,12 @@
   (defonce server
     (ring/run-jetty (add-headers-if-requested handler) {:port 18080 :join? false})))
 
+(defn proxy-fixture [f]
+  (let [mock-proxy (ClientAndServer/startClientAndServer (into-array Integer [(int 18081)]))]
+    (f)
+    (.stop mock-proxy)))
+(use-fixtures :once proxy-fixture)
+
 (defn localhost [path]
   (str "http://localhost:18080" path))
 
@@ -166,6 +173,13 @@
 (deftest ^:integration makes-get-request
   (run-server)
   (let [resp (request {:request-method :get :uri "/get"})]
+    (is (= 200 (:status resp)))
+    (is (= "get" (slurp-body resp)))))
+
+(deftest ^:integration makes-get-request-with-proxy
+  (run-server)
+  (let [resp (request {:request-method :get :uri "/get"
+                       :proxy-host "localhost" :proxy-port "18081" :proxy-scheme "https"})]
     (is (= 200 (:status resp)))
     (is (= "get" (slurp-body resp)))))
 

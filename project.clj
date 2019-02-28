@@ -34,7 +34,8 @@
                                   ;; logging
                                   [org.apache.logging.log4j/log4j-api "2.11.0"]
                                   [org.apache.logging.log4j/log4j-core "2.11.0"]
-                                  [org.apache.logging.log4j/log4j-1.2-api "2.11.0"]]
+                                  [org.apache.logging.log4j/log4j-1.2-api "2.11.0"]
+                                  [org.mock-server/mockserver-netty "5.5.1"]]
                    :plugins [[lein-ancient "0.6.15"]
                              [jonase/eastwood "0.2.5"]
                              [lein-kibit "0.1.5"]
