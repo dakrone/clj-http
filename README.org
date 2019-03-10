@@ -187,12 +187,6 @@ Example requests:
 (client/get "http://example.com"
             {:headers {:foo ["bar" "baz"], :eggplant "quux"}})
 
-;; Set any specific client parameters manually:
-(client/post "http://example.com"
-             {:client-params {"http.protocol.allow-circular-redirects" false
-                              "http.protocol.version" HttpVersion/HTTP_1_0
-                              "http.useragent" "clj-http"}})
-
 ;; Completely ignore cookies:
 (client/post "http://example.com" {:cookie-policy :none})
 ;; There are also multiple ways to handle cookies
