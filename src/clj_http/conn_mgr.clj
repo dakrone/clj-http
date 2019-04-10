@@ -385,7 +385,7 @@
         [io-reactor nil registry nil nil timeout
          java.util.concurrent.TimeUnit/SECONDS])))
 
-(defn ^PoolingNHttpClientConnectionManager make-reuseable-async-conn-manager
+(defn ^PoolingNHttpClientConnectionManager make-reusable-async-conn-manager
   "Creates a default pooling async connection manager with the specified
   options. Handles the same options as make-reusable-conn-manager plus
   :io-config which should be a map containing some of the following keys:
@@ -428,6 +428,11 @@
     (when default-per-route
       (.setDefaultMaxPerRoute conn-man default-per-route))
     conn-man))
+
+(defn ^PoolingNHttpClientConnectionManager make-reuseable-async-conn-manager
+  "Wraps correctly-spelled version - keeping for backwards compatibility."
+  [opts]
+  (make-reusable-async-conn-manager opts))
 
 (defmulti shutdown-manager
   "Shut down the given connection manager, if it is not nil"
