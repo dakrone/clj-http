@@ -605,7 +605,7 @@
 
 ;; This relies on connections to writequit.org being slower than 10ms, if this
 ;; fails, you must have very nice internet.
-(deftest ^:integration sets-conn-timeout
+(deftest ^:integration sets-connection-timeout
   (run-server)
   (try
     (is (thrown? SocketTimeoutException
@@ -613,7 +613,7 @@
                                   :server-name "writequit.org"
                                   :server-port 80
                                   :request-method :get :uri "/"
-                                  :conn-timeout 10})))))
+                                  :connection-timeout 10})))))
 
 (deftest ^:integration connection-pool-timeout
   (run-server)
@@ -622,8 +622,8 @@
                                                   :server-name "localhost"
                                                   :server-port 18080
                                                   :request-method :get
-                                                  :conn-timeout 1
-                                                  :conn-request-timeout 1
+                                                  :connection-timeout 1
+                                                  :connection-request-timeout 1
                                                   :uri "/timeout"}))
           is-pool-timeout-error?
           (fn [req-fut]

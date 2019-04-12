@@ -179,17 +179,20 @@
 (defmethod get-cookie-policy :stardard-strict standard-strict-cookie-policy
   [_] CookieSpecs/STANDARD_STRICT)
 
-(defn request-config [{:keys [conn-timeout
+(defn request-config [{:keys [connection-timeout
+                              connection-request-timeout
                               socket-timeout
-                              conn-request-timeout
                               max-redirects
-                              cookie-spec]
+                              cookie-spec
+                              ; deprecated
+                              conn-request-timeout
+                              conn-timeout]
                        :as req}]
   (let [config (-> (RequestConfig/custom)
-                   (.setConnectTimeout (or conn-timeout -1))
+                   (.setConnectTimeout (or connection-timeout conn-timeout -1))
                    (.setSocketTimeout (or socket-timeout -1))
                    (.setConnectionRequestTimeout
-                    (or conn-request-timeout -1))
+                    (or connection-request-timeout conn-request-timeout -1))
                    (.setRedirectsEnabled true)
                    (.setCircularRedirectsAllowed
                     (boolean (opt req :allow-circular-redirects)))
@@ -553,13 +556,15 @@
 
 (defn request
   ([req] (request req nil nil))
-  ([{:keys [body conn-timeout conn-request-timeout connection-manager
+  ([{:keys [body connection-timeout connection-request-timeout connection-manager
             cookie-store cookie-policy headers multipart query-string
             redirect-strategy max-redirects retry-handler
             request-method scheme server-name server-port socket-timeout
             uri response-interceptor proxy-host proxy-port
             http-client-context http-request-config http-client
-            proxy-ignore-hosts proxy-user proxy-pass digest-auth ntlm-auth]
+            proxy-ignore-hosts proxy-user proxy-pass digest-auth ntlm-auth
+            ; deprecated
+            conn-timeout conn-request-timeout]
      :as req} respond raise]
    (let [async? (opt req :async)
          cache? (opt req :cache)

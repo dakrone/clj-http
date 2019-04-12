@@ -156,7 +156,7 @@
                      :server-name "localhost"
                      ;; timeouts forces an exception being thrown
                      :socket-timeout 1
-                     :conn-timeout 1
+                     :connection-timeout 1
                      :connection-manager cm
                      :as :stream})
       (is false "request should have thrown an exception")
