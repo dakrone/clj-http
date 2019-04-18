@@ -205,28 +205,30 @@
     (when max-redirects (.setMaxRedirects config max-redirects))
     (.build config)))
 
-(defmulti ^:private construct-http-host (fn [proxy-host proxy-port]
+(defmulti ^:private construct-http-host (fn [proxy-host proxy-port proxy-scheme]
                                           (class proxy-host)))
 (defmethod construct-http-host String
-  [^String proxy-host ^Long proxy-port]
-  (if proxy-port
-    (HttpHost. proxy-host proxy-port)
-    (HttpHost. proxy-host)))
+  [^String proxy-host ^Long proxy-port ^String proxy-scheme]
+  (cond
+    (and proxy-host proxy-port proxy-scheme) (HttpHost. proxy-host proxy-port proxy-scheme)
+    (and proxy-host proxy-port) (HttpHost. proxy-host proxy-port)
+    :else (HttpHost. proxy-host)))
 (defmethod construct-http-host java.net.InetAddress
-  [^InetAddress proxy-host ^Long proxy-port]
-  (if proxy-port
-    (HttpHost. proxy-host proxy-port)
-    (HttpHost. proxy-host)))
+  [^InetAddress proxy-host ^Long proxy-port ^String proxy-scheme]
+  (cond
+    (and proxy-host proxy-port proxy-scheme) (HttpHost. proxy-host proxy-port proxy-scheme)
+    (and proxy-host proxy-port) (HttpHost. proxy-host proxy-port)
+    :else (HttpHost. proxy-host)))
 
 (defn ^HttpRoutePlanner get-route-planner
   "Return an HttpRoutePlanner that either use the supplied proxy settings
   if any, or the JVM/system proxy settings otherwise"
-  [^String proxy-host ^Long proxy-port proxy-ignore-hosts http-url]
+  [^String proxy-host ^Long proxy-port ^String proxy-scheme proxy-ignore-hosts http-url]
   (let [ignore-proxy? (and http-url
                            (contains? (set proxy-ignore-hosts)
                                       (.getHost (URL. http-url))))]
     (if (and proxy-host (not ignore-proxy?))
-      (DefaultProxyRoutePlanner. (construct-http-host proxy-host proxy-port))
+      (DefaultProxyRoutePlanner. (construct-http-host proxy-host proxy-port proxy-scheme))
       (SystemDefaultRoutePlanner. (ProxySelector/getDefault)))))
 
 (defn build-cache-config
@@ -307,7 +309,7 @@
   hostnames to ignore for any proxy settings. They can be safely ignored if not
   using proxies."
   [{:keys [retry-handler request-interceptor
-           response-interceptor proxy-host proxy-port
+           response-interceptor proxy-host proxy-port proxy-scheme
            http-builder-fns cookie-spec
            cookie-policy-registry]
     :as req}
@@ -327,7 +329,7 @@
                     ;; from the jvm or system properties
                     (.setRoutePlanner
                      (get-route-planner
-                      proxy-host proxy-port
+                      proxy-host proxy-port proxy-scheme
                       proxy-ignore-hosts http-url)))]
     (when cache?
       (.setCacheConfig ^CachingHttpClientBuilder builder (build-cache-config req)))
@@ -360,7 +362,7 @@
   and a list of hostnames to ignore for any proxy settings. They can be safely
   ignored if not using proxies."
   [{:keys [request-interceptor response-interceptor
-           proxy-host proxy-port async-http-builder-fns]
+           proxy-host proxy-port proxy-scheme async-http-builder-fns]
     :as req}
    conn-mgr & [http-url proxy-ignore-hosts]]
   ;; have to let first, otherwise we get a reflection warning on (.build)
@@ -373,7 +375,7 @@
                                             ;; properties
                                             (.setRoutePlanner
                                              (get-route-planner
-                                              proxy-host proxy-port
+                                              proxy-host proxy-port proxy-scheme
                                               proxy-ignore-hosts http-url)))]
     (when (conn/reusable? conn-mgr)
       (.setConnectionManagerShared builder true))
