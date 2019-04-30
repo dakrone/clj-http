@@ -635,7 +635,8 @@
                (conn/shutdown-manager conn-mgr))
              (throw t))))
        (let [^CloseableHttpAsyncClient client
-             (build-async-http-client req conn-mgr http-url proxy-ignore-hosts)]
+             (build-async-http-client req conn-mgr http-url proxy-ignore-hosts)
+             original-thread-bindings (clojure.lang.Var/getThreadBindingFrame)]
          (when cache?
            (throw (IllegalArgumentException.
                    "caching is not yet supported for async clients")))
@@ -643,12 +644,14 @@
          (.execute client http-req context
                    (reify org.apache.http.concurrent.FutureCallback
                      (failed [this ex]
+                       (clojure.lang.Var/resetThreadBindingFrame original-thread-bindings)
                        (when-not (conn/reusable? conn-mgr)
                          (conn/shutdown-manager conn-mgr))
                        (if (opt req :ignore-unknown-host)
                          ((:unknown-host-respond req) nil)
                          (raise ex)))
                      (completed [this resp]
+                       (clojure.lang.Var/resetThreadBindingFrame original-thread-bindings)
                        (try
                          (respond (build-response-map
                                    resp req http-req http-url
@@ -658,6 +661,7 @@
                              (conn/shutdown-manager conn-mgr))
                            (raise t))))
                      (cancelled [this]
+                       (clojure.lang.Var/resetThreadBindingFrame original-thread-bindings)
                        ;; Run the :oncancel function if available
                        (when-let [oncancel (:oncancel req)]
                          (oncancel))

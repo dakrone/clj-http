@@ -111,6 +111,39 @@
         (is (= params (read-fn (:body @resp))))
         (is (not (realized? exception)))))))
 
+(def ^:dynamic *test-dynamic-var* nil)
+
+(deftest ^:integration async-preserves-dynamic-variable-bindings
+  (run-server)
+  (let [expected-var "cat"]
+    (binding [*test-dynamic-var* expected-var]
+      (let [test-fn (fn [uri success-p fail-p]
+                      (request {:uri    uri
+                                :method :get
+                                :scheme "http"
+                                :async? true}
+                               (fn [_]
+                                 (deliver success-p *test-dynamic-var*)
+                                 (deliver fail-p :success))
+                               (fn [_]
+                                 (deliver success-p :fail)
+                                 (deliver fail-p *test-dynamic-var*))))]
+        (testing "dynamic variables on success responses"
+          (let [success-p (promise)
+                fail-p    (promise)]
+            (test-fn "/get" success-p fail-p)
+            (is (= @success-p expected-var *test-dynamic-var*))
+            (is (= @fail-p :success)
+                "Verify that we went through the success path, not the failure")))
+
+        (testing "dynamic variables on fail responses"
+          (let [success-p (promise)
+                fail-p    (promise)]
+            (test-fn "/json-bad" success-p fail-p)
+            (is (= @success-p :fail)
+                "Verify that we went through the failure path, not the success")
+            (is (= @fail-p expected-var *test-dynamic-var*))))))))
+
 (deftest ^:integration multipart-async
   (run-server)
   (let [resp (promise)
