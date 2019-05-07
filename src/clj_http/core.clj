@@ -309,15 +309,19 @@
   [{:keys [retry-handler request-interceptor
            response-interceptor proxy-host proxy-port
            http-builder-fns cookie-spec
-           cookie-policy-registry]
+           cookie-policy-registry
+           ^HttpClientBuilder http-client-builder]
     :as req}
    caching?
    conn-mgr
    & [http-url proxy-ignore-hosts]]
   ;; have to let first, otherwise we get a reflection warning on (.build)
   (let [cache? (opt req :cache)
-        builder (-> (if caching?
+        builder (-> (cond
+                      http-client-builder http-client-builder
+                      caching?
                       ^HttpClientBuilder (CachingHttpClientBuilder/create)
+                      :else
                       ^HttpClientBuilder (HttpClients/custom))
                     (.setConnectionManager conn-mgr)
                     (.setRedirectStrategy
