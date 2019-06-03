@@ -475,11 +475,10 @@
 
 (defn coerce-json-body
   [request {:keys [body] :as resp} keyword? strict? & [charset]]
+  {:pre [json-enabled?]}
   (let [charset (or charset (response-charset resp))
-        body (if json-enabled?
-               (if (can-parse-body? request resp)
-                 (decode-json-body body keyword? strict? charset)
-                 (util/force-string body charset))
+        body (if (can-parse-body? request resp)
+               (decode-json-body body keyword? strict? charset)
                (util/force-string body charset))]
     (assoc resp :body body)))
 
@@ -496,21 +495,19 @@
 (defn coerce-transit-body
   [{:keys [transit-opts] :as request}
    {:keys [body] :as resp} type & [charset]]
+  {:pre [transit-enabled?]}
   (let [charset (or charset (response-charset resp))
-        body (if transit-enabled?
-               (if (can-parse-body? request resp)
-                 (parse-transit (util/force-stream body) type transit-opts)
-                 (util/force-string body charset))
-               nil)]
+        body (if (can-parse-body? request resp)
+               (parse-transit (util/force-stream body) type transit-opts)
+               (util/force-string body charset))]
     (assoc resp :body body)))
 
 (defn coerce-form-urlencoded-body
   [_request {:keys [body] :as resp}]
+  {:pre [ring-codec-enabled?]}
   (let [charset (response-charset resp)
         body (util/force-string body charset)]
-    (assoc resp :body (if ring-codec-enabled?
-                        (-> body form-decode keywordize-keys)
-                        body))))
+    (assoc resp :body (-> body form-decode keywordize-keys))))
 
 (defmulti coerce-content-type (fn [req resp] (:content-type resp)))
 
