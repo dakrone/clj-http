@@ -527,15 +527,19 @@ it's received (output coercion) from the server.
 
 Output coercion with =:as :json=, =:as :json-strict=, =:as :json-strict-string-keys=, =:as :json-string-keys= or =:as :x-www-form-urlencoded= will only work with an optional dependency, see [[#optional-dependencies][Optional Dependencies]].
 
-JSON coercion defaults to only an "unexceptional" statuses, meaning status codes
-in the #{200 201 202 203 204 205 206 207 300 301 302 303 304 307} range. If you
-would like to change this, you can send the =:coerce= option, which can be set
-to:
+By default, JSON coercion is only applied when the response's status
+is considered "unexceptional". If the =:unexeceptional-status= option
+is provided, then its value is a function which specifies what status
+codes are unexceptional. =:unexceptional-status= defaults to
+=clj-http.client/unexceptional-status?=.
+
+If you would like to change under what conditions coercion is applied,
+you can send the =:coerce= option, which can be set to:
 
 #+BEGIN_SRC clojure
 :always        ;; always json decode the body
-:unexceptional ;; only json decode when not an HTTP error response
-:exceptional   ;; only json decode when it IS an HTTP error response
+:unexceptional ;; json decode when an HTTP response is considered unexceptional
+:exceptional   ;; json decode when an HTTP response is considered exceptional
 #+END_SRC
 
 The =:coerce= setting defaults to =:unexceptional=.
