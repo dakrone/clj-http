@@ -1073,6 +1073,9 @@ missed, etc:
 
 (client/get "http://example.com/protected" {:oauth-token "secret-token"})
 
+#+END_SRC
+
+
 ** Preferred Authentication
 :PROPERTIES:
 :CUSTOM_ID: h-c29486f9-8c54-11e9-acb1-90b11c96f2d2
