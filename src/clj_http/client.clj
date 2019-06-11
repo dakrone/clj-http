@@ -141,7 +141,7 @@
   "Resolve and apply cheshire's json stream decoding dynamically."
   [& args]
   {:pre [json-enabled?]}
-  (apply (ns-resolve (symbol "cheshire.core") (symbol "decode-stream")) args))
+  (doall (apply (ns-resolve (symbol "cheshire.core") (symbol "decode-stream")) args)))
 
 (defn ^:dynamic form-decode
   "Resolve and apply ring-codec's form decoding dynamically."

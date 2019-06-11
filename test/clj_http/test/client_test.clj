@@ -1556,6 +1556,15 @@
            (:body (client/coerce-response-body {:as :x-www-form-urlencoded}
                                                www-form-urlencoded-resp))))))
 
+(deftest t-as-json-is-not-lazy
+  (let [json-body (ByteArrayInputStream. (.getBytes "[1, {\"foo\":\"bar\"}]"))
+        json-resp {:body json-body :status 200
+                   :headers {"content-type" "application/json"}}
+        expected '(1 {:foo "bar"})
+        body (:body (client/coerce-response-body {:as :json} json-resp))]
+    (is (= true (realized? body)))
+    (is (= expected body))))
+
 (deftest ^:integration t-with-middleware
   (run-server)
   (is (:request-time (request {:uri "/get" :method :get})))
