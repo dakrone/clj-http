@@ -187,7 +187,8 @@
                               ; deprecated
                               conn-request-timeout
                               conn-timeout
-                              auth-schemes]
+                              auth-schemes
+                              proxy-auth-schemes]
                        :as req}]
   (let [config (-> (RequestConfig/custom)
                    (.setConnectTimeout (or connection-timeout conn-timeout -1))
@@ -200,7 +201,8 @@
                    (.setRelativeRedirectsAllowed
                     ((complement false?)
                      (opt req :allow-relative-redirects)))
-                   (.setTargetPreferredAuthSchemes auth-schemes))]
+                   (.setTargetPreferredAuthSchemes auth-schemes)
+                   (.setProxyPreferredAuthSchemes proxy-auth-schemes))]
     (if cookie-spec
       (.setCookieSpec config CUSTOM_COOKIE_POLICY)
       (.setCookieSpec config (get-cookie-policy req)))
