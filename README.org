@@ -1073,6 +1073,23 @@ missed, etc:
 
 (client/get "http://example.com/protected" {:oauth-token "secret-token"})
 
+** Preferred Authentication
+:PROPERTIES:
+:CUSTOM_ID: h-c29486f9-8c54-11e9-acb1-90b11c96f2d2
+:END:
+
+To select the preferred authentication scheme:
+
+#+BEGIN_SRC clojure
+
+(client/get "http://example.com/protected" {:auth-schemes ["NTLM"]})
+
+#+END_SRC
+
+#+BEGIN_SRC clojure
+
+(client/get "http://example.com/protected" {:proxy-auth-schemes ["BASIC" "DIGEST"]})
+
 #+END_SRC
 
 * Advanced Usage
