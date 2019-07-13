@@ -181,7 +181,9 @@ Example requests:
 
 (client/get "http://example.com/resources/id")
 
+;; Setting options
 (client/get "http://example.com/resources/3" {:accept :json})
+(client/get "http://example.com/resources/3" {:accept :json :query-params {"q" "foo, bar"}})
 
 ;; Specifying headers as either a string or collection:
 (client/get "http://example.com"
