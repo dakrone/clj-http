@@ -10,10 +10,23 @@
 * Changelog
 List of user-visible changes that have gone into each release
 
-** 3.10.0 (Unreleased)
+** 3.10.1 (Unreleased)
+- TBD
+** 3.10.0
 - Add trust-manager and key-managers support to the client -
   https://github.com/dakrone/clj-http/pull/469
-
+- Improving consistency of connection option names
+  https://github.com/dakrone/clj-http/pull/483
+  https://github.com/dakrone/clj-http/issues/477
+- Ensure Socket Timeout is set for BasicHttpClientConnectionManager
+  https://github.com/dakrone/clj-http/pull/463
+- Reduce body allocation and copying
+  https://github.com/dakrone/clj-http/pull/475
+** 3.9.1
+- Fix issue in body where first byte value is 255
+  https://github.com/dakrone/clj-http/pull/449
+- Add custom `:unexceptiona-status` option
+  https://github.com/dakrone/clj-http/pull/451
 ** 3.9.0
 - Add support for reusable http clients, returning the client in =:http-client= and allowing one to
   be specified (with the same setting) - https://github.com/dakrone/clj-http/issues/441
