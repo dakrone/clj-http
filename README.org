@@ -37,6 +37,7 @@
   - [[#meta-tag-headers][Meta Tag Headers]]
   - [[#link-headers][Link Headers]]
   - [[#redirects][Redirects]]
+    - [[#how-to-create-a-custom-redirectstrategy][How to create a custom RedirectStrategy]]
   - [[#cookies][Cookies]]
     - [[#cookiestores][Cookiestores]]
     - [[#keystores-trust-stores][Keystores, Trust-stores]]
@@ -709,6 +710,34 @@ this by setting =:validate-redirects false= in the request (the default is true)
 
 NOTE: The options =:force-redirects= and =:follow-redirects= (present in clj-http 2.x are no longer
 used). You can use =:graceful= to mostly emulate the old redirect behaviour.
+
+*** How to create a custom RedirectStrategy
+As mentioned earlier, it's possible to pass a custom instance of RedirectStrategy. The snippet below shows how to create a custom =RedirectStrategy= by wrapping the default strategy.
+
+#+begin_src clojure
+  (def default-strategy org.apache.http.impl.client.DefaultRedirectStrategy/INSTANCE)
+
+  (def logging-redirect-strategy
+    (reify org.apache.http.client.RedirectStrategy
+      (getRedirect [this request response context]
+        (println "attempting redirect...")
+        (.getRedirect default-strategy request response context))
+      (isRedirected [this request response context]
+        (println "checking isRedirected")
+        (.isRedirected default-strategy request response context))))
+
+  (client/get "https://httpbin.org/absolute-redirect/3" {:redirect-strategy logging-redirect-strategy})
+  ;; this will output the following:
+  ;;
+  ;;   checking isRedirected
+  ;;   attempting redirect...
+  ;;   checking isRedirected
+  ;;   attempting redirect...
+  ;;   checking isRedirected
+  ;;   attempting redirect...
+  ;;   checking isRedirected
+#+end_src
+
 
 ** Cookies
 :PROPERTIES:
