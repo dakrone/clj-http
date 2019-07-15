@@ -17,6 +17,7 @@
 #+ATTR_HTML: title="Join the chat at https://gitter.im/clj-http/Lobby"
 [[https://gitter.im/clj-http/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge][file:https://badges.gitter.im/clj-http/Lobby.svg]]
 
+- [[#branches][Branches]]
 - [[#introduction][Introduction]]
   - [[#overview][Overview]]
   - [[#philosophy][Philosophy]]
@@ -44,6 +45,7 @@
   - [[#exceptions][Exceptions]]
   - [[#decompression][Decompression]]
   - [[#debugging][Debugging]]
+    - [[#logging][Logging]]
 - [[#caching][Caching]]
 - [[#authentication][Authentication]]
   - [[#basic-auth][Basic Auth]]
@@ -54,8 +56,10 @@
   - [[#raw-request][Raw Request]]
     - [[#boolean-options][Boolean options]]
   - [[#persistent-connections][Persistent Connections]]
+  - [[#re-using-httpclient-between-requests][Re-using =HttpClient= between requests]]
   - [[#proxies][Proxies]]
   - [[#custom-middleware][Custom Middleware]]
+  - [[#modifying-apache-specific-features-of-the-httpclientbuilder-and-httpasyncclientbuilder][Modifying Apache-specific features of the =HttpClientBuilder= and =HttpAsyncClientBuilder=]]
 - [[#development][Development]]
   - [[#faking-responses][Faking Responses]]
   - [[#optional-dependencies][Optional Dependencies]]
@@ -65,7 +69,7 @@
     - [[#nohttpresponseexception--due-to-stale-connections][NoHttpResponseException ... due to stale connections**]]
 - [[#tests][Tests]]
 - [[#testimonials][Testimonials]]
-- [[#other-middleware][Other Middleware]]
+- [[#other-libraries-providing-middleware][Other Libraries Providing Middleware]]
 - [[#license][License]]
 
 
@@ -178,7 +182,9 @@ Example requests:
 
 (client/get "http://example.com/resources/id")
 
+;; Setting options
 (client/get "http://example.com/resources/3" {:accept :json})
+(client/get "http://example.com/resources/3" {:accept :json :query-params {"q" "foo, bar"}})
 
 ;; Specifying headers as either a string or collection:
 (client/get "http://example.com"
@@ -423,7 +429,7 @@ start an async request is easy, for example:
 
 All exceptions thrown during the request will be passed to the raise callback.
 
-*** Cancelling requests
+*** Cancelling Requests
 :PROPERTIES:
 :CUSTOM_ID: cancelling-requests
 :END:
@@ -1498,7 +1504,7 @@ Libraries inspired by clj-http:
 - [[https://github.com/mpenet/jet][jet]]
 - [[https://github.com/hiredman/clj-http-lite][clj-http-lite]]
 
-* Other libraries providing middleware
+* Other Libraries Providing Middleware
 :PROPERTIES:
 :CUSTOM_ID: other-middleware
 :END:
