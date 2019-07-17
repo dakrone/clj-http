@@ -10,7 +10,7 @@
             [clojure.string :as str]
             [clojure.walk :refer [keywordize-keys prewalk]])
   (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream)
-           (java.net URL UnknownHostException)
+           (java.net URI URL UnknownHostException)
            (java.nio.charset StandardCharsets)
            (org.apache.hc.core5.http ContentType)
            (org.apache.hc.core5.http.io.entity BufferedHttpEntity ByteArrayEntity
@@ -175,7 +175,7 @@
 
 (defn get-url-encoded-uri
   [^String url]
-  (-> url url-encode-illegal-characters URL. .toURI str))
+  (-> url url-encode-illegal-characters URI. str))
 
 (defn get-url-encoded-path
   [^java.net.URL url]
