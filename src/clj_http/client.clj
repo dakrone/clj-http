@@ -173,6 +173,14 @@
         (str/replace #"[^a-zA-Z0-9\.\-\_\~\!\$\&\'\(\)\*\+\,\;\=\:\@\/\%\?]"
                      util/url-encode))))
 
+(defn get-url-encoded-uri
+  [^java.net.URL url]
+  (-> url .toURI str url-encode-illegal-characters))
+
+(defn get-url-encoded-path
+  [^java.net.URL url]
+  (-> url .getPath url-encode-illegal-characters))
+
 (defn parse-url
   "Parse a URL string into a map of interesting parts."
   [url]
@@ -181,7 +189,8 @@
      :server-name (.getHost url-parsed)
      :server-port (when-pos (.getPort url-parsed))
      :url url
-     :uri (url-encode-illegal-characters (.getPath url-parsed))
+     :uri (get-url-encoded-uri url-parsed)
+     :path (get-url-encoded-path url-parsed)
      :user-info (if-let [user-info (.getUserInfo url-parsed)]
                   (util/url-decode user-info))
      :query-string (url-encode-illegal-characters (.getQuery url-parsed))}))
@@ -190,14 +199,14 @@
   "Takes a map of url-parts and generates a string representation.
   WARNING: does not do any sort of encoding! Don't use this for strict RFC
   following!"
-  [{:keys [scheme server-name server-port uri user-info query-string]}]
+  [{:keys [scheme server-name server-port uri path user-info query-string]}]
   (str (name scheme) "://"
        (if (seq user-info)
          (str user-info "@" server-name)
          server-name)
        (when server-port
          (str ":" server-port))
-       uri
+       path
        (when (seq query-string)
          (str "?" query-string))))
 
