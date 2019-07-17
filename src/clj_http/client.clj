@@ -174,8 +174,8 @@
                      util/url-encode))))
 
 (defn get-url-encoded-uri
-  [^java.net.URL url]
-  (-> url .toURI str url-encode-illegal-characters))
+  [^String url]
+  (-> url url-encode-illegal-characters URL. .toURI str))
 
 (defn get-url-encoded-path
   [^java.net.URL url]
@@ -189,7 +189,7 @@
      :server-name (.getHost url-parsed)
      :server-port (when-pos (.getPort url-parsed))
      :url url
-     :uri (get-url-encoded-uri url-parsed)
+     :uri (get-url-encoded-uri url)
      :path (get-url-encoded-path url-parsed)
      :user-info (if-let [user-info (.getUserInfo url-parsed)]
                   (util/url-decode user-info))
