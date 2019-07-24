@@ -530,6 +530,12 @@ it's received (output coercion) from the server.
 (client/get "http://example.com/bigrequest.html" {:as :stream})
 ;; Note that the connection to the server will NOT be closed until the
 ;; stream has been read
+
+;; Return the body as a java.io.BufferedReader
+(client/get "http://example.com/bigrequest.html" {:as :reader})
+;; As above, the connection will remain open until the stream has been
+;; read.  The reader will attempt to respect the server-specified charset,
+;; if any, defaulting to UTF-8.
 #+END_SRC
 
 Output coercion with =:as :json=, =:as :json-strict=, =:as :json-strict-string-keys=, =:as :json-string-keys= or =:as :x-www-form-urlencoded= will only work with an optional dependency, see [[#optional-dependencies][Optional Dependencies]].
