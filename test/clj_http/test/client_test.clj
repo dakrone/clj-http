@@ -1208,6 +1208,21 @@
            (:body (client/coerce-response-body {:as :x-www-form-urlencoded}
                                                www-form-urlencoded-resp))))))
 
+(deftest t-reader-coercion
+  (let [read-lines (fn [reader] (vec (take-while not-empty (repeatedly #(.readLine reader)))))
+        reader-body (ByteArrayInputStream. (.getBytes "foo\nbar\n"))
+        reader-resp {:body reader-body :status 200 :headers {"content-type" "text/plain; charset=utf-8"}}
+        encoded-body (ByteArrayInputStream. (byte-array [0xA9]))
+        encoded-resp {:body encoded-body :status 200 :headers {"content-type" "text/plain; charset=iso-8859-1"}}
+        utf8-body (ByteArrayInputStream. (byte-array [0xC2 0xA9]))
+        utf8-resp {:body utf8-body :status 200 :headers {"content-type" "text/plain; charset=utf-8"}}]
+    (is (= ["foo" "bar"]
+           (read-lines (:body (client/coerce-response-body {:as :reader} reader-resp)))))
+
+    (is (= "©"
+           (.readLine (:body (client/coerce-response-body {:as :reader} encoded-resp)))
+           (.readLine (:body (client/coerce-response-body {:as :reader} utf8-resp)))))))
+
 (deftest ^:integration t-with-middleware
   (run-server)
   (is (:request-time (request {:uri "/get" :method :get})))

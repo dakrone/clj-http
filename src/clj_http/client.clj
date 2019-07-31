@@ -6,6 +6,7 @@
             [clj-http.headers :refer [wrap-header-map]]
             [clj-http.links :refer [wrap-links]]
             [clj-http.util :refer [opt] :as util]
+            [clojure.java.io :as io]
             [clojure.stacktrace :refer [root-cause]]
             [clojure.string :as str]
             [clojure.walk :refer [keywordize-keys prewalk]])
@@ -330,6 +331,17 @@
           ;; This shouldn't happen, but we plan for it anyway
           (instance? (Class/forName "[B") body)
           (assoc resp :body (ByteArrayInputStream. body)))))
+
+(defn- response-charset [response]
+  (or (-> response :content-type-params :charset)
+      "UTF-8"))
+
+(defmethod coerce-response-body :reader
+  [_ {:keys [body] :as resp}]
+  (let [header (get-in resp [:headers "content-type"])
+        parsed-values (util/parse-content-type header)
+        charset (response-charset parsed-values)]
+    (assoc resp :body (io/reader body :encoding charset))))
 
 (defn coerce-json-body
   [{:keys [coerce] :as request}
