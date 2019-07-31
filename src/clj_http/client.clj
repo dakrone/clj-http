@@ -444,6 +444,13 @@
   (or (-> response :content-type-params :charset)
       "UTF-8"))
 
+(defmethod coerce-response-body :reader
+  [_ {:keys [body] :as resp}]
+  (let [header (get-in resp [:headers "content-type"])
+        parsed-values (util/parse-content-type header)
+        charset (response-charset parsed-values)]
+    (assoc resp :body (io/reader body :encoding charset))))
+
 (defn- can-parse-body? [{:keys [coerce] :as request} {:keys [status] :as _response}]
   (or (= coerce :always)
       (and (unexceptional-status-for-request? request status)
