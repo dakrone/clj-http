@@ -474,8 +474,7 @@
           (case first-char
             -1 nil
             (do (.reset br)
-                (json-decode-stream br keyword?))))
-        (finally (.close br))))))
+                (json-decode-stream br keyword?))))))))
 
 (defn coerce-json-body
   [request {:keys [body] :as resp} keyword? strict? & [charset]]
