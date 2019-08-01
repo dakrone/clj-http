@@ -58,6 +58,9 @@
     [:get "/json-array"]
     {:status 200 :body "[\"foo\", \"bar\"]"
      :headers {"content-type" "application/json"}}
+    [:get "/json-large-array"]
+    {:status 200 :body (file "test-resources/big_array_json.json")
+     :headers {"content-type" "application/json"}}
     [:get "/json-bad"]
     {:status 400 :body "{\"foo\":\"bar\"}"}
     [:get "/redirect"]
@@ -427,7 +430,10 @@
 (deftest ^:integration t-json-output-coercion
   (run-server)
   (let [resp (client/get (localhost "/json") {:as :json})
-        resp-array (client/get (localhost "/json-array") {:as :json-strict})
+        resp-array (client/get (localhost "/json-array") {:as :json})
+        resp-array-strict (client/get (localhost "/json-array") {:as :json-strict})
+        resp-large-array (client/get (localhost "/json-large-array") {:as :json})
+        resp-large-array-strict (client/get (localhost "/json-large-array") {:as :json-strict})
         resp-str (client/get (localhost "/json")
                              {:as :json :coerce :exceptional})
         resp-str-keys (client/get (localhost "/json") {:as :json-string-keys})
@@ -445,6 +451,9 @@
     (is (= 200
            (:status resp)
            (:status resp-array)
+           (:status resp-array-strict)
+           (:status resp-large-array)
+           (:status resp-large-array-strict)
            (:status resp-str)
            (:status resp-str-keys)
            (:status resp-strict-str-keys)
@@ -458,7 +467,8 @@
            (:body resp-strict-str-keys)
            (:body resp-str-keys)))
     ;; '("foo" "bar") and ["foo" "bar"] compare as equal with =.
-    (is (vector? (:body resp-array)))
+    (is (seq? (:body resp-array)))
+    (is (vector? (:body resp-array-strict)))
     (is (= "{\"foo\":\"bar\"}" (:body resp-str)))
     (is (= 400
            (:status bad-resp)
@@ -467,7 +477,11 @@
     (is (= "{\"foo\":\"bar\"}" (:body bad-resp))
         "don't coerce on bad response status by default")
     (is (= {:foo "bar"} (:body bad-resp-json)))
-    (is (= "{\"foo\":\"bar\"}" (:body bad-resp-json2)))))
+    (is (= "{\"foo\":\"bar\"}" (:body bad-resp-json2)))
+
+    (testing "lazily parsed stream completes parsing."
+      (is (= 100 (count (:body resp-large-array)))))
+    (is (= 100 (count (:body resp-large-array-strict))))))
 
 (deftest ^:integration t-ipv6
   (run-server)
