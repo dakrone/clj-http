@@ -125,7 +125,11 @@
   (apply (ns-resolve (symbol "cheshire.core") (symbol "encode")) args))
 
 (defn ^:dynamic json-decode
-  "Resolve and apply cheshire's json decoding dynamically."
+  "Resolve and apply cheshire's json decoding dynamically.
+
+  This function will be removed in a future version. See `json-decide-strict` and `json-decode-stream`.
+  "
+  {:deprecated "3.11.0"}
   [& args]
   {:pre [json-enabled?]}
   (apply (ns-resolve (symbol "cheshire.core") (symbol "decode")) args))
