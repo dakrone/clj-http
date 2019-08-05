@@ -11,7 +11,7 @@
 List of user-visible changes that have gone into each release
 
 ** 3.10.1 (Unreleased)
-- TBD
+- JSON parsing is always strict. See [[file:README.org::*Incrementally%20JSON%20Parsing][README#Incrementally JSON Parsing]]. Requires cheshire > 5.9.0.
 ** 3.10.0
 - Add trust-manager and key-managers support to the client
   https://github.com/dakrone/clj-http/pull/469

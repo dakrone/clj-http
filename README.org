@@ -60,6 +60,7 @@
   - [[#proxies][Proxies]]
   - [[#custom-middleware][Custom Middleware]]
   - [[#modifying-apache-specific-features-of-the-httpclientbuilder-and-httpasyncclientbuilder][Modifying Apache-specific features of the =HttpClientBuilder= and =HttpAsyncClientBuilder=]]
+  - [[#incrementally-json-parsing][Incrementally JSON Parsing]]
 - [[#development][Development]]
   - [[#faking-responses][Faking Responses]]
   - [[#optional-dependencies][Optional Dependencies]]
@@ -71,7 +72,6 @@
 - [[#testimonials][Testimonials]]
 - [[#other-libraries-providing-middleware][Other Libraries Providing Middleware]]
 - [[#license][License]]
-
 
 * Branches
 :PROPERTIES:
@@ -545,7 +545,7 @@ it's received (output coercion) from the server.
 ;; if any, defaulting to UTF-8.
 #+END_SRC
 
-Output coercion with =:as :json=, =:as :json-strict=, =:as :json-strict-string-keys=, =:as :json-string-keys= or =:as :x-www-form-urlencoded= will only work with an optional dependency, see [[#optional-dependencies][Optional Dependencies]].
+Output coercion with =:as :json=, =:as :json-string-keys= or =:as :x-www-form-urlencoded=, will only work with an optional dependency, see [[#optional-dependencies][Optional Dependencies]].
 
 By default, JSON coercion is only applied when the response's status
 is considered "unexceptional". If the =:unexceptional-status= option
@@ -1398,6 +1398,38 @@ planner, cache, or cookie spec registry may find these overridden by
 clj-http's =:connection-manager=, =:redirect-strategy=,
 =:retry-handler=, =:cache=, or =:cookie-policy-registry= or
 =:cookie-spec=, respectively.
+
+** Incrementally JSON Parsing
+[[https://github.com/dakrone/cheshire][cheshire]] supports incrementally parsing JSON using lazy sequences. This approach can useful for
+processing large top-level JSON arrays because it doesn't require upfront work consuming the entire stream.
+
+#+begin_src clojure
+  (require '[cheshire.core :as json])
+
+  (defn print-all-pokemon-names [pokemons]
+    (for [pokemon pokemons]
+      (println (get-in pokemon [:name :english]))))
+
+  (let [url "https://raw.githubusercontent.com/fanzeyi/pokemon.json/master/pokedex.json"
+        response (get url {:as :reader})]
+    (with-open [reader (:body response)]  ; closes the underlying connection when we're done
+      (let [pokemons (json/parse-stream reader true)]
+        ; You must perform all reads from the stream inside `with-open`,
+        ; any , any lazy
+        (doall (print-all-pokemon-names pokemons)))))
+#+end_src
+
+Keep in mind that the =reader= object wraps a HTTP connection. The user needs to be aware of two
+things:
+
+1. The user should close the reader after processing the stream, otherwise the underlying HTTP
+   Connection may leak and create subtle bugs. Clojure's [[https://clojuredocs.org/clojure.core/with-open][with-open]] is useful here.
+
+2. You should realize any lazy sequences before closing the connection. Use [[https://clojuredocs.org/clojure.core/doall][doall]] or [[https://clojure.org/reference/transducers][transducers]] to
+   prevent bugs from lazy IO. See [[https://stuartsierra.com/2015/08/25/clojure-donts-lazy-effects][Clojure Don'ts: Lazy Effects]].
+
+In previous versions of =clj-http= (<= 3.10.0), =clj-http= defaulted to lazily parsing JSON, but this
+was slow and also confused users who didn't expect laziness.
 
 * Development
 :PROPERTIES:
