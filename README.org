@@ -1543,3 +1543,7 @@ Libraries inspired by clj-http:
 
 Released under the MIT License:
 <http://www.opensource.org/licenses/mit-license.php>
+
+# Local Variables:
+# fill-column: 100
+# End:
