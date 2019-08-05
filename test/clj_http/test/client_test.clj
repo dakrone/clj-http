@@ -1562,7 +1562,10 @@
         (is (thrown? AssertionError (client/coerce-response-body {:as :auto} json-resp))))
       (with-redefs [client/transit-enabled? false]
         (is (thrown? AssertionError (client/coerce-response-body {:as :transit+json} transit-json-resp)))
-        (is (thrown? AssertionError (client/coerce-response-body {:as :transit+msgpack} transit-msgpack-resp)))))))
+        (is (thrown? AssertionError (client/coerce-response-body {:as :transit+msgpack} transit-msgpack-resp))))
+      (with-redefs [client/ring-codec-enabled? false]
+        (is (thrown? AssertionError (client/coerce-response-body {:as :x-www-form-urlencoded} www-form-urlencoded-resp)))
+        (is (thrown? AssertionError (client/coerce-response-body {:as :auto} auto-www-form-urlencoded-resp)))))))
 
 (deftest t-reader-coercion
   (let [read-lines (fn [reader] (vec (take-while not-empty (repeatedly #(.readLine reader)))))
