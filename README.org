@@ -514,9 +514,7 @@ it's received (output coercion) from the server.
 
 ;; Coerce as json
 (client/get "http://example.com/foo.json" {:as :json})
-(client/get "http://example.com/foo.json" {:as :json-strict})
 (client/get "http://example.com/foo.json" {:as :json-string-keys})
-(client/get "http://example.com/foo.json" {:as :json-strict-string-keys})
 
 ;; Coerce as Transit encoded JSON or MessagePack
 (client/get "http://example.com/foo" {:as :transit+json})
