@@ -467,7 +467,7 @@
            (:body resp-strict-str-keys)
            (:body resp-str-keys)))
     ;; '("foo" "bar") and ["foo" "bar"] compare as equal with =.
-    (is (seq? (:body resp-array)))
+    (is (vector? (:body resp-array)))
     (is (vector? (:body resp-array-strict)))
     (is (= "{\"foo\":\"bar\"}" (:body resp-str)))
     (is (= 400
