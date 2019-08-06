@@ -641,7 +641,7 @@
     (is (= :http (:scheme resp)))
     (is (= "google.com" (:server-name resp)))
     (is (= 8080 (:server-port resp)))
-    (is (= "/baz%20foo" (:uri resp)))
+    (is (= "/baz%20foo" (:path resp)))
     (is (= "bar=bat%20bit?" (:query-string resp)))))
 
 (deftest apply-on-url
@@ -653,7 +653,7 @@
     (is (= :http (:scheme @resp)))
     (is (= "google.com" (:server-name @resp)))
     (is (= 8080 (:server-port @resp)))
-    (is (= "/baz%20foo" (:uri @resp)))
+    (is (= "/baz%20foo" (:path @resp)))
     (is (= "bar=bat%20bit?" (:query-string @resp)))
     (is (not (realized? exception)))))
 
@@ -1144,11 +1144,11 @@
 (deftest test-url-encode-path
   (is (= (client/url-encode-illegal-characters "?foo bar+baz[]75")
          "?foo%20bar+baz%5B%5D75"))
-  (is (= {:uri (str "/:@-._~!$&'()*+,="
-                    ";"
-                    ":@-._~!$&'()*+,"
-                    "="
-                    ":@-._~!$&'()*+,==")
+  (is (= {:path (str "/:@-._~!$&'()*+,="
+                     ";"
+                     ":@-._~!$&'()*+,"
+                     "="
+                     ":@-._~!$&'()*+,==")
           :query-string (str "/?:@-._~!$'()*+,;"
                              "="
                              "/?:@-._~!$'()*+,;==")}
@@ -1157,7 +1157,7 @@
                        (str "http://example.com/:@-._~!$&'()*+,=;:@-._~!$&'()*+"
                             ",=:@-._~!$&'()*+,==?/?:@-._~!$'()*+,;=/?:@-._~!$'("
                             ")*+,;==#/?:@-._~!$&'()*+,;="))
-                      [:uri :query-string])))
+                      [:path :query-string])))
   (let [all-chars (apply str (map char (range 256)))
         all-legal (client/url-encode-illegal-characters all-chars)]
     (is (= all-legal
