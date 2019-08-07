@@ -1,6 +1,6 @@
 language: clojure
 lein: lein
-script: lein all do clean, test
+script: lein all do clean, test :all
 branches:
   only:
     - 3.x
