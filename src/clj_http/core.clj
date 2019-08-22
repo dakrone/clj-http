@@ -563,6 +563,7 @@
             uri response-interceptor proxy-host proxy-port
             http-client-context http-request-config http-client
             proxy-ignore-hosts proxy-user proxy-pass digest-auth ntlm-auth
+            multipart-mode
             ; deprecated
             conn-timeout conn-request-timeout]
      :as req} respond raise]
