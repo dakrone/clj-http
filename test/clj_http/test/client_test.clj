@@ -90,6 +90,14 @@
     (is (= "get" (:body @resp)))
     (is (not (realized? exception))))
 
+  ;; roundtrip with error handling
+  (let [resp (promise)
+        exception (promise)
+        _ (request {:uri "/error" :method :get
+                    :scheme "http"
+                    :async? true} resp exception)]
+    (is (instance? Exception @exception)))
+
   (let [params {:a "1" :b "2"}]
     (doseq [[content-type read-fn]
             [[nil (comp parse-form-params slurp)]
@@ -110,6 +118,45 @@
         (is (= "close" (get-in @resp [:headers "connection"])))
         (is (= params (read-fn (:body @resp))))
         (is (not (realized? exception)))))))
+
+(deftest ^:integration roundtrip-async-future
+  (run-server)
+  ;; roundtrip with scheme as a keyword
+  (let [resp (request {:uri "/get" :method :get
+                       :async-future? true})]
+    (is (= 200 (:status @resp)))
+    (is (= "close" (get-in @resp [:headers "connection"])))
+    (is (= "get" (:body @resp))))
+  ;; roundtrip with scheme as a string
+  (let [resp (request {:uri "/get" :method :get
+                       :scheme "http"
+                       :async-future? true})]
+    (is (= 200 (:status @resp)))
+    (is (= "close" (get-in @resp [:headers "connection"])))
+    (is (= "get" (:body @resp))))
+  ;; error handling
+  (let [resp (request {:uri "/error" :method :get
+                       :async-future? true})]
+    (is (thrown? java.util.concurrent.ExecutionException
+          @resp)))
+
+  (let [params {:a "1" :b "2"}]
+    (doseq [[content-type read-fn]
+            [[nil (comp parse-form-params slurp)]
+             [:x-www-form-urlencoded (comp parse-form-params slurp)]
+             [:edn (comp read-string slurp)]
+             [:transit+json #(client/parse-transit % :json)]
+             [:transit+msgpack #(client/parse-transit % :msgpack)]]]
+      (let [resp (request {:uri "/post"
+                           :as :stream
+                           :method :post
+                           :content-type content-type
+                           :flatten-nested-keys []
+                           :form-params params
+                           :async-future? true})]
+        (is (= 200 (:status @resp)))
+        (is (= "close" (get-in @resp [:headers "connection"])))
+        (is (= params (read-fn (:body @resp))))))))
 
 (def ^:dynamic *test-dynamic-var* nil)
 

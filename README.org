@@ -29,6 +29,7 @@
   - [[#post][POST]]
   - [[#delete][DELETE]]
   - [[#async-http-request][Async HTTP Request]]
+    - [[#async-futures][Async Futures]]
     - [[#cancelling-requests][Cancelling Requests]]
   - [[#coercions][Coercions]]
     - [[#input-coercion][Input coercion]]
@@ -429,12 +430,22 @@ start an async request is easy, for example:
 
 All exceptions thrown during the request will be passed to the raise callback.
 
+*** Async Futures
+Alternatively, if you prefer working with Futures, you can get the async response in the shape of a Future:
+
+#+begin_src clojure
+(def fut (client/get "http://example.com" {:async-future? true}))
+@fut
+#+end_src
+
+Deref-ing the future will return the response map or throw a [[https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ExecutionException.html][ExecutionException]] on error.
+
 *** Cancelling Requests
 :PROPERTIES:
 :CUSTOM_ID: cancelling-requests
 :END:
 
-Calls to the http methods with =:async true= return an Apache [[https://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/org/apache/http/concurrent/BasicFuture.html][BasicFuture]] that you can call =.get=
+Calls to the http methods with =:async true or :async-future true= return an Apache [[https://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/org/apache/http/concurrent/BasicFuture.html][BasicFuture]] that you can call =.get=
 or =.cancel= on. See the Javadocs for =BasicFuture= [[https://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/org/apache/http/concurrent/BasicFuture.html][here]]. For instance:
 
 #+BEGIN_SRC clojure
