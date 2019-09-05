@@ -1168,12 +1168,26 @@
      (throw (IllegalArgumentException. "Host URL cannot be nil"))))
 
 (defn- request*
-  [req [respond raise]]
-  (if (opt req :async)
+  [req & [respond raise]]
+  {:pre [(not (and (:async req) (:async-future req)))]}
+  (cond
+    (opt req :async)
     (if (some nil? [respond raise])
       (throw (IllegalArgumentException.
               "If :async? is true, you must pass respond and raise"))
       (request (dissoc req :respond :raise) respond raise))
+
+    (opt req :async-future)
+    (let [basic-future (org.apache.http.concurrent.BasicFuture. nil)]
+      (request (-> req
+                   (dissoc :async-future)
+                   (assoc :async true
+                          :oncancel #(.cancel basic-future)))
+               #(.completed basic-future %)
+               #(.failed basic-future %))
+      basic-future)
+
+    :default
     (request req)))
 
 (defn get
