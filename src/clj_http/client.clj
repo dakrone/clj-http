@@ -1169,7 +1169,7 @@
 
 (defn- request*
   [req & [respond raise]]
-  {:pre [(not (and (:async req) (:async-future req)))]}
+  {:pre [(not (and (opt req :async) (opt req :async-future)))]}
   (cond
     (opt req :async)
     (if (some nil? [respond raise])
@@ -1180,7 +1180,7 @@
     (opt req :async-future)
     (let [basic-future (org.apache.http.concurrent.BasicFuture. nil)]
       (request (-> req
-                   (dissoc :async-future)
+                   (dissoc :async :async? :async-future :async-future?)
                    (assoc :async true
                           :oncancel #(.cancel basic-future)))
                #(.completed basic-future %)
