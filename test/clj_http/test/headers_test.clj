@@ -66,7 +66,13 @@
     (is (= "baz" (:foo (merge (header-map :foo "bar")
                               {"Foo" "baz"}))))
     (let [m-with-meta (with-meta m {:withmeta-test true})]
-      (is (= (:withmeta-test (meta m-with-meta)) true)))))
+      (is (= (:withmeta-test (meta m-with-meta)) true)))
+
+    (testing "select-keys"
+      (are [expected keyset] (= expected (select-keys m keyset))
+        {"foo" "bar"} ["foo"]
+        {"foo" "bar"} ["foo" "non-existent-key"]
+        {"foo" "bar" "Foo" "bar" :foo "bar"} ["foo" "Foo" :foo]))))
 
 (deftest test-empty
   (testing "an empty header-map is a header-map"
