@@ -323,6 +323,11 @@
                     (.setRedirectStrategy
                      (get-redirect-strategy req))
                     (add-retry-handler retry-handler)
+
+                    ;; prefer using clj-http.client/wrap-decompression
+                    ;; for consistency between sync/async client options
+                    (.disableContentCompression)
+
                     ;; By default, get the proxy settings
                     ;; from the jvm or system properties
                     (.setRoutePlanner
