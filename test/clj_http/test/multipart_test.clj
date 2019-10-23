@@ -176,6 +176,9 @@
         (is (= "testname" (.getFilename body)))))))
 
 (deftest test-multipart-content-charset
-  (testing "charset is nil for all multipart requests"
+  (testing "charset is nil if no multipart-charset is supplied"
     (let [mp-entity (create-multipart-entity [] nil)]
-      (is (nil? (EntityUtils/getContentCharSet mp-entity))))))
+      (is (nil? (EntityUtils/getContentCharSet mp-entity)))))
+  (testing "charset is set if a multipart-charset is supplied"
+    (let [mp-entity (create-multipart-entity [] {:multipart-charset "UTF-8"})]
+      (is (= "UTF-8" (EntityUtils/getContentCharSet mp-entity))))))
