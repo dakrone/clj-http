@@ -740,6 +740,23 @@
         "Headers should have included the new default headers")
     (is (not (realized? error)))))
 
+(deftest ^:integration test-custom-http-client-builder
+  (run-server)
+  (let [methods (atom nil)
+        resp (client/get
+              (localhost "/get")
+              {:http-client-builder
+               (-> (org.apache.http.impl.client.HttpClientBuilder/create)
+                   (.setRequestExecutor
+                    (proxy [org.apache.http.protocol.HttpRequestExecutor] []
+                      (execute [request connection context]
+                        (->> request
+                             .getRequestLine
+                             .getMethod
+                             (swap! methods conj))
+                        (proxy-super execute request connection context)))))})]
+    (is (= ["GET"] @methods))))
+
 (deftest ^:integration test-bad-redirects
   (run-server)
   (try
