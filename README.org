@@ -383,6 +383,15 @@ content encodings.
                                    :retry-handler (fn [ex try-count http-context]
                                                     (println "Got:" ex)
                                                     (if (> try-count 4) false true))})
+
+;; to handle a file with non-ascii filename, try :multipart-charset "UTF-8" and :multipart-mode BROWSER_COMPATIBLE
+;; see also: https://stackoverflow.com/questions/3393445/international-characters-in-filename-in-mutipart-formdata
+(import (org.apache.http.entity.mime HttpMultipartMode))
+
+(client/post "http://example.org" {:multipart [{:content (clojure.java.io/file "日本語.txt")}]
+                                   :multipart-mode HttpMultipartMode/BROWSER_COMPATIBLE
+                                   :multipart-charset "UTF-8"} )
+
 #+END_SRC
 
 A word about flattening nested =:query-params= and =:form-params= maps. There are essentially three
