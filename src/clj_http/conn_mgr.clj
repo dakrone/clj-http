@@ -2,12 +2,13 @@
   "Utility methods for Scheme registries and HTTP connection managers"
   (:require [clj-http.util :refer [opt]]
             [clojure.java.io :as io])
-  (:import (java.net Socket Proxy Proxy$Type InetSocketAddress)
+  (:import (java.net Socket Proxy Proxy$Type InetAddress InetSocketAddress)
            (java.security KeyStore)
            (javax.net.ssl KeyManager
                           TrustManager)
            (org.apache.http.config RegistryBuilder Registry SocketConfig)
-           (org.apache.http.conn HttpClientConnectionManager)
+           (org.apache.http.conn HttpClientConnectionManager
+                                 DnsResolver)
            (org.apache.http.conn.ssl DefaultHostnameVerifier
                                      NoopHostnameVerifier
                                      SSLConnectionSocketFactory
@@ -15,7 +16,8 @@
                                      TrustStrategy)
            (org.apache.http.conn.socket PlainConnectionSocketFactory)
            (org.apache.http.impl.conn BasicHttpClientConnectionManager
-                                      PoolingHttpClientConnectionManager)
+                                      PoolingHttpClientConnectionManager
+                                      SystemDefaultDnsResolver)
            (org.apache.http.impl.nio.conn PoolingNHttpClientConnectionManager)
            (javax.net.ssl SSLContext HostnameVerifier)
            (org.apache.http.nio.conn NHttpClientConnectionManager)
@@ -53,6 +55,20 @@
 
 (def ^:private ^SSLIOSessionStrategy secure-strategy
   (SSLIOSessionStrategy/getDefaultStrategy))
+
+(defn- dns-custom-resolver
+  "Given a map with a string hostname key and a byte array ip address vector [10 10 22 1] {"foobar.com" [127 0 0 1] ...}
+   and when the :custom-dns-resolver is added to the options use the function to override normal DNS resolution. Useful when
+   testing when you dont have write permissions to a /etc/hosts file and you need to use TLS with SNI (server name indication).
+   Uses the system resolver if the :server-name is not found in the supplied map."
+  [host-map]
+  (reify
+    DnsResolver
+    (^"[Ljava.net.InetAddress;" resolve [this ^String host]
+     (println "hostmap:" host-map "host:" host)
+     (if (contains? host-map host)
+       (into-array [(InetAddress/getByAddress host (byte-array (get host-map host)))])
+       (.resolve (SystemDefaultDnsResolver.) host)))))
 
 (defn ^SSLConnectionSocketFactory SSLGenericSocketFactory
   "Given a function that returns a new socket, create an
@@ -232,20 +248,26 @@
       get-custom-strategy-registry))
 
 (defn ^BasicHttpClientConnectionManager make-regular-conn-manager
-  [{:keys [keystore trust-store
+  [{:keys [custom-dns-resolver
+           keystore trust-store
            key-managers trust-managers
            socket-timeout] :as req}]
   (let [conn-manager (cond
                        (or key-managers trust-managers)
-                       (BasicHttpClientConnectionManager. (get-managers-scheme-registry req))
+                       (BasicHttpClientConnectionManager. (get-managers-scheme-registry req)
+                                                          nil nil
+                                                          (when custom-dns-resolver (dns-custom-resolver custom-dns-resolver)))
 
                        (or keystore trust-store)
-                       (BasicHttpClientConnectionManager. (get-keystore-scheme-registry req))
+                       (BasicHttpClientConnectionManager. (get-keystore-scheme-registry req)
+                                                          nil nil
+                                                          (when custom-dns-resolver (dns-custom-resolver custom-dns-resolver)))
 
                        (opt req :insecure) (BasicHttpClientConnectionManager.
                                             @insecure-scheme-registry)
 
-                       :else (BasicHttpClientConnectionManager. regular-scheme-registry))]
+                       :else (BasicHttpClientConnectionManager. regular-scheme-registry nil nil
+                                                                (when custom-dns-resolver (dns-custom-resolver custom-dns-resolver))))]
     (when socket-timeout
       (.setSocketConfig conn-manager
                         (-> (.getSocketConfig conn-manager)
