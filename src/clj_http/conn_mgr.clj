@@ -57,7 +57,7 @@
   (SSLIOSessionStrategy/getDefaultStrategy))
 
 (defn- dns-custom-resolver
-  "Given a map with a string hostname key and a byte array ip address vector [10 10 22 1] {"foobar.com" [127 0 0 1] ...}
+  "Given a map with a string hostname key and a byte array ip address vector [10 10 22 1] {\"foobar.com\" [127 0 0 1] ...}
    and when the :custom-dns-resolver is added to the options use the function to override normal DNS resolution. Useful when
    testing when you dont have write permissions to a /etc/hosts file and you need to use TLS with SNI (server name indication).
    Uses the system resolver if the :server-name is not found in the supplied map."
@@ -65,7 +65,6 @@
   (reify
     DnsResolver
     (^"[Ljava.net.InetAddress;" resolve [this ^String host]
-     (println "hostmap:" host-map "host:" host)
      (if (contains? host-map host)
        (into-array [(InetAddress/getByAddress host (byte-array (get host-map host)))])
        (.resolve (SystemDefaultDnsResolver.) host)))))
