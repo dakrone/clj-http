@@ -180,7 +180,7 @@
 (deftest ^:integration custom-dns-resolver-ipv6
   (run-server)
   (let [resp (request {:request-method :get :uri "/get"
-                       :server-name "foo.bar.com"
+                       :server-name "foo.bar.ipv6"
                        :custom-dns-resolver {"foo.bar.ipv6" [0 0 0 0 0 0 0 1]}})]
     (is (= 200 (:status resp)))
     (is (= "get" (slurp-body resp)))))
