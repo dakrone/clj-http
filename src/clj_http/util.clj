@@ -44,7 +44,10 @@
   (when b
     (cond
       (instance? InputStream b)
-      (GZIPInputStream. b)
+      (try 
+        (GZIPInputStream. b)
+        (catch java.io.EOFException e
+          nil))
       :else
       (IOUtils/toByteArray (GZIPInputStream. (ByteArrayInputStream. b))))))
 
