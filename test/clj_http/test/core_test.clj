@@ -9,7 +9,7 @@
             [clojure.test :refer :all]
             [ring.adapter.jetty :as ring])
   (:import (java.io ByteArrayInputStream)
-           (java.net SocketTimeoutException)
+           (java.net NetworkInterface SocketTimeoutException)
            (java.util.concurrent TimeoutException TimeUnit)
            (org.apache.http.params CoreConnectionPNames CoreProtocolPNames)
            (org.apache.http.message BasicHeader BasicHeaderIterator)
@@ -177,13 +177,26 @@
     (is (= 200 (:status resp)))
     (is (= "get" (slurp-body resp)))))
 
+(defn ipv6-interfaces
+  "Return # of IPv6 interfaces"
+  []
+  (->> (enumeration-seq (NetworkInterface/getNetworkInterfaces))
+       (map #(.getInterfaceAddresses %))
+       (apply concat)
+       (map #(.getAddress %))
+       (filter #(instance? java.net.Inet6Address %))
+       (count)))
+
 (deftest ^:integration custom-dns-resolver-ipv6
-  (run-server)
-  (let [resp (request {:request-method :get :uri "/get"
-                       :server-name "foo.bar.ipv6"
-                       :custom-dns-resolver {"foo.bar.ipv6" [0 0 0 0 0 0 0 1]}})]
-    (is (= 200 (:status resp)))
-    (is (= "get" (slurp-body resp)))))
+  (if (<= 0 (ipv6-interfaces))
+    (println "IPv6 not enabled, skipping custom-dns-resolver-ipv6 test.")
+    (do
+      (run-server)
+      (let [resp (request {:request-method :get :uri "/get"
+                           :server-name "foo.bar.ipv6"
+                           :custom-dns-resolver {"foo.bar.ipv6" [0 0 0 0 0 0 0 1]}})]
+        (is (= 200 (:status resp)))
+        (is (= "get" (slurp-body resp)))))))
 
 (deftest ^:integration save-request-option
   (run-server)
