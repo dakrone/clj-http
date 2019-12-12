@@ -177,6 +177,14 @@
     (is (= 200 (:status resp)))
     (is (= "get" (slurp-body resp)))))
 
+(deftest ^:integration custom-dns-resolver-ipv6
+  (run-server)
+  (let [resp (request {:request-method :get :uri "/get"
+                       :server-name "foo.bar.com"
+                       :custom-dns-resolver {"foo.bar.ipv6" [0 0 0 0 0 0 0 1]}})]
+    (is (= 200 (:status resp)))
+    (is (= "get" (slurp-body resp)))))
+
 (deftest ^:integration save-request-option
   (run-server)
   (let [resp (request {:request-method :post
