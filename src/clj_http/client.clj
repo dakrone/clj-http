@@ -466,7 +466,7 @@
     (let [^BufferedReader br (io/reader (util/force-stream body))]
       (try
         (.mark br 1)
-        (let [^int first-char (try (.read br) (catch EOFException _ -1))]
+        (let [first-char (int (try (.read br) (catch EOFException _ -1)))]
           (case first-char
             -1 nil
             (do (.reset br)
