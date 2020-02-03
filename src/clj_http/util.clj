@@ -71,7 +71,7 @@
   (if (instance? InputStream b)
     (let [^PushbackInputStream bs (PushbackInputStream. b)]
       (try
-        (let [^int first-byte (try (.read bs) (catch EOFException _ -1))]
+        (let [first-byte (int (try (.read bs) (catch EOFException _ -1)))]
           (case first-byte
             -1 (byte-array 0)
             (do (.unread bs first-byte)
@@ -85,7 +85,7 @@
   (if (instance? InputStream s)
     (let [^PushbackInputStream bs (PushbackInputStream. s)]
       (try
-        (let [^int first-byte (try (.read bs) (catch EOFException _ -1))]
+        (let [first-byte (int (try (.read bs) (catch EOFException _ -1)))]
           (case first-byte
             -1 ""
             (do (.unread bs first-byte)
