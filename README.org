@@ -1265,7 +1265,7 @@ manager must be used.
 
 ;; You can also build your own, using clj-http's helper or manually building it:
 (let [cm (conn/make-reusable-conn-manager {})
-      hclient (core/build-http-client {} cm "https://example.com" false)]
+      hclient (core/build-http-client {} false cm)]
   (client/get "http://example.com/1"
               {:connection-manager cm :http-client hclient})
   (client/get "http://example.com/2"
@@ -1275,7 +1275,7 @@ manager must be used.
 
 ;; Async http clients may also be created and re-used:
 (let [acm (conn/make-reuseable-async-conn-manager {})
-      ahclient (core/build-async-http-client {} acm "https://example.com" false)]
+      ahclient (core/build-async-http-client {} acm)]
   (client/get "http://example.com/1"
               {:connection-manager cm :http-client ahclient}
               handle-response handle-failure)
