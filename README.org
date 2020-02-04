@@ -550,7 +550,7 @@ it's received (output coercion) from the server.
 Output coercion with =:as :json=, =:as :json-strict=, =:as :json-strict-string-keys=, =:as :json-string-keys= or =:as :x-www-form-urlencoded= will only work with an optional dependency, see [[#optional-dependencies][Optional Dependencies]].
 
 By default, JSON coercion is only applied when the response's status
-is considered "unexceptional". If the =:unexeceptional-status= option
+is considered "unexceptional". If the =:unexceptional-status= option
 is provided, then its value is a function which specifies what status
 codes are unexceptional. =:unexceptional-status= defaults to
 =clj-http.client/unexceptional-status?=.
@@ -876,7 +876,7 @@ HTTP responses other than =#{200 201 202 203 204 205 206 207 300 301 302 303 304
 ;; Or ignore an unknown host (methods return 'nil' if this is set to
 ;; true and the host does not exist:
 (client/get "http://example.invalid" {:ignore-unknown-host? true})
-;; Or customize the http statuses that will throw:
+;; Or customize the http statuses that will not throw:
 (client/get "http://example.com/broken" {:unexceptional-status #(<= 200 % 299)})
 #+END_SRC
 
