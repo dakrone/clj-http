@@ -122,7 +122,7 @@ function.
 With Leiningen/Boot:
 
 #+BEGIN_SRC clojure
-[clj-http "3.10.0"]
+[clj-http "3.10.1"]
 #+END_SRC
 
 If you need an older version, a 2.x release is also available.
@@ -731,6 +731,9 @@ NOTE: The options =:force-redirects= and =:follow-redirects= (present in clj-htt
 used). You can use =:graceful= to mostly emulate the old redirect behaviour.
 
 *** How to create a custom RedirectStrategy
+:PROPERTIES:
+:CUSTOM_ID: h:a3b8b124-411f-4c4c-ac4b-777624e76bf1
+:END:
 As mentioned earlier, it's possible to pass a custom instance of RedirectStrategy. The snippet below shows how to create a custom =RedirectStrategy= by wrapping the default strategy.
 
 #+begin_src clojure
@@ -1400,6 +1403,9 @@ clj-http's =:connection-manager=, =:redirect-strategy=,
 =:cookie-spec=, respectively.
 
 ** Incrementally JSON Parsing
+:PROPERTIES:
+:CUSTOM_ID: h:b01c16e8-7179-468e-8890-316939ec0e38
+:END:
 [[https://github.com/dakrone/cheshire][cheshire]] supports incrementally parsing JSON using lazy sequences. This approach can useful for
 processing large top-level JSON arrays because it doesn't require upfront work consuming the entire stream.
 
