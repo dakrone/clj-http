@@ -128,20 +128,7 @@
   "Resolve and apply cheshire's json decoding dynamically."
   [& args]
   {:pre [json-enabled?]}
-  (apply (ns-resolve (symbol "cheshire.core") (symbol "decode")) args))
-
-(defn ^:dynamic json-decode-strict
-  "Resolve and apply cheshire's json decoding dynamically (with lazy parsing
-  disabled)."
-  [& args]
-  {:pre [json-enabled?]}
-  (apply (ns-resolve (symbol "cheshire.core") (symbol "decode-strict")) args))
-
-(defn ^:dynamic json-decode-stream
-  "Resolve and apply cheshire's json stream decoding dynamically."
-  [& args]
-  {:pre [json-enabled?]}
-  (apply (ns-resolve (symbol "cheshire.core") (symbol "decode-stream")) args))
+  (apply (ns-resolve (symbol "cheshire.core") (symbol "parse-stream-strict")) args))
 
 (defn ^:dynamic form-decode
   "Resolve and apply ring-codec's form decoding dynamically."
@@ -459,26 +446,23 @@
       (and (not (unexceptional-status-for-request? request status))
            (= coerce :exceptional))))
 
-(defn- decode-json-body [body keyword? strict? charset]
-  (if strict?
-    ;; OPTIMIZE: When/if Cheshire gets a parse-stream-strict this won't need to go through String:
-    (json-decode-strict (util/force-string body charset) keyword?)
-    (let [^BufferedReader br (io/reader (util/force-stream body))]
-      (try
-        (.mark br 1)
-        (let [first-char (int (try (.read br) (catch EOFException _ -1)))]
-          (case first-char
-            -1 nil
-            (do (.reset br)
-                (json-decode-stream br keyword?))))
-        (finally (.close br))))))
+(defn- decode-json-body [body keyword? charset]
+  (let [^BufferedReader br (io/reader (util/force-stream body))]
+    (try
+      (.mark br 1)
+      (let [^int first-char (try (.read br) (catch EOFException _ -1))]
+        (case first-char
+          -1 nil
+          (do (.reset br)
+              (json-decode br keyword?))))
+      (finally (.close br)))))
 
 (defn coerce-json-body
-  [request {:keys [body] :as resp} keyword? strict? & [charset]]
+  [request {:keys [body] :as resp} keyword? & [charset]]
   {:pre [json-enabled?]}
   (let [charset (or charset (response-charset resp))
         body (if (can-parse-body? request resp)
-               (decode-json-body body keyword? strict? charset)
+               (decode-json-body body keyword? charset)
                (util/force-string body charset))]
     (assoc resp :body body)))
 
@@ -540,16 +524,20 @@
          (coerce-content-type request))))
 
 (defmethod coerce-response-body :json [req resp]
-  (coerce-json-body req resp true false))
-
-(defmethod coerce-response-body :json-strict [req resp]
-  (coerce-json-body req resp true true))
-
-(defmethod coerce-response-body :json-strict-string-keys [req resp]
-  (coerce-json-body req resp false true))
+  (coerce-json-body req resp true))
 
 (defmethod coerce-response-body :json-string-keys [req resp]
-  (coerce-json-body req resp false false))
+  (coerce-json-body req resp false))
+
+;; There is no longer any distinction between strict and non-strict JSON parsing
+;; options.
+;;
+;; `:json-strict` and `:json-strict-string-keys` will be removed in a future version
+(defmethod coerce-response-body :json-strict [req resp]
+  (coerce-json-body req resp true))
+
+(defmethod coerce-response-body :json-strict-string-keys [req resp]
+  (coerce-json-body req resp false))
 
 (defmethod coerce-response-body :clojure [req resp]
   (coerce-clojure-body req resp))

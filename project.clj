@@ -18,7 +18,7 @@
                  [potemkin "0.4.5"]]
   :resource-paths ["resources"]
   :profiles {:dev {:dependencies [;; optional deps
-                                  [cheshire "5.8.1"]
+                                  [cheshire "5.9.0"]
                                   [crouton "0.1.2" :exclusions [[org.jsoup/jsoup]]]
                                   [org.jsoup/jsoup "1.11.3"]
                                   [org.clojure/tools.reader "1.3.2"]
