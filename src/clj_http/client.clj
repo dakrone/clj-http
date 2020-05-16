@@ -1112,6 +1112,15 @@
   Automatically bound when `with-middleware` is used."
   default-middleware)
 
+(defn- async-future [client req]
+  (let [fut     (org.apache.http.concurrent.BasicFuture. nil)
+        respond #(.completed fut %)
+        raise   #(.failed fut %)
+        cancel  #(.cancel fut)
+        req     (assoc req :async true :oncancel cancel)]
+    (client req respond raise)
+    fut))
+
 (defn- async-transform
   [client]
   (fn
@@ -1122,6 +1131,9 @@
          (when (some nil? [respond raise])
            (throw (IllegalArgumentException. "If :async? is true, you must pass respond and raise")))
          (client req respond raise))
+
+       (opt req :async-future)
+       (async-future client (dissoc req :async-future :async-future?))
 
        :else
        (client req)))
