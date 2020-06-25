@@ -49,10 +49,10 @@
      (SSLIOSessionStrategy. ^SSLContext context ^HostnameVerifier verifier))))
 
 (def ^:private ^SSLConnectionSocketFactory secure-ssl-socket-factory
-  (SSLConnectionSocketFactory/getSocketFactory))
+  (delay (SSLConnectionSocketFactory/getSocketFactory)))
 
 (def ^:private ^SSLIOSessionStrategy secure-strategy
-  (SSLIOSessionStrategy/getDefaultStrategy))
+  (delay (SSLIOSessionStrategy/getDefaultStrategy)))
 
 (defn ^SSLConnectionSocketFactory SSLGenericSocketFactory
   "Given a function that returns a new socket, create an
@@ -178,16 +178,16 @@
        (.build))))
 
 (def ^:private regular-scheme-registry
-  (-> (RegistryBuilder/create)
-      (.register "http" (PlainConnectionSocketFactory/getSocketFactory))
-      (.register "https" secure-ssl-socket-factory)
-      (.build)))
+  (delay (-> (RegistryBuilder/create)
+             (.register "http" (PlainConnectionSocketFactory/getSocketFactory))
+             (.register "https" @secure-ssl-socket-factory)
+             (.build))))
 
 (def ^:private regular-strategy-registry
-  (-> (RegistryBuilder/create)
-      (.register "http" NoopIOSessionStrategy/INSTANCE)
-      (.register "https" secure-strategy)
-      (.build)))
+  (delay (-> (RegistryBuilder/create)
+             (.register "http" NoopIOSessionStrategy/INSTANCE)
+             (.register "https" @secure-strategy)
+             (.build))))
 
 (defn ^Registry get-custom-scheme-registry
   [{:keys [context verifier]}]
@@ -245,7 +245,7 @@
                        (opt req :insecure) (BasicHttpClientConnectionManager.
                                             @insecure-scheme-registry)
 
-                       :else (BasicHttpClientConnectionManager. regular-scheme-registry))]
+                       :else (BasicHttpClientConnectionManager. @regular-scheme-registry))]
     (when socket-timeout
       (.setSocketConfig conn-manager
                         (-> (.getSocketConfig conn-manager)
@@ -286,7 +286,7 @@
                              (opt req :insecure)
                              @insecure-strategy-registry
 
-                             :else regular-strategy-registry)
+                             :else @regular-strategy-registry)
         io-reactor (make-ioreactor {:shutdown-grace-period 1})]
     (doto (PoolingNHttpClientConnectionManager. io-reactor registry)
       (.setMaxTotal 1))))
@@ -312,7 +312,7 @@
                    (or keystore trust-store)
                    (get-keystore-scheme-registry config)
 
-                   :else regular-scheme-registry)]
+                   :else @regular-scheme-registry)]
     (PoolingHttpClientConnectionManager.
      registry nil nil nil timeout java.util.concurrent.TimeUnit/SECONDS)))
 
@@ -375,7 +375,7 @@
                    (or keystore trust-store)
                    (get-keystore-scheme-registry config)
 
-                   :else regular-strategy-registry)
+                   :else @regular-strategy-registry)
         io-reactor (make-ioreactor io-config)
         protocol-handler (HttpAsyncRequestExecutor.)
         io-event-dispatch (DefaultHttpClientIODispatch. protocol-handler
