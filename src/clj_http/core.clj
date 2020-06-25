@@ -485,27 +485,29 @@
 (defn- print-debug!
   "Print out debugging information to *out* for a given request."
   [{:keys [debug-body body] :as req} http-req]
-  (println "Request:" (type body))
-  (clojure.pprint/pprint
-   (assoc req
-          :body (if (opt req :debug-body)
-                  (cond
-                    (isa? (type body) String)
-                    body
+  (println
+   (with-out-str
+     (println "Request:" (type body))
+     (clojure.pprint/pprint
+      (assoc req
+             :body (if (opt req :debug-body)
+                     (cond
+                       (isa? (type body) String)
+                       body
 
-                    (isa? (type body) HttpEntity)
-                    (let [baos (ByteArrayOutputStream.)]
-                      (.writeTo ^HttpEntity body baos)
-                      (.toString baos "UTF-8"))
+                       (isa? (type body) HttpEntity)
+                       (let [baos (ByteArrayOutputStream.)]
+                         (.writeTo ^HttpEntity body baos)
+                         (.toString baos "UTF-8"))
 
-                    :else nil)
-                  (if (isa? (type body) String)
-                    (format "... %s bytes ..."
-                            (count body))
-                    (and body (bean body))))
-          :body-type (type body)))
-  (println "HttpRequest:")
-  (clojure.pprint/pprint (bean http-req)))
+                       :else nil)
+                     (if (isa? (type body) String)
+                       (format "... %s bytes ..."
+                               (count body))
+                       (and body (bean body))))
+             :body-type (type body)))
+     (println "HttpRequest:")
+     (clojure.pprint/pprint (bean http-req)))))
 
 (defn- build-response-map
   [^HttpResponse response req ^HttpUriRequest http-req http-url
