@@ -1437,6 +1437,48 @@ things:
 In previous versions of =clj-http= (<= 3.10.0), =clj-http= defaulted to lazily parsing JSON, but this
 was slow and also confused users who didn't expect laziness.
 
+** DNS Resolution
+
+Users may add their own DNS resolver function to override the OS provided DNS resolver. This is useful in situations where you are unable to change the name to IP Address mapping. It is analogus to the --reslove flag present in cUrl. This example uses the org.apache.http.impl.conn.InMemoryDnsResolver to allow resolution of example.com to IP Address 127.0.0.1. 
+
+#+BEGIN_SRC clojure
+(client/get "https://example.com" {:keystore "/path/to/keystore.ks"
+                                   :keystore-type "jks" ; default: jks
+                                   :keystore-pass "secretpass"
+                                   :trust-store "/path/to/trust-store.ks"
+                                   :trust-store-type "jks" ; default jks
+                                   :trust-store-pass "trustpass"
+                                   :dns-resolver (doto (InMemoryDnsResolver.)
+                                                   (.add "example.com" (into-array[(InetAddress/getByAddress (byte-array [127 0 0 1]))])))})
+#+END_SRC
+
+This option is supported for all of the connection managers. You are free to implement any DnsResolver function you like. Here is a more Clojuresq example of a DnsResolver that attempts to look up the hostname in the supplied map and if it is not found passes it on to the system DNS resolver. Note how IPV6 addresses are specified.
+
+#+BEGIN_SRC clojure
+(defn custom-dns-resolver
+  "Given a map with a string hostname key and a byte array ip address vector [10 10 22 1] {\"foobar.com\" [127 0 0 1] ...}
+   and when the :custom-dns-resolver is added to the options use the function to override normal DNS resolution. Useful when
+   testing when you dont have write permissions to a /etc/hosts file and you need to use TLS with SNI (server name indication).
+   Uses the system resolver if the :server-name is not found in the supplied map."
+  [host-map]
+  (reify
+    DnsResolver
+    (^"[Ljava.net.InetAddress;" resolve [this ^String host]
+     (if (contains? host-map host)
+       (into-array [(InetAddress/getByAddress host (byte-array (get host-map host)))])
+       (.resolve (SystemDefaultDnsResolver.) host)))))Editing clj-http_README.org at 3.x · fhitchen_clj-http
+       
+(client/get "https://example.com" {:keystore "/path/to/keystore.ks"
+                                   :keystore-type "jks" ; default: jks
+                                   :keystore-pass "secretpass"
+                                   :trust-store "/path/to/trust-store.ks"
+                                   :trust-store-type "jks" ; default jks
+                                   :trust-store-pass "trustpass"
+                                   :dns-resolver (custom-dns-resolver {"example.com" [127 0 0 1]
+                                                                       "www.google.com" [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1]})})
+#+END_SRC
+       
+
 * Development
 :PROPERTIES:
 :CUSTOM_ID: h-65bbf017-2e8b-4c43-824b-24b89cc27a70
