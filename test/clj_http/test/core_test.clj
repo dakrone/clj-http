@@ -9,7 +9,7 @@
             [clojure.test :refer :all]
             [ring.adapter.jetty :as ring])
   (:import (java.io ByteArrayInputStream)
-           (java.net SocketTimeoutException)
+           (java.net InetAddress NetworkInterface SocketTimeoutException)
            (java.util.concurrent TimeoutException TimeUnit)
            (org.apache.http.params CoreConnectionPNames CoreProtocolPNames)
            (org.apache.http.message BasicHeader BasicHeaderIterator)
@@ -17,6 +17,7 @@
            (org.apache.http.client.protocol HttpClientContext)
            (org.apache.http.client.config RequestConfig)
            (org.apache.http.client.params CookiePolicy ClientPNames)
+           (org.apache.http.conn DnsResolver)
            (org.apache.http.conn.util PublicSuffixMatcherLoader)
            (org.apache.http.cookie CommonCookieAttributeHandler)
            (org.apache.http HttpRequest HttpResponse HttpConnection
@@ -25,6 +26,7 @@
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.impl.cookie RFC6265CookieSpec RFC6265CookieSpecProvider
                                         RFC6265CookieSpecProvider$CompatibilityLevel)
+           (org.apache.http.impl.conn InMemoryDnsResolver SystemDefaultDnsResolver)
            (org.apache.http.client.params ClientPNames)
            (org.apache.logging.log4j LogManager)
            (sun.security.provider.certpath SunCertPathBuilderException)))
@@ -171,6 +173,108 @@
   (let [resp (request {:request-method :get :uri "/get"})]
     (is (= 200 (:status resp)))
     (is (= "get" (slurp-body resp)))))
+
+(deftest ^:integration dns-resolver
+  (run-server)
+  (let [resp (request {:request-method :get :uri "/get"
+                       :server-name "foo.bar.com"
+                       :dns-resolver (doto (InMemoryDnsResolver.)
+                                       (.add "foo.bar.com" (into-array[(InetAddress/getByAddress (byte-array [127 0 0 1]))])))})]
+    (is (= 200 (:status resp)))
+    (is (= "get" (slurp-body resp)))))
+
+(deftest ^:integration dns-resolver-reusable-connection-manager
+  (run-server)
+  (let [cm (conn/make-reuseable-async-conn-manager {:dns-resolver (doto (InMemoryDnsResolver.)
+                                                                    (.add "totallynonexistant.google.com" (into-array[(InetAddress/getByAddress (byte-array [127 0 0 1]))])))})
+        hc (core/build-async-http-client {} cm)]
+    (client/get "http://totallynonexistant.google.com:18080/json"
+                {:connection-manager cm
+                 :http-client hc
+                 :as :json
+                 :async true}
+                (fn [resp]
+                  (is (= 200 (:status resp)))
+                  (is (= {:foo "bar"} (:body resp))))
+                (fn [e] (is false (str "failed with " e)))))
+  (let [cm (conn/make-reusable-conn-manager {:dns-resolver (doto (InMemoryDnsResolver.)
+                                                             (.add "nonexistant.google.com" (into-array[(InetAddress/getByAddress (byte-array [127 0 0 1]))])))})
+        hc (:http-client (client/get "http://nonexistant.google.com:18080/get"
+                                     {:connection-manager cm}))
+        resp (client/get "http://nonexistant.google.com:18080/json"
+                         {:connection-manager cm
+                          :http-client hc
+                          :as :json})]
+    (is (= 200 (:status resp)))
+    (is (= {:foo "bar"} (:body resp)))))
+        
+(deftest ^:integration dns-resolver-insecure
+  (run-server)
+  (let [resp (request {:request-method :get :uri "/get"
+                       :server-name "foo.bar.com"
+                       :insecure true
+                       :dns-resolver (doto (InMemoryDnsResolver.)
+                                       (.add "foo.bar.com" (into-array[(InetAddress/getByAddress (byte-array [127 0 0 1]))])))})]
+    (is (= 200 (:status resp)))
+    (is (= "get" (slurp-body resp)))))
+
+(defn custom-dns-resolver
+  "Given a map with a string hostname key and a byte array ip address vector [10 10 22 1] {\"foobar.com\" [127 0 0 1] ...}
+   and when the :custom-dns-resolver is added to the options use the function to override normal DNS resolution. Useful when
+   testing when you dont have write permissions to a /etc/hosts file and you need to use TLS with SNI (server name indication).
+   Uses the system resolver if the :server-name is not found in the supplied map."
+  [host-map]
+  (reify
+    DnsResolver
+    (^"[Ljava.net.InetAddress;" resolve [this ^String host]
+     (if (contains? host-map host)
+       (into-array [(InetAddress/getByAddress host (byte-array (get host-map host)))])
+       (.resolve (SystemDefaultDnsResolver.) host)))))
+
+(deftest ^:integration dns-resolver-custom
+  (run-server)
+  (let [resp (request {:request-method :get :uri "/get"
+                       :server-name "foo.bar.com"
+                       :insecure true
+                       :dns-resolver (custom-dns-resolver {"foo.bar.com" [127 0 0 1]
+                                                           "www.google.com" [127 0 0 1]})})]
+    (is (= 200 (:status resp)))
+    (is (= "get" (slurp-body resp)))))
+
+
+
+(defn ipv6-interfaces
+  "Return # of IPv6 interfaces"
+  []
+  (->> (enumeration-seq (NetworkInterface/getNetworkInterfaces))
+       (map #(.getInterfaceAddresses %))
+       (apply concat)
+       (map #(.getAddress %))
+       (filter #(instance? java.net.Inet6Address %))
+       (count)))
+
+(deftest ^:integration dns-resolver-ipv6
+  (if (<= (ipv6-interfaces) 0)
+    (println "IPv6 not enabled, skipping custom-dns-resolver-ipv6 test.")
+    (do
+      (run-server)
+      (let [resp (request {:request-method :get :uri "/get"
+                           :server-name "foo.bar.ipv6"
+                           :dns-resolver (doto (InMemoryDnsResolver.)
+                                           (.add "foo.bar.ipv6" (into-array[(InetAddress/getByAddress (byte-array [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1]))])))})]
+        (is (= 200 (:status resp)))
+        (is (= "get" (slurp-body resp)))))))
+
+(deftest ^:integration dns-resolver-ipv6-custom
+  (if (<= (ipv6-interfaces) 0)
+    (println "IPv6 not enabled, skipping custom-dns-resolver-ipv6 test.")
+    (do
+      (run-server)
+      (let [resp (request {:request-method :get :uri "/get"
+                           :server-name "foo.bar.ipv6"
+                           :dns-resolver (custom-dns-resolver {"foo.bar.ipv6" [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1]})})]
+        (is (= 200 (:status resp)))
+        (is (= "get" (slurp-body resp)))))))
 
 (deftest ^:integration save-request-option
   (run-server)

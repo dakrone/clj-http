@@ -232,20 +232,28 @@
       get-custom-strategy-registry))
 
 (defn ^BasicHttpClientConnectionManager make-regular-conn-manager
-  [{:keys [keystore trust-store
+  [{:keys [dns-resolver
+           keystore trust-store
            key-managers trust-managers
            socket-timeout] :as req}]
+
   (let [conn-manager (cond
                        (or key-managers trust-managers)
-                       (BasicHttpClientConnectionManager. (get-managers-scheme-registry req))
+                       (BasicHttpClientConnectionManager. (get-managers-scheme-registry req)
+                                                          nil nil
+                                                          (when dns-resolver dns-resolver))
 
                        (or keystore trust-store)
-                       (BasicHttpClientConnectionManager. (get-keystore-scheme-registry req))
+                       (BasicHttpClientConnectionManager. (get-keystore-scheme-registry req)
+                                                          nil nil
+                                                          (when dns-resolver dns-resolver))
 
                        (opt req :insecure) (BasicHttpClientConnectionManager.
-                                            @insecure-scheme-registry)
+                                            @insecure-scheme-registry nil nil
+                                            (when dns-resolver dns-resolver))
 
-                       :else (BasicHttpClientConnectionManager. @regular-scheme-registry))]
+                       :else (BasicHttpClientConnectionManager. @regular-scheme-registry nil nil
+                                                                (when dns-resolver dns-resolver)))]
     (when socket-timeout
       (.setSocketConfig conn-manager
                         (-> (.getSocketConfig conn-manager)
@@ -300,7 +308,8 @@
   "Given an timeout and optional insecure? flag, create a
   PoolingHttpClientConnectionManager with <timeout> seconds set as the
   timeout value."
-  [{:keys [timeout
+  [{:keys [dns-resolver
+           timeout
            keystore trust-store
            key-managers trust-managers] :as config}]
   (let [registry (cond
@@ -314,7 +323,7 @@
 
                    :else @regular-scheme-registry)]
     (PoolingHttpClientConnectionManager.
-     registry nil nil nil timeout java.util.concurrent.TimeUnit/SECONDS)))
+     registry nil nil (when dns-resolver dns-resolver) timeout java.util.concurrent.TimeUnit/SECONDS)))
 
 (defn reusable? [conn-mgr]
   (or (instance? PoolingHttpClientConnectionManager conn-mgr)
@@ -364,7 +373,8 @@
     conn-man))
 
 (defn- ^PoolingNHttpClientConnectionManager make-reusable-async-conn-manager*
-  [{:keys [timeout keystore trust-store io-config
+  [{:keys [dns-resolver
+           timeout keystore trust-store io-config
            key-managers trust-managers] :as config}]
   (let [registry (cond
                    (opt config :insecure) @insecure-strategy-registry
@@ -382,7 +392,7 @@
                                                         ConnectionConfig/DEFAULT)]
     (future (.execute io-reactor io-event-dispatch))
     (proxy [PoolingNHttpClientConnectionManager ReuseableAsyncConnectionManager]
-        [io-reactor nil registry nil nil timeout
+        [io-reactor nil registry nil (when dns-resolver dns-resolver) timeout
          java.util.concurrent.TimeUnit/SECONDS])))
 
 (defn ^PoolingNHttpClientConnectionManager make-reusable-async-conn-manager
