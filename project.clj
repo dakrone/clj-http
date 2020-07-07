@@ -23,7 +23,7 @@
                                   [org.jsoup/jsoup "1.11.3"]
                                   [org.clojure/tools.reader "1.3.2"]
                                   [com.cognitect/transit-clj "0.8.313"]
-                                  [ring/ring-codec "1.1.1"]
+                                  [ring/ring-codec "1.1.2"]
                                   ;; other (testing) deps
                                   [org.clojure/clojure "1.10.0"]
                                   [org.clojure/tools.logging "0.4.0"]
