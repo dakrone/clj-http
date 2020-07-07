@@ -241,19 +241,19 @@
                        (or key-managers trust-managers)
                        (BasicHttpClientConnectionManager. (get-managers-scheme-registry req)
                                                           nil nil
-                                                          (when dns-resolver dns-resolver))
+                                                          dns-resolver)
 
                        (or keystore trust-store)
                        (BasicHttpClientConnectionManager. (get-keystore-scheme-registry req)
                                                           nil nil
-                                                          (when dns-resolver dns-resolver))
+                                                          dns-resolver)
 
                        (opt req :insecure) (BasicHttpClientConnectionManager.
                                             @insecure-scheme-registry nil nil
-                                            (when dns-resolver dns-resolver))
+                                            dns-resolver)
 
                        :else (BasicHttpClientConnectionManager. @regular-scheme-registry nil nil
-                                                                (when dns-resolver dns-resolver)))]
+                                                                dns-resolver))]
     (when socket-timeout
       (.setSocketConfig conn-manager
                         (-> (.getSocketConfig conn-manager)
@@ -323,7 +323,7 @@
 
                    :else @regular-scheme-registry)]
     (PoolingHttpClientConnectionManager.
-     registry nil nil (when dns-resolver dns-resolver) timeout java.util.concurrent.TimeUnit/SECONDS)))
+     registry nil nil dns-resolver timeout java.util.concurrent.TimeUnit/SECONDS)))
 
 (defn reusable? [conn-mgr]
   (or (instance? PoolingHttpClientConnectionManager conn-mgr)
@@ -350,6 +350,8 @@
 
   :key-managers - KeyManager objects to be used for connection manager
   :trust-managers - TrustManager objects to be used for connection manager
+
+  :dns-resolver - Use a custom DNS resolver instead of the default DNS resolver.
 
   Note that :insecure? and :keystore/:trust-store/:key-managers/:trust-managers options are mutually exclusive
 
@@ -392,7 +394,7 @@
                                                         ConnectionConfig/DEFAULT)]
     (future (.execute io-reactor io-event-dispatch))
     (proxy [PoolingNHttpClientConnectionManager ReuseableAsyncConnectionManager]
-        [io-reactor nil registry nil (when dns-resolver dns-resolver) timeout
+        [io-reactor nil registry nil dns-resolver timeout
          java.util.concurrent.TimeUnit/SECONDS])))
 
 (defn ^PoolingNHttpClientConnectionManager make-reusable-async-conn-manager
