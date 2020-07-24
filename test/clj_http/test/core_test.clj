@@ -183,6 +183,14 @@
     (is (= 200 (:status resp)))
     (is (= "get" (slurp-body resp)))))
 
+(deftest ^:integration dns-resolver-unknown-host
+  (run-server)
+  (let [custom-dns-resolver (doto (InMemoryDnsResolver.)
+                              (.add "foo.bar.com" (into-array[(InetAddress/getByAddress (byte-array [127 0 0 1]))])))]
+    (is (thrown? java.net.UnknownHostException (request {:request-method :get :uri "/get"
+                                                        :server-name "www.google.com"
+                                                        :dns-resolver custom-dns-resolver})))))
+
 (deftest ^:integration dns-resolver-reusable-connection-manager
   (run-server)
   (let [custom-dns-resolver (doto (InMemoryDnsResolver.)
