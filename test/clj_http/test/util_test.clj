@@ -53,3 +53,7 @@
       ;; coerce to seq to force byte-by-byte comparison
       (is (= (seq (IOUtils/toByteArray (io/input-stream jpg-path)))
              (seq (force-byte-array (io/input-stream jpg-path))))))))
+
+(deftest test-gunzip
+  (testing "with empty input, does not q gzip stream"
+    (is (nil? (force-byte-array (gunzip (force-stream (byte-array 0))))))))

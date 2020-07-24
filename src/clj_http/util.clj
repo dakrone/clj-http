@@ -44,7 +44,12 @@
   (when b
     (cond
       (instance? InputStream b)
-      (GZIPInputStream. b)
+      (let [^PushbackInputStream b (PushbackInputStream. b)
+            first-byte (int (try (.read b) (catch EOFException _ -1)))]
+        (case first-byte
+          -1 b
+          (do (.unread b first-byte)
+              (GZIPInputStream. b))))
       :else
       (IOUtils/toByteArray (GZIPInputStream. (ByteArrayInputStream. b))))))
 
