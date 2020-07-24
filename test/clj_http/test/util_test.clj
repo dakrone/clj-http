@@ -55,5 +55,10 @@
              (seq (force-byte-array (io/input-stream jpg-path))))))))
 
 (deftest test-gunzip
-  (testing "with empty input, does not q gzip stream"
-    (is (nil? (force-byte-array (gunzip (force-stream (byte-array 0))))))))
+  (testing "with input streams"
+    (testing "with empty stream, does not apply gunzip stream"
+      (is (= "" (slurp (gunzip (force-stream (byte-array 0)))))))
+    (testing "with non-empty stream, gunzip decompresses data"
+      (let [data "hello world"]
+        (is (= data
+               (slurp (gunzip (force-stream (gzip (.getBytes data)))))))))))
