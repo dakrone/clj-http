@@ -9,7 +9,7 @@
             [clojure.test :refer :all]
             [ring.adapter.jetty :as ring])
   (:import (java.io ByteArrayInputStream)
-           (java.net InetAddress NetworkInterface SocketTimeoutException)
+           (java.net InetAddress SocketTimeoutException)
            (java.util.concurrent TimeoutException TimeUnit)
            (org.apache.http.params CoreConnectionPNames CoreProtocolPNames)
            (org.apache.http.message BasicHeader BasicHeaderIterator)
@@ -17,7 +17,6 @@
            (org.apache.http.client.protocol HttpClientContext)
            (org.apache.http.client.config RequestConfig)
            (org.apache.http.client.params CookiePolicy ClientPNames)
-           (org.apache.http.conn DnsResolver)
            (org.apache.http.conn.util PublicSuffixMatcherLoader)
            (org.apache.http.cookie CommonCookieAttributeHandler)
            (org.apache.http HttpRequest HttpResponse HttpConnection
@@ -26,7 +25,7 @@
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.impl.cookie RFC6265CookieSpec RFC6265CookieSpecProvider
                                         RFC6265CookieSpecProvider$CompatibilityLevel)
-           (org.apache.http.impl.conn InMemoryDnsResolver SystemDefaultDnsResolver)
+           (org.apache.http.impl.conn InMemoryDnsResolver)
            (org.apache.http.client.params ClientPNames)
            (org.apache.logging.log4j LogManager)
            (sun.security.provider.certpath SunCertPathBuilderException)))
