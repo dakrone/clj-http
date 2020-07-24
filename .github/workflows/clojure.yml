@@ -11,12 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [8, 9, 10, 11]
-        clojure: [1.6, 1.7, 1.8, 1.9, 1.10]
+        java: ["8", "9", "10", "11"]
+        clojure: ["1.6", "1.7", "1.8", "1.9", "1.10"]
 
     name: Java ${{ matrix.java }} Clojure ${{ matrix.clojure }}
     steps:
     - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-lein-${{ hashFiles('**/project.clj') }}
+        restore-keys: |
+          ${{ runner.os }}-lein-
 
     - name: Setup java
       uses: actions/setup-java@v1
