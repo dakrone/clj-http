@@ -9,7 +9,7 @@
             [clojure.test :refer :all]
             [ring.adapter.jetty :as ring])
   (:import (java.io ByteArrayInputStream)
-           (java.net SocketTimeoutException)
+           (java.net InetAddress SocketTimeoutException)
            (java.util.concurrent TimeoutException TimeUnit)
            (org.apache.http.params CoreConnectionPNames CoreProtocolPNames)
            (org.apache.http.message BasicHeader BasicHeaderIterator)
@@ -25,6 +25,7 @@
            (org.apache.http.impl.client DefaultHttpClient)
            (org.apache.http.impl.cookie RFC6265CookieSpec RFC6265CookieSpecProvider
                                         RFC6265CookieSpecProvider$CompatibilityLevel)
+           (org.apache.http.impl.conn InMemoryDnsResolver)
            (org.apache.http.client.params ClientPNames)
            (org.apache.logging.log4j LogManager)
            (sun.security.provider.certpath SunCertPathBuilderException)))
@@ -171,6 +172,52 @@
   (let [resp (request {:request-method :get :uri "/get"})]
     (is (= 200 (:status resp)))
     (is (= "get" (slurp-body resp)))))
+
+(deftest ^:integration dns-resolver
+  (run-server)
+  (let [custom-dns-resolver (doto (InMemoryDnsResolver.)
+                              (.add "foo.bar.com" (into-array[(InetAddress/getByAddress (byte-array [127 0 0 1]))])))
+        resp (request {:request-method :get :uri "/get"
+                       :server-name "foo.bar.com"
+                       :dns-resolver custom-dns-resolver})]
+    (is (= 200 (:status resp)))
+    (is (= "get" (slurp-body resp)))))
+
+(deftest ^:integration dns-resolver-unknown-host
+  (run-server)
+  (let [custom-dns-resolver (doto (InMemoryDnsResolver.)
+                              (.add "foo.bar.com" (into-array[(InetAddress/getByAddress (byte-array [127 0 0 1]))])))]
+    (is (thrown? java.net.UnknownHostException (request {:request-method :get :uri "/get"
+                                                        :server-name "www.google.com"
+                                                        :dns-resolver custom-dns-resolver})))))
+
+(deftest ^:integration dns-resolver-reusable-connection-manager
+  (run-server)
+  (let [custom-dns-resolver (doto (InMemoryDnsResolver.)
+                              (.add "totallynonexistant.google.com"
+                                    (into-array[(InetAddress/getByAddress (byte-array [127 0 0 1]))])))
+        cm (conn/make-reuseable-async-conn-manager {:dns-resolver custom-dns-resolver})
+        hc (core/build-async-http-client {} cm)]
+    (client/get "http://totallynonexistant.google.com:18080/json"
+                {:connection-manager cm
+                 :http-client hc
+                 :as :json
+                 :async true}
+                (fn [resp]
+                  (is (= 200 (:status resp)))
+                  (is (= {:foo "bar"} (:body resp))))
+                (fn [e] (is false (str "failed with " e)))))
+  (let [custom-dns-resolver (doto (InMemoryDnsResolver.)
+                              (.add "nonexistant.google.com" (into-array[(InetAddress/getByAddress (byte-array [127 0 0 1]))])))
+        cm (conn/make-reusable-conn-manager {:dns-resolver custom-dns-resolver})
+        hc (:http-client (client/get "http://nonexistant.google.com:18080/get"
+                                     {:connection-manager cm}))
+        resp (client/get "http://nonexistant.google.com:18080/json"
+                         {:connection-manager cm
+                          :http-client hc
+                          :as :json})]
+    (is (= 200 (:status resp)))
+    (is (= {:foo "bar"} (:body resp)))))
 
 (deftest ^:integration save-request-option
   (run-server)

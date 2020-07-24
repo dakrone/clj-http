@@ -1437,6 +1437,35 @@ things:
 In previous versions of =clj-http= (<= 3.10.0), =clj-http= defaulted to lazily parsing JSON, but this
 was slow and also confused users who didn't expect laziness.
 
+** DNS Resolution
+
+Users may add their own DNS resolver function to override the default DNS Resolver. This is useful in situations where you are unable to change the name to IP Address mapping. It is analogous to the =--resolve= flag present in =curl=. This example uses =org.apache.http.impl.conn.InMemoryDnsResolver= to resolve =example.com= to IP Address =127.0.0.1=. 
+
+#+BEGIN_SRC clojure
+(client/get "https://example.com" {:dns-resolver (doto (InMemoryDnsResolver.)
+                                                   (.add "example.com" (into-array[(InetAddress/getByAddress (byte-array [127 0 0 1]))])))})
+#+END_SRC
+
+This option is supported for all of the connection managers.
+
+The =dns-resolver= can be any instance of =DnsResolver=. Here is an example of a custom implementation that attempts to look up the hostname in the supplied map and falls back to the default SystemDnsResolver if not found. Note how IPV6 addresses are specified.
+
+#+BEGIN_SRC clojure
+(defn custom-dns-resolver
+  [host-map]
+  (let [system-dns-resolver (org.apache.http.impl.conn.SystemDefaultDnsResolver.)]
+    (reify
+      org.apache.http.conn.DnsResolver
+      (^"[Ljava.net.InetAddress;" resolve [this ^String host]
+       (if-let [address (get host-map host)]
+         (into-array [(java.net.InetAddress/getByAddress host (byte-array address))])
+         (.resolve system-dns-resolver host))))))
+       
+(client/get "https://example.com" {:dns-resolver (custom-dns-resolver {"example.com" [127 0 0 1]
+                                                                        "www.google.com" [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1]})})
+#+END_SRC
+       
+
 * Development
 :PROPERTIES:
 :CUSTOM_ID: h-65bbf017-2e8b-4c43-824b-24b89cc27a70
