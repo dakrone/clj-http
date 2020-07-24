@@ -10,7 +10,16 @@
 * Changelog
 List of user-visible changes that have gone into each release
 
-** 3.10.2 (Unreleased)
+** 3.10.3 (Unreleased)
+** 3.10.2
+- Fix performance regressions from #528
+  https://github.com/dakrone/clj-http/pull/546
+- Adds support for custom DNS Resolvers
+  https://github.com/dakrone/clj-http/pull/545
+- Buffer :debug output to improve readability
+  https://github.com/dakrone/clj-http/pull/544
+- Improve compatbility with GraalVM
+  https://github.com/dakrone/clj-http/pull/543
 ** 3.10.1
 - JSON parsing is always strict. See [[file:README.org::*Incrementally%20JSON%20Parsing][README#Incrementally JSON Parsing]]. Requires cheshire >= 5.9.0.
 ** 3.10.0
