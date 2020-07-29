@@ -53,3 +53,12 @@
       ;; coerce to seq to force byte-by-byte comparison
       (is (= (seq (IOUtils/toByteArray (io/input-stream jpg-path)))
              (seq (force-byte-array (io/input-stream jpg-path))))))))
+
+(deftest test-gunzip
+  (testing "with input streams"
+    (testing "with empty stream, does not apply gunzip stream"
+      (is (= "" (slurp (gunzip (force-stream (byte-array 0)))))))
+    (testing "with non-empty stream, gunzip decompresses data"
+      (let [data "hello world"]
+        (is (= data
+               (slurp (gunzip (force-stream (gzip (.getBytes data)))))))))))
