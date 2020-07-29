@@ -34,3 +34,6 @@ jobs:
 
     - name: Run tests
       run: lein with-profile dev,${{matrix.clojure}} test :all
+
+    - name: Check Reflection Warnings
+      run:  '! lein with-profile dev,${{matrix.clojure}} check 2>&1 | egrep "Reflection warning|Performance warning"'
