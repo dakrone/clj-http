@@ -20,6 +20,8 @@ List of user-visible changes that have gone into each release
   https://github.com/dakrone/clj-http/pull/544
 - Improve compatbility with GraalVM
   https://github.com/dakrone/clj-http/pull/543
+- Bug fix: Check first byte before wrapping response stream with gunzip
+  https://github.com/dakrone/clj-http/pull/549
 ** 3.10.1
 - JSON parsing is always strict. See [[file:README.org::*Incrementally%20JSON%20Parsing][README#Incrementally JSON Parsing]]. Requires cheshire >= 5.9.0.
 ** 3.10.0
