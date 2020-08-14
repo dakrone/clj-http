@@ -704,7 +704,7 @@ APIs:
 
 clj-http conforms its behaviour regarding automatic redirects to the [[https://tools.ietf.org/html/rfc2616#section-10.3][RFC]].
 
-It means that redirects on status =301=, =302= and =307= are not redirected on
+It means that redirects on status =301=, =302=, =307= and =308= are not redirected on
 methods other than =GET= and =HEAD=. If you want a behaviour closer to what most
 browser have, you can set =:redirect-strategy= to =:lax= in your request to have
 automatic redirection work on all methods by transforming the method of the

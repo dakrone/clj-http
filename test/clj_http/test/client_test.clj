@@ -457,7 +457,7 @@
 
 (deftest pass-on-non-redirectable-methods
   (doseq [method [:put :post :delete]
-          status [301 302 307]]
+          status [301 302 307 308]]
     (let [client (fn [req] {:status status :body (:body req)
                            :headers {"location" "http://example.com/bat"}})
           r-client (client/wrap-redirects client)
@@ -470,7 +470,7 @@
 
 (deftest pass-on-non-redirectable-methods-async
   (doseq [method [:put :post :delete]
-          status [301 302 307]]
+          status [301 302 307 308]]
     (let [client (fn [req respond raise]
                    (respond {:status status :body (:body req)
                              :headers {"location" "http://example.com/bat"}}))
