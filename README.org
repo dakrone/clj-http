@@ -12,11 +12,6 @@
 :CUSTOM_ID: h-aaf075ea-2f0e-4a45-871a-0f89c838fb4b
 :END:
 
-[[https://secure.travis-ci.org/dakrone/clj-http.png]]
-
-#+ATTR_HTML: title="Join the chat at https://gitter.im/clj-http/Lobby"
-[[https://gitter.im/clj-http/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge][file:https://badges.gitter.im/clj-http/Lobby.svg]]
-
 - [[#branches][Branches]]
 - [[#introduction][Introduction]]
   - [[#overview][Overview]]
@@ -61,6 +56,7 @@
   - [[#custom-middleware][Custom Middleware]]
   - [[#modifying-apache-specific-features-of-the-httpclientbuilder-and-httpasyncclientbuilder][Modifying Apache-specific features of the =HttpClientBuilder= and =HttpAsyncClientBuilder=]]
   - [[#incrementally-json-parsing][Incrementally JSON Parsing]]
+  - [[#dns-resolution][DNS Resolution]]
 - [[#development][Development]]
   - [[#faking-responses][Faking Responses]]
   - [[#optional-dependencies][Optional Dependencies]]
@@ -201,6 +197,7 @@ Example requests:
 (client/post "http://example.com" {:cookie-policy :netscape})
 (client/post "http://example.com" {:cookie-policy :standard})
 (client/post "http://example.com" {:cookie-policy :standard-strict})
+
 
 ;; Cookies can be completely configurable with a custom spec by adding a
 ;; function to return a cookie spec for parsing the cookie. For example, if you
@@ -760,6 +757,8 @@ As mentioned earlier, it's possible to pass a custom instance of RedirectStrateg
   ;;   checking isRedirected
 #+end_src
 
+NOTE: The options =:force-redirects= and =:follow-redirects= (present in clj-http 2.x are no longer
+used). You can use =:graceful= to mostly emulate the old redirect behaviour.
 
 ** Cookies
 :PROPERTIES:
@@ -830,6 +829,9 @@ from a cookie store:
 :CUSTOM_ID: h-7968467a-1441-4a73-9307-9a7a5fd8e733
 :END:
 
+Need more docs on this? See the [[SSL.org][SSL documentation]] if you want to use your own self-signed
+certificate.
+
 You can also specify your own keystore/trust-store to be used:
 
 #+BEGIN_SRC clojure
@@ -851,8 +853,8 @@ files or =KeyStore= instances.
 
 The client will throw exceptions on, well, exceptional status codes, meaning all
 HTTP responses other than =#{200 201 202 203 204 205 206 207 300 301 302 303 304
-307}=. clj-http will throw a [[http://github.com/scgilardi/slingshot][Slingshot]] Stone that can be caught by a regular
-=(catch Exception e ...)= or in Slingshot's =try+= block:
+307}=. clj-http will throw an ex-info exception that can be caught by a regular
+=(catch Exception e ...)= or in [[http://github.com/scgilardi/slingshot][Slingshot]]'s =try+= block:
 
 #+BEGIN_SRC clojure
 (client/get "http://example.com/broken")
@@ -877,7 +879,7 @@ HTTP responses other than =#{200 201 202 203 204 205 206 207 300 301 302 303 304
 ;; Or ignore an unknown host (methods return 'nil' if this is set to
 ;; true and the host does not exist:
 (client/get "http://example.invalid" {:ignore-unknown-host? true})
-;; Or customize the http statuses that will not throw:
+;; Or customize the http statuses that will throw:
 (client/get "http://example.com/broken" {:unexceptional-status #(<= 200 % 299)})
 #+END_SRC
 
@@ -956,6 +958,33 @@ There are four debugging methods you can use:
 ;; see http://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/org/apache/http/HttpResponseInterceptor.html
 (client/get "http://example.org" {:response-interceptor (fn [resp ctx] (println ctx))})
 #+END_SRC
+
+To debug what data is being sent on the =Socket= when a request is make, clj-http
+provides the =:capture-socket= option:
+
+#+BEGIN_SRC clojure
+(-> (client/post "http://localhost:9200/_search"
+                 {:capture-socket true ;; turn on the capture
+                  :headers {"content-type" "application/json"}
+                  :body "{\"query\": {\"match_all\":{}}}"})
+    ;; Both :raw-socket-str and :raw-socket-bytes are returned with the response
+    :raw-socket-str
+    println)
+;;; Which outputs something such as:
+;; POST /_search HTTP/1.1
+;; Connection: close
+;; content-type: application/json
+;; accept-encoding: gzip, deflate
+;; Content-Length: 27
+;; Host: localhost:9200
+;; User-Agent: Apache-HttpClient/4.5.5 (Java/9.0.1)
+;;
+;; {"query": {"match_all":{}}}
+;; nil
+#+END_SRC
+
+There are currently limitations with =:capture-socket=, a custom connection manager or the
+=:insecure= option cannot be used, and async requests are not yet supported.
 
 *** Logging
 :PROPERTIES:

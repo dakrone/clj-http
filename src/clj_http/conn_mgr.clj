@@ -2,32 +2,36 @@
   "Utility methods for Scheme registries and HTTP connection managers"
   (:require [clj-http.util :refer [opt]]
             [clojure.java.io :as io])
-  (:import (java.net Socket Proxy Proxy$Type InetSocketAddress)
+  (:import (java.io ByteArrayInputStream ByteArrayOutputStream)
+           (java.net Socket Proxy Proxy$Type InetSocketAddress)
            (java.security KeyStore)
            (javax.net.ssl KeyManager
                           TrustManager)
-           (org.apache.http.config RegistryBuilder Registry SocketConfig)
-           (org.apache.http.conn HttpClientConnectionManager)
-           (org.apache.http.conn.ssl DefaultHostnameVerifier
-                                     NoopHostnameVerifier
-                                     SSLConnectionSocketFactory
-                                     SSLContexts
-                                     TrustStrategy)
-           (org.apache.http.conn.socket PlainConnectionSocketFactory)
-           (org.apache.http.impl.conn BasicHttpClientConnectionManager
-                                      PoolingHttpClientConnectionManager)
-           (org.apache.http.impl.nio.conn PoolingNHttpClientConnectionManager)
+           (org.apache.hc.core5.http.config RegistryBuilder Registry)
+           (org.apache.hc.client5.http.io HttpClientConnectionManager)
+           (org.apache.hc.client5.http.ssl DefaultHostnameVerifier
+                                           NoopHostnameVerifier
+                                           SSLConnectionSocketFactory)
+           (org.apache.hc.core5.ssl SSLContexts
+                                    TrustStrategy)
+           (org.apache.hc.client5.http.socket PlainConnectionSocketFactory)
+           (org.apache.hc.client5.http.impl.io BasicHttpClientConnectionManager
+                                               PoolingHttpClientConnectionManager
+                                               PoolingHttpClientConnectionManagerBuilder)
+           (org.apache.hc.client5.http.impl.nio PoolingAsyncClientConnectionManager
+                                                PoolingAsyncClientConnectionManagerBuilder)
+           ;; (org.apache.http.impl.nio.conn PoolingNHttpClientConnectionManager)
            (javax.net.ssl SSLContext HostnameVerifier)
-           (org.apache.http.nio.conn NHttpClientConnectionManager)
-           (org.apache.http.nio.conn.ssl SSLIOSessionStrategy)
-           (org.apache.http.impl.nio.reactor
+           ;; (org.apache.http.nio.conn NHttpClientConnectionManager)
+           ;; (org.apache.http.nio.conn.ssl SSLIOSessionStrategy)
+           #_(org.apache.http.impl.nio.reactor
             IOReactorConfig
             AbstractMultiworkerIOReactor$DefaultThreadFactory
             DefaultConnectingIOReactor)
-           (org.apache.http.nio.conn NoopIOSessionStrategy)
-           (org.apache.http.nio.protocol HttpAsyncRequestExecutor)
-           (org.apache.http.impl.nio DefaultHttpClientIODispatch)
-           (org.apache.http.config ConnectionConfig)))
+           #_(org.apache.http.nio.conn NoopIOSessionStrategy)
+           #_(org.apache.http.nio.protocol HttpAsyncRequestExecutor)
+           #_(org.apache.http.impl.nio DefaultHttpClientIODispatch)
+           #_(org.apache.http.config ConnectionConfig)))
 
 (def ^:private insecure-context-verifier
   (delay {
@@ -43,7 +47,7 @@
      (SSLConnectionSocketFactory. ^SSLContext context
                                   ^HostnameVerifier verifier))))
 
-(def ^:private insecure-strategy
+#_(def ^:private insecure-strategy
   (delay
    (let [{:keys [context  verifier]} @insecure-context-verifier]
      (SSLIOSessionStrategy. ^SSLContext context ^HostnameVerifier verifier))))
@@ -51,7 +55,8 @@
 (def ^:private ^SSLConnectionSocketFactory secure-ssl-socket-factory
   (delay (SSLConnectionSocketFactory/getSocketFactory)))
 
-(def ^:private ^SSLIOSessionStrategy secure-strategy
+
+#_(def ^:private ^SSLIOSessionStrategy secure-strategy
   (delay (SSLIOSessionStrategy/getDefaultStrategy)))
 
 (defn ^SSLConnectionSocketFactory SSLGenericSocketFactory
@@ -79,6 +84,25 @@
   "Create a Socket proxied through socks, using the given hostname and port"
   [^String hostname ^Integer port]
   (Socket. (Proxy. Proxy$Type/SOCKS (InetSocketAddress. hostname port))))
+
+(defn capturing-socket
+  "Create a java.net.Socket that will capture data sent in and out of it."
+  [output-stream]
+  (proxy [java.net.Socket] []
+    ;; TODO: implement capturing the read data, currently I don't know of a good
+    ;; way to proxy reading input into an arbitrary place
+    (getInputStream []
+      (proxy-super getInputStream))
+    (getOutputStream []
+      (let [stream (proxy-super getOutputStream)]
+        (proxy [java.io.FilterOutputStream] [stream]
+          (write
+            ([b]
+             (.write output-stream b)
+             (proxy-super write b))
+            ([b off len]
+             (.write output-stream b off len)
+             (proxy-super write b off len))))))))
 
 (defn ^KeyStore get-keystore*
   [keystore-file keystore-type ^String keystore-pass]
@@ -163,6 +187,18 @@
                  (.build))]
      (PoolingHttpClientConnectionManager. reg))))
 
+(defn make-capturing-socket-conn-manager
+  "Given an optional hostname and a port, create a connection manager captures
+  Socket data. `output` should be an `OutputStream` where all output from this
+  factory will be sent."
+  [output]
+  (let [socket-factory #(capturing-socket output)
+        reg (-> (RegistryBuilder/create)
+                (.register "http" (PlainGenericSocketFactory socket-factory))
+                (.register "https" (SSLGenericSocketFactory socket-factory nil))
+                (.build))]
+    (BasicHttpClientConnectionManager. reg)))
+
 (def ^:private insecure-scheme-registry
   (delay
    (-> (RegistryBuilder/create)
@@ -170,11 +206,11 @@
        (.register "https" ^SSLConnectionSocketFactory @insecure-socket-factory)
        (.build))))
 
-(def ^:private insecure-strategy-registry
+#_(def ^:private insecure-strategy-registry
   (delay
    (-> (RegistryBuilder/create)
        (.register "http" NoopIOSessionStrategy/INSTANCE)
-       (.register "https" ^SSLIOSessionStrategy @insecure-strategy)
+
        (.build))))
 
 (def ^:private regular-scheme-registry
@@ -183,7 +219,7 @@
              (.register "https" @secure-ssl-socket-factory)
              (.build))))
 
-(def ^:private regular-strategy-registry
+#_(def ^:private regular-strategy-registry
   (delay (-> (RegistryBuilder/create)
              (.register "http" NoopIOSessionStrategy/INSTANCE)
              (.register "https" @secure-strategy)
@@ -262,7 +298,7 @@
                             (.build))))
     conn-manager))
 
-(defn- ^DefaultConnectingIOReactor make-ioreactor
+#_(defn- ^DefaultConnectingIOReactor make-ioreactor
   [{:keys [connect-timeout interest-op-queued io-thread-count rcv-buf-size
            select-interval shutdown-grace-period snd-buf-size
            so-keep-alive so-linger so-timeout tcp-no-delay]}]
@@ -280,14 +316,15 @@
     (if-some [v tcp-no-delay] (.setTcpNoDelay c v) c)
     (DefaultConnectingIOReactor. (.build c))))
 
-(defn ^PoolingNHttpClientConnectionManager
+(defn ^PoolingAsyncClientConnectionManager
   make-regular-async-conn-manager
   [{:keys [keystore trust-store
            key-managers trust-managers] :as req}]
-  (let [^Registry registry (cond
+  ;; TODO: there are no longer un-reusable async connection managers, so this can go away
+  (.build (PoolingAsyncClientConnectionManagerBuilder/create))
+  #_(let [^Registry registry (cond
                              (or key-managers trust-managers)
                              (get-managers-strategy-registry req)
-
                              (or keystore trust-store)
                              (get-keystore-strategy-registry req)
 
@@ -303,7 +340,7 @@
 
 ;; need the fully qualified class name because this fn is later used in a
 ;; macro from a different ns
-(defn ^org.apache.http.impl.conn.PoolingHttpClientConnectionManager
+(defn ^PoolingHttpClientConnectionManager
   make-reusable-conn-manager*
   "Given an timeout and optional insecure? flag, create a
   PoolingHttpClientConnectionManager with <timeout> seconds set as the
@@ -312,7 +349,8 @@
            timeout
            keystore trust-store
            key-managers trust-managers] :as config}]
-  (let [registry (cond
+  (.build (PoolingHttpClientConnectionManagerBuilder/create))
+  #_(let [registry (cond
                    (opt config :insecure) @insecure-scheme-registry
 
                    (or key-managers trust-managers)
@@ -327,6 +365,7 @@
 
 (defn reusable? [conn-mgr]
   (or (instance? PoolingHttpClientConnectionManager conn-mgr)
+      (instance? PoolingAsyncClientConnectionManager conn-mgr)
       (instance? ReuseableAsyncConnectionManager conn-mgr)))
 
 (defn ^PoolingHttpClientConnectionManager make-reusable-conn-manager
@@ -378,7 +417,7 @@
   [{:keys [dns-resolver
            timeout keystore trust-store io-config
            key-managers trust-managers] :as config}]
-  (let [registry (cond
+  #_(let [registry (cond
                    (opt config :insecure) @insecure-strategy-registry
 
                    (or key-managers trust-managers)
@@ -449,12 +488,19 @@
 (defmulti shutdown-manager
   "Shut down the given connection manager, if it is not nil"
   class)
+
 (defmethod shutdown-manager nil [conn-mgr] nil)
-(defmethod shutdown-manager org.apache.http.conn.HttpClientConnectionManager
-  [^HttpClientConnectionManager  conn-mgr] (.shutdown conn-mgr))
+
+(defmethod shutdown-manager PoolingHttpClientConnectionManager
+  [^PoolingHttpClientConnectionManager  conn-mgr] (.close conn-mgr))
+
 (defmethod shutdown-manager
-  org.apache.http.nio.conn.NHttpClientConnectionManager
-  [^NHttpClientConnectionManager conn-mgr] (.shutdown conn-mgr))
+  PoolingAsyncClientConnectionManager
+  [^PoolingAsyncClientConnectionManager conn-mgr] (.close conn-mgr))
+
+(defmethod shutdown-manager
+  BasicHttpClientConnectionManager
+  [^BasicHttpClientConnectionManager conn-mgr] (.close conn-mgr))
 
 (def ^:dynamic *connection-manager*
   "connection manager to be rebound during request execution"

@@ -3,9 +3,13 @@
             [clojure.test :refer :all])
   (:import (java.io File ByteArrayOutputStream ByteArrayInputStream)
            (java.nio.charset Charset)
-           (org.apache.http.entity.mime.content FileBody StringBody ContentBody
-                                                ByteArrayBody InputStreamBody)
-           (org.apache.http.util EntityUtils)))
+           (org.apache.hc.client5.http.entity.mime ByteArrayBody
+                                                   ContentBody
+                                                   FileBody
+                                                   InputStreamBody
+                                                   StringBody)
+           (org.apache.hc.core5.http ContentType)
+           (org.apache.hc.core5.http.io.entity EntityUtils)))
 
 (defn body-str [^StringBody body]
   (-> body .getReader slurp))
@@ -36,7 +40,7 @@
          (make-multipart-body {:content (Object.)}))))
 
   (testing "ContentBody content direct usage"
-    (let [contentBody (StringBody. "abc")]
+    (let [contentBody (StringBody. "abc" ContentType/TEXT_PLAIN)]
       (is (identical? contentBody
                       (make-multipart-body {:content contentBody})))))
 

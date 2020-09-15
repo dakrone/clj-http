@@ -2,20 +2,20 @@
   "Namespace dealing with HTTP cookies"
   (:require [clj-http.util :refer [opt]]
             [clojure.string :refer [blank? join lower-case]])
-  (:import (org.apache.http.client.params ClientPNames CookiePolicy)
-           (org.apache.http.cookie ClientCookie CookieOrigin CookieSpec)
-           (org.apache.http.params BasicHttpParams)
-           (org.apache.http.impl.cookie BasicClientCookie2)
-           (org.apache.http.impl.cookie BrowserCompatSpecFactory)
-           (org.apache.http.message BasicHeader)
-           org.apache.http.client.CookieStore
-           (org.apache.http.impl.client BasicCookieStore)
-           (org.apache.http Header)
-           (org.apache.http.protocol BasicHttpContext)))
+  (:import (org.apache.hc.client5.http.cookie BasicCookieStore
+                                              Cookie
+                                              CookieOrigin
+                                              CookieSpec
+                                              CookieStore)
+           (org.apache.hc.client5.http.impl.cookie BasicClientCookie
+                                                   RFC6265CookieSpecProvider)
+           (org.apache.hc.core5.http Header)
+           (org.apache.hc.core5.http.message BasicHeader)
+           (org.apache.hc.core5.http.protocol BasicHttpContext)))
 
-(defn cookie-spec ^org.apache.http.cookie.CookieSpec []
+(defn cookie-spec ^org.apache.hc.client5.http.cookie.CookieSpec []
   (.create
-   (BrowserCompatSpecFactory.)
+   (RFC6265CookieSpecProvider.)
    (BasicHttpContext.)))
 
 (defn compact-map
@@ -31,35 +31,25 @@
   "Converts a ClientCookie object into a tuple where the first item is
   the name of the cookie and the second item the content of the
   cookie."
-  [^ClientCookie cookie]
+  [cookie]
   [(.getName cookie)
    (compact-map
-    {:comment (.getComment cookie)
-     :comment-url (.getCommentURL cookie)
-     :discard (not (.isPersistent cookie))
-     :domain (.getDomain cookie)
+    {:domain (.getDomain cookie)
      :expires (when (.getExpiryDate cookie) (.getExpiryDate cookie))
      :path (.getPath cookie)
-     :ports (when (.getPorts cookie) (seq (.getPorts cookie)))
      :secure (.isSecure cookie)
-     :value (.getValue cookie)
-     :version (.getVersion cookie)})])
+     :value (.getValue cookie)})])
 
-(defn ^BasicClientCookie2
+(defn ^BasicClientCookie
   to-basic-client-cookie
-  "Converts a cookie seq into a BasicClientCookie2."
+  "Converts a cookie seq into a BasicClientCookie."
   [[cookie-name cookie-content]]
-  (doto (BasicClientCookie2. (name cookie-name)
-                             (name (:value cookie-content)))
-    (.setComment (:comment cookie-content))
-    (.setCommentURL (:comment-url cookie-content))
-    (.setDiscard (:discard cookie-content true))
+  (doto (BasicClientCookie. (name cookie-name)
+                            (name (:value cookie-content)))
     (.setDomain (:domain cookie-content))
     (.setExpiryDate (:expires cookie-content))
     (.setPath (:path cookie-content))
-    (.setPorts (int-array (:ports cookie-content)))
-    (.setSecure (:secure cookie-content false))
-    (.setVersion (:version cookie-content 0))))
+    (.setSecure (:secure cookie-content false))))
 
 (defn decode-cookie
   "Decode the Set-Cookie string into a cookie seq."
@@ -128,11 +118,11 @@
   [client]
   (fn
     ([request]
-      (cookies-response request (client (encode-cookie-header request))))
+     (cookies-response request (client (encode-cookie-header request))))
     ([request respond raise]
-      (client (encode-cookie-header request)
-              #(respond (cookies-response request %))
-              raise))))
+     (client (encode-cookie-header request)
+             #(respond (cookies-response request %))
+             raise))))
 
 (defn cookie-store
   "Returns a new, empty instance of the default implementation of the
@@ -148,10 +138,10 @@
 
 (defn add-cookie
   "Add a ClientCookie to a cookie-store"
-  [^CookieStore cookie-store ^ClientCookie cookie]
+  [^CookieStore cookie-store ^Cookie cookie]
   (.addCookie cookie-store cookie))
 
 (defn clear-cookies
- "Clears all cookies from cookie-store"
+  "Clears all cookies from cookie-store"
   [^CookieStore cookie-store]
   (.clear cookie-store))

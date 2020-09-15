@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         java: ["8", "11", "14"]
-        clojure: ["1.6", "1.7", "1.8", "1.9", "1.10"]
+        clojure: ["1.8", "1.9", "1.10"]
 
     name: Java ${{ matrix.java }} Clojure ${{ matrix.clojure }}
     steps:

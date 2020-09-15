@@ -9,15 +9,16 @@
             [clojure.java.io :as io]
             [clojure.stacktrace :refer [root-cause]]
             [clojure.string :as str]
-            [clojure.walk :refer [keywordize-keys prewalk]]
-            [slingshot.slingshot :refer [throw+]])
+            [clojure.walk :refer [keywordize-keys prewalk]])
   (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream EOFException BufferedReader)
            (java.net URL UnknownHostException)
-           (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
-                                   InputStreamEntity FileEntity StringEntity)
-           (org.apache.http.impl.conn PoolingHttpClientConnectionManager)
-           (org.apache.http.impl.nio.conn PoolingNHttpClientConnectionManager)
-           (org.apache.http.impl.nio.client HttpAsyncClients))
+           (java.nio.charset StandardCharsets)
+           (org.apache.hc.core5.http ContentType)
+           (org.apache.hc.core5.http.io.entity BufferedHttpEntity ByteArrayEntity
+                                               InputStreamEntity FileEntity StringEntity)
+           (org.apache.hc.client5.http.impl.io PoolingHttpClientConnectionManager)
+           (org.apache.hc.client5.http.impl.nio PoolingAsyncClientConnectionManager)
+           (org.apache.hc.client5.http.impl.async HttpAsyncClients))
   (:refer-clojure :exclude [get update]))
 
 ;; Cheshire is an optional dependency, so we check for it at compile time.
@@ -206,6 +207,11 @@
   ((or (:unexceptional-status req) unexceptional-status?)
    status))
 
+(defn unexceptional-status-for-request?
+  [req status]
+  ((or (:unexceptional-status req) unexceptional-status?)
+   status))
+
 ;; helper methods to determine realm of a response
 (defn success?
   [{:keys [status]}]
@@ -239,11 +245,11 @@
       resp
       (let [data (assoc resp :type ::unexceptional-status)]
         (if (opt req :throw-entire-message)
-          (throw+ data "clj-http: status %d %s" (:status %) resp)
-          (throw+ data "clj-http: status %s" (:status %)))))))
+          (throw (ex-info (format "clj-http: status %d %s" status resp) data))
+          (throw (ex-info (format "clj-http: status %s" status) data)))))))
 
 (defn wrap-exceptions
-  "Middleware that throws a slingshot exception if the response is not a
+  "Middleware that throws a ex-info exception if the response is not a
   regular response. If :throw-entire-message? is set to true, the entire
   response is used as the message, instead of just the status number."
   [client]
@@ -256,120 +262,13 @@
                (response (exceptions-response req resp)))
              raise))))
 
-(declare wrap-redirects)
 (declare reuse-pool)
-
-(defn- follow-redirect-request
-  [req redirect trace-redirects resp]
-  (-> req
-      (merge (parse-url redirect))
-      (dissoc :query-params)
-      (assoc :url redirect)
-      (assoc :trace-redirects trace-redirects)
-      (reuse-pool resp)))
-
-(defn follow-redirect
-  "Attempts to follow the redirects from the \"location\" header, if no such
-  header exists (bad server!), returns the response without following the
-  request."
-  [client {:keys [uri url scheme server-name server-port async? respond raise]
-           :as req}
-   {:keys [trace-redirects ^InputStream body] :as resp}]
-  (let [url (or url (str (name scheme) "://" server-name
-                         (when server-port (str ":" server-port)) uri))]
-    (if-let [raw-redirect (get-in resp [:headers "location"])]
-      (let [redirect (str (URL. (URL. url) raw-redirect))]
-        (try (.close body) (catch Exception _))
-        (if-not async?
-          ((wrap-redirects client)
-           (follow-redirect-request req redirect trace-redirects resp))
-          (if (some nil? [respond raise])
-            (raise
-             (IllegalArgumentException.
-              "If :async? is true, you must set :respond and :raise"))
-            ((wrap-redirects client)
-             (follow-redirect-request req redirect trace-redirects resp)
-             respond raise))))
-      ;; Oh well, we tried, but if no location is set, return the response
-      (if-not async?
-        resp
-        (respond resp)))))
 
 (defn- respond*
   [resp req]
   (if (opt req :async)
     ((:respond req) resp)
     resp))
-
-(defn- redirects-response
-  [client
-   {:keys [request-method max-redirects redirects-count trace-redirects url]
-    :or {redirects-count 1 trace-redirects []
-         ;; max-redirects default taken from Firefox
-         max-redirects 20}
-    :as req} {:keys [status] :as resp}]
-  (let [resp-r (assoc resp :trace-redirects
-                      (if url
-                        (conj trace-redirects url)
-                        trace-redirects))]
-    (cond
-      (false? (opt req :follow-redirects))
-      (respond* resp req)
-      (not (redirect? resp-r))
-      (respond* resp-r req)
-      (and max-redirects (> redirects-count max-redirects))
-      (if (opt req :throw-exceptions)
-        (throw+ resp-r "Too many redirects: %s" redirects-count)
-        (respond* resp-r req))
-      (= 303 status)
-      (follow-redirect client (assoc req :request-method :get
-                                     :redirects-count (inc redirects-count))
-                       resp-r)
-      (#{301 302} status)
-      (cond
-        (#{:get :head} request-method)
-        (follow-redirect client (assoc req :redirects-count
-                                       (inc redirects-count)) resp-r)
-        (opt req :force-redirects)
-        (follow-redirect client (assoc req
-                                       :request-method :get
-                                       :redirects-count (inc redirects-count))
-                         resp-r)
-        :else
-        (respond* resp-r req))
-      (#{307 308} status)
-      (if (or (#{:get :head} request-method)
-              (opt req :force-redirects))
-        (follow-redirect client (assoc req :redirects-count
-                                       (inc redirects-count)) resp-r)
-        (respond* resp-r req))
-      :else
-      (respond* resp-r req))))
-
-(defn ^:deprecated wrap-redirects
-  "Middleware that follows redirects in the response. A slingshot exception is
-  thrown if too many redirects occur. Options
-
-  :follow-redirects - default:true, whether to follow redirects
-  :max-redirects - default:20, maximum number of redirects to follow
-  :force-redirects - default:false, force redirecting methods to GET requests
-
-  In the response:
-
-  :redirects-count - number of redirects
-  :trace-redirects - vector of sites the request was redirected from"
-  [client]
-  (fn
-    ([req]
-     (redirects-response client req (client req)))
-    ([req respond raise]
-     (client req
-             #(redirects-response client
-                                  (assoc req :async? true
-                                         :respond respond
-                                         :raise raise)
-                                  %)
-             raise))))
 
 ;; Multimethods for Content-Encoding dispatch automatically
 ;; decompressing response bodies
@@ -459,6 +358,17 @@
           (do (.reset br)
               (json-decode br keyword?))))
       (finally (.close br)))))
+
+(defn- response-charset [response]
+  (or (-> response :content-type-params :charset)
+      "UTF-8"))
+
+(defmethod coerce-response-body :reader
+  [_ {:keys [body] :as resp}]
+  (let [header (get-in resp [:headers "content-type"])
+        parsed-values (util/parse-content-type header)
+        charset (response-charset parsed-values)]
+    (assoc resp :body (io/reader body :encoding charset))))
 
 (defn coerce-json-body
   [request {:keys [body] :as resp} keyword? & [charset]]
@@ -593,14 +503,20 @@
       (string? body)
       (-> req (assoc :body (maybe-wrap-entity
                             req (StringEntity. ^String body
-                                               ^String body-encoding))
+                                               StandardCharsets/UTF_8
+                                               ;; TODO: use ContentType here
+                                               ;;^String body-encoding
+                                               ))
                      :character-encoding (or body-encoding
                                              "UTF-8")))
       (instance? File body)
       (-> req (assoc :body
                      (maybe-wrap-entity
                       req (FileEntity. ^File body
-                                       ^String body-encoding))))
+                                       StandardCharsets/UTF_8
+                                       ;; TODO: use ContentType here
+                                       ;;^String body-encoding
+                                       ))))
 
       ;; A length of -1 instructs HttpClient to use chunked encoding.
       (instance? InputStream body)
@@ -1082,6 +998,46 @@
                #(respond (request-timing-response % start))
                raise)))))
 
+
+(defn check-conflicting-socket-capture-opts
+  "Checks whether the request has multually exclusive options for socket capturing."
+  [req]
+  (when (util/opt req :capture-socket)
+    (when (or (some req #{:connection-manager :insecure})
+              conn/*connection-manager*)
+      (throw
+       (IllegalArgumentException.
+        (str "capturing sockets cannot be used with custom or "
+             "insecure connection manager"))))))
+
+(defn wrap-capture-socket-traffic
+  "Middleware that uses a Socket proxy that can capture raw bytes being sent,
+  returning them in a :raw-socket-str and :raw-socket-bytes parameters in the
+  response."
+  [client]
+  (fn wrap-capture-socket-traffic-fn
+    ([req]
+     (check-conflicting-socket-capture-opts req)
+     (if (util/opt req :capture-socket)
+       (let [baos (ByteArrayOutputStream.)
+             cm (conn/make-capturing-socket-conn-manager baos)
+             resp (client (assoc req :connection-manager cm))
+             bytes (.toByteArray baos)
+             charset (or (:body-encoding req)
+                         (:character-encoding req)
+                         StandardCharsets/UTF_8)]
+         (assoc resp
+                :raw-socket-bytes bytes
+                :raw-socket-str (String. bytes charset)))
+       (client req)))
+    ([req respond raise]
+     (if (util/opt req :capture-socket)
+       (throw
+        (IllegalArgumentException.
+         (str "capturing socket traffic does not currently "
+              "work with async requests")))
+       (client req respond raise)))))
+
 (def default-middleware
   "The default list of middleware clj-http uses for wrapping requests."
   [wrap-request-timing
@@ -1097,6 +1053,7 @@
    ;; headers can be used if desired
    wrap-additional-header-parsing
    wrap-output-coercion
+   wrap-capture-socket-traffic
    wrap-exceptions
    wrap-accept
    wrap-accept-encoding
@@ -1283,9 +1240,9 @@
        (try
          ~@body
          (finally
-           (.shutdown
+           (conn/shutdown-manager
             ^PoolingHttpClientConnectionManager
-            conn/*connection-manager*))))))
+            cm#))))))
 
 (defn reuse-pool
   "A helper function takes a request options map and a response map respond
@@ -1337,6 +1294,6 @@
        (try
          ~@body
          (finally
-           (.shutdown
-            ^PoolingNHttpClientConnectionManager
+           (conn/shutdown-manager
+            ^PoolingAsyncClientConnectionManager
             cm#))))))

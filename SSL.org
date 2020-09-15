@@ -1,0 +1,120 @@
+#+TITLE: Using clj-http with a self-signed certificate
+#+AUTHOR: Lee Hinman
+#+EMAIL: leehinman@fastmail.com
+
+* Introduction
+
+Sometimes people want to use clj-http with a self-signed cert. This is a small guide on how to do
+that.
+
+* Generating the key and cert
+
+First, you'll need to generate a =key.pem= and =cert.pem=, if you don't already have them (or a
+combined version). Make sure that for the common name that you specify the hostname of the machine
+you want to use for clj-http. In the examples below, "perelandra" is the hostname of my laptop.
+
+#+BEGIN_SRC fundamental
+$ openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365
+Generating a 4096 bit RSA private key
+.......................++
+.................................................................................................................................................................................++
+writing new private key to 'key.pem'
+Enter PEM pass phrase:
+Verifying - Enter PEM pass phrase:
+-----
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:US
+State or Province Name (full name) []:Colorado
+Locality Name (eg, city) [Default City]:Denver
+Organization Name (eg, company) [Default Company Ltd]:clj-http
+Organizational Unit Name (eg, section) []:.
+Common Name (eg, your name or your server's hostname) []:perelandra
+Email Address []:lee@example.com
+#+END_SRC
+
+Next, combine the =key.pem= and =cert.pem= files:
+
+#+BEGIN_SRC fundamental
+$ cat cert.pem > combined.pem
+$ cat key.pem >> combined.pem
+#+END_SRC
+
+You can use these files to start whatever server you are using serving HTTPS, for example, I use
+twisted (twistd) with:
+
+#+BEGIN_SRC fundamental
+$ twistd -no web --https=4443 -c cert.pem -k key.pem --path=.
+
+Removing stale pidfile /home/hinmanm/twistd.pid
+Enter PEM pass phrase:
+2018-02-20T21:27:04-0700 [-] Removing stale pidfile /home/hinmanm/twistd.pid
+2018-02-20T21:27:07-0700 [twisted.scripts._twistd_unix.UnixAppLogger#info] twistd 17.9.0 (/usr/bin/python3 3.6.4) starting up.
+2018-02-20T21:27:07-0700 [twisted.scripts._twistd_unix.UnixAppLogger#info] reactor class: twisted.internet.epollreactor.EPollReactor.
+2018-02-20T21:27:07-0700 [-] Site (TLS) starting on 4443
+2018-02-20T21:27:07-0700 [twisted.web.server.Site#info] Starting factory <twisted.web.server.Site object at 0x7f9798bbbb00>
+2018-02-20T21:27:07-0700 [-] Site starting on 8080
+#+END_SRC
+
+* Creating the Java keystore
+
+Next, you'll need to create a keystore that has this new key:
+
+#+BEGIN_SRC fundamental
+$ keytool -import -alias mykey -keystore mykeystore.ks -file combined.pem
+Enter keystore password:
+Re-enter new password:
+Owner: EMAILADDRESS=lee@example.com, CN=perelandra, O=clj-http, L=Denver, ST=Colorado, C=US
+Issuer: EMAILADDRESS=lee@example.com, CN=perelandra, O=clj-http, L=Denver, ST=Colorado, C=US
+Serial number: f15128a283778dd0
+Valid from: Tue Feb 20 21:22:59 MST 2018 until: Wed Feb 20 21:22:59 MST 2019
+Certificate fingerprints:
+	 SHA1: F6:40:6E:32:13:77:F1:88:17:E7:9A:A7:3B:B4:13:5E:DD:2E:6D:7E
+	 SHA256: 2A:E4:62:BF:C0:36:FF:15:7C:FD:79:29:E8:44:DA:6B:E1:54:F3:F2:0E:52:B6:D8:59:FD:16:A8:84:F4:80:84
+Signature algorithm name: SHA256withRSA
+Subject Public Key Algorithm: 4096-bit RSA key
+Version: 3
+
+Extensions:
+
+#1: ObjectId: 2.5.29.35 Criticality=false
+AuthorityKeyIdentifier [
+KeyIdentifier [
+0000: CF 20 7B 63 22 53 0D E6   2C 1D EE 5A 00 BB FC 19  . .c"S..,..Z....
+0010: 11 5F 0C 2B                                        ._.+
+]
+]
+
+#2: ObjectId: 2.5.29.19 Criticality=true
+BasicConstraints:[
+  CA:true
+  PathLen:2147483647
+]
+
+#3: ObjectId: 2.5.29.14 Criticality=false
+SubjectKeyIdentifier [
+KeyIdentifier [
+0000: CF 20 7B 63 22 53 0D E6   2C 1D EE 5A 00 BB FC 19  . .c"S..,..Z....
+0010: 11 5F 0C 2B                                        ._.+
+]
+]
+
+Trust this certificate? [no]:  yes
+Certificate was added to keystore
+#+END_SRC
+
+* Using the keystore from clj-http
+
+Once you have your keystore, you can use it from clj-http like so, be sure to use the same password
+as you specified above
+
+#+BEGIN_SRC clj
+(http/get "https://perelandra:4443/" {:trust-store "/home/hinmanm/mykeystore.ks" :trust-store-pass "password"})
+#+END_SRC
+
+Hope this helps you!

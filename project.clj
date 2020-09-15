@@ -1,4 +1,4 @@
-(defproject clj-http "3.10.3-SNAPSHOT"
+(defproject clj-http "4.0.0-SNAPSHOT"
   :description "A Clojure HTTP library wrapping the Apache HttpComponents client."
   :url "https://github.com/dakrone/clj-http/"
   :license {:name "The MIT License"
@@ -7,14 +7,11 @@
   :global-vars {*warn-on-reflection* false}
   :min-lein-version "2.0.0"
   :exclusions [org.clojure/clojure]
-  :dependencies [[org.apache.httpcomponents/httpcore "4.4.12"]
-                 [org.apache.httpcomponents/httpclient "4.5.10"]
-                 [org.apache.httpcomponents/httpclient-cache "4.5.10"]
-                 [org.apache.httpcomponents/httpasyncclient "4.1.4"]
-                 [org.apache.httpcomponents/httpmime "4.5.10"]
+  :dependencies [[org.apache.httpcomponents.core5/httpcore5 "5.0.1"]
+                 [org.apache.httpcomponents.client5/httpclient5 "5.0.1"]
+                 [org.apache.httpcomponents.client5/httpclient5-cache "5.0.1"]
                  [commons-codec "1.12"]
                  [commons-io "2.6"]
-                 [slingshot "0.12.2"]
                  [potemkin "0.4.5"]]
   :resource-paths ["resources"]
   :profiles {:dev {:dependencies [;; optional deps
@@ -39,12 +36,10 @@
                              [jonase/eastwood "0.2.5"]
                              [lein-kibit "0.1.5"]
                              [lein-nvd "0.5.2"]]}
-             :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
-             :1.7 {:dependencies [[org.clojure/clojure "1.7.0"]]}
              :1.8 {:dependencies [[org.clojure/clojure "1.8.0"]]}
              :1.9 {:dependencies [[org.clojure/clojure "1.9.0"]]}
              :1.10 {:dependencies [[org.clojure/clojure "1.10.1"]]}}
-  :aliases {"all" ["with-profile" "dev,1.6:dev,1.7:dev,1.8:dev,1.9:dev,1.10:dev"]}
+  :aliases {"all" ["with-profile" "dev,1.8:dev,1.9:dev,1.10:dev"]}
   :plugins [[codox "0.6.4"]]
   :test-selectors {:default  #(not (:integration %))
                    :integration :integration
