@@ -7,16 +7,12 @@
 #+HTML_HEAD: <style type="text/css"> body {margin-right:15%; margin-left:15%;} </style>
 #+LANGUAGE: en
 
+[[https://clojars.org/clj-http][file:https://img.shields.io/clojars/v/clj-http.svg]] [[https://github.com/dakrone/clj-http/actions?query=workflow%3A%22Clojure+CI%22][file:https://github.com/dakrone/clj-http/workflows/Clojure%20CI/badge.svg]] [[https://gitter.im/clj-http/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge][file:https://badges.gitter.im/clj-http/Lobby.svg]]
+
 * Table of Contents                                                     :TOC:
 :PROPERTIES:
 :CUSTOM_ID: h-aaf075ea-2f0e-4a45-871a-0f89c838fb4b
 :END:
-
-[[https://secure.travis-ci.org/dakrone/clj-http.png]]
-
-#+ATTR_HTML: title="Join the chat at https://gitter.im/clj-http/Lobby"
-[[https://gitter.im/clj-http/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge][file:https://badges.gitter.im/clj-http/Lobby.svg]]
-
 - [[#branches][Branches]]
 - [[#introduction][Introduction]]
   - [[#overview][Overview]]
@@ -61,6 +57,7 @@
   - [[#custom-middleware][Custom Middleware]]
   - [[#modifying-apache-specific-features-of-the-httpclientbuilder-and-httpasyncclientbuilder][Modifying Apache-specific features of the =HttpClientBuilder= and =HttpAsyncClientBuilder=]]
   - [[#incrementally-json-parsing][Incrementally JSON Parsing]]
+  - [[#dns-resolution][DNS Resolution]]
 - [[#development][Development]]
   - [[#faking-responses][Faking Responses]]
   - [[#optional-dependencies][Optional Dependencies]]
@@ -122,7 +119,7 @@ function.
 With Leiningen/Boot:
 
 #+BEGIN_SRC clojure
-[clj-http "3.10.2"]
+[clj-http "3.10.3"]
 #+END_SRC
 
 If you need an older version, a 2.x release is also available.
