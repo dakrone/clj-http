@@ -128,7 +128,10 @@
   "Resolve and apply cheshire's json decoding dynamically."
   [& args]
   {:pre [json-enabled?]}
-  (apply (ns-resolve (symbol "cheshire.core") (symbol "parse-stream-strict")) args))
+  (if-let [json-decode-fn (ns-resolve (symbol "cheshire.core") (symbol "parse-stream-strict"))]
+    (apply json-decode-fn args)
+    (throw
+     (IllegalStateException. "Missing #'cheshire.core/parse-stream-strict. Ensure the version of `cheshire` is >= 5.9.0"))))
 
 (defn ^:dynamic form-decode
   "Resolve and apply ring-codec's form decoding dynamically."
