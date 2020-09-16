@@ -1,5 +1,5 @@
 (ns clj-http.core
-  "Core HTTP request/response implementation. Rewrite for Apache 4.3"
+  "Core HTTP request/response implementation. Rewrite for Apache 5.0"
   (:require [clj-http.conn-mgr :as conn]
             [clj-http.headers :as headers]
             [clj-http.multipart :as mp]
@@ -12,15 +12,17 @@
            (org.apache.hc.core5.http HttpEntity HttpHost HttpRequest
                                      HttpResponse HttpRequestInterceptor
                                      HttpResponseInterceptor
-                                     ProtocolException)
+                                     ProtocolException
+                                     ContentType)
+           (org.apache.hc.core5.http.protocol HttpContext)
            (org.apache.hc.client5.http.auth CredentialsProvider
                                             UsernamePasswordCredentials AuthScope
                                             NTCredentials)
-           (org.apache.hc.client5.http HttpRequestRetryHandler HttpRoute)
+           (org.apache.hc.client5.http HttpRoute)
            (org.apache.hc.client5.http.protocol RedirectStrategy)
            (org.apache.hc.client5.http.cache HttpCacheContext)
-           (org.apache.hc.client5.http.config RequestConfig CookieSpecs)
-           (org.apache.hc.client5.http.cookie CookieSpecProvider)
+           (org.apache.hc.client5.http.cookie CookieSpecFactory StandardCookieSpec)
+           (org.apache.hc.client5.http.config RequestConfig)
            (org.apache.hc.client5.http.impl.classic CloseableHttpResponse
                                                     CloseableHttpClient
                                                     HttpClients
@@ -35,9 +37,6 @@
            (org.apache.hc.client5.http.utils URIUtils)
            (org.apache.hc.core5.http.config RegistryBuilder)
            (org.apache.hc.client5.http.routing HttpRoutePlanner)
-           (org.apache.hc.client5.http.ssl DefaultHostnameVerifier SSLConnectionSocketFactory)
-           (org.apache.hc.core5.ssl SSLContexts)
-           (org.apache.hc.client5.http.socket PlainConnectionSocketFactory)
            (org.apache.hc.core5.http.io.entity ByteArrayEntity StringEntity)
            (org.apache.hc.client5.http.impl DefaultRedirectStrategy)
            (org.apache.hc.client5.http.impl.auth BasicCredentialsProvider)
@@ -46,11 +45,7 @@
            (org.apache.hc.client5.http.impl.async HttpAsyncClientBuilder
                                                   HttpAsyncClients
                                                   CloseableHttpAsyncClient)
-           (org.apache.hc.core5.http.message BasicHttpResponse)
-           (java.util.concurrent ExecutionException)
-           (org.apache.http.entity.mime HttpMultipartMode)))
-
-(def CUSTOM_COOKIE_POLICY "_custom")
+           (org.apache.hc.core5.http.io.entity EntityUtils)))
 
 (def CUSTOM_COOKIE_POLICY "_custom")
 
@@ -73,25 +68,23 @@
                    (headers/assoc-join hs k v))
                  (headers/header-map)))))
 
-#_(defn graceful-redirect-strategy
+(defn graceful-redirect-strategy
   "Similar to the default redirect strategy, however, does not throw an error
   when the maximum number of redirects has been reached. Still supports
   validating that the new redirect host is not empty."
   [req]
   (let [validate? (opt req :validate-redirects)]
     (reify RedirectStrategy
-      (getRedirect [this request response context]
-        (let [new-request (.getRedirect DefaultRedirectStrategy/INSTANCE
-                                        request response context)]
+      (^URI getLocationURI [this ^HttpRequest request ^HttpResponse response ^HttpContext context]
+       (let [uri (.getLocationURI DefaultRedirectStrategy/INSTANCE request response context)]
           (when (or validate? (nil? validate?))
-            (let [uri (.getURI new-request)
-                  new-host (URIUtils/extractHost uri)]
+            (let [new-host (URIUtils/extractHost uri)]
               (when (nil? new-host)
                 (throw
                  (ProtocolException.
                   (str "Redirect URI does not specify a valid host name: "
                        uri))))))
-          new-request))
+          uri))
 
       (isRedirected [this request response context]
         (let [^HttpClientContext typed-context context
@@ -103,24 +96,23 @@
             (.isRedirected DefaultRedirectStrategy/INSTANCE
                            request response typed-context)))))))
 
-#_(defn default-redirect-strategy
+(defn default-redirect-strategy
   "Proxies calls to whatever original redirect strategy is passed in, however,
   if :validate-redirects is set in the request, checks that the redirected host
   is not empty."
   [^RedirectStrategy original req]
   (let [validate? (opt req :validate-redirects)]
     (reify RedirectStrategy
-      (getRedirect [this request response context]
-        (let [new-request (.getRedirect original request response context)]
-          (when (or validate? (nil? validate?))
-            (let [uri (.getURI new-request)
-                  new-host (URIUtils/extractHost uri)]
-              (when (nil? new-host)
-                (throw
-                 (ProtocolException.
-                  (str "Redirect URI does not specify a valid host name: "
-                       uri))))))
-          new-request))
+      (^URI getLocationURI [this ^HttpRequest request ^HttpResponse response ^HttpContext context]
+       (let [uri (.getLocationURI DefaultRedirectStrategy/INSTANCE request response context)]
+         (when (or validate? (nil? validate?))
+           (let [new-host (URIUtils/extractHost uri)]
+             (when (nil? new-host)
+               (throw
+                (ProtocolException.
+                 (str "Redirect URI does not specify a valid host name: "
+                      uri))))))
+         uri))
 
       (isRedirected [this request response context]
         (.isRedirected original request response context)))))
@@ -135,18 +127,14 @@
 
       ;; Like default, but does not throw exceptions when max redirects is
       ;; reached.
-      ;; :graceful (graceful-redirect-strategy req)
-
-      :default DefaultRedirectStrategy/INSTANCE
-      ;; :default (default-redirect-strategy DefaultRedirectStrategy/INSTANCE req)
-      ;; :lax (default-redirect-strategy (LaxRedirectStrategy.) req)
-      nil DefaultRedirectStrategy/INSTANCE
-      ;; nil (default-redirect-strategy DefaultRedirectStrategy/INSTANCE req)
+      :graceful (graceful-redirect-strategy req)
+      :default (default-redirect-strategy DefaultRedirectStrategy/INSTANCE req)
 
       ;; use default
       DefaultRedirectStrategy/INSTANCE)))
 
-(defn ^HttpClientBuilder add-retry-handler [^HttpClientBuilder builder handler]
+;; TODO: replace with retry-strategy
+#_(defn ^HttpClientBuilder add-retry-handler [^HttpClientBuilder builder handler]
   (when handler
     (.setRetryHandler
      builder
@@ -162,7 +150,7 @@
   [cookie-spec-fn]
   (-> (RegistryBuilder/create)
       (.register CUSTOM_COOKIE_POLICY
-                 (proxy [CookieSpecProvider] []
+                 (proxy [CookieSpecFactory] []
                    (create [context]
                      (cookie-spec-fn context))))
       (.build)))
@@ -174,17 +162,17 @@
   (fn get-cookie-dispatch [request] (:cookie-policy request)))
 
 (defmethod get-cookie-policy :none none-cookie-policy
-  [_] CookieSpecs/IGNORE_COOKIES)
+  [_] StandardCookieSpec/IGNORE)
 (defmethod get-cookie-policy :default default-cookie-policy
-  [_] CookieSpecs/DEFAULT)
+  [_] StandardCookieSpec/RELAXED)
 (defmethod get-cookie-policy nil nil-cookie-policy
-  [_] CookieSpecs/DEFAULT)
+  [_] StandardCookieSpec/RELAXED)
 (defmethod get-cookie-policy :ignore netscape-cookie-policy
-  [_] CookieSpecs/IGNORE_COOKIES)
+  [_] StandardCookieSpec/IGNORE)
 (defmethod get-cookie-policy :standard standard-cookie-policy
-  [_] CookieSpecs/STANDARD)
+  [_] StandardCookieSpec/RELAXED)
 (defmethod get-cookie-policy :stardard-strict standard-strict-cookie-policy
-  [_] CookieSpecs/STANDARD_STRICT)
+  [_] StandardCookieSpec/STRICT)
 
 (defn request-config [{:keys [connection-timeout
                               connection-request-timeout
@@ -317,13 +305,17 @@
    & [http-url proxy-ignore-hosts]]
   ;; have to let first, otherwise we get a reflection warning on (.build)
   (let [cache? (opt req :cache)
-        ^HttpClientBuilder builder (-> (if caching?
-                                         (CachingHttpClientBuilder/create)
-                                         (HttpClients/custom))
+        ^HttpClientBuilder builder (-> (cond http-client-builder
+                                             http-client-builder
+
+                                             caching?
+                                             (CachingHttpClientBuilder/create)
+                                             :else
+                                             (HttpClients/custom))
                                        (.setConnectionManager conn-mgr)
                                        (.setRedirectStrategy
                                         (get-redirect-strategy req))
-                                       (add-retry-handler retry-handler)
+                                       #_(add-retry-handler retry-handler)
                                        ;; By default, get the proxy settings
                                        ;; from the jvm or system properties
                                        (.setRoutePlanner
@@ -466,7 +458,8 @@
   and the connection manager when closed."
   [^HttpEntity http-entity conn-mgr ^CloseableHttpResponse response]
   (if http-entity
-    (proxy [FilterInputStream]
+    (.getContent http-entity)
+    #_(proxy [FilterInputStream]
         [^InputStream (.getContent http-entity)]
       (close []
         (try
@@ -630,7 +623,7 @@
              (.setEntity http-req
                          (if (string? body)
                            (StringEntity. ^String body "UTF-8")
-                           (ByteArrayEntity. body)))))))
+                           (ByteArrayEntity. body ContentType/WILDCARD)))))))
      (doseq [[header-n header-v] headers]
        (if (coll? header-v)
          (doseq [header-vth header-v]

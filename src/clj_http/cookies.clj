@@ -5,17 +5,16 @@
   (:import (org.apache.hc.client5.http.cookie BasicCookieStore
                                               Cookie
                                               CookieOrigin
-                                              CookieSpec
                                               CookieStore)
            (org.apache.hc.client5.http.impl.cookie BasicClientCookie
-                                                   RFC6265CookieSpecProvider)
+                                                   RFC6265CookieSpecFactory)
            (org.apache.hc.core5.http Header)
            (org.apache.hc.core5.http.message BasicHeader)
            (org.apache.hc.core5.http.protocol BasicHttpContext)))
 
 (defn cookie-spec ^org.apache.hc.client5.http.cookie.CookieSpec []
   (.create
-   (RFC6265CookieSpecProvider.)
+   (RFC6265CookieSpecFactory.)
    (BasicHttpContext.)))
 
 (defn compact-map
@@ -31,7 +30,7 @@
   "Converts a ClientCookie object into a tuple where the first item is
   the name of the cookie and the second item the content of the
   cookie."
-  [cookie]
+  [^Cookie cookie]
   [(.getName cookie)
    (compact-map
     {:domain (.getDomain cookie)

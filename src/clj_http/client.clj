@@ -531,7 +531,7 @@
 
       (instance? (Class/forName "[B") body)
       (-> req (assoc :body (maybe-wrap-entity
-                            req (ByteArrayEntity. body))))
+                            req (ByteArrayEntity. body ContentType/WILDCARD))))
 
       :else
       req)
