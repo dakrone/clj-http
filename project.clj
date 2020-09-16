@@ -29,6 +29,7 @@
                                   ;; caching example deps
                                   [org.clojure/core.cache "0.7.2"]
                                   ;; logging
+                                  [org.apache.logging.log4j/log4j-slf4j-impl "2.11.2"]
                                   [org.apache.logging.log4j/log4j-api "2.11.2"]
                                   [org.apache.logging.log4j/log4j-core "2.11.2"]
                                   [org.apache.logging.log4j/log4j-1.2-api "2.11.2"]]
