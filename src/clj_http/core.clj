@@ -1,51 +1,33 @@
 (ns clj-http.core
   "Core HTTP request/response implementation. Rewrite for Apache 5.0"
-  (:require [clj-http.conn-mgr :as conn]
+  (:require [clj-http.conn-mgr :as conn-mgr]
             [clj-http.headers :as headers]
             [clj-http.multipart :as mp]
             [clj-http.util :refer [opt]]
-            [clojure.pprint])
-  (:import (java.io ByteArrayOutputStream FilterInputStream InputStream)
-           (java.net URI URL ProxySelector InetAddress)
-           (java.util Locale)
-           (java.util.concurrent TimeUnit)
-           (org.apache.hc.core5.http HttpEntity HttpHost HttpRequest
-                                     HttpResponse HttpRequestInterceptor
-                                     HttpResponseInterceptor
-                                     ProtocolException
-                                     ContentType)
-           (org.apache.hc.core5.http.protocol HttpContext)
-           (org.apache.hc.client5.http.auth CredentialsProvider
-                                            UsernamePasswordCredentials AuthScope
-                                            NTCredentials)
-           (org.apache.hc.client5.http HttpRoute)
-           (org.apache.hc.client5.http.protocol RedirectStrategy)
-           (org.apache.hc.client5.http.cache HttpCacheContext)
-           (org.apache.hc.client5.http.cookie CookieSpecFactory StandardCookieSpec)
-           (org.apache.hc.client5.http.config RequestConfig)
-           (org.apache.hc.client5.http.impl.classic CloseableHttpResponse
-                                                    CloseableHttpClient
-                                                    HttpClients
-                                                    HttpClientBuilder)
-           (org.apache.hc.client5.http.impl.cache CacheConfig
-                                                  CachingHttpClientBuilder)
-           (org.apache.hc.client5.http.classic.methods HttpDelete HttpGet HttpPost HttpPut
-                                                       HttpOptions HttpPatch
-                                                       HttpHead
-                                                       HttpUriRequest HttpUriRequestBase)
-           (org.apache.hc.client5.http.protocol HttpClientContext)
-           (org.apache.hc.client5.http.utils URIUtils)
-           (org.apache.hc.core5.http.config RegistryBuilder)
-           (org.apache.hc.client5.http.routing HttpRoutePlanner)
-           (org.apache.hc.core5.http.io.entity ByteArrayEntity StringEntity)
-           (org.apache.hc.client5.http.impl DefaultRedirectStrategy)
-           (org.apache.hc.client5.http.impl.auth BasicCredentialsProvider)
-           (org.apache.hc.client5.http.impl.routing SystemDefaultRoutePlanner
-                                                    DefaultProxyRoutePlanner)
-           (org.apache.hc.client5.http.impl.async HttpAsyncClientBuilder
-                                                  HttpAsyncClients
-                                                  CloseableHttpAsyncClient)
-           (org.apache.hc.core5.http.io.entity EntityUtils)))
+            clojure.pprint)
+  (:import [java.io ByteArrayOutputStream FilterInputStream InputStream]
+           [java.net InetAddress ProxySelector URI URL]
+           java.util.concurrent.TimeUnit
+           java.util.Locale
+           [org.apache.hc.client5.http.async.methods SimpleHttpRequest SimpleHttpResponse]
+           [org.apache.hc.client5.http.auth AuthScope CredentialsProvider NTCredentials UsernamePasswordCredentials]
+           org.apache.hc.client5.http.cache.HttpCacheContext
+           [org.apache.hc.client5.http.classic.methods HttpDelete HttpGet HttpHead HttpOptions HttpPatch HttpPost HttpPut HttpUriRequest HttpUriRequestBase]
+           org.apache.hc.client5.http.config.RequestConfig
+           [org.apache.hc.client5.http.cookie CookieSpecFactory StandardCookieSpec]
+           [org.apache.hc.client5.http.impl.async CloseableHttpAsyncClient HttpAsyncClientBuilder HttpAsyncClients]
+           org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider
+           [org.apache.hc.client5.http.impl.cache CacheConfig CachingHttpClientBuilder]
+           [org.apache.hc.client5.http.impl.classic CloseableHttpClient CloseableHttpResponse HttpClientBuilder HttpClients]
+           org.apache.hc.client5.http.impl.DefaultRedirectStrategy
+           [org.apache.hc.client5.http.impl.routing DefaultProxyRoutePlanner SystemDefaultRoutePlanner]
+           [org.apache.hc.client5.http.protocol HttpClientContext RedirectStrategy]
+           org.apache.hc.client5.http.routing.HttpRoutePlanner
+           org.apache.hc.client5.http.utils.URIUtils
+           [org.apache.hc.core5.http ContentType HttpEntity HttpHost HttpRequest HttpRequestInterceptor HttpResponse HttpResponseInterceptor ProtocolException]
+           org.apache.hc.core5.http.config.RegistryBuilder
+           [org.apache.hc.core5.http.io.entity ByteArrayEntity StringEntity]
+           org.apache.hc.core5.http.protocol.HttpContext))
 
 (def CUSTOM_COOKIE_POLICY "_custom")
 
@@ -374,8 +356,8 @@
                                              (get-route-planner
                                               proxy-host proxy-port
                                               proxy-ignore-hosts http-url)))]
-    (when (conn/reusable? conn-mgr)
-      (.setConnectionManagerShared builder true))
+    (.setIOReactorConfig builder (conn-mgr/ioreactor-config req))
+    (.setConnectionManagerShared builder true)
 
     (when request-interceptor
       (.addInterceptorLast
@@ -456,10 +438,9 @@
 (defn- coerce-body-entity
   "Coerce the http-entity from an HttpResponse to a stream that closes itself
   and the connection manager when closed."
-  [^HttpEntity http-entity conn-mgr ^CloseableHttpResponse response]
+  [^HttpEntity http-entity conn-mgr ^CloseableHttpResponse response conn-mgr-reusable?]
   (if http-entity
-    (.getContent http-entity)
-    #_(proxy [FilterInputStream]
+    (proxy [FilterInputStream]
         [^InputStream (.getContent http-entity)]
       (close []
         (try
@@ -469,9 +450,9 @@
           (finally
             (when (instance? CloseableHttpResponse response)
               (.close response))
-            (when-not (conn/reusable? conn-mgr)
+            (when-not conn-mgr-reusable?
               (conn/shutdown-manager conn-mgr))))))
-    (when-not (conn/reusable? conn-mgr)
+    (when-not conn-mgr-reusable?
       (conn/shutdown-manager conn-mgr))))
 
 (defn- print-debug!
@@ -501,15 +482,25 @@
      (println "HttpRequest:")
      (clojure.pprint/pprint (bean http-req)))))
 
+(defmulti http-entity class)
+(defmethod http-entity CloseableHttpResponse [^CloseableHttpResponse response]
+  (.getEntity response))
+(defmethod http-entity SimpleHttpResponse [^SimpleHttpResponse response]
+  (ByteArrayEntity.
+   (.getBodyBytes response)
+   (.getContentType response)))
+
 (defn- build-response-map
   [^HttpResponse response req ^HttpUriRequest http-req http-url
-   conn-mgr ^HttpClientContext context ^CloseableHttpClient client]
-  (let [^HttpEntity entity (.getEntity response)
+   conn-mgr ^HttpClientContext context ^CloseableHttpClient client conn-mgr-reusable?]
+  (println ::reusable conn-mgr-reusable?)
+  (def the-response response)
+  (let [^HttpEntity entity (http-entity response)
         status (.getCode response)
         protocol-version (.getVersion response)
         body (:body req)
         response
-        {:body (coerce-body-entity entity conn-mgr response)
+        {:body (coerce-body-entity entity conn-mgr response conn-mgr-reusable?)
          :http-client client
          :headers (parse-headers
                    (.headerIterator response)
@@ -576,6 +567,9 @@
                        (when query-string (str "?" query-string)))
          conn-mgr (or connection-manager
                       (get-conn-mgr async? req))
+         conn-mgr-reusable? (boolean (or connection-manager
+                                         (= conn-mgr conn/*connection-manager*)))
+
          ;; Has an async connection manager been manually specified?
          async-conn-mgr-reusable? (boolean (or connection-manager
                                                conn/*async-connection-manager*))
@@ -639,9 +633,11 @@
                                     conn-mgr http-url proxy-ignore-hosts))]
          (try
            (build-response-map (.execute client http-req context)
-                               req http-req http-url conn-mgr context client)
+                               req http-req http-url conn-mgr context client
+                               conn-mgr-reusable?
+                               )
            (catch Throwable t
-             (when-not (conn/reusable? conn-mgr)
+             (when-not conn-mgr-reusable?
                (conn/shutdown-manager conn-mgr))
              (throw t))))
 
@@ -653,11 +649,11 @@
            (throw (IllegalArgumentException.
                    "caching is not yet supported for async clients")))
          (.start client)
-         (.execute client http-req context
+         (.execute ^CloseableHttpAsyncClient client (SimpleHttpRequest/copy http-req) ^HttpContext context
                    (reify org.apache.hc.core5.concurrent.FutureCallback
                      (failed [this ex]
                        (clojure.lang.Var/resetThreadBindingFrame original-thread-bindings)
-                       (when-not (conn/reusable? conn-mgr)
+                       (when-not conn-mgr-reusable?
                          (conn/shutdown-manager conn-mgr))
                        (if (opt req :ignore-unknown-host)
                          ((:unknown-host-respond req) nil)
@@ -667,9 +663,12 @@
                        (try
                          (respond (build-response-map
                                    resp req http-req http-url
-                                   conn-mgr context client))
+                                   conn-mgr context client
+                                   async-conn-mgr-reusable?
+                                   ))
                          (catch Throwable t
-                           (when-not (conn/reusable? conn-mgr)
+                           (println ::t t)
+                           (when-not conn-mgr-reusable?
                              (conn/shutdown-manager conn-mgr))
                            (raise t))))
                      (cancelled [this]
@@ -679,5 +678,5 @@
                          (oncancel))
                        ;; Attempt to abort the execution of the request
                        (.abort http-req)
-                       (when-not (conn/reusable? conn-mgr)
+                       (when-not conn-mgr-reusable?
                          (conn/shutdown-manager conn-mgr))))))))))

@@ -5,25 +5,21 @@
             [clj-http.core :as core]
             [clj-http.util :as util]
             [clojure.java.io :refer [file]]
-            [clojure.pprint :as pp]
             [clojure.test :refer :all]
             [ring.adapter.jetty :as ring])
-  (:import (java.io ByteArrayInputStream)
-           (java.net SocketTimeoutException)
-           (java.util.concurrent TimeoutException TimeUnit)
-           (org.apache.hc.core5.http.message BasicHeader BasicHeaderIterator)
-           (org.apache.hc.client5.http.classic.methods HttpPost)
-           (org.apache.hc.client5.http.cookie MalformedCookieException)
-           (org.apache.hc.core5.http.protocol HttpCoreContext)
-           (org.apache.hc.client5.http.protocol HttpClientContext)
-           (org.apache.hc.client5.http.impl.classic CloseableHttpClient)
-           (org.apache.hc.client5.http.impl.cookie CookieSpecBase RFC6265CookieSpecProvider)
-           (org.apache.hc.client5.http.config RequestConfig)
-           (org.apache.hc.core5.http HttpRequest HttpResponse HttpConnection
-                                     ProtocolException)
-           (org.apache.hc.core5.http.protocol HttpContext)
-           (org.apache.logging.log4j LogManager)
-           (sun.security.provider.certpath SunCertPathBuilderException)))
+  (:import java.io.ByteArrayInputStream
+           [java.net InetAddress SocketTimeoutException]
+           org.apache.hc.client5.http.config.RequestConfig
+           org.apache.hc.client5.http.cookie.MalformedCookieException
+           [org.apache.hc.client5.http.impl.classic CloseableHttpClient HttpClientBuilder]
+           [org.apache.hc.client5.http.impl.cookie CookieSpecBase RFC6265CookieSpecFactory]
+           org.apache.hc.client5.http.impl.InMemoryDnsResolver
+           org.apache.hc.client5.http.protocol.HttpClientContext
+           [org.apache.hc.core5.http HttpConnection HttpRequest HttpResponse]
+           [org.apache.hc.core5.http.message BasicHeader BasicHeaderIterator]
+           org.apache.hc.core5.http.protocol.HttpContext
+           org.apache.logging.log4j.LogManager
+           sun.security.provider.certpath.SunCertPathBuilderException))
 
 (defonce logger (LogManager/getLogger "clj-http.test.core-test"))
 
@@ -804,12 +800,11 @@
         resp (client/get
               (localhost "/get")
               {:http-client-builder
-               (-> (org.apache.http.impl.client.HttpClientBuilder/create)
+               (-> (HttpClientBuilder/create)
                    (.setRequestExecutor
-                    (proxy [org.apache.http.protocol.HttpRequestExecutor] []
+                    (proxy [org.apache.hc.core5.http.impl.io.HttpRequestExecutor] []
                       (execute [request connection context]
                         (->> request
-                             .getRequestLine
                              .getMethod
                              (swap! methods conj))
                         (proxy-super execute request connection context)))))})]
@@ -892,7 +887,7 @@
     (catch MalformedCookieException e))
   (client/get (localhost "/bad-cookie") {:decode-cookies false})
   (let [validated (atom false)
-        spec-provider (RFC6265CookieSpecProvider.)
+        spec-provider (RFC6265CookieSpecFactory.)
         resp (client/get (localhost "/cookie")
                          {:cookie-spec
                           (fn [http-context]
