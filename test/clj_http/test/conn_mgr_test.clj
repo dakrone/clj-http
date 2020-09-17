@@ -130,7 +130,7 @@
 (deftest ^:integration t-closed-conn-mgr-for-as-stream
   (run-server)
   ;; timeouts forces an exception being thrown
-  (let [cm (conn-mgr/make-regular-conn-manager {:socket/timeout 1})]
+  (let [cm (conn-mgr/make-conn-manager {:socket/timeout 1})]
     (with-redefs-fn {#'conn-mgr/make-regular-conn-manager (constantly cm)}
       #(try
          (core/request {:request-method :get :uri "/timeout"
@@ -145,23 +145,10 @@
 
 (deftest ^:integration t-closed-conn-mgr-for-empty-body
   (run-server)
-  (let [cm (conn-mgr/make-regular-conn-manager {})]
+  (let [cm (conn-mgr/make-conn-manager {})]
     (with-redefs-fn {#'conn-mgr/make-regular-conn-manager (constantly cm)}
       #(core/request {:request-method :get :uri "/unmodified-resource"
                       :server-port 18080 :scheme :http
                       :server-name "localhost"}))
     (is (thrown-with-msg? IllegalStateException #"Connection pool shut down"
                           (.lease cm "12345" (HttpRoute. (HttpHost/create "https://localhost:18080"))  {})))))
-
-;; TODO: remove me, this is a poor way of defining reusability
-#_(deftest t-reusable-conn-mgrs
-  (let [regular (conn-mgr/make-regular-conn-manager {})
-        regular-reusable (conn-mgr/make-reusable-conn-manager {})
-        async (conn-mgr/make-regular-async-conn-manager {})
-        async-reusable (conn-mgr/make-reusable-async-conn-manager {})
-        async-reuseable (conn-mgr/make-reuseable-async-conn-manager {})]
-    (is (false? (conn-mgr/reusable? regular)))
-    (is (true? (conn-mgr/reusable? regular-reusable)))
-    (is (true? (conn-mgr/reusable? async)))
-    (is (true? (conn-mgr/reusable? async-reusable)))
-    (is (true? (conn-mgr/reusable? async-reuseable)))))

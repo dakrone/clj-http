@@ -544,9 +544,9 @@
   [async? req]
   (if async?
     (or conn/*async-connection-manager*
-        (conn/make-regular-async-conn-manager req))
+        (conn/make-async-conn-manager req))
     (or conn/*connection-manager*
-        (conn/make-regular-conn-manager req))))
+        (conn/make-conn-manager req))))
 
 (defn request
   ([req] (request req nil nil))
