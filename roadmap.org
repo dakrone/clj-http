@@ -1,0 +1,36 @@
+* 4.x Upgrade Tasks
+
+- [X] migrate to switch to apache httpclient 5.x
+- [ ] remove old redirect behavior
+- [ ] update cookie default behavior
+- [ ] wrap async response in a future
+- [ ] remove deprecated :transit-opts
+- [ ] fix linter errors using clj-kondo
+- [ ] remove spelling errors for reuseable -> reusable
+- [ ] update list of options for request options
+- [ ] update list of connection pooling options
+
+- [ ] Re-triage all 4.x labelled tickets and identify if fixed correctly
+- [ ] HTTP Client Builder
+  - [ ] Implement & Migrate RetryHandler -> RetryStrategy
+- [ ] CookieSpec API has changed
+  - [ ] Note in README that the custom cookie spec is a breaking change
+  - [ ] Update README instructions on custom cookie policy
+- [ ] RedirectStrategy API changed
+  - [ ] Note in README that the custom redirect strategy is a breaking change
+  - [ ] only impacts you if you implement a custom redirect strategy
+  - [ ] redirect is alwasy lax now
+
+- [ ] Clean up how reusable connections are defined
+  - [ ] It should depend on the *context* rather than a marker of the class
+- [ ] tests for socks proxy
+  - [ ] migrated into get-socket-config
+
+
+
+** Foundational
+- [ ] Understand how the async client interacts in this version
+- [ ] Understand how the connection managers are configured in this version
+
+** Optional
+- [ ] Propose namespacing related request parameters
