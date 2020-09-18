@@ -17,7 +17,12 @@ List of user-visible changes that have gone into each release
 - Removed deprecated :follow-redirects & :force-redirects options
 - Added an option to capture socket data as it is written out
   https://github.com/dakrone/clj-http/pull/440
-** 3.10.3 (Unreleased)
+** 3.10.4 (Unreleased)
+** 3.10.3
+- Improve error message when using incompatible version of cheshire
+  https://github.com/dakrone/clj-http/pull/558
+- Properly handle "308 Permanent Redirect" status code
+  https://github.com/dakrone/clj-http/pull/554
 ** 3.10.2
 - Fix performance regressions from #528
   https://github.com/dakrone/clj-http/pull/546
