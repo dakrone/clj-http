@@ -1,4 +1,4 @@
-(defproject clj-http "3.10.3"
+(defproject clj-http "3.10.4-SNAPSHOT"
   :description "A Clojure HTTP library wrapping the Apache HttpComponents client."
   :url "https://github.com/dakrone/clj-http/"
   :license {:name "The MIT License"
