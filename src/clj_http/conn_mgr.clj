@@ -146,16 +146,16 @@
   "
   ([config]
    (get-socket-config (SocketConfig/custom) config))
-  ([^SocketConfig$Builder builder {:keys [socket-timeout]
-                                   :socket/keys [backlog-size
-                                                 rcv-buf-size
-                                                 snd-buf-size
-                                                 socks-proxy-address
-                                                 keepalive
-                                                 linger
-                                                 reuse-address
-                                                 timeout
-                                                 tcp-no-delay]}]
+  ([^SocketConfig$Builder builder {:keys [socket-timeout
+                                          :socket/backlog-size
+                                          :socket/rcv-buf-size
+                                          :socket/snd-buf-size
+                                          :socket/socks-proxy-address
+                                          :socket/keepalive
+                                          :socket/linger
+                                          :socket/reuse-address
+                                          :socket/timeout
+                                          :socket/tcp-no-delay]}]
    (cond-> builder
      backlog-size (.setBacklogSize backlog-size)
      rcv-buf-size (.setRcvBufSize rcv-buf-size)
