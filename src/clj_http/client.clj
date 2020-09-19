@@ -499,42 +499,43 @@
   [{:keys [body body-encoding length]
     :or {^String body-encoding "UTF-8"} :as req}]
   (if body
-    (cond
-      (string? body)
-      (-> req (assoc :body (maybe-wrap-entity
-                            req (StringEntity. ^String body
-                                               StandardCharsets/UTF_8
-                                               ;; TODO: use ContentType here
-                                               ;;^String body-encoding
-                                               ))
-                     :character-encoding (or body-encoding
-                                             "UTF-8")))
-      (instance? File body)
-      (-> req (assoc :body
+    (let [content-type (if-let [content-type (get-in req [:headers "content-type"])]
+                         (ContentType/parse content-type)
+                         ContentType/DEFAULT_BINARY)]
+      (cond
+        (string? body)
+        (-> req (assoc :body (maybe-wrap-entity
+                              req (StringEntity.
+                                   ^String body
+                                   (.withCharset content-type StandardCharsets/UTF_8)))
+                       :character-encoding (or body-encoding
+                                               "UTF-8")))
+        (instance? File body)
+        (-> req (assoc :body
+                       (maybe-wrap-entity
+                        req (FileEntity. ^File body
+                                         content-type
+                                         StandardCharsets/UTF_8
+                                         ;; TODO: use ContentType here
+                                         ;;^String body-encoding
+                                         ))))
+
+        ;; A length of -1 instructs HttpClient to use chunked encoding.
+        (instance? InputStream body)
+        (-> req
+            (assoc :body
+                   (if length
+                     (InputStreamEntity. body length content-type)
                      (maybe-wrap-entity
-                      req (FileEntity. ^File body
-                                       StandardCharsets/UTF_8
-                                       ;; TODO: use ContentType here
-                                       ;;^String body-encoding
-                                       ))))
+                      req
+                      (InputStreamEntity. body -1 content-type)))))
 
-      ;; A length of -1 instructs HttpClient to use chunked encoding.
-      (instance? InputStream body)
-      (-> req
-          (assoc :body
-                 (if length
-                   (InputStreamEntity.
-                    ^InputStream body (long length))
-                   (maybe-wrap-entity
-                    req
-                    (InputStreamEntity. ^InputStream body -1)))))
+        (instance? (Class/forName "[B") body)
+        (-> req (assoc :body (maybe-wrap-entity
+                              req (ByteArrayEntity. body ContentType/DEFAULT_BINARY))))
 
-      (instance? (Class/forName "[B") body)
-      (-> req (assoc :body (maybe-wrap-entity
-                            req (ByteArrayEntity. body ContentType/WILDCARD))))
-
-      :else
-      req)
+        :else
+        req))
     req))
 
 (defn wrap-input-coercion
@@ -1232,10 +1233,11 @@
   If the value 'nil' is specified or the value is not set, the default value
   will be used."
   [opts & body]
+  ;; TODO: yes, absolutely!
   ;; I'm leaving the connection bindable for now because in the
   ;; future I'm toying with the idea of managing the connection
   ;; manager yourself and passing it into the request
-  `(let [cm# (conn/make-reusable-conn-manager ~opts)]
+  `(let [cm# (conn/make-conn-manager ~opts)]
      (binding [conn/*connection-manager* cm#]
        (try
          ~@body
@@ -1289,7 +1291,7 @@
   If the value 'nil' is specified or the value is not set, the default value
   will be used."
   [opts & body]
-  `(let [cm# (conn/make-reuseable-async-conn-manager ~opts)]
+  `(let [cm# (conn/make-async-conn-manager ~opts)]
      (binding [conn/*async-connection-manager* cm#]
        (try
          ~@body

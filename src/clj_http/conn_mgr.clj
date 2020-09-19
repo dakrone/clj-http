@@ -3,13 +3,14 @@
   (:require [clj-http.util :refer [opt]]
             [clojure.java.io :as io]
             [clojure.string :as str])
-  (:import [java.net InetSocketAddress]
+  (:import java.net.InetSocketAddress
            java.security.KeyStore
            [javax.net.ssl HostnameVerifier KeyManager SSLContext TrustManager]
            [org.apache.hc.client5.http.impl.io PoolingHttpClientConnectionManager PoolingHttpClientConnectionManagerBuilder]
            [org.apache.hc.client5.http.impl.nio PoolingAsyncClientConnectionManager PoolingAsyncClientConnectionManagerBuilder]
            org.apache.hc.client5.http.socket.PlainConnectionSocketFactory
            [org.apache.hc.client5.http.ssl DefaultHostnameVerifier NoopHostnameVerifier SSLConnectionSocketFactory]
+           [org.apache.hc.core5.http.config Registry RegistryBuilder]
            [org.apache.hc.core5.http.io SocketConfig SocketConfig$Builder]
            [org.apache.hc.core5.pool PoolConcurrencyPolicy PoolReusePolicy]
            org.apache.hc.core5.reactor.IOReactorConfig
@@ -129,6 +130,8 @@
 
   The following options are supported:
 
+  :socket-timeout (for backwards compatibility)
+
   :socket/backlog-size
   :socket/rcv-buf-size
   :socket/snd-buf-size
@@ -186,6 +189,19 @@
     (.build builder)))
 
 ;; -- Connection Managers  -----------------------------------------------------
+(defn into-registry [registry]
+  (cond
+    (instance? Registry registry)
+    registry
+
+    (map? registry)
+    (let [registry-builder (RegistryBuilder/create)]
+      (doseq [[k v] registry]
+        (.register registry-builder k v))
+      (.build registry-builder))
+
+    :else
+    (throw (IllegalArgumentException. "Expected a registry"))))
 
 ;; TODO: take documentation from make-reusable-conn-manager
 (defn ^PoolingHttpClientConnectionManager make-conn-manager
@@ -195,7 +211,7 @@
 
   :connection-time-to-live - Time that connections are left open before automatically closing
     default: 5000 ms
-  :conn-pool-policy - Connection Pool Reuse Policy. One of `:lifo` or `:fifo`. See `org.apache.hc.core5.pool.PoolReusePolicy`.
+  :pool-reuse-policy - Connection Pool Reuse Policy. One of `:lifo` or `:fifo`. See `org.apache.hc.core5.pool.PoolReusePolicy`.
   :dns-resolver - Use a custom DNS resolver instead of the default DNS resolver.
   :max-conn-per-route - Maximum number of simultaneous connections per host
     default: 2
@@ -203,11 +219,6 @@
   :pool-concurrency-policy - Concurrency Policy of Pool. One of `:lax` or `:strict`. See `org.apache.hc.core5.pool.PoolConcurrencyPolicy`.
   :scheme-port-resolver - A custom implementation of SchemePortResolver
   :validate-after-inactivity - How to wait before checking keepalive of connections
-
-  Socket creation can be customized by specifying:
-
-  :connection-factory - Custom non-SSL Connection Factory
-  :ssl-connection-factory - Custom SSL Connection Factory
 
   SSL Connections can also be customized by setting these options:
 
@@ -223,6 +234,8 @@
   Note that :insecure? and :keystore/:trust-store/:key-managers/:trust-managers
   options are mutually exclusive.
 
+  :socket-factory-registry - A custom socket facotry registry. This can be a
+  clojure map *or* an instance of Registry<ConnectionSocketFactory>. This setting will override the SSL Connections section.
 
   Socket Configuration
   :default-socket-config - SocketConfig to use by default.
@@ -232,37 +245,52 @@
 
   If the value 'nil' is specified or the value is not set, the default value
   will be used."
-  [{:keys [connection-factory
-           connection-time-to-live
-           conn-pool-policy
+  [{:keys [connection-time-to-live
+           pool-reuse-policy
            default-socket-config
            dns-resolver
            max-conn-per-route
            max-conn-total
            pool-concurrency-policy
            scheme-port-resolver
-           ssl-connection-factory
-           validate-after-inactivity] :as req :or {connection-time-to-live 5000
-                                                   max-conn-per-route 2}}]
-  (let [builder (PoolingHttpClientConnectionManagerBuilder/create)]
-    (cond-> builder
-      conn-pool-policy (.setConnPoolPolicy (PoolReusePolicy/valueOf (str/upper-case (name conn-pool-policy))))
-      connection-factory (.setConnectionFactory connection-factory)
-      connection-time-to-live (.setConnectionTimeToLive (TimeValue/ofMilliseconds connection-time-to-live))
-      true (.setDefaultSocketConfig (or default-socket-config (get-socket-config req)))
-      dns-resolver (.setDnsResolver dns-resolver)
-      max-conn-per-route (.setMaxConnPerRoute max-conn-per-route)
-      max-conn-total (.setMaxConnTotal max-conn-total)
-      pool-concurrency-policy (.setPoolConcurrencyPolicy (PoolConcurrencyPolicy/valueOf (str/upper-case (name pool-concurrency-policy))))
-      scheme-port-resolver  (.setSchemePortResolver scheme-port-resolver)
-      true (.setSSLSocketFactory (or ssl-connection-factory
-                                     (let [ssl-context (get-ssl-context req)
-                                           verifier (if (opt req :insecure)
-                                                      NoopHostnameVerifier/INSTANCE
-                                                      (DefaultHostnameVerifier.))]
-                                       (SSLConnectionSocketFactory. ssl-context ^HostnameVerifier verifier))))
-      validate-after-inactivity (.setValidateAfterInactivity (TimeValue/ofMilliseconds validate-after-inactivity)))
-    (.build builder)))
+           sockety-factory-registry
+           validate-after-inactivity
+           conn-factory] :as req :or {connection-time-to-live 5000
+                                      max-conn-per-route 2}}]
+  (let [socket-factory-registry (or sockety-factory-registry
+                                    (into-registry
+                                     {"http" (PlainConnectionSocketFactory/getSocketFactory)
+                                      "https" (let [ssl-context (get-ssl-context req)
+                                                    verifier (if (opt req :insecure)
+                                                               NoopHostnameVerifier/INSTANCE
+                                                               (DefaultHostnameVerifier.))]
+                                                (SSLConnectionSocketFactory. ssl-context ^HostnameVerifier verifier))}))
+        pool-concurrency-policy (when pool-concurrency-policy
+                                  (PoolConcurrencyPolicy/valueOf (str/upper-case (name pool-concurrency-policy))))
+
+        pool-reuse-policy (when pool-reuse-policy
+                            (PoolReusePolicy/valueOf (str/upper-case (name pool-reuse-policy))))
+
+        connection-time-to-live (when connection-time-to-live
+                                  (TimeValue/ofMilliseconds connection-time-to-live))
+
+        conn-mgr (PoolingHttpClientConnectionManager.
+                  socket-factory-registry
+                  pool-concurrency-policy
+                  pool-reuse-policy
+                  connection-time-to-live
+                  scheme-port-resolver
+                  dns-resolver
+                  conn-factory)]
+    (.setDefaultSocketConfig conn-mgr (or default-socket-config
+                                          (get-socket-config req)))
+    (when max-conn-per-route
+      (.setDefaultMaxPerRoute conn-mgr max-conn-per-route))
+    (when max-conn-total
+      (.setMaxTotal conn-mgr max-conn-total))
+    (when validate-after-inactivity
+      (.setValidateAfterInactivity conn-mgr validate-after-inactivity))
+    conn-mgr))
 
 
 (defn ^PoolingAsyncClientConnectionManager make-async-conn-manager
@@ -348,5 +376,6 @@
   factory will be sent."
   [output]
   (let [socket-factory #(capturing-socket output)]
-    (make-conn-manager {:connection-factory     (PlainGenericSocketFactory socket-factory)
-                        :ssl-connection-factory (SSLGenericSocketFactory socket-factory nil)})))
+    (make-conn-manager {:socket-factory-registry
+                        {"http" (PlainGenericSocketFactory socket-factory)
+                         "https" (SSLGenericSocketFactory socket-factory nil)}})))

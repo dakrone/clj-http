@@ -11,13 +11,15 @@
            [java.net InetAddress SocketTimeoutException]
            org.apache.hc.client5.http.config.RequestConfig
            org.apache.hc.client5.http.cookie.MalformedCookieException
+           org.apache.hc.client5.http.HttpRoute
            [org.apache.hc.client5.http.impl.classic CloseableHttpClient HttpClientBuilder]
            [org.apache.hc.client5.http.impl.cookie CookieSpecBase RFC6265CookieSpecFactory]
            org.apache.hc.client5.http.impl.InMemoryDnsResolver
            org.apache.hc.client5.http.protocol.HttpClientContext
-           [org.apache.hc.core5.http HttpConnection HttpRequest HttpResponse]
+           [org.apache.hc.core5.http HttpRequest HttpResponse]
            [org.apache.hc.core5.http.message BasicHeader BasicHeaderIterator]
            org.apache.hc.core5.http.protocol.HttpContext
+           org.apache.hc.core5.util.TimeValue
            org.apache.logging.log4j.LogManager
            sun.security.provider.certpath.SunCertPathBuilderException))
 
@@ -127,8 +129,7 @@
     {:status 200 :body "yay"
      :headers
      {"Set-Cookie"
-      (str "DD-PSHARD=3; expires=\"Thu, 12-Apr-2018 06:40:25 GMT\"; "
-           "Max-Age=604800; Path=/; secure; HttpOnly")}}))
+      (str "DD-PSHARD=3; expires=\"Thu, 12-Apr-2018")}}))
 
 (defn add-headers-if-requested [client]
   (fn [req]
@@ -187,7 +188,7 @@
   (let [custom-dns-resolver (doto (InMemoryDnsResolver.)
                               (.add "totallynonexistant.google.com"
                                     (into-array[(InetAddress/getByAddress (byte-array [127 0 0 1]))])))
-        cm (conn/make-reuseable-async-conn-manager {:dns-resolver custom-dns-resolver})
+        cm (conn/make-async-conn-manager {:dns-resolver custom-dns-resolver})
         hc (core/build-async-http-client {} cm)]
     (client/get "http://totallynonexistant.google.com:18080/json"
                 {:connection-manager cm
@@ -200,7 +201,7 @@
                 (fn [e] (is false (str "failed with " e)))))
   (let [custom-dns-resolver (doto (InMemoryDnsResolver.)
                               (.add "nonexistant.google.com" (into-array[(InetAddress/getByAddress (byte-array [127 0 0 1]))])))
-        cm (conn/make-reusable-conn-manager {:dns-resolver custom-dns-resolver})
+        cm (conn/make-conn-manager {:dns-resolver custom-dns-resolver})
         hc (:http-client (client/get "http://nonexistant.google.com:18080/get"
                                      {:connection-manager cm}))
         resp (client/get "http://nonexistant.google.com:18080/json"
@@ -527,7 +528,8 @@
     (is (= 200 (:status resp)))
     (is (= "get" (:body resp)))))
 
-(deftest t-custom-retry-handler
+;; TODO: retry-handlers are no longer implemented
+#_(deftest t-custom-retry-handler
   (let [called? (atom false)]
     (is (thrown? Exception
                  (client/post "http://localhost"
@@ -569,11 +571,11 @@
         (client/get
          (localhost "/get")
          {:request-interceptor
-          (fn [^HttpRequest req ^HttpContext ctx]
-            (reset! req-ctx {:method (.getMethod req) :uri (.getURI req)}))})]
+          (fn [^HttpRequest req _ ^HttpContext ctx]
+            (reset! req-ctx {:method (.getMethod req) :uri (.getUri req)}))})]
     (is (= 200 status))
     (is (= "GET" (:method @req-ctx)))
-    (is (= "/get" (.getPath (:uri @req-ctx))))))
+    (is (= "/get" (.getPath ^java.net.URI (:uri @req-ctx))))))
 
 (deftest ^:integration t-response-interceptor
   (run-server)
@@ -582,16 +584,13 @@
         (client/get
          (localhost "/redirect-to-get")
          {:response-interceptor
-          (fn [^HttpResponse resp ^HttpContext ctx]
-            (let [conn
-                  (.getAttribute ctx "http.connection")]
-              (swap! saved-ctx conj {:remote-port (.getRemotePort conn)
-                                     :http-conn conn})))})]
+          (fn [^HttpResponse resp _ ^HttpContext ctx]
+            (let [^HttpRoute route (.getAttribute ctx HttpClientContext/HTTP_ROUTE)]
+              (swap! saved-ctx conj {:remote-port (-> route .getTargetHost .getPort)})))})]
     (is (= 200 status))
     (is (= 2 (count @saved-ctx)))
     #_(is (= (count trace-redirects) (count @saved-ctx)))
-    (is (every? #(= 18080 (:remote-port %)) @saved-ctx))
-    (is (every? #(instance? HttpConnection (:http-conn %)) @saved-ctx))))
+    (is (every? #(= 18080 (:remote-port %)) @saved-ctx))))
 
 (deftest ^:integration t-send-input-stream-body
   (run-server)
@@ -858,7 +857,7 @@
 
 (deftest ^:integration test-reusable-http-client
   (run-server)
-  (let [cm (conn/make-reuseable-async-conn-manager {})
+  (let [cm (conn/make-async-conn-manager {})
         hc (core/build-async-http-client {} cm)]
     (client/get (localhost "/json")
                 {:connection-manager cm
@@ -869,7 +868,7 @@
                   (is (= 200 (:status resp)))
                   (is (= {:foo "bar"} (:body resp))))
                 (fn [e] (is false (str "failed with " e)))))
-  (let [cm (conn/make-reusable-conn-manager {})
+  (let [cm (conn/make-conn-manager {})
         hc (:http-client (client/get (localhost "/get")
                                      {:connection-manager cm}))
         resp (client/get (localhost "/json")
@@ -881,10 +880,8 @@
 
 (deftest ^:integration t-cookies-spec
   (run-server)
-  (try
-    (client/get (localhost "/bad-cookie"))
-    (is false "should have failed")
-    (catch MalformedCookieException e))
+  (is (thrown? MalformedCookieException
+               (client/get (localhost "/bad-cookie"))))
   (client/get (localhost "/bad-cookie") {:decode-cookies false})
   (let [validated (atom false)
         spec-provider (RFC6265CookieSpecFactory.)
@@ -927,7 +924,7 @@
     (is (= 2 (.getAsynchronousWorkers cc)))
     (is (= true (.isHeuristicCachingEnabled cc)))
     (is (= 1.5 (.getHeuristicCoefficient cc)))
-    (is (= 12 (.getHeuristicDefaultLifetime cc)))
+    (is (= (TimeValue/ofMilliseconds 12) (.getHeuristicDefaultLifetime cc)))
     (is (= 100 (.getMaxCacheEntries cc)))
     (is (= 123 (.getMaxObjectSize cc)))
     (is (= 3 (.getMaxUpdateRetries cc)))
@@ -937,7 +934,7 @@
 
 (deftest ^:integration t-client-caching
   (run-server)
-  (let [cm (conn/make-reusable-conn-manager {})
+  (let [cm (conn/make-conn-manager {})
         r1 (client/get (localhost "/get")
                        {:connection-manager cm :cache true})
         client (:http-client r1)
@@ -951,7 +948,7 @@
     (is (= :VALIDATED (:cached r2)))
     (is (= :VALIDATED (:cached r3)))
     (is (= :VALIDATED (:cached r4))))
-  (let [cm (conn/make-reusable-conn-manager {})
+  (let [cm (conn/make-conn-manager {})
         r1 (client/get (localhost "/dont-cache")
                        {:connection-manager cm :cache true})
         client (:http-client r1)

@@ -39,27 +39,6 @@
   (let [ks (conn-mgr/get-keystore "test-resources/keystore" nil nil)]
     (is (instance? KeyStore ks))))
 
-(deftest keystore-scheme-factory
-  (let [sr (conn-mgr/get-keystore-scheme-registry
-            {:keystore client-ks :keystore-pass client-ks-pass
-             :trust-store client-ks :trust-store-pass client-ks-pass})
-        plain-socket-factory (.lookup sr "http")
-        ssl-socket-factory (.lookup sr "https")]
-    (is (instance? PlainConnectionSocketFactory plain-socket-factory))
-    (is (instance? SSLConnectionSocketFactory ssl-socket-factory))))
-
-#_
-(deftest keystore-session-strategy
-  (let [strategy-registry (conn-mgr/get-keystore-strategy-registry
-                           {:keystore client-ks
-                            :keystore-pass client-ks-pass
-                            :trust-store client-ks
-                            :trust-store-pass client-ks-pass})
-        noop-session-strategy (.lookup strategy-registry "http")
-        ssl-session-strategy (.lookup strategy-registry "https")]
-    (is (instance? NoopIOSessionStrategy noop-session-strategy))
-    (is (instance? SSLIOSessionStrategy ssl-session-strategy))))
-
 (def array-of-trust-manager
   (let [ks (conn-mgr/get-keystore "test-resources/keystore" nil "keykey")
         tmf (doto (TrustManagerFactory/getInstance (TrustManagerFactory/getDefaultAlgorithm))
@@ -71,19 +50,6 @@
         tmf (doto (KeyManagerFactory/getInstance (KeyManagerFactory/getDefaultAlgorithm))
               (.init ks (.toCharArray "keykey")))]
     (.getKeyManagers tmf)))
-
-(deftest managers-scheme-factory
-  (doseq [[trust-managers key-managers] [[array-of-trust-manager array-of-key-manager]
-                                         [(seq array-of-trust-manager) (seq array-of-key-manager)]
-                                         [(first (seq array-of-trust-manager)) (first (seq array-of-key-manager))]]]
-    (let [scheme-registry (conn-mgr/get-managers-scheme-registry
-                           {:trust-managers trust-managers
-                            :key-managers key-managers})
-          plain-socket-factory (.lookup scheme-registry "http")
-          ssl-socket-factory (.lookup scheme-registry "https")]
-      (is (instance? PlainConnectionSocketFactory plain-socket-factory))
-      (is (instance? SSLConnectionSocketFactory ssl-socket-factory)))))
-
 
 (deftest ^:integration ssl-client-cert-get
   (let [server (ring/run-jetty secure-handler
@@ -131,7 +97,7 @@
   (run-server)
   ;; timeouts forces an exception being thrown
   (let [cm (conn-mgr/make-conn-manager {:socket/timeout 1})]
-    (with-redefs-fn {#'conn-mgr/make-regular-conn-manager (constantly cm)}
+    (with-redefs-fn {#'conn-mgr/make-conn-manager (constantly cm)}
       #(try
          (core/request {:request-method :get :uri "/timeout"
                         :server-port 18080 :scheme :http
@@ -146,7 +112,7 @@
 (deftest ^:integration t-closed-conn-mgr-for-empty-body
   (run-server)
   (let [cm (conn-mgr/make-conn-manager {})]
-    (with-redefs-fn {#'conn-mgr/make-regular-conn-manager (constantly cm)}
+    (with-redefs-fn {#'conn-mgr/make-conn-manager (constantly cm)}
       #(core/request {:request-method :get :uri "/unmodified-resource"
                       :server-port 18080 :scheme :http
                       :server-name "localhost"}))

@@ -1,6 +1,13 @@
 (in-ns 'clj-http.core)
 
+
+
 (comment
+  ;; Stop the test server
+  (.stop clj-http.test.core-test/server)
+  (ns-unmap (find-ns 'clj-http.test.core-test) 'server)
+
+  ;; scratch for client testing
   (let [client (-> (HttpClients/custom)
                    (.setConnectionManager
                     (org.apache.hc.client5.http.impl.io.BasicHttpClientConnectionManager.))

@@ -1013,7 +1013,7 @@
 
 (deftest ^:integration t-reusable-conn-mgrs
   (run-server)
-  (let [cm (conn/make-reusable-conn-manager {:timeout 10 :insecure? false})
+  (let [cm (conn/make-conn-manager {:timeout 10 :insecure? false})
         resp1 (request {:uri "/redirect-to-get"
                         :method :get
                         :connection-manager cm})
@@ -1028,7 +1028,7 @@
 
 (deftest ^:integration t-reusable-async-conn-mgrs
   (run-server)
-  (let [cm (conn/make-reuseable-async-conn-manager {:timeout 10 :insecure? false})
+  (let [cm (conn/make-async-conn-manager {:timeout 10 :insecure? false})
         resp1 (promise) resp2 (promise)
         exce1 (promise) exce2 (promise)]
     (request {:async? true :uri "/redirect-to-get" :method :get :connection-manager cm}
@@ -1079,7 +1079,7 @@
       (request {:async? true :uri "/get" :method :get} resp2 exce2)
       (is (realized? exce1))
       (is (not (realized? exce2)))
-      (is (= 200 (:status @resp2))))))
+      (is (= 200 (:status (deref resp2 500 ::not-found)))))))
 
 (deftest ^:integration t-async-pool-exception-when-start
   (run-server)
@@ -1368,6 +1368,11 @@
              (str "only :flatten-nested-keys or :ignore-nested-query-string/"
                   ":flatten-nested-keys may be specified, not both"))))))
 
+;; there's a couple of concerns with this approach
+;; 1. it's not a transparent conection amanger, will leak in the background
+;; 2. we need to check for conflicting values -> better if the caller passes in an explicit connection maanger
+;; 3. doesn't work async, is this something that should be done as a middleware? I thin it's a bit too davnaced
+#_
 (deftest ^:integration t-socket-capture
   (run-server)
   (let [resp (client/post (localhost "/post")

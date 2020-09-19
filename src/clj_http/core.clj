@@ -3,31 +3,35 @@
   (:require [clj-http.conn-mgr :as conn-mgr]
             [clj-http.headers :as headers]
             [clj-http.multipart :as mp]
-            [clj-http.util :refer [opt]]
-            clojure.pprint)
-  (:import [java.io ByteArrayOutputStream FilterInputStream InputStream]
-           [java.net InetAddress ProxySelector URI URL]
-           java.util.concurrent.TimeUnit
-           java.util.Locale
-           [org.apache.hc.client5.http.async.methods SimpleHttpRequest SimpleHttpResponse]
-           [org.apache.hc.client5.http.auth AuthScope CredentialsProvider NTCredentials UsernamePasswordCredentials]
-           org.apache.hc.client5.http.cache.HttpCacheContext
-           [org.apache.hc.client5.http.classic.methods HttpDelete HttpGet HttpHead HttpOptions HttpPatch HttpPost HttpPut HttpUriRequest HttpUriRequestBase]
-           org.apache.hc.client5.http.config.RequestConfig
-           [org.apache.hc.client5.http.cookie CookieSpecFactory StandardCookieSpec]
-           [org.apache.hc.client5.http.impl.async CloseableHttpAsyncClient HttpAsyncClientBuilder HttpAsyncClients]
-           org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider
-           [org.apache.hc.client5.http.impl.cache CacheConfig CachingHttpClientBuilder]
-           [org.apache.hc.client5.http.impl.classic CloseableHttpClient CloseableHttpResponse HttpClientBuilder HttpClients]
-           org.apache.hc.client5.http.impl.DefaultRedirectStrategy
-           [org.apache.hc.client5.http.impl.routing DefaultProxyRoutePlanner SystemDefaultRoutePlanner]
-           [org.apache.hc.client5.http.protocol HttpClientContext RedirectStrategy]
-           org.apache.hc.client5.http.routing.HttpRoutePlanner
-           org.apache.hc.client5.http.utils.URIUtils
-           [org.apache.hc.core5.http ContentType HttpEntity HttpHost HttpRequest HttpRequestInterceptor HttpResponse HttpResponseInterceptor ProtocolException]
-           org.apache.hc.core5.http.config.RegistryBuilder
-           [org.apache.hc.core5.http.io.entity ByteArrayEntity StringEntity]
-           org.apache.hc.core5.http.protocol.HttpContext))
+            [clj-http.util :as util :refer [opt]]
+            clojure.pprint
+            [clojure.string :as str])
+  (:import
+   [java.io ByteArrayOutputStream FilterInputStream InputStream]
+   [java.net InetAddress ProxySelector URI URL]
+   java.util.concurrent.TimeUnit
+   java.util.Locale
+   [org.apache.hc.client5.http.async.methods SimpleHttpRequest SimpleHttpResponse]
+   [org.apache.hc.client5.http.auth AuthScope CredentialsProvider NTCredentials UsernamePasswordCredentials]
+   org.apache.hc.client5.http.cache.HttpCacheContext
+   [org.apache.hc.client5.http.classic.methods HttpDelete HttpGet HttpHead HttpOptions HttpPatch HttpPost HttpPut HttpUriRequest HttpUriRequestBase]
+   org.apache.hc.client5.http.config.RequestConfig
+   [org.apache.hc.client5.http.cookie CookieSpecFactory StandardCookieSpec]
+   [org.apache.hc.client5.http.impl.async CloseableHttpAsyncClient HttpAsyncClientBuilder HttpAsyncClients]
+   org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider
+   [org.apache.hc.client5.http.impl.cache CacheConfig CachingHttpClientBuilder]
+   [org.apache.hc.client5.http.impl.classic CloseableHttpClient CloseableHttpResponse HttpClientBuilder HttpClients]
+   org.apache.hc.client5.http.impl.DefaultRedirectStrategy
+   [org.apache.hc.client5.http.impl.routing DefaultProxyRoutePlanner SystemDefaultRoutePlanner]
+   [org.apache.hc.client5.http.protocol HttpClientContext RedirectStrategy]
+   org.apache.hc.client5.http.routing.HttpRoutePlanner
+   org.apache.hc.client5.http.utils.URIUtils
+   [org.apache.hc.core5.http ContentType HttpEntity HttpHost HttpRequest HttpRequestInterceptor HttpResponse HttpResponseInterceptor ProtocolException]
+   org.apache.hc.core5.http.config.RegistryBuilder
+   [org.apache.hc.core5.http.io.entity ByteArrayEntity StringEntity]
+   org.apache.hc.core5.http.protocol.HttpContext
+   org.apache.hc.core5.util.TimeValue
+   java.nio.charset.StandardCharsets))
 
 (def CUSTOM_COOKIE_POLICY "_custom")
 
@@ -72,7 +76,7 @@
         (let [^HttpClientContext typed-context context
               max-redirects (-> (.getRequestConfig typed-context)
                                 .getMaxRedirects)
-              num-redirects (count (.getRedirectLocations typed-context))]
+              num-redirects (.size (.getRedirectLocations typed-context))]
           (if (<= max-redirects num-redirects)
             false
             (.isRedirected DefaultRedirectStrategy/INSTANCE
@@ -173,10 +177,6 @@
     (and connection-timeout
          (.setConnectTimeout
           config connection-timeout TimeUnit/MILLISECONDS))
-    ;; TODO: these need to move to the connection manager
-    ;; (and socket-timeout
-    ;;      (.setSocketTimeout
-    ;;       config ^int (int socket-timeout)))
     (and connection-request-timeout
          (.setConnectionRequestTimeout
           config connection-request-timeout TimeUnit/MILLISECONDS))
@@ -251,7 +251,7 @@
         (when heuristic-coefficient
           (.setHeuristicCoefficient config heuristic-coefficient))
         (when heuristic-default-lifetime
-          (.setHeuristicDefaultLifetime config heuristic-default-lifetime))
+          (.setHeuristicDefaultLifetime config (TimeValue/ofMilliseconds heuristic-default-lifetime)))
         (when max-cache-entries
           (.setMaxCacheEntries config max-cache-entries))
         (when max-object-size
@@ -320,17 +320,18 @@
         (.setDefaultCookieSpecRegistry
          builder (create-custom-cookie-policy-registry cookie-spec))))
     (when request-interceptor
-      (.addInterceptorLast
-       builder (proxy [HttpRequestInterceptor] []
-                 (process [req ctx]
-                   (request-interceptor req ctx)))))
+      (.addRequestInterceptorLast
+       builder (reify HttpRequestInterceptor
+                 (process [_ req entity-details ctx]
+                   (request-interceptor
+                    req entity-details ctx)))))
 
     (when response-interceptor
-      (.addInterceptorLast
-       builder (proxy [HttpResponseInterceptor] []
-                 (process [resp ctx]
+      (.addResponseInterceptorLast
+       builder (reify HttpResponseInterceptor
+                 (process [_ resp entity-details ctx]
                    (response-interceptor
-                    resp ctx)))))
+                    resp entity-details ctx)))))
     (doseq [http-builder-fn http-builder-fns]
       (http-builder-fn builder req))
     (.build builder)))
@@ -375,54 +376,7 @@
       (async-http-builder-fn builder req))
     (.build builder)))
 
-(defn http-get []
-  (HttpGet. "https://www.google.com"))
-
-(defn make-proxy-method-with-body
-  [method]
-  (fn [url]
-    (let [new-uri (URI. url)
-          method-name (name method)]
-      (proxy [HttpUriRequestBase] [method-name new-uri]
-        (getMethod [] (.toUpperCase method-name Locale/ROOT))))))
-
-(def proxy-delete-with-body (make-proxy-method-with-body :delete))
-(def proxy-get-with-body (make-proxy-method-with-body :get))
-(def proxy-copy-with-body (make-proxy-method-with-body :copy))
-(def proxy-move-with-body (make-proxy-method-with-body :move))
-(def proxy-patch-with-body (make-proxy-method-with-body :patch))
-
 (def ^:dynamic *cookie-store* nil)
-
-#_(defn make-proxy-method [method url]
-  (doto (proxy [HttpRequestBase] []
-          (getMethod
-            []
-            (str method)))
-    (.setURI (URI/create url))))
-
-(defn http-request-for
-  "Provides the HttpRequest object for a particular request-method and url"
-  [request-method ^String http-url body]
-  (case request-method
-    :get     (if body
-               (proxy-get-with-body http-url)
-               (HttpGet. http-url))
-    :head    (HttpHead. http-url)
-    :put     (HttpPut. http-url)
-    :post    (HttpPost. http-url)
-    :options (HttpOptions. http-url)
-    :delete  (if body
-               (proxy-delete-with-body http-url)
-               (HttpDelete. http-url))
-    :copy    (proxy-copy-with-body http-url)
-    :move    (proxy-move-with-body http-url)
-    :patch   (if body
-               (proxy-patch-with-body http-url)
-               (HttpPatch. http-url))
-    #_(if body
-      ((make-proxy-method-with-body request-method) http-url)
-      (make-proxy-method request-method http-url))))
 
 (defn ^HttpClientContext http-context [caching? request-config http-client-context]
   (let [^HttpClientContext typed-context (or http-client-context
@@ -451,9 +405,9 @@
             (when (instance? CloseableHttpResponse response)
               (.close response))
             (when-not conn-mgr-reusable?
-              (conn/shutdown-manager conn-mgr))))))
+              (conn-mgr/shutdown-manager conn-mgr))))))
     (when-not conn-mgr-reusable?
-      (conn/shutdown-manager conn-mgr))))
+      (conn-mgr/shutdown-manager conn-mgr))))
 
 (defn- print-debug!
   "Print out debugging information to *out* for a given request."
@@ -493,8 +447,6 @@
 (defn- build-response-map
   [^HttpResponse response req ^HttpUriRequest http-req http-url
    conn-mgr ^HttpClientContext context ^CloseableHttpClient client conn-mgr-reusable?]
-  (println ::reusable conn-mgr-reusable?)
-  (def the-response response)
   (let [^HttpEntity entity (http-entity response)
         status (.getCode response)
         protocol-version (.getVersion response)
@@ -517,7 +469,9 @@
          :cached (when (instance? HttpCacheContext context)
                    (when-let [cache-resp (.getCacheResponseStatus context)]
                      (-> cache-resp str keyword)))
-         #_:trace-redirects #_(mapv str (.getRedirectLocations context))}]
+         :trace-redirects (->> (.getRedirectLocations context)
+                               (.getAll)
+                               (mapv str))}]
     (if (opt req :save-request)
       (-> response
           (assoc :request req)
@@ -543,10 +497,10 @@
 (defn- get-conn-mgr
   [async? req]
   (if async?
-    (or conn/*async-connection-manager*
-        (conn/make-async-conn-manager req))
-    (or conn/*connection-manager*
-        (conn/make-conn-manager req))))
+    (or conn-mgr/*async-connection-manager*
+        (conn-mgr/make-async-conn-manager req))
+    (or conn-mgr/*connection-manager*
+        (conn-mgr/make-conn-manager req))))
 
 (defn request
   ([req] (request req nil nil))
@@ -565,25 +519,26 @@
                        (when server-port (str ":" server-port))
                        uri
                        (when query-string (str "?" query-string)))
+
+         ;; Has an async connection manager binded *or* specified explicitly?
          conn-mgr (or connection-manager
                       (get-conn-mgr async? req))
          conn-mgr-reusable? (boolean (or connection-manager
-                                         (= conn-mgr conn/*connection-manager*)))
+                                         (if async?
+                                           (= conn-mgr conn-mgr/*async-connection-manager*)
+                                           (= conn-mgr conn-mgr/*connection-manager*))))
 
-         ;; Has an async connection manager been manually specified?
-         async-conn-mgr-reusable? (boolean (or connection-manager
-                                               conn/*async-connection-manager*))
          proxy-ignore-hosts (or proxy-ignore-hosts
                                 #{"localhost" "127.0.0.1"})
          ^RequestConfig request-config (or http-request-config
                                            (request-config req))
          ^HttpClientContext context
          (http-context cache? request-config http-client-context)
-         ^HttpUriRequest http-req (http-request-for
-                                   request-method http-url body)]
+         ^HttpUriRequest http-req (HttpUriRequestBase.
+                                   (str/upper-case (name request-method))
+                                   (URI/create http-url))]
      ;; Either it's not async and not reusable, or it's regular and not reusable
-     (when (not (or (and async? async-conn-mgr-reusable?)
-                    (conn/reusable? conn-mgr)))
+     (when-not conn-mgr-reusable?
        (.addHeader http-req "Connection" "close"))
      (when-let [cookie-jar (or cookie-store *cookie-store*)]
        (.setCookieStore context cookie-jar))
@@ -602,7 +557,7 @@
             (.setCredentials authscope creds)))))
      (if multipart
        (.setEntity http-req
-                   (mp/create-multipart-entity multipart mime-subtype http-multipart-mode))
+                   (mp/create-multipart-entity multipart req))
        (do
          #_(when (and body (instance? HttpEntityEnclosingRequest http-req))
            (if (instance? HttpEntity body)
@@ -616,7 +571,7 @@
            (when body
              (.setEntity http-req
                          (if (string? body)
-                           (StringEntity. ^String body "UTF-8")
+                           (StringEntity. ^String body StandardCharsets/UTF_8)
                            (ByteArrayEntity. body ContentType/WILDCARD)))))))
      (doseq [[header-n header-v] headers]
        (if (coll? header-v)
@@ -638,23 +593,31 @@
                                )
            (catch Throwable t
              (when-not conn-mgr-reusable?
-               (conn/shutdown-manager conn-mgr))
+               (conn-mgr/shutdown-manager conn-mgr))
              (throw t))))
 
        ;; Async version
        (let [^CloseableHttpAsyncClient client
              (build-async-http-client req conn-mgr http-url proxy-ignore-hosts)
-             original-thread-bindings (clojure.lang.Var/getThreadBindingFrame)]
+             original-thread-bindings (clojure.lang.Var/getThreadBindingFrame)
+             async-http-request (SimpleHttpRequest/copy http-req)]
+
+         ;; TODO: this is not a nio/reactive friendly approach nio-friendly solution
+         (when-let [entity (.getEntity http-req)]
+           (let [bytes (util/force-byte-array (.getContent entity))
+                 content-type (ContentType/parse (.getContentType entity))]
+             (.setBody async-http-request bytes content-type)))
+
          (when cache?
            (throw (IllegalArgumentException.
                    "caching is not yet supported for async clients")))
          (.start client)
-         (.execute ^CloseableHttpAsyncClient client (SimpleHttpRequest/copy http-req) ^HttpContext context
+         (.execute ^CloseableHttpAsyncClient client async-http-request ^HttpContext context
                    (reify org.apache.hc.core5.concurrent.FutureCallback
                      (failed [this ex]
                        (clojure.lang.Var/resetThreadBindingFrame original-thread-bindings)
                        (when-not conn-mgr-reusable?
-                         (conn/shutdown-manager conn-mgr))
+                         (conn-mgr/shutdown-manager conn-mgr))
                        (if (opt req :ignore-unknown-host)
                          ((:unknown-host-respond req) nil)
                          (raise ex)))
@@ -664,12 +627,11 @@
                          (respond (build-response-map
                                    resp req http-req http-url
                                    conn-mgr context client
-                                   async-conn-mgr-reusable?
+                                   conn-mgr-reusable?
                                    ))
                          (catch Throwable t
-                           (println ::t t)
                            (when-not conn-mgr-reusable?
-                             (conn/shutdown-manager conn-mgr))
+                             (conn-mgr/shutdown-manager conn-mgr))
                            (raise t))))
                      (cancelled [this]
                        (clojure.lang.Var/resetThreadBindingFrame original-thread-bindings)
@@ -679,4 +641,4 @@
                        ;; Attempt to abort the execution of the request
                        (.abort http-req)
                        (when-not conn-mgr-reusable?
-                         (conn/shutdown-manager conn-mgr))))))))))
+                         (conn-mgr/shutdown-manager conn-mgr))))))))))
