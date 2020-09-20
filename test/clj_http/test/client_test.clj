@@ -1667,7 +1667,17 @@
           query-string (-> resp :body form-decode-str)]
       (is (= 200 (:status resp)))
       (is (.contains query-string "a[]=1&a[]=2&a[]=3") query-string)
-      (is (.contains query-string "b[]=x&b[]=y&b[]=z") query-string))))
+      (is (.contains query-string "b[]=x&b[]=y&b[]=z") query-string)))
+  (testing "multi-valued query params in enumerated-style"
+    (let [resp (request {:uri "/query-string"
+                         :method :get
+                         :multi-param-style :enumerated
+                         :query-params {:a [1 2 3]
+                                        :b ["x" "y" "z"]}})
+          query-string (-> resp :body form-decode-str)]
+      (is (= 200 (:status resp)))
+      (is (.contains query-string "a=1,2,3") query-string)
+      (is (.contains query-string "b=x,y,z") query-string))))
 
 (deftest t-wrap-flatten-nested-params
   (is-applied client/wrap-flatten-nested-params

@@ -771,11 +771,18 @@
   (str/join "&"
             (mapcat (fn [[k v]]
                       (if (sequential? v)
-                        (map-indexed
-                         #(str (util/url-encode (name k) encoding)
-                               (multi-param-suffix %1 multi-param-style)
-                               "="
-                               (util/url-encode (str %2) encoding)) v)
+                        (cond
+                          (= multi-param-style :enumerated)
+                          [(str (util/url-encode (name k) encoding)
+                              "="
+                              (str/join "," (map #(util/url-encode (str %) encoding) v)))]
+                          
+                          :else
+                          (map-indexed
+                           #(str (util/url-encode (name k) encoding)
+                                 (multi-param-suffix %1 multi-param-style)
+                                 "="
+                                 (util/url-encode (str %2) encoding)) v))
                         [(str (util/url-encode (name k) encoding)
                               "="
                               (util/url-encode (str v) encoding))]))
