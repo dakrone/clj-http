@@ -2,13 +2,11 @@
   "Helper functions for the HTTP client."
   (:require [clojure.string :refer [blank? lower-case split trim]]
             [clojure.walk :refer [postwalk]])
-  (:import (org.apache.commons.codec.binary Base64)
-           (org.apache.commons.io IOUtils)
-           (java.io InputStream BufferedInputStream ByteArrayInputStream
-                    ByteArrayOutputStream EOFException PushbackInputStream)
-           (java.net URLEncoder URLDecoder)
-           (java.util.zip InflaterInputStream DeflaterInputStream
-                          GZIPInputStream GZIPOutputStream)))
+  (:import [java.io BufferedInputStream ByteArrayInputStream ByteArrayOutputStream EOFException InputStream PushbackInputStream]
+           [java.net URLDecoder URLEncoder]
+           [java.util.zip DeflaterInputStream GZIPInputStream GZIPOutputStream InflaterInputStream]
+           org.apache.commons.codec.binary.Base64
+           org.apache.commons.io.IOUtils))
 
 (defn utf8-bytes
   "Returns the encoding's bytes corresponding to the given string. If no

@@ -6,7 +6,8 @@
   (:import java.net.InetSocketAddress
            java.security.KeyStore
            [javax.net.ssl HostnameVerifier KeyManager SSLContext TrustManager]
-           [org.apache.hc.client5.http.impl.io PoolingHttpClientConnectionManager PoolingHttpClientConnectionManagerBuilder]
+           org.apache.commons.io.output.TeeOutputStream
+           org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager
            [org.apache.hc.client5.http.impl.nio PoolingAsyncClientConnectionManager PoolingAsyncClientConnectionManagerBuilder]
            org.apache.hc.client5.http.socket.PlainConnectionSocketFactory
            [org.apache.hc.client5.http.ssl DefaultHostnameVerifier NoopHostnameVerifier SSLConnectionSocketFactory]
@@ -352,23 +353,21 @@
 ;; -- Custom Connection Managers  ----------------------------------------------
 (defn capturing-socket
   "Create a java.net.Socket that will capture data sent in and out of it."
-  [output-stream]
+  [^java.io.OutputStream output-stream]
   (proxy [java.net.Socket] []
     ;; TODO: implement capturing the read data, currently I don't know of a good
     ;; way to proxy reading input into an arbitrary place
     (getInputStream []
-      (proxy-super getInputStream))
+      (let [this ^java.net.Socket this]
+        (proxy-super getInputStream)))
     (getOutputStream []
-      (let [stream (proxy-super getOutputStream)]
-        (proxy [java.io.FilterOutputStream] [stream]
-          (write
-            ([b]
-             (.write output-stream b)
-             (proxy-super write b))
-            ([b off len]
-             (.write output-stream b off len)
-             (proxy-super write b off len))))))))
+      (let [this ^java.net.Socket this
+            stream (proxy-super getOutputStream)]
+        (TeeOutputStream.
+         stream
+         output-stream)))))
 
+clojure.java.io/Coercions
 
 (defn make-capturing-socket-conn-manager
   "Given an optional hostname and a port, create a connection manager captures

@@ -1,25 +1,24 @@
 (ns clj-http.client
   "Batteries-included HTTP client."
+  (:refer-clojure :exclude [get update])
   (:require [clj-http.conn-mgr :as conn]
             [clj-http.cookies :refer [wrap-cookies]]
             [clj-http.core :as core]
             [clj-http.headers :refer [wrap-header-map]]
             [clj-http.links :refer [wrap-links]]
-            [clj-http.util :refer [opt] :as util]
+            [clj-http.multipart :as multipart]
+            [clj-http.util :as util :refer [opt]]
             [clojure.java.io :as io]
             [clojure.stacktrace :refer [root-cause]]
             [clojure.string :as str]
             [clojure.walk :refer [keywordize-keys prewalk]])
-  (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream EOFException BufferedReader)
-           (java.net URL UnknownHostException)
-           (java.nio.charset StandardCharsets)
-           (org.apache.hc.core5.http ContentType)
-           (org.apache.hc.core5.http.io.entity BufferedHttpEntity ByteArrayEntity
-                                               InputStreamEntity FileEntity StringEntity)
-           (org.apache.hc.client5.http.impl.io PoolingHttpClientConnectionManager)
-           (org.apache.hc.client5.http.impl.nio PoolingAsyncClientConnectionManager)
-           (org.apache.hc.client5.http.impl.async HttpAsyncClients))
-  (:refer-clojure :exclude [get update]))
+  (:import [java.io BufferedReader ByteArrayOutputStream EOFException File InputStream]
+           [java.net UnknownHostException URL]
+           java.nio.charset.StandardCharsets
+           org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager
+           org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager
+           org.apache.hc.core5.http.ContentType
+           [org.apache.hc.core5.http.io.entity BufferedHttpEntity ByteArrayEntity FileEntity InputStreamEntity StringEntity]))
 
 ;; Cheshire is an optional dependency, so we check for it at compile time.
 (def json-enabled?
@@ -1024,9 +1023,10 @@
              cm (conn/make-capturing-socket-conn-manager baos)
              resp (client (assoc req :connection-manager cm))
              bytes (.toByteArray baos)
-             charset (or (:body-encoding req)
-                         (:character-encoding req)
-                         StandardCharsets/UTF_8)]
+             charset (multipart/encoding-to-charset
+                      (or (:body-encoding req)
+                          (:character-encoding req)
+                          StandardCharsets/UTF_8))]
          (assoc resp
                 :raw-socket-bytes bytes
                 :raw-socket-str (String. bytes charset)))

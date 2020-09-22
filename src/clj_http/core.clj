@@ -6,32 +6,31 @@
             [clj-http.util :as util :refer [opt]]
             clojure.pprint
             [clojure.string :as str])
-  (:import
-   [java.io ByteArrayOutputStream FilterInputStream InputStream]
-   [java.net InetAddress ProxySelector URI URL]
-   java.util.concurrent.TimeUnit
-   java.util.Locale
-   [org.apache.hc.client5.http.async.methods SimpleHttpRequest SimpleHttpResponse]
-   [org.apache.hc.client5.http.auth AuthScope CredentialsProvider NTCredentials UsernamePasswordCredentials]
-   org.apache.hc.client5.http.cache.HttpCacheContext
-   [org.apache.hc.client5.http.classic.methods HttpDelete HttpGet HttpHead HttpOptions HttpPatch HttpPost HttpPut HttpUriRequest HttpUriRequestBase]
-   org.apache.hc.client5.http.config.RequestConfig
-   [org.apache.hc.client5.http.cookie CookieSpecFactory StandardCookieSpec]
-   [org.apache.hc.client5.http.impl.async CloseableHttpAsyncClient HttpAsyncClientBuilder HttpAsyncClients]
-   org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider
-   [org.apache.hc.client5.http.impl.cache CacheConfig CachingHttpClientBuilder]
-   [org.apache.hc.client5.http.impl.classic CloseableHttpClient CloseableHttpResponse HttpClientBuilder HttpClients]
-   org.apache.hc.client5.http.impl.DefaultRedirectStrategy
-   [org.apache.hc.client5.http.impl.routing DefaultProxyRoutePlanner SystemDefaultRoutePlanner]
-   [org.apache.hc.client5.http.protocol HttpClientContext RedirectStrategy]
-   org.apache.hc.client5.http.routing.HttpRoutePlanner
-   org.apache.hc.client5.http.utils.URIUtils
-   [org.apache.hc.core5.http ContentType HttpEntity HttpHost HttpRequest HttpRequestInterceptor HttpResponse HttpResponseInterceptor ProtocolException]
-   org.apache.hc.core5.http.config.RegistryBuilder
-   [org.apache.hc.core5.http.io.entity ByteArrayEntity StringEntity]
-   org.apache.hc.core5.http.protocol.HttpContext
-   org.apache.hc.core5.util.TimeValue
-   java.nio.charset.StandardCharsets))
+  (:import [java.io ByteArrayOutputStream FilterInputStream InputStream]
+           [java.net InetAddress ProxySelector URI URL]
+           java.nio.charset.StandardCharsets
+           java.util.concurrent.TimeUnit
+           [org.apache.hc.client5.http.async.methods SimpleHttpRequest SimpleHttpResponse]
+           [org.apache.hc.client5.http.auth AuthScope NTCredentials UsernamePasswordCredentials]
+           org.apache.hc.client5.http.cache.HttpCacheContext
+           [org.apache.hc.client5.http.classic.methods HttpUriRequest HttpUriRequestBase]
+           org.apache.hc.client5.http.config.RequestConfig
+           [org.apache.hc.client5.http.cookie CookieSpecFactory StandardCookieSpec]
+           [org.apache.hc.client5.http.impl.async CloseableHttpAsyncClient HttpAsyncClientBuilder HttpAsyncClients]
+           org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider
+           [org.apache.hc.client5.http.impl.cache CacheConfig CachingHttpClientBuilder]
+           [org.apache.hc.client5.http.impl.classic CloseableHttpClient CloseableHttpResponse HttpClientBuilder HttpClients]
+           org.apache.hc.client5.http.impl.DefaultRedirectStrategy
+           [org.apache.hc.client5.http.impl.routing DefaultProxyRoutePlanner SystemDefaultRoutePlanner]
+           org.apache.hc.client5.http.io.HttpClientConnectionManager
+           [org.apache.hc.client5.http.protocol HttpClientContext RedirectStrategy]
+           org.apache.hc.client5.http.routing.HttpRoutePlanner
+           org.apache.hc.client5.http.utils.URIUtils
+           [org.apache.hc.core5.http ContentType HttpEntity HttpHost HttpRequest HttpRequestInterceptor HttpResponse HttpResponseInterceptor ProtocolException]
+           org.apache.hc.core5.http.config.RegistryBuilder
+           [org.apache.hc.core5.http.io.entity ByteArrayEntity StringEntity]
+           org.apache.hc.core5.http.protocol.HttpContext
+           org.apache.hc.core5.util.TimeValue))
 
 (def CUSTOM_COOKIE_POLICY "_custom")
 
@@ -283,7 +282,7 @@
            ntlm-auth]
     :as req}
    caching?
-   conn-mgr
+   ^HttpClientConnectionManager conn-mgr
    & [http-url proxy-ignore-hosts]]
   ;; have to let first, otherwise we get a reflection warning on (.build)
   (let [cache? (opt req :cache)
@@ -291,27 +290,28 @@
                                              http-client-builder
 
                                              caching?
-                                             (CachingHttpClientBuilder/create)
+                                             (-> (CachingHttpClientBuilder/create)
+                                                 (.setCacheConfig (build-cache-config req)))
+
                                              :else
-                                             (HttpClients/custom))
-                                       (.setConnectionManager conn-mgr)
-                                       (.setRedirectStrategy
-                                        (get-redirect-strategy req))
-                                       #_(add-retry-handler retry-handler)
-                                       ;; By default, get the proxy settings
-                                       ;; from the jvm or system properties
-                                       (.setRoutePlanner
-                                        (get-route-planner
-                                         proxy-host proxy-port
-                                         proxy-ignore-hosts http-url)))]
+                                             (HttpClients/custom)))
+        builder (-> builder
+                    (.setConnectionManager conn-mgr)
+                    (.setRedirectStrategy
+                     (get-redirect-strategy req))
+                    #_(add-retry-handler retry-handler)
+                    ;; By default, get the proxy settings
+                    ;; from the jvm or system properties
+                    (.setRoutePlanner
+                     (get-route-planner
+                      proxy-host proxy-port
+                      proxy-ignore-hosts http-url)))]
     (when-let [[user password host domain] ntlm-auth]
       (.setDefaultCredentialsProvider
        builder
        (doto (BasicCredentialsProvider.)
          (.setCredentials (AuthScope. nil -1 nil)
                           (NTCredentials. user password host domain)))))
-    (when cache?
-      (.setCacheConfig builder (build-cache-config req)))
     (when (or cookie-policy-registry cookie-spec)
       (if cookie-policy-registry
         ;; They have a custom registry they'd like to re-use, so use that
@@ -361,17 +361,17 @@
     (.setConnectionManagerShared builder true)
 
     (when request-interceptor
-      (.addInterceptorLast
+      (.addRequestInterceptorLast
        builder (proxy [HttpRequestInterceptor] []
-                 (process [req ctx]
-                   (request-interceptor req ctx)))))
+                 (process [req entity ctx]
+                   (request-interceptor req entity ctx)))))
 
     (when response-interceptor
-      (.addInterceptorLast
+      (.addResponseInterceptorLast
        builder (proxy [HttpResponseInterceptor] []
-                 (process [resp ctx]
+                 (process [resp entity ctx]
                    (response-interceptor
-                    resp ctx)))))
+                    resp entity ctx)))))
     (doseq [async-http-builder-fn async-http-builder-fns]
       (async-http-builder-fn builder req))
     (.build builder)))
@@ -386,7 +386,7 @@
     (doto typed-context
       (.setRequestConfig request-config))))
 
-(defn ^CredentialsProvider credentials-provider []
+(defn ^BasicCredentialsProvider credentials-provider []
   (BasicCredentialsProvider.))
 
 (defn- coerce-body-entity
@@ -467,7 +467,7 @@
                             :minor (.getMinor protocol-version)}
          :reason-phrase (.getReasonPhrase response)
          :cached (when (instance? HttpCacheContext context)
-                   (when-let [cache-resp (.getCacheResponseStatus context)]
+                   (when-let [cache-resp (.getCacheResponseStatus ^HttpCacheContext context)]
                      (-> cache-resp str keyword)))
          :trace-redirects (->> (.getRedirectLocations context)
                                (.getAll)
