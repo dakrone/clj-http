@@ -1668,10 +1668,10 @@
       (is (= 200 (:status resp)))
       (is (.contains query-string "a[]=1&a[]=2&a[]=3") query-string)
       (is (.contains query-string "b[]=x&b[]=y&b[]=z") query-string)))
-  (testing "multi-valued query params in enumerated-style"
+  (testing "multi-valued query params in comma-separated"
     (let [resp (request {:uri "/query-string"
                          :method :get
-                         :multi-param-style :enumerated
+                         :multi-param-style :comma-separated
                          :query-params {:a [1 2 3]
                                         :b ["x" "y" "z"]}})
           query-string (-> resp :body form-decode-str)]

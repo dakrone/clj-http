@@ -771,7 +771,7 @@
       :array
       (map #(vector (str key "[]") %) values)
 
-      :enumerated
+      :comma-separated
       ;; See sub-delims in https://tools.ietf.org/html/rfc3986#section-2.2
       [[key (str/join "," values)]]
 
