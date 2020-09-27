@@ -761,28 +761,28 @@
      (second found))
    "UTF-8"))
 
-(defn- multi-param-suffix [index multi-param-style]
-  (case multi-param-style
-    :indexed (str "[" index "]")
-    :array "[]"
-    ""))
+(defn- multi-param-entries [key values multi-param-style encoding]
+  (let [key (util/url-encode (name key) encoding)
+        values (map #(util/url-encode (str %) encoding) values)]
+    (case multi-param-style
+      :index
+      (map-indexed #(vector (str key \[ %1 \]) %2) values)
+
+      :array
+      (map #(vector (str key "[]") %) values)
+
+      :enumerated
+      ;; See sub-delims in https://tools.ietf.org/html/rfc3986#section-2.2
+      [[key (str/join "," values)]]
+
+      ;; default: repeat the key multiple times
+      (map #(vector key %) values))))
 
 (defn generate-query-string-with-encoding [params encoding multi-param-style]
   (str/join "&"
             (mapcat (fn [[k v]]
                       (if (sequential? v)
-                        (cond
-                          (= multi-param-style :enumerated)
-                          [(str (util/url-encode (name k) encoding)
-                              "="
-                              (str/join "," (map #(util/url-encode (str %) encoding) v)))]
-                          
-                          :else
-                          (map-indexed
-                           #(str (util/url-encode (name k) encoding)
-                                 (multi-param-suffix %1 multi-param-style)
-                                 "="
-                                 (util/url-encode (str %2) encoding)) v))
+                        (map #(str/join "=" %) (multi-param-entries k v multi-param-style encoding))
                         [(str (util/url-encode (name k) encoding)
                               "="
                               (util/url-encode (str v) encoding))]))
