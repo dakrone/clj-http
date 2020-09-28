@@ -765,7 +765,7 @@
   (let [key (util/url-encode (name key) encoding)
         values (map #(util/url-encode (str %) encoding) values)]
     (case multi-param-style
-      :index
+      :indexed
       (map-indexed #(vector (str key \[ %1 \]) %2) values)
 
       :array
