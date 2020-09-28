@@ -600,7 +600,7 @@ they are:
 - A repeating parameter (default)
 - Array style
 - Indexed array style
-- Enumerated style
+- Comma separated style
 
 Here is an example of the input and output for the ~:query-params~ parameter,
 controlled by the ~:multi-param-style~ option:
@@ -614,7 +614,7 @@ controlled by the ~:multi-param-style~ option:
 ;; with :multi-param-style :indexed, a repeating param with array suffix and
 ;; index (Rails-style):
 :a [1 2 3] => "a[0]=1&a[1]=2&a[2]=3"
-;; with :multi-param-style :enumerated, a param with enumerated values
+;; with :multi-param-style :comma-separated, a param with comma-separated values
 :a [1 2 3] => "a=1,2,3"
 #+END_SRC
 
