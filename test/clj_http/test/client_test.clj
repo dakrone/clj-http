@@ -569,7 +569,7 @@
         e-client (client/wrap-exceptions client)]
     (try+
      (e-client {})
-     (catch [:type :clj-http.client/unexceptional-status] _
+     (catch [:type :clj-http.client/exceptional-status] _
        (is true))
      (catch Object _
        (is false ":type selector was not caught.")))))
