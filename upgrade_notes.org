@@ -1,0 +1,139 @@
+* Apache HTTP Client 5.x Upgrade Notes
+The motivation of this work is to identify what should be changed as part of the
+upgrade.
+
+I've organized this into three broad categories:
+
+- Breaking Changes :: What functionality will be broken for users
+- Quality of Life Improvements :: Improve library ergonomics & maintenance
+- Future Considerations :: Nice to have, maybe in a future release
+
+** Breaking Changes
+In general, most features will continue to work well because our users do not
+interface directly the apache httpclient library.
+
+Most of the changes involve re-wiring the internals of clj-http to use the new
+packages & classes. The breaking changes /tend/ to be focused on extension points
+of Apache HTTPClient. These changes should be communicated to users.
+
+Here are the observed breaking changes:
+- RedirectStrategy Interface changed
+- RetryHandler removed, and replaced with RetryStrategy
+- Removed deprecated CookieSpecs & slight changes to CookieSpec API
+- Changes to HttpRequestInterceptor & HttpResponseInterceptor
+- Customizing ConnectionManagers
+- Customizing Client Builders
+
+These are identified by getting the clj-http tests to pass. These breaking
+changes should be easy for users to notice because of Compilation Errors or
+Reflection warnings.
+
+** Quality of Life Improvements
+These are not strictly necessary, but I think improve the quality of life using the library.
+*** Connection Pools
+Upgrading the =conn_mgr.clj= namespace was the most difficult. In this experiment
+branch, I've refactored the code that followed these three themes:.
+
+**** Improving Extensibility
+The old code had a lot of boilerplate for combining SocketFactories, Registries, SSLContexts, insecure verifiers.
+
+I have refactored the code that retains the existing featureset and also reduce the boilerplate by standardizingo n this pattern:
+
+1. Start by constructing a SSLContext (default or custom)
+2. Pass SSLContext from (1) into a SocketFactoryRegistry
+3. Instantiate a ConnectionManager
+
+The net benfit of this approach is reducing the number of =cond= branches and data
+munging. This should make it easier to extend in the future.
+
+This new approach works well for sync and async clients
+**** Connection Pools: Standardize on Pooled Connection Managers
+Previously, the behavior of reusable connection managers depended on the =type= of
+connection manager (basic or non-basic).
+
+There's a couple of reasons I recommend for standardizing on PooledConnectionManagers for all HTTP interactions:
+
+Firstly, from testing the Apache HTTP5 Client, the BasicConnectionManager does
+not release connections properly. This is breaking clj-http's unit tests.
+
+I have reviewed the apache httpclient code, and I have not found any real world uses of BasicConnectionManager.
+It is not used in the example code. Furthermore, The HttpClientBuilder returns a PoolingConnectionManager. See
+https://github.com/apache/httpcomponents-client/blob/44e464ac2/httpclient5/src/main/java/org/apache/hc/client5/http/impl/classic/HttpClientBuilder.java#L731-L733
+
+Secondly, I think the behavior currently in clj-http is suboptimal. I think the
+decision to autoclose a connection pool should be decided by whether a
+connection pool is provided explicitly or not, rather than checking the type of connection manager.
+
+**** ConnectionManagerBuilder to match Java API
+We should provide a clojure API for calling the Java builders by supporting all
+the props and matching the keys. This way, it's easier for developers to customize the connection managers.
+
+**** Replace Socks Proxy with native support from Connection Managers
+The underlying library supports this now, and we can remove this extra boilerplate.
+
+*** Returning a middleware-handled Future when passing :async
+See https://github.com/dakrone/clj-http/issues/512.
+
+This would be worth exploring in the context of 4.x because it gives us a bit
+more leeway with breaking changes. I've been unsatisfied with the solutions I've
+experimented with that try not to break the existing API.
+
+*** Moving Capturing Socket Manager out of Conn Mgr
+My concerns are:
+1. Doesn't compose well with existing connectino manager options (see conflicting socket-capture-opts)
+2. Implicitly creates a connection manager. This could leak resources.
+
+With (2), it *may* be better to recommend users to control this directly.
+Give them the ability to create a =socket-capture-connection-manager=, and provide
+examples of how to properly clean up resources.
+
+Some ideas:
+1. Move all the logic to the =client.clj= namespace
+2. Move it to a separate namespace, perhaps =client_experimental.clj=
+
+*** Maintenance Stuff
+As part of the upgrade, I found it easier to refactor and iterate with these changes:
+
+1. Setting up =clj-kondo= as a linter
+2. Cleaning up namespace imports (using =clj-refactor=)
+3. Adding explicit timeouts on async tests
+4. Add macros to make async testing easier to observe (specifically errors) and finding "blocked" tests
+5. Prefer =reify= over =proxy= where possible.
+** Future Considerations
+*** Supporting Reactive Streams
+In Apache HTTPClient 5, there's interesting new capabilities:
+- HTTP/2 Support, Multiplexing
+- Fully Reactive Request/Response processing
+
+It's unclear to me right now how we should best integrate this into clj-http,
+since I do not use these features.
+
+This doesn't block the upgrade to Apache HTTPClient 5, and could be explored in a future minor release.
+
+*** Clojure.Spec & Namespaced Keys
+This isn't critical to the upgrade, however it would be usefl to use namespaced
+keys & clojure.spec to validate related request options.
+*** Change with-connection-pool
+There's a comment in with-connection-pool that discusses passing in the connection-manager explicitly.
+
+I 100% agree with this, and I think it's a much more flexible solution than creating it in the macro.
+
+* Recommendations for Next Steps
+Once we work through the recommendations, and if it's approved, I can break down
+the experimental branch =x-4.x-apache5-upgrade-experiment= into smaller commits
+that focus on addressing one recommendation at a time.
+
+The approach I would probably take is:
+1. Merge =3.x= into =master=. Note: =master= will not have passing CI tests
+2. Create new commits or PRs to =master= that solve each of the points above.
+   a. Start with refactoring =conn_mgr.clj= and to get tests working for =conn_mgr.clj=
+   b. Add fixes to get the remaining tests to pass
+   c. Polish time!
+3. Release an alpha and get feedback from community
+
+** Tracking Work
+I recommend setting up a Github Project and creating an Issue for each
+recommendation to track the work. This will help manage the recommendations.
+
+Alternatively, I can reorganize the existing branch into a series of meaningful
+commits and have it reviewed all at once.

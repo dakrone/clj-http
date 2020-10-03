@@ -367,8 +367,6 @@
          stream
          output-stream)))))
 
-clojure.java.io/Coercions
-
 (defn make-capturing-socket-conn-manager
   "Given an optional hostname and a port, create a connection manager captures
   Socket data. `output` should be an `OutputStream` where all output from this
