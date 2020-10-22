@@ -4,17 +4,17 @@
             [clj-http.conn-mgr :as conn]
             [clj-http.test.core-test :refer [run-server]]
             [clj-http.util :as util]
-            [clojure.string :as str]
             [clojure.java.io :refer [resource]]
+            [clojure.string :as str]
             [clojure.test :refer :all]
             [cognitect.transit :as transit]
-            [ring.util.codec :refer [form-decode-str]]
             [ring.middleware.nested-params :refer [parse-nested-keys]]
+            [ring.util.codec :refer [form-decode-str]]
             [slingshot.slingshot :refer [try+]])
-  (:import (java.net UnknownHostException)
-           (java.io ByteArrayInputStream)
-           (org.apache.http HttpEntity)
-           (org.apache.logging.log4j LogManager)))
+  (:import java.io.ByteArrayInputStream
+           java.net.UnknownHostException
+           org.apache.http.HttpEntity
+           org.apache.logging.log4j.LogManager))
 
 (defonce logger (LogManager/getLogger "clj-http.test.client-test"))
 

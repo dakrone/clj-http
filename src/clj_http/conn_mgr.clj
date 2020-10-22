@@ -2,32 +2,20 @@
   "Utility methods for Scheme registries and HTTP connection managers"
   (:require [clj-http.util :refer [opt]]
             [clojure.java.io :as io])
-  (:import (java.net Socket Proxy Proxy$Type InetSocketAddress)
-           (java.security KeyStore)
-           (javax.net.ssl KeyManager
-                          TrustManager)
-           (org.apache.http.config RegistryBuilder Registry SocketConfig)
-           (org.apache.http.conn HttpClientConnectionManager)
-           (org.apache.http.conn.ssl DefaultHostnameVerifier
-                                     NoopHostnameVerifier
-                                     SSLConnectionSocketFactory
-                                     SSLContexts
-                                     TrustStrategy)
-           (org.apache.http.conn.socket PlainConnectionSocketFactory)
-           (org.apache.http.impl.conn BasicHttpClientConnectionManager
-                                      PoolingHttpClientConnectionManager)
-           (org.apache.http.impl.nio.conn PoolingNHttpClientConnectionManager)
-           (javax.net.ssl SSLContext HostnameVerifier)
-           (org.apache.http.nio.conn NHttpClientConnectionManager)
-           (org.apache.http.nio.conn.ssl SSLIOSessionStrategy)
-           (org.apache.http.impl.nio.reactor
-            IOReactorConfig
-            AbstractMultiworkerIOReactor$DefaultThreadFactory
-            DefaultConnectingIOReactor)
-           (org.apache.http.nio.conn NoopIOSessionStrategy)
-           (org.apache.http.nio.protocol HttpAsyncRequestExecutor)
-           (org.apache.http.impl.nio DefaultHttpClientIODispatch)
-           (org.apache.http.config ConnectionConfig)))
+  (:import [java.net InetSocketAddress Proxy Proxy$Type Socket]
+           java.security.KeyStore
+           [javax.net.ssl HostnameVerifier KeyManager SSLContext TrustManager]
+           [org.apache.http.config ConnectionConfig Registry RegistryBuilder SocketConfig]
+           org.apache.http.conn.HttpClientConnectionManager
+           org.apache.http.conn.socket.PlainConnectionSocketFactory
+           [org.apache.http.conn.ssl DefaultHostnameVerifier NoopHostnameVerifier SSLConnectionSocketFactory SSLContexts TrustStrategy]
+           [org.apache.http.impl.conn BasicHttpClientConnectionManager PoolingHttpClientConnectionManager]
+           org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager
+           org.apache.http.impl.nio.DefaultHttpClientIODispatch
+           [org.apache.http.impl.nio.reactor DefaultConnectingIOReactor IOReactorConfig]
+           [org.apache.http.nio.conn NHttpClientConnectionManager NoopIOSessionStrategy]
+           org.apache.http.nio.conn.ssl.SSLIOSessionStrategy
+           org.apache.http.nio.protocol.HttpAsyncRequestExecutor))
 
 (def ^:private insecure-context-verifier
   (delay {

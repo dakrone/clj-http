@@ -1,11 +1,10 @@
 (ns clj-http.test.multipart-test
   (:require [clj-http.multipart :refer :all]
             [clojure.test :refer :all])
-  (:import (java.io File ByteArrayOutputStream ByteArrayInputStream)
-           (java.nio.charset Charset)
-           (org.apache.http.entity.mime.content FileBody StringBody ContentBody
-                                                ByteArrayBody InputStreamBody)
-           (org.apache.http.util EntityUtils)))
+  (:import [java.io ByteArrayInputStream ByteArrayOutputStream File]
+           java.nio.charset.Charset
+           [org.apache.http.entity.mime.content ByteArrayBody ContentBody FileBody InputStreamBody StringBody]
+           org.apache.http.util.EntityUtils))
 
 (defn body-str [^StringBody body]
   (-> body .getReader slurp))

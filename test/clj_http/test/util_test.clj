@@ -1,9 +1,9 @@
 (ns clj-http.test.util-test
   (:require [clj-http.util :refer :all]
-            [clojure.test :refer :all]
-            [clojure.java.io :as io])
-  (:import (org.apache.commons.io IOUtils)
-           (org.apache.commons.io.input NullInputStream)))
+            [clojure.java.io :as io]
+            [clojure.test :refer :all])
+  (:import org.apache.commons.io.input.NullInputStream
+           org.apache.commons.io.IOUtils))
 
 (deftest test-lower-case-keys
   (are [map expected]

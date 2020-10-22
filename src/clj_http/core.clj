@@ -4,50 +4,26 @@
             [clj-http.headers :as headers]
             [clj-http.multipart :as mp]
             [clj-http.util :refer [opt]]
-            [clojure.pprint])
-  (:import (java.io ByteArrayOutputStream FilterInputStream InputStream)
-           (java.net URI URL ProxySelector InetAddress)
-           (java.util Locale)
-           (org.apache.http HttpEntity HeaderIterator HttpHost HttpRequest
-                            HttpEntityEnclosingRequest HttpResponse
-                            HttpRequestInterceptor HttpResponseInterceptor
-                            ProtocolException)
-           (org.apache.http.auth UsernamePasswordCredentials AuthScope
-                                 NTCredentials)
-           (org.apache.http.client HttpRequestRetryHandler RedirectStrategy
-                                   CredentialsProvider)
-           (org.apache.http.client.config RequestConfig CookieSpecs)
-           (org.apache.http.client.methods HttpDelete HttpGet HttpPost HttpPut
-                                           HttpOptions HttpPatch
-                                           HttpHead
-                                           HttpEntityEnclosingRequestBase
-                                           CloseableHttpResponse
-                                           HttpUriRequest HttpRequestBase)
-           (org.apache.http.client.protocol HttpClientContext)
-           (org.apache.http.client.utils URIUtils)
-           (org.apache.http.config RegistryBuilder)
-           (org.apache.http.conn.routing HttpRoute HttpRoutePlanner)
-           (org.apache.http.conn.ssl BrowserCompatHostnameVerifier
-                                     SSLConnectionSocketFactory SSLContexts)
-           (org.apache.http.conn.socket PlainConnectionSocketFactory)
-           (org.apache.http.conn.util PublicSuffixMatcherLoader)
-           (org.apache.http.cookie CookieSpecProvider)
-           (org.apache.http.entity ByteArrayEntity StringEntity)
-           (org.apache.http.impl.client BasicCredentialsProvider
-                                        CloseableHttpClient HttpClients
-                                        DefaultRedirectStrategy
-                                        LaxRedirectStrategy HttpClientBuilder)
-           (org.apache.http.client.cache HttpCacheContext)
-           (org.apache.http.impl.client.cache CacheConfig
-                                              CachingHttpClientBuilder)
-           (org.apache.http.impl.cookie DefaultCookieSpecProvider)
-           (org.apache.http.impl.conn SystemDefaultRoutePlanner
-                                      DefaultProxyRoutePlanner)
-           (org.apache.http.impl.nio.client HttpAsyncClientBuilder
-                                            HttpAsyncClients
-                                            CloseableHttpAsyncClient)
-           (org.apache.http.message BasicHttpResponse)
-           (java.util.concurrent ExecutionException)))
+            clojure.pprint)
+  (:import [java.io ByteArrayOutputStream FilterInputStream InputStream]
+           [java.net InetAddress ProxySelector URI URL]
+           java.util.Locale
+           [org.apache.http HeaderIterator HttpEntity HttpEntityEnclosingRequest HttpHost HttpRequestInterceptor HttpResponse HttpResponseInterceptor ProtocolException]
+           [org.apache.http.auth AuthScope NTCredentials UsernamePasswordCredentials]
+           [org.apache.http.client CredentialsProvider HttpRequestRetryHandler RedirectStrategy]
+           org.apache.http.client.cache.HttpCacheContext
+           [org.apache.http.client.config CookieSpecs RequestConfig]
+           [org.apache.http.client.methods CloseableHttpResponse HttpDelete HttpEntityEnclosingRequestBase HttpGet HttpHead HttpOptions HttpPatch HttpPost HttpPut HttpRequestBase HttpUriRequest]
+           org.apache.http.client.protocol.HttpClientContext
+           org.apache.http.client.utils.URIUtils
+           org.apache.http.config.RegistryBuilder
+           org.apache.http.conn.routing.HttpRoutePlanner
+           org.apache.http.cookie.CookieSpecProvider
+           [org.apache.http.entity ByteArrayEntity StringEntity]
+           [org.apache.http.impl.client BasicCredentialsProvider CloseableHttpClient DefaultRedirectStrategy HttpClientBuilder HttpClients LaxRedirectStrategy]
+           [org.apache.http.impl.client.cache CacheConfig CachingHttpClientBuilder]
+           [org.apache.http.impl.conn DefaultProxyRoutePlanner SystemDefaultRoutePlanner]
+           [org.apache.http.impl.nio.client CloseableHttpAsyncClient HttpAsyncClientBuilder HttpAsyncClients]))
 
 (def CUSTOM_COOKIE_POLICY "_custom")
 

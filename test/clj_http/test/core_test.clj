@@ -5,30 +5,22 @@
             [clj-http.core :as core]
             [clj-http.util :as util]
             [clojure.java.io :refer [file]]
-            [clojure.pprint :as pp]
             [clojure.test :refer :all]
             [ring.adapter.jetty :as ring])
-  (:import (java.io ByteArrayInputStream)
-           (java.net InetAddress SocketTimeoutException)
-           (java.util.concurrent TimeoutException TimeUnit)
-           (org.apache.http.params CoreConnectionPNames CoreProtocolPNames)
-           (org.apache.http.message BasicHeader BasicHeaderIterator)
-           (org.apache.http.client.methods HttpPost)
-           (org.apache.http.client.protocol HttpClientContext)
-           (org.apache.http.client.config RequestConfig)
-           (org.apache.http.client.params CookiePolicy ClientPNames)
-           (org.apache.http.conn.util PublicSuffixMatcherLoader)
-           (org.apache.http.cookie CommonCookieAttributeHandler)
-           (org.apache.http HttpRequest HttpResponse HttpConnection
-                            HttpInetConnection HttpVersion ProtocolException)
-           (org.apache.http.protocol HttpContext ExecutionContext)
-           (org.apache.http.impl.client DefaultHttpClient)
-           (org.apache.http.impl.cookie RFC6265CookieSpec RFC6265CookieSpecProvider
-                                        RFC6265CookieSpecProvider$CompatibilityLevel)
-           (org.apache.http.impl.conn InMemoryDnsResolver)
-           (org.apache.http.client.params ClientPNames)
-           (org.apache.logging.log4j LogManager)
-           (sun.security.provider.certpath SunCertPathBuilderException)))
+  (:import java.io.ByteArrayInputStream
+           [java.net InetAddress SocketTimeoutException]
+           [java.util.concurrent TimeoutException TimeUnit]
+           [org.apache.http HttpConnection HttpInetConnection HttpRequest HttpResponse ProtocolException]
+           org.apache.http.client.config.RequestConfig
+           org.apache.http.client.params.ClientPNames
+           org.apache.http.client.protocol.HttpClientContext
+           org.apache.http.impl.conn.InMemoryDnsResolver
+           org.apache.http.impl.cookie.RFC6265CookieSpecProvider
+           [org.apache.http.message BasicHeader BasicHeaderIterator]
+           [org.apache.http.params CoreConnectionPNames CoreProtocolPNames]
+           [org.apache.http.protocol ExecutionContext HttpContext]
+           org.apache.logging.log4j.LogManager
+           sun.security.provider.certpath.SunCertPathBuilderException))
 
 (defonce logger (LogManager/getLogger "clj-http.test.core-test"))
 
