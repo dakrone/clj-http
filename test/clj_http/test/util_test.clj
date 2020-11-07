@@ -41,6 +41,9 @@
     " application/json;  charset=UTF-8 "
     {:content-type :application/json
      :content-type-params {:charset "UTF-8"}}
+    " application/json;  charset=\"utf-8\" "
+    {:content-type :application/json
+     :content-type-params {:charset "utf-8"}}
     "text/html; charset=ISO-8859-4"
     {:content-type :text/html
      :content-type-params {:charset "ISO-8859-4"}}))
