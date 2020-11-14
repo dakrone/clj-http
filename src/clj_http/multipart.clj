@@ -128,8 +128,7 @@
 (defn- multipart-workaround
   "Workaround for AsyncHttpClient to bypass 25kb restriction on getContent.
 
-  See https://github.com/dakrone/clj-http/issues/560,
-  https://issues.apache.org/jira/browse/HTTPASYNC-163
+  See https://github.com/dakrone/clj-http/issues/560.
   "
   [^org.apache.http.entity.mime.MultipartFormEntity mp-entity]
   (reify org.apache.http.HttpEntity
