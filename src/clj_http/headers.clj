@@ -8,8 +8,8 @@
   \"Accept-Encoding\")."
   (:require [clojure.string :as s]
             [potemkin :as potemkin])
-  (:import (java.util Locale)
-           (org.apache.http Header HeaderIterator)))
+  (:import java.util.Locale
+           [org.apache.http Header HeaderIterator]))
 
 (def special-cases
   "A collection of HTTP headers that do not follow the normal

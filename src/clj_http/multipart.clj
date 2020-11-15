@@ -1,15 +1,10 @@
 (ns clj-http.multipart
   "Namespace used for clj-http to create multipart entities and bodies."
-  (:import (java.io File InputStream)
-           (org.apache.http.entity ContentType)
-           (org.apache.http.entity.mime MultipartEntityBuilder)
-           (org.apache.http.entity.mime HttpMultipartMode)
-           (org.apache.http.entity.mime.content ContentBody
-                                                ByteArrayBody
-                                                FileBody
-                                                InputStreamBody
-                                                StringBody)
-           (org.apache.http Consts)))
+  (:import [java.io File InputStream]
+           org.apache.http.Consts
+           org.apache.http.entity.ContentType
+           [org.apache.http.entity.mime HttpMultipartMode MultipartEntityBuilder]
+           [org.apache.http.entity.mime.content ByteArrayBody ContentBody FileBody InputStreamBody StringBody]))
 
 ;; we don't need to make a fake byte-array every time, only once
 (def byte-array-type (type (byte-array 0)))

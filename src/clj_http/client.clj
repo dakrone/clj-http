@@ -1,24 +1,22 @@
 (ns clj-http.client
   "Batteries-included HTTP client."
+  (:refer-clojure :exclude [get update])
   (:require [clj-http.conn-mgr :as conn]
             [clj-http.cookies :refer [wrap-cookies]]
             [clj-http.core :as core]
             [clj-http.headers :refer [wrap-header-map]]
             [clj-http.links :refer [wrap-links]]
-            [clj-http.util :refer [opt] :as util]
+            [clj-http.util :as util :refer [opt]]
             [clojure.java.io :as io]
             [clojure.stacktrace :refer [root-cause]]
             [clojure.string :as str]
             [clojure.walk :refer [keywordize-keys prewalk]]
             [slingshot.slingshot :refer [throw+]])
-  (:import (java.io InputStream File ByteArrayOutputStream ByteArrayInputStream EOFException BufferedReader)
-           (java.net URL UnknownHostException)
-           (org.apache.http.entity BufferedHttpEntity ByteArrayEntity
-                                   InputStreamEntity FileEntity StringEntity)
-           (org.apache.http.impl.conn PoolingHttpClientConnectionManager)
-           (org.apache.http.impl.nio.conn PoolingNHttpClientConnectionManager)
-           (org.apache.http.impl.nio.client HttpAsyncClients))
-  (:refer-clojure :exclude [get update]))
+  (:import [java.io BufferedReader ByteArrayInputStream ByteArrayOutputStream EOFException File InputStream]
+           [java.net UnknownHostException URL]
+           [org.apache.http.entity BufferedHttpEntity ByteArrayEntity FileEntity InputStreamEntity StringEntity]
+           org.apache.http.impl.conn.PoolingHttpClientConnectionManager
+           org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager))
 
 ;; Cheshire is an optional dependency, so we check for it at compile time.
 (def json-enabled?

@@ -4,34 +4,24 @@
             [clj-http.headers :as headers]
             [clj-http.multipart :as mp]
             [clj-http.util :refer [opt]]
-            [clojure.pprint])
-  (:import (java.io ByteArrayOutputStream FilterInputStream InputStream)
-
-           (org.apache.http HeaderIterator HttpEntity
-                            HttpEntityEnclosingRequest
-                            HttpResponse Header HttpHost
-                            HttpResponseInterceptor)
-           (org.apache.http.auth UsernamePasswordCredentials AuthScope
-                                 NTCredentials)
-           (org.apache.http.params CoreConnectionPNames)
-           (org.apache.http.client HttpClient HttpRequestRetryHandler)
-           (org.apache.http.client.methods HttpDelete
-                                           HttpEntityEnclosingRequestBase
-                                           HttpGet HttpHead HttpOptions
-                                           HttpPatch HttpPost HttpPut
-                                           HttpUriRequest)
-           (org.apache.http.client.params CookiePolicy ClientPNames)
-           (org.apache.http.conn ClientConnectionManager)
-           (org.apache.http.conn.routing HttpRoute)
-           (org.apache.http.conn.params ConnRoutePNames)
-           (org.apache.http.cookie CookieSpecFactory)
-           (org.apache.http.cookie.params CookieSpecPNames)
-           (org.apache.http.entity ByteArrayEntity StringEntity)
-
-           (org.apache.http.impl.client DefaultHttpClient)
-           (org.apache.http.impl.conn ProxySelectorRoutePlanner)
-           (org.apache.http.impl.cookie BrowserCompatSpec)
-           (java.net URI)))
+            clojure.pprint)
+  (:import [java.io ByteArrayOutputStream FilterInputStream InputStream]
+           java.net.URI
+           [org.apache.http HeaderIterator HttpEntity HttpEntityEnclosingRequest HttpHost HttpResponseInterceptor]
+           [org.apache.http.auth AuthScope NTCredentials UsernamePasswordCredentials]
+           [org.apache.http.client HttpClient HttpRequestRetryHandler]
+           [org.apache.http.client.methods HttpDelete HttpEntityEnclosingRequestBase HttpGet HttpHead HttpOptions HttpPatch HttpPost HttpPut HttpUriRequest]
+           [org.apache.http.client.params ClientPNames CookiePolicy]
+           org.apache.http.conn.ClientConnectionManager
+           org.apache.http.conn.params.ConnRoutePNames
+           org.apache.http.conn.routing.HttpRoute
+           org.apache.http.cookie.CookieSpecFactory
+           org.apache.http.cookie.params.CookieSpecPNames
+           [org.apache.http.entity ByteArrayEntity StringEntity]
+           org.apache.http.impl.client.DefaultHttpClient
+           org.apache.http.impl.conn.ProxySelectorRoutePlanner
+           org.apache.http.impl.cookie.BrowserCompatSpec
+           org.apache.http.params.CoreConnectionPNames))
 
 (defn parse-headers
   "Takes a HeaderIterator and returns a map of names to values.

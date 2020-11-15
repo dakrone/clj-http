@@ -4,19 +4,13 @@
             [clj-http.test.core-test :refer [run-server]]
             [clojure.test :refer :all]
             [ring.adapter.jetty :as ring])
-  (:import (java.security KeyStore)
-           (javax.net.ssl KeyManager
-                          KeyManagerFactory
-                          TrustManager
-                          TrustManagerFactory)
-           (org.apache.http.impl.conn BasicHttpClientConnectionManager)
-           (org.apache.http.conn.ssl SSLConnectionSocketFactory
-                                     DefaultHostnameVerifier
-                                     NoopHostnameVerifier
-                                     TrustStrategy)
-           (org.apache.http.conn.socket PlainConnectionSocketFactory)
-           (org.apache.http.nio.conn NoopIOSessionStrategy)
-           (org.apache.http.nio.conn.ssl SSLIOSessionStrategy)))
+  (:import java.security.KeyStore
+           [javax.net.ssl KeyManagerFactory TrustManagerFactory]
+           org.apache.http.conn.socket.PlainConnectionSocketFactory
+           org.apache.http.conn.ssl.SSLConnectionSocketFactory
+           org.apache.http.impl.conn.BasicHttpClientConnectionManager
+           org.apache.http.nio.conn.NoopIOSessionStrategy
+           org.apache.http.nio.conn.ssl.SSLIOSessionStrategy))
 
 (def client-ks "test-resources/client-keystore")
 (def client-ks-pass "keykey")

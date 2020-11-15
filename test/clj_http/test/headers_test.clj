@@ -3,10 +3,9 @@
             [clj-http.headers :refer :all]
             [clj-http.util :refer [lower-case-keys]]
             [clojure.test :refer :all])
-  (:import (javax.servlet.http HttpServletRequest
-                               HttpServletResponse)
-           (org.eclipse.jetty.server Request Server)
-           (org.eclipse.jetty.server.handler AbstractHandler)))
+  (:import [javax.servlet.http HttpServletRequest HttpServletResponse]
+           [org.eclipse.jetty.server Request Server]
+           org.eclipse.jetty.server.handler.AbstractHandler))
 
 (deftest test-special-case
   (are [expected given]
