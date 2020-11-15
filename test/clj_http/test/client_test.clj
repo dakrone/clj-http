@@ -1511,8 +1511,13 @@
     (is (= all-legal
            (client/url-encode-illegal-characters all-legal)))))
 
+(defmethod client/coerce-response-body :json+ms949
+  [req resp]
+  (client/coerce-json-body req resp true "MS949"))
+
 (deftest t-coercion-methods
   (let [json-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"bar\"}"))
+        json-ms949-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"안뇽\"}" "MS949"))
         auto-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"bar\"}"))
         edn-body (ByteArrayInputStream. (.getBytes "{:foo \"bar\"}"))
         transit-json-body (ByteArrayInputStream.
@@ -1526,6 +1531,8 @@
         (ByteArrayInputStream. (.getBytes "foo=bar"))
         json-resp {:body json-body :status 200
                    :headers {"content-type" "application/json"}}
+        json-ms949-resp {:body json-ms949-body :status 200
+                         :headers {"content-type" "application/json; charset=ms949"}}
         auto-resp {:body auto-body :status 200
                    :headers {"content-type" "application/json"}}
         edn-resp {:body edn-body :status 200
@@ -1555,6 +1562,8 @@
                                                auto-www-form-urlencoded-resp))
            (:body (client/coerce-response-body {:as :x-www-form-urlencoded}
                                                www-form-urlencoded-resp))))
+    (is (= {:foo "안뇽"}
+           (:body (client/coerce-response-body {:as :json+ms949} json-ms949-resp))))
 
     (testing "throws AssertionError when optional libraries are not loaded"
       (with-redefs [client/json-enabled? false]
@@ -1566,6 +1575,7 @@
       (with-redefs [client/ring-codec-enabled? false]
         (is (thrown? AssertionError (client/coerce-response-body {:as :x-www-form-urlencoded} www-form-urlencoded-resp)))
         (is (thrown? AssertionError (client/coerce-response-body {:as :auto} auto-www-form-urlencoded-resp)))))))
+
 
 (deftest t-reader-coercion
   (let [read-lines (fn [reader] (vec (take-while not-empty (repeatedly #(.readLine reader)))))

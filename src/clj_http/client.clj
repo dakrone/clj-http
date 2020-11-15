@@ -450,7 +450,7 @@
            (= coerce :exceptional))))
 
 (defn- decode-json-body [body keyword? charset]
-  (let [^BufferedReader br (io/reader (util/force-stream body))]
+  (let [^BufferedReader br (io/reader (util/force-stream body) :encoding charset)]
     (try
       (.mark br 1)
       (let [first-char (int (try (.read br) (catch EOFException _ -1)))]
