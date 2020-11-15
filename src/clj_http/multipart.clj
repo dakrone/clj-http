@@ -125,6 +125,27 @@
   [{:keys [^ContentBody content]}]
   content)
 
+(defn- multipart-workaround
+  "Workaround for AsyncHttpClient to bypass 25kb restriction on getContent.
+
+  See https://github.com/dakrone/clj-http/issues/560.
+  "
+  [^org.apache.http.entity.mime.MultipartFormEntity mp-entity]
+  (reify org.apache.http.HttpEntity
+    (isRepeatable [_] (.isRepeatable mp-entity))
+    (isChunked [_] (.isChunked mp-entity))
+    (isStreaming [_] (.isStreaming mp-entity))
+    (getContentLength [_] (.getContentLength mp-entity))
+    (getContentType [_] (.getContentType mp-entity))
+    (getContentEncoding [_] (.getContentEncoding mp-entity))
+    (consumeContent [_] (.consumeContent mp-entity))
+    (getContent [_]
+      (let [os (java.io.ByteArrayOutputStream.)]
+        (.writeTo mp-entity os)
+        (.flush os)
+        (java.io.ByteArrayInputStream. (.toByteArray os))))
+    (writeTo [_ output-stream] (.writeTo mp-entity output-stream))))
+
 (defn create-multipart-entity
   "Takes a multipart vector of maps and creates a MultipartEntity with each
   map added as a part, depending on the type of content."
@@ -140,4 +161,5 @@
       (let [name (or (:part-name m) (:name m))
             part (make-multipart-body m)]
         (.addPart mp-entity name part)))
-    (.build mp-entity)))
+    (multipart-workaround
+     (.build mp-entity))))

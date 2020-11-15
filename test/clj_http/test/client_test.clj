@@ -160,7 +160,26 @@
                       )]
     (is (= 200 (:status @resp)))
     (is (not (realized? exception)))
-    #_(when (realized? exception) (prn @exception))))
+    #_(when (realized? exception) (prn @exception)))
+
+  ;; Regression Testing https://github.com/dakrone/clj-http/issues/560
+  (testing "multipart uploads larger than 25kb"
+    (let [resp (promise)
+          exception (promise)
+          ;; assumption: file > 5kb
+          file (clojure.java.io/file "test-resources/big_array_json.json")
+
+          _ (request {:uri "/post" :method :post
+                      :async? true
+                      :multipart [{:name "part-1" :content file}
+                                  {:name "part-2" :content file}
+                                  {:name "part-3" :content file}
+                                  {:name "part-4" :content file}
+                                  {:name "part-5" :content file}]}
+                     resp
+                     exception)]
+      (is (= 200 (:status (deref resp 500 :failed))))
+      (is (not (realized? exception))))))
 
 (deftest ^:integration nil-input
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
