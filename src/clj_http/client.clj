@@ -485,7 +485,8 @@
   {:pre [transit-enabled?]}
   (let [charset (or charset (response-charset resp))
         body (if (can-parse-body? request resp)
-               (parse-transit (util/force-stream body) type transit-opts)
+               (with-open [in (util/force-stream body)]
+                 (parse-transit in type transit-opts))
                (util/force-string body charset))]
     (assoc resp :body body)))
 
