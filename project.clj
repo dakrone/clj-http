@@ -7,11 +7,11 @@
   :global-vars {*warn-on-reflection* false}
   :min-lein-version "2.0.0"
   :exclusions [org.clojure/clojure]
-  :dependencies [[org.apache.httpcomponents/httpcore "4.4.12"]
-                 [org.apache.httpcomponents/httpclient "4.5.10"]
-                 [org.apache.httpcomponents/httpclient-cache "4.5.10"]
+  :dependencies [[org.apache.httpcomponents/httpcore "4.4.13"]
+                 [org.apache.httpcomponents/httpclient "4.5.13"]
+                 [org.apache.httpcomponents/httpclient-cache "4.5.13"]
                  [org.apache.httpcomponents/httpasyncclient "4.1.4"]
-                 [org.apache.httpcomponents/httpmime "4.5.10"]
+                 [org.apache.httpcomponents/httpmime "4.5.13"]
                  [commons-codec "1.12"]
                  [commons-io "2.6"]
                  [slingshot "0.12.2"]
