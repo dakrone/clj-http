@@ -12,7 +12,7 @@ List of user-visible changes that have gone into each release
 ** 3.11.1 (Unreleased)
 ** 3.11.0
 - Adds workaround for Async Multipart uploads greater than 25 kb (#574)
-  https://github.com/dakrone/clj-http/pull/571
+  https://github.com/dakrone/clj-http/pull/574
 - Adds an additional style for multi-param-style added (#562)
   https://github.com/dakrone/clj-http/pull/562
 - Close transit input stream after reading response (#565)
