@@ -4,8 +4,8 @@
             [clj-http.conn-mgr :as conn]
             [clj-http.test.core-test :refer [run-server localhost]]
             [clj-http.util :as util]
-            [clojure.string :as str]
             [clojure.java.io :refer [resource]]
+            [clojure.string :as str]
             [clojure.test :refer :all]
             [cognitect.transit :as transit]
             [ring.util.codec :refer [form-decode-str]]
@@ -159,7 +159,26 @@
                    exception)]
     (is (= 200 (:status @resp)))
     (is (not (realized? exception)))
-    #_(when (realized? exception) (prn @exception))))
+    #_(when (realized? exception) (prn @exception)))
+
+  ;; Regression Testing https://github.com/dakrone/clj-http/issues/560
+  (testing "multipart uploads larger than 25kb"
+    (let [resp (promise)
+          exception (promise)
+          ;; assumption: file > 5kb
+          file (clojure.java.io/file "test-resources/big_array_json.json")
+
+          _ (request {:uri "/post" :method :post
+                      :async? true
+                      :multipart [{:name "part-1" :content file}
+                                  {:name "part-2" :content file}
+                                  {:name "part-3" :content file}
+                                  {:name "part-4" :content file}
+                                  {:name "part-5" :content file}]}
+                     resp
+                     exception)]
+      (is (= 200 (:status (deref resp 500 :failed))))
+      (is (not (realized? exception))))))
 
 (deftest ^:integration nil-input
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
@@ -1163,8 +1182,13 @@
     (is (= all-legal
            (client/url-encode-illegal-characters all-legal)))))
 
+(defmethod client/coerce-response-body :json+ms949
+  [req resp]
+  (client/coerce-json-body req resp true "MS949"))
+
 (deftest t-coercion-methods
   (let [json-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"bar\"}"))
+        json-ms949-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"안뇽\"}" "MS949"))
         auto-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"bar\"}"))
         edn-body (ByteArrayInputStream. (.getBytes "{:foo \"bar\"}"))
         transit-json-body (ByteArrayInputStream.
@@ -1178,6 +1202,8 @@
         (ByteArrayInputStream. (.getBytes "foo=bar"))
         json-resp {:body json-body :status 200
                    :headers {"content-type" "application/json"}}
+        json-ms949-resp {:body json-ms949-body :status 200
+                         :headers {"content-type" "application/json; charset=ms949"}}
         auto-resp {:body auto-body :status 200
                    :headers {"content-type" "application/json"}}
         edn-resp {:body edn-body :status 200
@@ -1207,6 +1233,8 @@
                                                auto-www-form-urlencoded-resp))
            (:body (client/coerce-response-body {:as :x-www-form-urlencoded}
                                                www-form-urlencoded-resp))))
+    (is (= {:foo "안뇽"}
+           (:body (client/coerce-response-body {:as :json+ms949} json-ms949-resp))))
 
     (testing "throws AssertionError when optional libraries are not loaded"
       (with-redefs [client/json-enabled? false]
@@ -1218,6 +1246,7 @@
       (with-redefs [client/ring-codec-enabled? false]
         (is (thrown? AssertionError (client/coerce-response-body {:as :x-www-form-urlencoded} www-form-urlencoded-resp)))
         (is (thrown? AssertionError (client/coerce-response-body {:as :auto} auto-www-form-urlencoded-resp)))))))
+
 
 (deftest t-reader-coercion
   (let [read-lines (fn [reader] (vec (take-while not-empty (repeatedly #(.readLine reader)))))
@@ -1319,7 +1348,17 @@
           query-string (-> resp :body form-decode-str)]
       (is (= 200 (:status resp)))
       (is (.contains query-string "a[]=1&a[]=2&a[]=3") query-string)
-      (is (.contains query-string "b[]=x&b[]=y&b[]=z") query-string))))
+      (is (.contains query-string "b[]=x&b[]=y&b[]=z") query-string)))
+  (testing "multi-valued query params in comma-separated"
+    (let [resp (request {:uri "/query-string"
+                         :method :get
+                         :multi-param-style :comma-separated
+                         :query-params {:a [1 2 3]
+                                        :b ["x" "y" "z"]}})
+          query-string (-> resp :body form-decode-str)]
+      (is (= 200 (:status resp)))
+      (is (.contains query-string "a=1,2,3") query-string)
+      (is (.contains query-string "b=x,y,z") query-string))))
 
 (deftest t-wrap-flatten-nested-params
   (is-applied client/wrap-flatten-nested-params

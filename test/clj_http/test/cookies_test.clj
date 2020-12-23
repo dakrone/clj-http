@@ -1,6 +1,5 @@
 (ns clj-http.test.cookies-test
   (:require [clj-http.cookies :refer :all]
-            [clj-http.util :refer :all]
             [clojure.test :refer :all])
   (:import (org.apache.hc.client5.http.impl.cookie BasicClientCookie)))
 

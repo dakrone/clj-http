@@ -3,7 +3,7 @@
   (:require [clj-http.util :refer [opt]]
             [clojure.java.io :as io]
             [clojure.string :as str])
-  (:import java.net.InetSocketAddress
+  (:import [java.net InetSocketAddress Proxy Proxy$Type Socket]
            java.security.KeyStore
            [javax.net.ssl HostnameVerifier KeyManager SSLContext TrustManager]
            org.apache.commons.io.output.TeeOutputStream
@@ -18,7 +18,7 @@
            [org.apache.hc.core5.ssl SSLContexts TrustStrategy]
            org.apache.hc.core5.util.TimeValue))
 
-;; -- Helpers  -----------------------------------------------------------------
+;; -- Interop Helpers  ---------------------------------------------------------
 (defn into-inetaddress [socks-proxy-address]
   (cond
     (instance? InetSocketAddress socks-proxy-address)
@@ -30,7 +30,22 @@
     :else
     (throw (IllegalArgumentException. "Unable to coerce into inetaddress"))))
 
-;; -- SocketFactory Helpers  ---------------------------------------------------
+
+(defn ^Registry into-registry [registry]
+  (cond
+    (instance? Registry registry)
+    registry
+
+    (map? registry)
+    (let [registry-builder (RegistryBuilder/create)]
+      (doseq [[k v] registry]
+        (.register registry-builder k v))
+      (.build registry-builder))
+
+    :else
+    (throw (IllegalArgumentException. "Cannot coerce into a Registry"))))
+
+;; -- SocketFactory  -----------------------------------------------------------
 (defn ^SSLConnectionSocketFactory SSLGenericSocketFactory
   "Given a function that returns a new socket, create an
   SSLConnectionSocketFactory that will use that socket."
@@ -53,6 +68,12 @@
       (socket-factory))))
 
 ;; -- Custom SSL Contexts  -----------------------------------------------------
+(defn socks-proxied-socket
+  "Create a Socket proxied through socks, using the given hostname and port"
+  [^String hostname ^Integer port]
+  (Socket. (Proxy. Proxy$Type/SOCKS (InetSocketAddress. hostname port))))
+
+;; -- SSL Contexts  ------------------------------------------------------------
 (defn ^KeyStore get-keystore*
   [keystore-file keystore-type ^String keystore-pass]
   (when keystore-file
@@ -112,14 +133,14 @@
 
 (defn ^SSLContext get-ssl-context
   "Gets the SSL Context from a request or connection pool settings"
-  [{:keys [keystore trust-store key-managers trust-managers] :as req}]
+  [{:keys [keystore trust-store key-managers trust-managers] :as config}]
   (cond (or keystore trust-store)
-        (ssl-context-for-keystore req)
+        (ssl-context-for-keystore config)
 
         (or key-managers trust-managers)
-        (ssl-context-for-trust-or-key-manager req)
+        (ssl-context-for-trust-or-key-manager config)
 
-        (opt req :insecure)
+        (opt config :insecure)
         (ssl-context-insecure)
 
         :else
@@ -190,20 +211,6 @@
     (.build builder)))
 
 ;; -- Connection Managers  -----------------------------------------------------
-(defn into-registry [registry]
-  (cond
-    (instance? Registry registry)
-    registry
-
-    (map? registry)
-    (let [registry-builder (RegistryBuilder/create)]
-      (doseq [[k v] registry]
-        (.register registry-builder k v))
-      (.build registry-builder))
-
-    :else
-    (throw (IllegalArgumentException. "Expected a registry"))))
-
 ;; TODO: take documentation from make-reusable-conn-manager
 (defn ^PoolingHttpClientConnectionManager make-conn-manager
   "Creates a blocking connection manager with the specified options.

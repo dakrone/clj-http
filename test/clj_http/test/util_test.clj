@@ -1,9 +1,9 @@
 (ns clj-http.test.util-test
   (:require [clj-http.util :refer :all]
-            [clojure.test :refer :all]
-            [clojure.java.io :as io])
-  (:import (org.apache.commons.io IOUtils)
-           (org.apache.commons.io.input NullInputStream)))
+            [clojure.java.io :as io]
+            [clojure.test :refer :all])
+  (:import org.apache.commons.io.input.NullInputStream
+           org.apache.commons.io.IOUtils))
 
 (deftest test-lower-case-keys
   (are [map expected]
@@ -41,6 +41,9 @@
     " application/json;  charset=UTF-8 "
     {:content-type :application/json
      :content-type-params {:charset "UTF-8"}}
+    " application/json;  charset=\"utf-8\" "
+    {:content-type :application/json
+     :content-type-params {:charset "utf-8"}}
     "text/html; charset=ISO-8859-4"
     {:content-type :text/html
      :content-type-params {:charset "ISO-8859-4"}}))

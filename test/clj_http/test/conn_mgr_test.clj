@@ -89,6 +89,23 @@
             exception (promise)
             _ (core/request (assoc secure-request :async? true) resp exception)]
         (is (= 200 (:status (deref resp 1000 {:status :timeout})))))
+
+      (testing "with reusable connection pool"
+        (let [pool (conn-mgr/make-async-conn-manager {:timeout 10000
+                                                      :keystore client-ks :keystore-pass client-ks-pass
+                                                      :trust-store client-ks :trust-store-pass client-ks-pass
+                                                      :insecure? true})]
+          (try
+            (let [resp (promise) exception (promise)
+                  _ (core/request {:request-method :get :uri "/get"
+                                   :server-port 18084 :scheme :https
+                                   :server-name "localhost"
+                                   :connection-manager pool :async? true} resp exception)]
+              (is (= 200 (:status (deref resp 1000 {:status :timeout}))))
+              (is (:body @resp))
+              (is (not (realized? exception))))
+            (finally
+              (conn-mgr/shutdown-manager pool)))))
       (finally
         (.stop server)))))
 

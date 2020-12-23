@@ -143,15 +143,17 @@
         false
         (or v1 v2)))))
 
+(defn- trim-quotes [s]
+  (clojure.string/replace s #"^\s*(\"(.*)\"|(.*?))\s*$" "$2$3"))
+
 (defn parse-content-type
   "Parse `s` as an RFC 2616 media type."
   [s]
-  (if-let [m (re-matches #"\s*(([^/]+)/([^ ;]+))\s*(\s*;.*)?" (str s))]
+  (when-let [m (re-matches #"\s*(([^/]+)/([^ ;]+))\s*(\s*;.*)?" (str s))]
     {:content-type (keyword (nth m 1))
      :content-type-params
      (->> (split (str (nth m 4)) #"\s*;\s*")
-          (identity)
           (remove blank?)
           (map #(split % #"="))
-          (mapcat (fn [[k v]] [(keyword (lower-case k)) (trim v)]))
+          (mapcat (fn [[k v]] [(keyword (lower-case k)) (trim-quotes v)]))
           (apply hash-map))}))
