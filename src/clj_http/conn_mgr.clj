@@ -17,31 +17,22 @@
            org.apache.http.nio.conn.ssl.SSLIOSessionStrategy
            org.apache.http.nio.protocol.HttpAsyncRequestExecutor))
 
-(def ^:private insecure-context-verifier
-  (delay {
-          :context (-> (SSLContexts/custom)
-                       (.loadTrustMaterial nil (reify TrustStrategy
-                                                 (isTrusted [_ _ _] true)))
-                       (.build))
-          :verifier NoopHostnameVerifier/INSTANCE}))
+;; -- Interop Helpers  ---------------------------------------------------------
+(defn ^Registry into-registry [registry]
+  (cond
+    (instance? Registry registry)
+    registry
 
-(def ^:private insecure-socket-factory
-  (delay
-   (let [{:keys [context  verifier]} @insecure-context-verifier]
-     (SSLConnectionSocketFactory. ^SSLContext context
-                                  ^HostnameVerifier verifier))))
+    (map? registry)
+    (let [registry-builder (RegistryBuilder/create)]
+      (doseq [[k v] registry]
+        (.register registry-builder k v))
+      (.build registry-builder))
 
-(def ^:private insecure-strategy
-  (delay
-   (let [{:keys [context  verifier]} @insecure-context-verifier]
-     (SSLIOSessionStrategy. ^SSLContext context ^HostnameVerifier verifier))))
+    :else
+    (throw (IllegalArgumentException. "Cannot coerce into a Registry"))))
 
-(def ^:private ^SSLConnectionSocketFactory secure-ssl-socket-factory
-  (delay (SSLConnectionSocketFactory/getSocketFactory)))
-
-(def ^:private ^SSLIOSessionStrategy secure-strategy
-  (delay (SSLIOSessionStrategy/getDefaultStrategy)))
-
+;; -- SocketFactory  -----------------------------------------------------------
 (defn ^SSLConnectionSocketFactory SSLGenericSocketFactory
   "Given a function that returns a new socket, create an
   SSLConnectionSocketFactory that will use that socket."
@@ -68,6 +59,7 @@
   [^String hostname ^Integer port]
   (Socket. (Proxy. Proxy$Type/SOCKS (InetSocketAddress. hostname port))))
 
+;; -- SSL Contexts  ------------------------------------------------------------
 (defn ^KeyStore get-keystore*
   [keystore-file keystore-type ^String keystore-pass]
   (when keystore-file
@@ -82,31 +74,26 @@
     keystore
     (apply get-keystore* keystore args)))
 
-(defn get-keystore-context-verifier
+(defn- ssl-context-for-keystore
   ;; TODO: use something else for passwords
   ;; Note: JVM strings aren't ideal for passwords - see
   ;; https://tinyurl.com/azm3ab9
-  [{:keys [keystore keystore-type ^String keystore-pass keystore-instance
-           trust-store trust-store-type trust-store-pass]
-    :as req}]
+  [{:keys [keystore keystore-type ^String keystore-pass
+           trust-store trust-store-type trust-store-pass]}]
   (let [ks (get-keystore keystore keystore-type keystore-pass)
         ts (get-keystore trust-store trust-store-type trust-store-pass)]
-    {:context (-> (SSLContexts/custom)
-                  (.loadKeyMaterial
-                   ks (when keystore-pass
-                        (.toCharArray keystore-pass)))
-                  (.loadTrustMaterial
-                   ts nil)
-                  (.build))
-     :verifier (if (opt req :insecure)
-                 NoopHostnameVerifier/INSTANCE
-                 (DefaultHostnameVerifier.))}))
+    (-> (SSLContexts/custom)
+        (.loadKeyMaterial
+         ks (when keystore-pass
+              (.toCharArray keystore-pass)))
+        (.loadTrustMaterial
+         ts nil)
+        (.build))))
 
-(defn get-managers-context-verifier
+(defn- ssl-context-for-trust-or-key-manager
   "Given an instance or seqable data structure of TrustManager or KeyManager
   will create and return an SSLContexts object including the resulting managers"
-  [{:keys [trust-managers key-managers]
-    :as req}]
+  [{:keys [trust-managers key-managers]}]
   (let [x-or-xs->x-array (fn [type x-or-xs]
                            (cond
                              (or (-> x-or-xs class .isArray)
@@ -119,12 +106,38 @@
                          (x-or-xs->x-array TrustManager trust-managers))
         key-managers (when key-managers
                        (x-or-xs->x-array KeyManager key-managers))]
-    {:context (doto (.build (SSLContexts/custom))
-                (.init key-managers trust-managers nil))
-     :verifier (if (opt req :insecure)
-                 NoopHostnameVerifier/INSTANCE
-                 (DefaultHostnameVerifier.))}))
+    (doto (.build (SSLContexts/custom))
+      (.init key-managers trust-managers nil))))
 
+(defn- ssl-context-insecure
+  "Creates a SSL Context that trusts all material."
+  []
+  (-> (SSLContexts/custom)
+      (.loadTrustMaterial nil (reify TrustStrategy
+                            (isTrusted [_ chain auth-type] true)))
+      (.build)))
+
+(defn ^SSLContext get-ssl-context
+  "Gets the SSL Context from a request or connection pool settings"
+  [{:keys [keystore trust-store key-managers trust-managers] :as config}]
+  (cond (or keystore trust-store)
+        (ssl-context-for-keystore config)
+
+        (or key-managers trust-managers)
+        (ssl-context-for-trust-or-key-manager config)
+
+        (opt config :insecure)
+        (ssl-context-insecure)
+
+        :else
+        (SSLContexts/createDefault)))
+
+(defn ^HostnameVerifier get-hostname-verifier [config]
+  (if (opt config :insecure)
+    NoopHostnameVerifier/INSTANCE
+    (DefaultHostnameVerifier.)))
+
+;; -- Connection Managers  -----------------------------------------------------
 (defn make-socks-proxied-conn-manager
   "Given an optional hostname and a port, create a connection manager that's
   proxied using a SOCKS proxy."
@@ -133,115 +146,27 @@
   ([^String hostname ^Integer port
     {:keys [keystore keystore-type keystore-pass
             trust-store trust-store-type trust-store-pass
-            trust-managers key-managers] :as opts}]
+            trust-managers key-managers] :as config}]
    (let [socket-factory #(socks-proxied-socket hostname port)
-         ssl-context (cond
-                       (or trust-managers key-managers)
-                       (-> opts get-managers-context-verifier :context)
-
-                       (some (complement nil?)
-                             [keystore keystore-type keystore-pass trust-store
-                              trust-store-type trust-store-pass])
-                       (-> opts get-keystore-context-verifier :context))
-         reg (-> (RegistryBuilder/create)
-                 (.register "http" (PlainGenericSocketFactory socket-factory))
-                 (.register "https"
-                            (SSLGenericSocketFactory
-                             socket-factory ssl-context))
-                 (.build))]
-     (PoolingHttpClientConnectionManager. reg))))
-
-(def ^:private insecure-scheme-registry
-  (delay
-   (-> (RegistryBuilder/create)
-       (.register "http" PlainConnectionSocketFactory/INSTANCE)
-       (.register "https" ^SSLConnectionSocketFactory @insecure-socket-factory)
-       (.build))))
-
-(def ^:private insecure-strategy-registry
-  (delay
-   (-> (RegistryBuilder/create)
-       (.register "http" NoopIOSessionStrategy/INSTANCE)
-       (.register "https" ^SSLIOSessionStrategy @insecure-strategy)
-       (.build))))
-
-(def ^:private regular-scheme-registry
-  (delay (-> (RegistryBuilder/create)
-             (.register "http" (PlainConnectionSocketFactory/getSocketFactory))
-             (.register "https" @secure-ssl-socket-factory)
-             (.build))))
-
-(def ^:private regular-strategy-registry
-  (delay (-> (RegistryBuilder/create)
-             (.register "http" NoopIOSessionStrategy/INSTANCE)
-             (.register "https" @secure-strategy)
-             (.build))))
-
-(defn ^Registry get-custom-scheme-registry
-  [{:keys [context verifier]}]
-  (let [factory (SSLConnectionSocketFactory. ^SSLContext context
-                                             ^HostnameVerifier verifier)]
-    (-> (RegistryBuilder/create)
-        (.register "http" (PlainConnectionSocketFactory/getSocketFactory))
-        (.register "https" factory)
-        (.build))))
-
-(defn ^Registry get-custom-strategy-registry
-  [{:keys [context verifier]}]
-  (let [strategy (SSLIOSessionStrategy. ^SSLContext context
-                                        ^HostnameVerifier verifier)]
-    (-> (RegistryBuilder/create)
-        (.register "http" NoopIOSessionStrategy/INSTANCE)
-        (.register "https" strategy)
-        (.build))))
-
-(defn ^Registry get-keystore-scheme-registry
-  [req]
-  (-> req
-      get-keystore-context-verifier
-      get-custom-scheme-registry))
-
-(defn ^Registry get-keystore-strategy-registry
-  [req]
-  (-> req
-      get-keystore-context-verifier
-      get-custom-strategy-registry))
-
-(defn ^Registry get-managers-scheme-registry
-  [req]
-  (-> req
-      get-managers-context-verifier
-      get-custom-scheme-registry))
-
-(defn ^Registry get-managers-strategy-registry
-  [req]
-  (-> req
-      get-managers-context-verifier
-      get-custom-strategy-registry))
+         registry (into-registry
+                   {"http" (PlainGenericSocketFactory socket-factory)
+                    "https" (SSLGenericSocketFactory socket-factory (get-ssl-context config))})]
+     (PoolingHttpClientConnectionManager. registry))))
 
 (defn ^BasicHttpClientConnectionManager make-regular-conn-manager
   [{:keys [dns-resolver
            keystore trust-store
            key-managers trust-managers
-           socket-timeout] :as req}]
+           socket-timeout] :as config}]
 
-  (let [conn-manager (cond
-                       (or key-managers trust-managers)
-                       (BasicHttpClientConnectionManager. (get-managers-scheme-registry req)
-                                                          nil nil
-                                                          dns-resolver)
-
-                       (or keystore trust-store)
-                       (BasicHttpClientConnectionManager. (get-keystore-scheme-registry req)
-                                                          nil nil
-                                                          dns-resolver)
-
-                       (opt req :insecure) (BasicHttpClientConnectionManager.
-                                            @insecure-scheme-registry nil nil
-                                            dns-resolver)
-
-                       :else (BasicHttpClientConnectionManager. @regular-scheme-registry nil nil
-                                                                dns-resolver))]
+  (let [registry (into-registry
+                  {"http" (PlainConnectionSocketFactory/getSocketFactory)
+                   "https" (SSLConnectionSocketFactory.
+                            (get-ssl-context config)
+                            (get-hostname-verifier config))})
+        conn-manager (BasicHttpClientConnectionManager. registry
+                                                        nil nil
+                                                        dns-resolver)]
     (when socket-timeout
       (.setSocketConfig conn-manager
                         (-> (.getSocketConfig conn-manager)
@@ -271,18 +196,12 @@
 (defn ^PoolingNHttpClientConnectionManager
   make-regular-async-conn-manager
   [{:keys [keystore trust-store
-           key-managers trust-managers] :as req}]
-  (let [^Registry registry (cond
-                             (or key-managers trust-managers)
-                             (get-managers-strategy-registry req)
-
-                             (or keystore trust-store)
-                             (get-keystore-strategy-registry req)
-
-                             (opt req :insecure)
-                             @insecure-strategy-registry
-
-                             :else @regular-strategy-registry)
+           key-managers trust-managers] :as config}]
+  (let [^Registry registry (into-registry
+                            {"http" (NoopIOSessionStrategy/INSTANCE)
+                             "https" (SSLIOSessionStrategy.
+                                      (get-ssl-context config)
+                                      (get-hostname-verifier config))})
         io-reactor (make-ioreactor {:shutdown-grace-period 1})]
     (doto (PoolingNHttpClientConnectionManager. io-reactor registry)
       (.setMaxTotal 1))))
@@ -300,16 +219,11 @@
            timeout
            keystore trust-store
            key-managers trust-managers] :as config}]
-  (let [registry (cond
-                   (opt config :insecure) @insecure-scheme-registry
-
-                   (or key-managers trust-managers)
-                   (get-managers-scheme-registry config)
-
-                   (or keystore trust-store)
-                   (get-keystore-scheme-registry config)
-
-                   :else @regular-scheme-registry)]
+  (let [registry (into-registry
+                  {"http" (PlainConnectionSocketFactory/getSocketFactory)
+                   "https" (SSLConnectionSocketFactory.
+                            (get-ssl-context config)
+                            (get-hostname-verifier config))})]
     (PoolingHttpClientConnectionManager.
      registry nil nil dns-resolver timeout java.util.concurrent.TimeUnit/SECONDS)))
 
@@ -366,16 +280,11 @@
   [{:keys [dns-resolver
            timeout keystore trust-store io-config
            key-managers trust-managers] :as config}]
-  (let [registry (cond
-                   (opt config :insecure) @insecure-strategy-registry
-
-                   (or key-managers trust-managers)
-                   (get-managers-scheme-registry config)
-
-                   (or keystore trust-store)
-                   (get-keystore-scheme-registry config)
-
-                   :else @regular-strategy-registry)
+  (let [registry (into-registry
+                  {"http" (NoopIOSessionStrategy/INSTANCE)
+                   "https" (SSLIOSessionStrategy.
+                            (get-ssl-context config)
+                            (get-hostname-verifier config))})
         io-reactor (make-ioreactor io-config)
         protocol-handler (HttpAsyncRequestExecutor.)
         io-event-dispatch (DefaultHttpClientIODispatch. protocol-handler
