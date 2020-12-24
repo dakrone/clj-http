@@ -3,10 +3,9 @@
             [clj-http.headers :refer :all]
             [clj-http.util :refer [lower-case-keys]]
             [clojure.test :refer :all])
-  (:import (javax.servlet.http HttpServletRequest
-                               HttpServletResponse)
-           (org.eclipse.jetty.server Request Server)
-           (org.eclipse.jetty.server.handler AbstractHandler)))
+  (:import [javax.servlet.http HttpServletRequest HttpServletResponse]
+           [org.eclipse.jetty.server Request Server]
+           org.eclipse.jetty.server.handler.AbstractHandler))
 
 (deftest test-special-case
   (are [expected given]
@@ -66,7 +65,13 @@
     (is (= "baz" (:foo (merge (header-map :foo "bar")
                               {"Foo" "baz"}))))
     (let [m-with-meta (with-meta m {:withmeta-test true})]
-      (is (= (:withmeta-test (meta m-with-meta)) true)))))
+      (is (= (:withmeta-test (meta m-with-meta)) true)))
+
+    (testing "select-keys"
+      (are [expected keyset] (= expected (select-keys m keyset))
+        {"foo" "bar"} ["foo"]
+        {"foo" "bar"} ["foo" "non-existent-key"]
+        {"foo" "bar" "Foo" "bar" :foo "bar"} ["foo" "Foo" :foo]))))
 
 (deftest test-empty
   (testing "an empty header-map is a header-map"

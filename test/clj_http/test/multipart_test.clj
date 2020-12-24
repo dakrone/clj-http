@@ -1,15 +1,10 @@
 (ns clj-http.test.multipart-test
   (:require [clj-http.multipart :refer :all]
             [clojure.test :refer :all])
-  (:import (java.io File ByteArrayOutputStream ByteArrayInputStream)
-           (java.nio.charset Charset)
-           (org.apache.hc.client5.http.entity.mime ByteArrayBody
-                                                   ContentBody
-                                                   FileBody
-                                                   InputStreamBody
-                                                   StringBody)
-           (org.apache.hc.core5.http ContentType)
-           (org.apache.hc.core5.http.io.entity EntityUtils)))
+  (:import [java.io ByteArrayInputStream ByteArrayOutputStream File]
+           java.nio.charset.Charset
+           [org.apache.hc.client5.http.entity.mime ByteArrayBody ContentBody FileBody InputStreamBody StringBody]
+           [org.apache.hc.core5.http ContentType HttpEntity]))
 
 (defn body-str [^StringBody body]
   (-> body .getReader slurp))
@@ -179,7 +174,16 @@
         (is (= test-file (.getFile body) ))
         (is (= "testname" (.getFilename body)))))))
 
+(defn- ^java.nio.charset.Charset charset [^HttpEntity http-entity]
+  (-> (.getContentType http-entity)
+      (ContentType/parse)
+      (.getCharset)))
+
 (deftest test-multipart-content-charset
-  (testing "charset is nil for all multipart requests"
+  (testing "charset is nil if no multipart-charset is supplied"
     (let [mp-entity (create-multipart-entity [] nil)]
-      (is (nil? (.getCharset (EntityUtils/getContentType mp-entity)))))))
+      (is (nil? (charset mp-entity) ))))
+  (testing "charset is set if a multipart-charset is supplied"
+    (let [mp-entity (create-multipart-entity [] {:multipart-charset "UTF-8"})]
+      (is (= (java.nio.charset.Charset/forName "UTF-8")
+             (charset mp-entity))))))

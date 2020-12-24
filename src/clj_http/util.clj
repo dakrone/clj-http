@@ -1,14 +1,12 @@
 (ns clj-http.util
   "Helper functions for the HTTP client."
-  (:require [clojure.string :refer [blank? lower-case split trim]]
+  (:require [clojure.string :refer [blank? lower-case split]]
             [clojure.walk :refer [postwalk]])
-  (:import (org.apache.commons.codec.binary Base64)
-           (org.apache.commons.io IOUtils)
-           (java.io BufferedInputStream ByteArrayInputStream
-                    ByteArrayOutputStream EOFException)
-           (java.net URLEncoder URLDecoder)
-           (java.util.zip InflaterInputStream DeflaterInputStream
-                          GZIPInputStream GZIPOutputStream)))
+  (:import [java.io BufferedInputStream ByteArrayInputStream ByteArrayOutputStream EOFException InputStream PushbackInputStream]
+           [java.net URLDecoder URLEncoder]
+           [java.util.zip DeflaterInputStream GZIPInputStream GZIPOutputStream InflaterInputStream]
+           org.apache.commons.codec.binary.Base64
+           org.apache.commons.io.IOUtils))
 
 (defn utf8-bytes
   "Returns the encoding's bytes corresponding to the given string. If no
@@ -25,12 +23,12 @@
 (defn url-decode
   "Returns the form-url-decoded version of the given string, using either a
   specified encoding or UTF-8 by default."
-  [encoded & [encoding]]
+  [^String encoded & [^String encoding]]
   (URLDecoder/decode encoded (or encoding "UTF-8")))
 
 (defn url-encode
   "Returns an UTF-8 URL encoded version of the given string."
-  [unencoded & [encoding]]
+  [^String unencoded & [^String encoding]]
   (URLEncoder/encode unencoded (or encoding "UTF-8")))
 
 (defn base64-encode
@@ -43,8 +41,13 @@
   [b]
   (when b
     (cond
-      (instance? java.io.InputStream b)
-      (GZIPInputStream. b)
+      (instance? InputStream b)
+      (let [^PushbackInputStream b (PushbackInputStream. b)
+            first-byte (int (try (.read b) (catch EOFException _ -1)))]
+        (case first-byte
+          -1 b
+          (do (.unread b first-byte)
+              (GZIPInputStream. b))))
       :else
       (IOUtils/toByteArray (GZIPInputStream. (ByteArrayInputStream. b))))))
 
@@ -58,23 +61,40 @@
       (.close gos)
       (.toByteArray baos))))
 
+(defn force-stream
+  "Force b as InputStream if it is a ByteArray."
+  ^InputStream [b]
+  (if (instance? InputStream b)
+    b
+    (ByteArrayInputStream. b)))
+
 (defn force-byte-array
   "force b as byte array if it is an InputStream, also close the stream"
   ^bytes [b]
-  (if (instance? java.io.InputStream b)
-    (try
-      (let [^int first-byte (try
-                              (.read b)
-                               (catch EOFException e -1))]
-        (if (= -1 first-byte)
-          (byte-array 0)
-          (let [rest-bytes (IOUtils/toByteArray ^java.io.InputStream b)
-                barray (byte-array (inc (count rest-bytes)))]
-            (aset-byte barray 0 (unchecked-byte first-byte))
-            (System/arraycopy rest-bytes 0 barray 1 (count rest-bytes))
-            barray)))
-      (finally (.close ^java.io.InputStream b)))
+  (if (instance? InputStream b)
+    (let [^PushbackInputStream bs (PushbackInputStream. b)]
+      (try
+        (let [first-byte (int (try (.read bs) (catch EOFException _ -1)))]
+          (case first-byte
+            -1 (byte-array 0)
+            (do (.unread bs first-byte)
+                (IOUtils/toByteArray bs))))
+        (finally (.close bs))))
     b))
+
+(defn force-string
+  "Convert s (a ByteArray or InputStream) to String."
+  ^String [s ^String charset]
+  (if (instance? InputStream s)
+    (let [^PushbackInputStream bs (PushbackInputStream. s)]
+      (try
+        (let [first-byte (int (try (.read bs) (catch EOFException _ -1)))]
+          (case first-byte
+            -1 ""
+            (do (.unread bs first-byte)
+                (IOUtils/toString bs charset))))
+        (finally (.close bs))))
+    (IOUtils/toString ^"[B" s charset)))
 
 (defn inflate
   "Returns a zlib inflate'd version of the given byte array or InputStream."
@@ -83,7 +103,7 @@
     ;; This weirdness is because HTTP servers lie about what kind of deflation
     ;; they're using, so we try one way, then if that doesn't work, reset and
     ;; try the other way
-    (let [stream (BufferedInputStream. (if (instance? java.io.InputStream b)
+    (let [stream (BufferedInputStream. (if (instance? InputStream b)
                                          b
                                          (ByteArrayInputStream. b)))
           _ (.mark stream 512)
@@ -123,15 +143,17 @@
         false
         (or v1 v2)))))
 
+(defn- trim-quotes [s]
+  (clojure.string/replace s #"^\s*(\"(.*)\"|(.*?))\s*$" "$2$3"))
+
 (defn parse-content-type
   "Parse `s` as an RFC 2616 media type."
   [s]
-  (if-let [m (re-matches #"\s*(([^/]+)/([^ ;]+))\s*(\s*;.*)?" (str s))]
+  (when-let [m (re-matches #"\s*(([^/]+)/([^ ;]+))\s*(\s*;.*)?" (str s))]
     {:content-type (keyword (nth m 1))
      :content-type-params
      (->> (split (str (nth m 4)) #"\s*;\s*")
-          (identity)
           (remove blank?)
           (map #(split % #"="))
-          (mapcat (fn [[k v]] [(keyword (lower-case k)) (trim v)]))
+          (mapcat (fn [[k v]] [(keyword (lower-case k)) (trim-quotes v)]))
           (apply hash-map))}))

@@ -120,9 +120,14 @@
         mta)
   (with-meta [_ mta]
     (HeaderMap. m mta))
+
   clojure.lang.Associative
   (containsKey [_ k]
                (contains? m (normalize k)))
+  (entryAt [_ k]
+           (if (contains? m (normalize k))
+             (clojure.lang.MapEntry. k (get _ k))))
+
   (empty [_]
          (HeaderMap. {} nil)))
 

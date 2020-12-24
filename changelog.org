@@ -9,17 +9,62 @@
 
 * Changelog
 List of user-visible changes that have gone into each release
-
 ** 4.0.0 (Unreleased)
 - Apache HTTP Client version 5 is now used - this is a major breaking change for almost all of the
   internals of clj-http.
 - Removed slingshot dependency. clj-http exceptions are now regular exceptions
 - Removed deprecated :follow-redirects & :force-redirects options
-- Added an option to capture socket data as it is written out -
+- Added an option to capture socket data as it is written out
   https://github.com/dakrone/clj-http/pull/440
 
-** 3.10.0 (Unreleased)
-
+** 3.11.0
+- Adds workaround for Async Multipart uploads greater than 25 kb (#574)
+  https://github.com/dakrone/clj-http/pull/574
+- Adds an additional style for multi-param-style added (#562)
+  https://github.com/dakrone/clj-http/pull/562
+- Close transit input stream after reading response (#565)
+  https://github.com/dakrone/clj-http/pull/565
+- Bump patch versions of apache httpcomponents to latest. (#569)
+  https://github.com/dakrone/clj-http/pull/569
+- Fixed decode-json-body (#568)
+  https://github.com/dakrone/clj-http/pull/568
+- Handle quoted parameter values in content type (#573)
+  https://github.com/dakrone/clj-http/pull/573
+** 3.10.3
+- Improve error message when using incompatible version of cheshire
+  https://github.com/dakrone/clj-http/pull/558
+- Properly handle "308 Permanent Redirect" status code
+  https://github.com/dakrone/clj-http/pull/554
+** 3.10.2
+- Fix performance regressions from #528
+  https://github.com/dakrone/clj-http/pull/546
+- Adds support for custom DNS Resolvers
+  https://github.com/dakrone/clj-http/pull/545
+- Buffer :debug output to improve readability
+  https://github.com/dakrone/clj-http/pull/544
+- Improve compatbility with GraalVM
+  https://github.com/dakrone/clj-http/pull/543
+- Bug fix: Check first byte before wrapping response stream with gunzip
+  https://github.com/dakrone/clj-http/pull/549
+** 3.10.1
+- JSON parsing is always strict. See [[file:README.org::*Incrementally%20JSON%20Parsing][README#Incrementally JSON Parsing]]. This is
+  a *breaking change* and users *must* upgrade to cheshire >= 5.9.0.
+  https://github.com/dakrone/clj-http/pull/507
+** 3.10.0
+- Add trust-manager and key-managers support to the client
+  https://github.com/dakrone/clj-http/pull/469
+- Improving consistency of connection option names
+  https://github.com/dakrone/clj-http/pull/483
+  https://github.com/dakrone/clj-http/issues/477
+- Ensure Socket Timeout is set for BasicHttpClientConnectionManager
+  https://github.com/dakrone/clj-http/pull/463
+- Reduce body allocation and copying
+  https://github.com/dakrone/clj-http/pull/475
+** 3.9.1
+- Fix body parsing when first byte value is 255
+  https://github.com/dakrone/clj-http/pull/449
+- Add custom =:unexceptional-status= option
+  https://github.com/dakrone/clj-http/pull/451
 ** 3.9.0
 - Add support for reusable http clients, returning the client in =:http-client= and allowing one to
   be specified (with the same setting) - https://github.com/dakrone/clj-http/issues/441

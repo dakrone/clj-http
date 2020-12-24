@@ -1,61 +1,51 @@
 (ns clj-http.conn-mgr
   "Utility methods for Scheme registries and HTTP connection managers"
   (:require [clj-http.util :refer [opt]]
-            [clojure.java.io :as io])
-  (:import (java.io ByteArrayInputStream ByteArrayOutputStream)
-           (java.net Socket Proxy Proxy$Type InetSocketAddress)
-           (java.security KeyStore)
-           (org.apache.hc.core5.http.config RegistryBuilder Registry)
-           (org.apache.hc.client5.http.io HttpClientConnectionManager)
-           (org.apache.hc.client5.http.ssl DefaultHostnameVerifier
-                                           NoopHostnameVerifier
-                                           SSLConnectionSocketFactory)
-           (org.apache.hc.core5.ssl SSLContexts
-                                    TrustStrategy)
-           (org.apache.hc.client5.http.socket PlainConnectionSocketFactory)
-           (org.apache.hc.client5.http.impl.io BasicHttpClientConnectionManager
-                                               PoolingHttpClientConnectionManager
-                                               PoolingHttpClientConnectionManagerBuilder)
-           (org.apache.hc.client5.http.impl.nio PoolingAsyncClientConnectionManager
-                                                PoolingAsyncClientConnectionManagerBuilder)
-           ;; (org.apache.http.impl.nio.conn PoolingNHttpClientConnectionManager)
-           (javax.net.ssl SSLContext HostnameVerifier)
-           ;; (org.apache.http.nio.conn NHttpClientConnectionManager)
-           ;; (org.apache.http.nio.conn.ssl SSLIOSessionStrategy)
-           #_(org.apache.http.impl.nio.reactor
-            IOReactorConfig
-            AbstractMultiworkerIOReactor$DefaultThreadFactory
-            DefaultConnectingIOReactor)
-           #_(org.apache.http.nio.conn NoopIOSessionStrategy)
-           #_(org.apache.http.nio.protocol HttpAsyncRequestExecutor)
-           #_(org.apache.http.impl.nio DefaultHttpClientIODispatch)
-           #_(org.apache.http.config ConnectionConfig)))
+            [clojure.java.io :as io]
+            [clojure.string :as str])
+  (:import [java.net InetSocketAddress Proxy Proxy$Type Socket]
+           java.security.KeyStore
+           [javax.net.ssl HostnameVerifier KeyManager SSLContext TrustManager]
+           org.apache.commons.io.output.TeeOutputStream
+           org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager
+           [org.apache.hc.client5.http.impl.nio PoolingAsyncClientConnectionManager PoolingAsyncClientConnectionManagerBuilder]
+           org.apache.hc.client5.http.socket.PlainConnectionSocketFactory
+           [org.apache.hc.client5.http.ssl DefaultHostnameVerifier NoopHostnameVerifier SSLConnectionSocketFactory]
+           [org.apache.hc.core5.http.config Registry RegistryBuilder]
+           [org.apache.hc.core5.http.io SocketConfig SocketConfig$Builder]
+           [org.apache.hc.core5.pool PoolConcurrencyPolicy PoolReusePolicy]
+           org.apache.hc.core5.reactor.IOReactorConfig
+           [org.apache.hc.core5.ssl SSLContexts TrustStrategy]
+           org.apache.hc.core5.util.TimeValue))
 
-(def ^:private insecure-context-verifier
-  (delay {
-          :context (-> (SSLContexts/custom)
-                       (.loadTrustMaterial nil (reify TrustStrategy
-                                                 (isTrusted [_ _ _] true)))
-                       (.build))
-          :verifier NoopHostnameVerifier/INSTANCE}))
+;; -- Interop Helpers  ---------------------------------------------------------
+(defn into-inetaddress [socks-proxy-address]
+  (cond
+    (instance? InetSocketAddress socks-proxy-address)
+    socks-proxy-address
 
-(def ^:private insecure-socket-factory
-  (delay
-   (let [{:keys [context  verifier]} @insecure-context-verifier]
-     (SSLConnectionSocketFactory. ^SSLContext context
-                                  ^HostnameVerifier verifier))))
+    (map? socks-proxy-address)
+    (InetSocketAddress. ^String (:hostname socks-proxy-address) ^Integer (:port socks-proxy-address))
 
-#_(def ^:private insecure-strategy
-  (delay
-   (let [{:keys [context  verifier]} @insecure-context-verifier]
-     (SSLIOSessionStrategy. ^SSLContext context ^HostnameVerifier verifier))))
+    :else
+    (throw (IllegalArgumentException. "Unable to coerce into inetaddress"))))
 
-(def ^:private ^SSLConnectionSocketFactory secure-ssl-socket-factory
-  (SSLConnectionSocketFactory/getSocketFactory))
 
-#_(def ^:private ^SSLIOSessionStrategy secure-strategy
-  (SSLIOSessionStrategy/getDefaultStrategy))
+(defn ^Registry into-registry [registry]
+  (cond
+    (instance? Registry registry)
+    registry
 
+    (map? registry)
+    (let [registry-builder (RegistryBuilder/create)]
+      (doseq [[k v] registry]
+        (.register registry-builder k v))
+      (.build registry-builder))
+
+    :else
+    (throw (IllegalArgumentException. "Cannot coerce into a Registry"))))
+
+;; -- SocketFactory  -----------------------------------------------------------
 (defn ^SSLConnectionSocketFactory SSLGenericSocketFactory
   "Given a function that returns a new socket, create an
   SSLConnectionSocketFactory that will use that socket."
@@ -77,30 +67,13 @@
     (createSocket [context]
       (socket-factory))))
 
+;; -- Custom SSL Contexts  -----------------------------------------------------
 (defn socks-proxied-socket
   "Create a Socket proxied through socks, using the given hostname and port"
   [^String hostname ^Integer port]
   (Socket. (Proxy. Proxy$Type/SOCKS (InetSocketAddress. hostname port))))
 
-(defn capturing-socket
-  "Create a java.net.Socket that will capture data sent in and out of it."
-  [output-stream]
-  (proxy [java.net.Socket] []
-    ;; TODO: implement capturing the read data, currently I don't know of a good
-    ;; way to proxy reading input into an arbitrary place
-    (getInputStream []
-      (proxy-super getInputStream))
-    (getOutputStream []
-      (let [stream (proxy-super getOutputStream)]
-        (proxy [java.io.FilterOutputStream] [stream]
-          (write
-            ([b]
-             (.write output-stream b)
-             (proxy-super write b))
-            ([b off len]
-             (.write output-stream b off len)
-             (proxy-super write b off len))))))))
-
+;; -- SSL Contexts  ------------------------------------------------------------
 (defn ^KeyStore get-keystore*
   [keystore-file keystore-type ^String keystore-pass]
   (when keystore-file
@@ -115,235 +88,220 @@
     keystore
     (apply get-keystore* keystore args)))
 
-(defn get-keystore-context-verifier
+(defn- ssl-context-for-keystore
   ;; TODO: use something else for passwords
   ;; Note: JVM strings aren't ideal for passwords - see
   ;; https://tinyurl.com/azm3ab9
-  [{:keys [keystore keystore-type ^String keystore-pass keystore-instance
-           trust-store trust-store-type trust-store-pass]
-    :as req}]
+  [{:keys [keystore keystore-type ^String keystore-pass
+           trust-store trust-store-type trust-store-pass]}]
   (let [ks (get-keystore keystore keystore-type keystore-pass)
         ts (get-keystore trust-store trust-store-type trust-store-pass)]
-    {:context (-> (SSLContexts/custom)
-                  (.loadKeyMaterial
-                   ks (when keystore-pass
-                        (.toCharArray keystore-pass)))
-                  (.loadTrustMaterial
-                   ts nil)
-                  (.build))
-     :verifier (if (opt req :insecure)
-                 NoopHostnameVerifier/INSTANCE
-                 (DefaultHostnameVerifier.))}))
-
-(defn make-socks-proxied-conn-manager
-  "Given an optional hostname and a port, create a connection manager that's
-  proxied using a SOCKS proxy."
-  ([^String hostname ^Integer port]
-   (make-socks-proxied-conn-manager hostname port {}))
-  ([^String hostname ^Integer port
-    {:keys [keystore keystore-type keystore-pass
-            trust-store trust-store-type trust-store-pass] :as opts}]
-   (let [socket-factory #(socks-proxied-socket hostname port)
-         ssl-context (when
-                         (some (complement nil?)
-                               [keystore keystore-type keystore-pass trust-store
-                                trust-store-type trust-store-pass])
-                       (-> opts get-keystore-context-verifier :context))
-         reg (-> (RegistryBuilder/create)
-                 (.register "http" (PlainGenericSocketFactory socket-factory))
-                 (.register "https"
-                            (SSLGenericSocketFactory
-                             socket-factory ssl-context))
-                 (.build))]
-     (PoolingHttpClientConnectionManager. reg))))
-
-(defn make-capturing-socket-conn-manager
-  "Given an optional hostname and a port, create a connection manager captures
-  Socket data. `output` should be an `OutputStream` where all output from this
-  factory will be sent."
-  [output]
-  (let [socket-factory #(capturing-socket output)
-        reg (-> (RegistryBuilder/create)
-                (.register "http" (PlainGenericSocketFactory socket-factory))
-                (.register "https" (SSLGenericSocketFactory socket-factory nil))
-                (.build))]
-    (BasicHttpClientConnectionManager. reg)))
-
-(def ^:private insecure-scheme-registry
-  (delay
-   (-> (RegistryBuilder/create)
-       (.register "http" PlainConnectionSocketFactory/INSTANCE)
-       (.register "https" ^SSLConnectionSocketFactory @insecure-socket-factory)
-       (.build))))
-
-#_(def ^:private insecure-strategy-registry
-  (delay
-   (-> (RegistryBuilder/create)
-       (.register "http" NoopIOSessionStrategy/INSTANCE)
-
-       (.build))))
-
-(def ^:private regular-scheme-registry
-  (-> (RegistryBuilder/create)
-      (.register "http" (PlainConnectionSocketFactory/getSocketFactory))
-      (.register "https" secure-ssl-socket-factory)
-      (.build)))
-
-#_(def ^:private regular-strategy-registry
-  (-> (RegistryBuilder/create)
-      (.register "http" NoopIOSessionStrategy/INSTANCE)
-      (.register "https" secure-strategy)
-      (.build)))
-
-(defn ^Registry get-keystore-scheme-registry
-  [req]
-  (let [{:keys [context verifier]} (get-keystore-context-verifier req)
-        factory (SSLConnectionSocketFactory. ^SSLContext context
-                                             ^HostnameVerifier verifier)]
-    (-> (RegistryBuilder/create)
-        (.register "http" (PlainConnectionSocketFactory/getSocketFactory))
-        (.register "https" factory)
+    (-> (SSLContexts/custom)
+        (.loadKeyMaterial
+         ks (when keystore-pass
+              (.toCharArray keystore-pass)))
+        (.loadTrustMaterial
+         ts nil)
         (.build))))
 
-#_(defn ^Registry get-keystore-strategy-registry
-  [req]
-  (let [{:keys [context verifier]} (get-keystore-context-verifier req)
-        strategy (SSLIOSessionStrategy. ^SSLContext context
-                                        ^HostnameVerifier verifier)]
-    (-> (RegistryBuilder/create)
-        (.register "http" NoopIOSessionStrategy/INSTANCE)
-        (.register "https" strategy)
-        (.build))))
+(defn- ssl-context-for-trust-or-key-manager
+  "Given an instance or seqable data structure of TrustManager or KeyManager
+  will create and return an SSLContexts object including the resulting managers"
+  [{:keys [trust-managers key-managers]}]
+  (let [x-or-xs->x-array (fn [type x-or-xs]
+                           (cond
+                             (or (-> x-or-xs class .isArray)
+                                 (sequential? x-or-xs))
+                             (into-array type (seq x-or-xs))
 
-(defn ^BasicHttpClientConnectionManager make-regular-conn-manager
-  [{:keys [keystore trust-store] :as req}]
-  (cond
-    (or keystore trust-store)
-    (BasicHttpClientConnectionManager. (get-keystore-scheme-registry req))
+                             :else
+                             (into-array type [x-or-xs])))
+        trust-managers (when trust-managers
+                         (x-or-xs->x-array TrustManager trust-managers))
+        key-managers (when key-managers
+                       (x-or-xs->x-array KeyManager key-managers))]
+    (doto (.build (SSLContexts/custom))
+      (.init key-managers trust-managers nil))))
 
-    (opt req :insecure) (BasicHttpClientConnectionManager.
-                         @insecure-scheme-registry)
+(defn- ssl-context-insecure
+  "Creates a SSL Context that trusts all material."
+  []
+  (-> (SSLContexts/custom)
+      (.loadTrustMaterial (reify TrustStrategy
+                            (isTrusted [_ chain auth-type] true)))
+      (.build)))
 
-    :else (BasicHttpClientConnectionManager. regular-scheme-registry)))
+(defn ^SSLContext get-ssl-context
+  "Gets the SSL Context from a request or connection pool settings"
+  [{:keys [keystore trust-store key-managers trust-managers] :as config}]
+  (cond (or keystore trust-store)
+        (ssl-context-for-keystore config)
 
-#_(defn- ^DefaultConnectingIOReactor make-ioreactor
-  [{:keys [connect-timeout interest-op-queued io-thread-count rcv-buf-size
-           select-interval shutdown-grace-period snd-buf-size
-           so-keep-alive so-linger so-timeout tcp-no-delay]}]
-  (as-> (IOReactorConfig/custom) c
-    (if-some [v connect-timeout] (.setConnectTimeout c v) c)
-    (if-some [v interest-op-queued] (.setInterestOpQueued c v) c)
-    (if-some [v io-thread-count] (.setIoThreadCount c v) c)
-    (if-some [v rcv-buf-size] (.setRcvBufSize c v) c)
-    (if-some [v select-interval] (.setSelectInterval c v) c)
-    (if-some [v shutdown-grace-period] (.setShutdownGracePeriod c v) c)
-    (if-some [v snd-buf-size] (.setSndBufSize c v) c)
-    (if-some [v so-keep-alive] (.setSoKeepAlive c v) c)
-    (if-some [v so-linger] (.setSoLinger c v) c)
-    (if-some [v so-timeout] (.setSoTimeout c v) c)
-    (if-some [v tcp-no-delay] (.setTcpNoDelay c v) c)
-    (DefaultConnectingIOReactor. (.build c))))
+        (or key-managers trust-managers)
+        (ssl-context-for-trust-or-key-manager config)
 
-(defn ^PoolingAsyncClientConnectionManager
-  make-regular-async-conn-manager
-  [{:keys [keystore trust-store] :as req}]
-  ;; TODO: there are no longer un-reusable async connection managers, so this can go away
-  (.build (PoolingAsyncClientConnectionManagerBuilder/create))
-  #_(let [^Registry registry (cond
-                             (or keystore trust-store)
-                             (get-keystore-strategy-registry req)
+        (opt config :insecure)
+        (ssl-context-insecure)
 
-                             (opt req :insecure)
-                             @insecure-strategy-registry
+        :else
+        (SSLContexts/createDefault)))
 
-                             :else regular-strategy-registry)
-        io-reactor (make-ioreactor {:shutdown-grace-period 1})]
-    (doto (PoolingNHttpClientConnectionManager. io-reactor registry)
-      (.setMaxTotal 1))))
-
-(definterface ReuseableAsyncConnectionManager)
-
-;; need the fully qualified class name because this fn is later used in a
-;; macro from a different ns
-(defn ^PoolingHttpClientConnectionManager
-  make-reusable-conn-manager*
-  "Given an timeout and optional insecure? flag, create a
-  PoolingHttpClientConnectionManager with <timeout> seconds set as the
-  timeout value."
-  [{:keys [timeout keystore trust-store] :as config}]
-  (.build (PoolingHttpClientConnectionManagerBuilder/create))
-  #_(let [registry (cond
-                   (opt config :insecure) @insecure-scheme-registry
-
-                   (or keystore trust-store)
-                   (get-keystore-scheme-registry config)
-
-                   :else regular-scheme-registry)]
-    (PoolingHttpClientConnectionManager.
-     registry nil nil nil timeout java.util.concurrent.TimeUnit/SECONDS)))
-
-(defn reusable? [conn-mgr]
-  (or (instance? PoolingHttpClientConnectionManager conn-mgr)
-      (instance? PoolingAsyncClientConnectionManager conn-mgr)
-      (instance? ReuseableAsyncConnectionManager conn-mgr)))
-
-(defn ^PoolingHttpClientConnectionManager make-reusable-conn-manager
-  "Creates a default pooling connection manager with the specified options.
+;; -- Connection Configurations  -----------------------------------------------
+(defn ^SocketConfig get-socket-config
+  "Creates a socket config from a map.
 
   The following options are supported:
 
-  :timeout - Time that connections are left open before automatically closing
-    default: 5
-  :threads - Maximum number of threads that will be used for connecting
-    default: 4
-  :default-per-route - Maximum number of simultaneous connections per host
+  :socket-timeout (for backwards compatibility)
+
+  :socket/backlog-size
+  :socket/rcv-buf-size
+  :socket/snd-buf-size
+  :socket/socks-proxy-address
+  :socket/keepalive
+  :socket/linger
+  :socket/reuse-address
+  :socket/timeout
+  :socket/tcp-no-delay
+
+  See https://javadoc.io/doc/org.apache.httpcomponents.core5/httpcore5/latest/index.html
+  "
+  ([config]
+   (get-socket-config (SocketConfig/custom) config))
+  ([^SocketConfig$Builder builder {:keys [socket-timeout
+                                          :socket/backlog-size
+                                          :socket/rcv-buf-size
+                                          :socket/snd-buf-size
+                                          :socket/socks-proxy-address
+                                          :socket/keepalive
+                                          :socket/linger
+                                          :socket/reuse-address
+                                          :socket/timeout
+                                          :socket/tcp-no-delay]}]
+   (cond-> builder
+     backlog-size (.setBacklogSize backlog-size)
+     rcv-buf-size (.setRcvBufSize rcv-buf-size)
+     snd-buf-size (.setSndBufSize snd-buf-size)
+     socks-proxy-address (.setSocksProxyAddress (into-inetaddress socks-proxy-address))
+     keepalive (.setSoKeepAlive keepalive)
+     linger (.setSoLinger linger)
+     reuse-address (.setSoReuseAddress reuse-address)
+
+     ;; set the timeout, falling back to non-namespaced key for backwards compatibility
+     timeout (.setSoTimeout timeout java.util.concurrent.TimeUnit/MILLISECONDS)
+     socket-timeout (.setSoTimeout socket-timeout java.util.concurrent.TimeUnit/MILLISECONDS)
+     tcp-no-delay (.setTcpNoDelay tcp-no-delay)
+
+     true (.build))))
+
+(defn ^IOReactorConfig ioreactor-config
+  [{:keys [backlog-size io-thread-count rcv-buf-size
+           select-interval snd-buf-size
+           so-keep-alive so-linger so-timeout tcp-no-delay]}]
+  (let [builder (cond-> (IOReactorConfig/custom)
+                  backlog-size (.setBacklogSize backlog-size)
+                  io-thread-count (.setIoThreadCount io-thread-count)
+                  rcv-buf-size (.setRcvBufSize rcv-buf-size)
+                  select-interval (.setSelectInterval select-interval)
+                  snd-buf-size (.setSndBufSize snd-buf-size)
+                  so-keep-alive (.setSoKeepAlive so-keep-alive)
+                  so-linger (.setSoLinger (TimeValue/ofMilliseconds so-linger))
+                  so-timeout (.setSoTimeout so-timeout)
+                  tcp-no-delay (.setTcpNoDelay tcp-no-delay))]
+    (.build builder)))
+
+;; -- Connection Managers  -----------------------------------------------------
+;; TODO: take documentation from make-reusable-conn-manager
+(defn ^PoolingHttpClientConnectionManager make-conn-manager
+  "Creates a blocking connection manager with the specified options.
+
+  The following options are supported:
+
+  :connection-time-to-live - Time that connections are left open before automatically closing
+    default: 5000 ms
+  :pool-reuse-policy - Connection Pool Reuse Policy. One of `:lifo` or `:fifo`. See `org.apache.hc.core5.pool.PoolReusePolicy`.
+  :dns-resolver - Use a custom DNS resolver instead of the default DNS resolver.
+  :max-conn-per-route - Maximum number of simultaneous connections per host
     default: 2
+  :max-conn-total - Sets the maximum total of connections in the pool.
+  :pool-concurrency-policy - Concurrency Policy of Pool. One of `:lax` or `:strict`. See `org.apache.hc.core5.pool.PoolConcurrencyPolicy`.
+  :scheme-port-resolver - A custom implementation of SchemePortResolver
+  :validate-after-inactivity - How to wait before checking keepalive of connections
+
+  SSL Connections can also be customized by setting these options:
+
   :insecure? - Boolean flag to specify allowing insecure HTTPS connections
     default: false
-
   :keystore - keystore file to be used for connection manager
   :keystore-pass - keystore password
   :trust-store - trust store file to be used for connection manager
   :trust-store-pass - trust store password
+  :key-managers - KeyManager objects to be used for connection manager
+  :trust-managers - TrustManager objects to be used for connection manager
 
-  Note that :insecure? and :keystore/:trust-store options are mutually exclusive
+  Note that :insecure? and :keystore/:trust-store/:key-managers/:trust-managers
+  options are mutually exclusive.
+
+  :socket-factory-registry - A custom socket facotry registry. This can be a
+  clojure map *or* an instance of Registry<ConnectionSocketFactory>. This setting will override the SSL Connections section.
+
+  Socket Configuration
+  :default-socket-config - SocketConfig to use by default.
+  :socket/*     - Default Socket Options. Same as `get-socket-config`.
+
+  `:default-socket-config` is mututally exclusive to :socket/* options.
 
   If the value 'nil' is specified or the value is not set, the default value
   will be used."
-  [opts]
-  (let [timeout (or (:timeout opts) 5)
-        threads (or (:threads opts) 4)
-        default-per-route (:default-per-route opts)
-        insecure? (opt opts :insecure)
-        leftovers (dissoc opts :timeout :threads :insecure? :insecure)
-        conn-man (make-reusable-conn-manager* (merge {:timeout timeout
-                                                      :insecure? insecure?}
-                                                     leftovers))]
-    (.setMaxTotal conn-man threads)
-    (when default-per-route
-      (.setDefaultMaxPerRoute conn-man default-per-route))
-    conn-man))
+  [{:keys [connection-time-to-live
+           pool-reuse-policy
+           default-socket-config
+           dns-resolver
+           max-conn-per-route
+           max-conn-total
+           pool-concurrency-policy
+           scheme-port-resolver
+           sockety-factory-registry
+           validate-after-inactivity
+           conn-factory] :as req :or {connection-time-to-live 5000
+                                      max-conn-per-route 2}}]
+  (let [socket-factory-registry (or sockety-factory-registry
+                                    (into-registry
+                                     {"http" (PlainConnectionSocketFactory/getSocketFactory)
+                                      "https" (let [ssl-context (get-ssl-context req)
+                                                    verifier (if (opt req :insecure)
+                                                               NoopHostnameVerifier/INSTANCE
+                                                               (DefaultHostnameVerifier.))]
+                                                (SSLConnectionSocketFactory. ssl-context ^HostnameVerifier verifier))}))
+        pool-concurrency-policy (when pool-concurrency-policy
+                                  (PoolConcurrencyPolicy/valueOf (str/upper-case (name pool-concurrency-policy))))
 
-(defn- ^PoolingAsyncClientConnectionManager make-reusable-async-conn-manager*
-  [{:keys [timeout keystore trust-store io-config] :as config}]
-  (.build (PoolingAsyncClientConnectionManagerBuilder/create))
-  #_(let [registry (cond
-                   (opt config :insecure) @insecure-strategy-registry
+        pool-reuse-policy (when pool-reuse-policy
+                            (PoolReusePolicy/valueOf (str/upper-case (name pool-reuse-policy))))
 
-                   (or keystore trust-store)
-                   (get-keystore-scheme-registry config)
+        connection-time-to-live (when connection-time-to-live
+                                  (TimeValue/ofMilliseconds connection-time-to-live))
 
-                   :else regular-strategy-registry)
-        io-reactor (make-ioreactor io-config)
-        protocol-handler (HttpAsyncRequestExecutor.)
-        io-event-dispatch (DefaultHttpClientIODispatch. protocol-handler
-                                                        ConnectionConfig/DEFAULT)]
-    (future (.execute io-reactor io-event-dispatch))
-    (proxy [PoolingNHttpClientConnectionManager ReuseableAsyncConnectionManager]
-        [io-reactor nil registry nil nil timeout
-         java.util.concurrent.TimeUnit/SECONDS])))
+        conn-mgr (PoolingHttpClientConnectionManager.
+                  socket-factory-registry
+                  pool-concurrency-policy
+                  pool-reuse-policy
+                  connection-time-to-live
+                  scheme-port-resolver
+                  dns-resolver
+                  conn-factory)]
+    (.setDefaultSocketConfig conn-mgr (or default-socket-config
+                                          (get-socket-config req)))
+    (when max-conn-per-route
+      (.setDefaultMaxPerRoute conn-mgr max-conn-per-route))
+    (when max-conn-total
+      (.setMaxTotal conn-mgr max-conn-total))
+    (when validate-after-inactivity
+      (.setValidateAfterInactivity conn-mgr validate-after-inactivity))
+    conn-mgr))
 
-(defn ^PoolingAsyncClientConnectionManager make-reuseable-async-conn-manager
+
+(defn ^PoolingAsyncClientConnectionManager make-async-conn-manager
   "Creates a default pooling async connection manager with the specified
   options. Handles the same options as make-reusable-conn-manager plus
   :io-config which should be a map containing some of the following keys:
@@ -374,35 +332,22 @@
 
   If the value 'nil' is specified or the value is not set, the default value
   will be used."
-  [opts]
-  (let [timeout (or (:timeout opts) 5)
-        threads (or (:threads opts) 4)
-        default-per-route (:default-per-route opts)
-        insecure? (opt opts :insecure)
-        leftovers (dissoc opts :timeout :threads :insecure? :insecure)
-        conn-man (make-reusable-async-conn-manager*
-                  (merge {:timeout timeout :insecure? insecure?} leftovers))]
-    (.setMaxTotal conn-man threads)
-    (when default-per-route
-      (.setDefaultMaxPerRoute conn-man default-per-route))
-    conn-man))
+  [{:keys [dns-resolver tls-strategy] :as req}]
+  (-> (PoolingAsyncClientConnectionManagerBuilder/create)
+      (.setDnsResolver dns-resolver)
+      (.setTlsStrategy (or tls-strategy
+                           (let [ssl-context (get-ssl-context req)
+                                 verifier (if (opt req :insecure)
+                                            NoopHostnameVerifier/INSTANCE
+                                            (DefaultHostnameVerifier.))]
+                             (org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy. ssl-context verifier))))
+      (.build)))
 
-(defmulti shutdown-manager
+(defn shutdown-manager
   "Shut down the given connection manager, if it is not nil"
-  class)
-
-(defmethod shutdown-manager nil [conn-mgr] nil)
-
-(defmethod shutdown-manager PoolingHttpClientConnectionManager
-  [^PoolingHttpClientConnectionManager  conn-mgr] (.close conn-mgr))
-
-(defmethod shutdown-manager
-  PoolingAsyncClientConnectionManager
-  [^PoolingAsyncClientConnectionManager conn-mgr] (.close conn-mgr))
-
-(defmethod shutdown-manager
-  BasicHttpClientConnectionManager
-  [^BasicHttpClientConnectionManager conn-mgr] (.close conn-mgr))
+  [^java.io.Closeable conn-mgr]
+  (when conn-mgr
+    (.close conn-mgr)))
 
 (def ^:dynamic *connection-manager*
   "connection manager to be rebound during request execution"
@@ -411,3 +356,30 @@
 (def ^:dynamic *async-connection-manager*
   "connection manager to be rebound during async request execution"
   nil)
+
+;; -- Custom Connection Managers  ----------------------------------------------
+(defn capturing-socket
+  "Create a java.net.Socket that will capture data sent in and out of it."
+  [^java.io.OutputStream output-stream]
+  (proxy [java.net.Socket] []
+    ;; TODO: implement capturing the read data, currently I don't know of a good
+    ;; way to proxy reading input into an arbitrary place
+    (getInputStream []
+      (let [this ^java.net.Socket this]
+        (proxy-super getInputStream)))
+    (getOutputStream []
+      (let [this ^java.net.Socket this
+            stream (proxy-super getOutputStream)]
+        (TeeOutputStream.
+         stream
+         output-stream)))))
+
+(defn make-capturing-socket-conn-manager
+  "Given an optional hostname and a port, create a connection manager captures
+  Socket data. `output` should be an `OutputStream` where all output from this
+  factory will be sent."
+  [output]
+  (let [socket-factory #(capturing-socket output)]
+    (make-conn-manager {:socket-factory-registry
+                        {"http" (PlainGenericSocketFactory socket-factory)
+                         "https" (SSLGenericSocketFactory socket-factory nil)}})))

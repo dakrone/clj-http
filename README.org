@@ -7,16 +7,12 @@
 #+HTML_HEAD: <style type="text/css"> body {margin-right:15%; margin-left:15%;} </style>
 #+LANGUAGE: en
 
+[[https://clojars.org/clj-http][file:https://img.shields.io/clojars/v/clj-http.svg]] [[https://github.com/dakrone/clj-http/actions?query=workflow%3A%22Clojure+CI%22][file:https://github.com/dakrone/clj-http/workflows/Clojure%20CI/badge.svg]] [[https://gitter.im/clj-http/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge][file:https://badges.gitter.im/clj-http/Lobby.svg]]
+
 * Table of Contents                                                     :TOC:
 :PROPERTIES:
 :CUSTOM_ID: h-aaf075ea-2f0e-4a45-871a-0f89c838fb4b
 :END:
-
-[[https://secure.travis-ci.org/dakrone/clj-http.png]]
-
-#+ATTR_HTML: title="Join the chat at https://gitter.im/clj-http/Lobby"
-[[https://gitter.im/clj-http/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge][file:https://badges.gitter.im/clj-http/Lobby.svg]]
-
 - [[#branches][Branches]]
 - [[#introduction][Introduction]]
   - [[#overview][Overview]]
@@ -38,12 +34,14 @@
   - [[#meta-tag-headers][Meta Tag Headers]]
   - [[#link-headers][Link Headers]]
   - [[#redirects][Redirects]]
+    - [[#how-to-create-a-custom-redirectstrategy][How to create a custom RedirectStrategy]]
   - [[#cookies][Cookies]]
     - [[#cookiestores][Cookiestores]]
     - [[#keystores-trust-stores][Keystores, Trust-stores]]
   - [[#exceptions][Exceptions]]
   - [[#decompression][Decompression]]
   - [[#debugging][Debugging]]
+    - [[#logging][Logging]]
 - [[#caching][Caching]]
 - [[#authentication][Authentication]]
   - [[#basic-auth][Basic Auth]]
@@ -54,8 +52,12 @@
   - [[#raw-request][Raw Request]]
     - [[#boolean-options][Boolean options]]
   - [[#persistent-connections][Persistent Connections]]
+  - [[#re-using-httpclient-between-requests][Re-using =HttpClient= between requests]]
   - [[#proxies][Proxies]]
   - [[#custom-middleware][Custom Middleware]]
+  - [[#modifying-apache-specific-features-of-the-httpclientbuilder-and-httpasyncclientbuilder][Modifying Apache-specific features of the =HttpClientBuilder= and =HttpAsyncClientBuilder=]]
+  - [[#incrementally-json-parsing][Incrementally JSON Parsing]]
+  - [[#dns-resolution][DNS Resolution]]
 - [[#development][Development]]
   - [[#faking-responses][Faking Responses]]
   - [[#optional-dependencies][Optional Dependencies]]
@@ -65,7 +67,7 @@
     - [[#nohttpresponseexception--due-to-stale-connections][NoHttpResponseException ... due to stale connections**]]
 - [[#tests][Tests]]
 - [[#testimonials][Testimonials]]
-- [[#other-middleware][Other Middleware]]
+- [[#other-libraries-providing-middleware][Other Libraries Providing Middleware]]
 - [[#license][License]]
 
 * Branches
@@ -117,7 +119,7 @@ function.
 With Leiningen/Boot:
 
 #+BEGIN_SRC clojure
-[clj-http "3.9.0"]
+[clj-http "3.10.3"]
 #+END_SRC
 
 If you need an older version, a 2.x release is also available.
@@ -177,7 +179,9 @@ Example requests:
 
 (client/get "http://example.com/resources/id")
 
+;; Setting options
 (client/get "http://example.com/resources/3" {:accept :json})
+(client/get "http://example.com/resources/3" {:accept :json :query-params {"q" "foo, bar"}})
 
 ;; Specifying headers as either a string or collection:
 (client/get "http://example.com"
@@ -187,12 +191,6 @@ Example requests:
 (client/get "http://example.com"
             {:headers {:foo ["bar" "baz"], :eggplant "quux"}})
 
-;; Set any specific client parameters manually:
-(client/post "http://example.com"
-             {:client-params {"http.protocol.allow-circular-redirects" false
-                              "http.protocol.version" HttpVersion/HTTP_1_0
-                              "http.useragent" "clj-http"}})
-
 ;; Completely ignore cookies:
 (client/post "http://example.com" {:cookie-policy :none})
 ;; There are also multiple ways to handle cookies
@@ -200,6 +198,7 @@ Example requests:
 (client/post "http://example.com" {:cookie-policy :netscape})
 (client/post "http://example.com" {:cookie-policy :standard})
 (client/post "http://example.com" {:cookie-policy :standard-strict})
+
 
 ;; Cookies can be completely configurable with a custom spec by adding a
 ;; function to return a cookie spec for parsing the cookie. For example, if you
@@ -268,7 +267,7 @@ Example requests:
 (client/get "http://example.com/redirects-somewhere" {:max-redirects 5 :redirect-strategy :graceful})
 
 ;; Throw an exception if the get takes too long. Timeouts in milliseconds.
-(client/get "http://example.com/redirects-somewhere" {:socket-timeout 1000 :conn-timeout 1000})
+(client/get "http://example.com/redirects-somewhere" {:socket-timeout 1000 :connection-timeout 1000})
 
 ;; Query parameters
 (client/get "http://example.com/search" {:query-params {"q" "foo, bar"}})
@@ -325,8 +324,8 @@ content encodings.
               :body "{\"json\": \"input\"}"
               :headers {"X-Api-Version" "2"}
               :content-type :json
-              :socket-timeout 1000  ;; in milliseconds
-              :conn-timeout 1000    ;; in milliseconds
+              :socket-timeout 1000      ;; in milliseconds
+              :connection-timeout 1000  ;; in milliseconds
               :accept :json})
 
 ;; Send form params as a urlencoded body (POST or PUT)
@@ -382,6 +381,15 @@ content encodings.
                                    :retry-handler (fn [ex try-count http-context]
                                                     (println "Got:" ex)
                                                     (if (> try-count 4) false true))})
+
+;; to handle a file with non-ascii filename, try :multipart-charset "UTF-8" and :multipart-mode BROWSER_COMPATIBLE
+;; see also: https://stackoverflow.com/questions/3393445/international-characters-in-filename-in-mutipart-formdata
+(import (org.apache.http.entity.mime HttpMultipartMode))
+
+(client/post "http://example.org" {:multipart [{:content (clojure.java.io/file "日本語.txt")}]
+                                   :multipart-mode HttpMultipartMode/BROWSER_COMPATIBLE
+                                   :multipart-charset "UTF-8"} )
+
 #+END_SRC
 
 A word about flattening nested =:query-params= and =:form-params= maps. There are essentially three
@@ -428,7 +436,7 @@ start an async request is easy, for example:
 
 All exceptions thrown during the request will be passed to the raise callback.
 
-*** Cancelling requests
+*** Cancelling Requests
 :PROPERTIES:
 :CUSTOM_ID: cancelling-requests
 :END:
@@ -504,9 +512,7 @@ it's received (output coercion) from the server.
 
 ;; Coerce as json
 (client/get "http://example.com/foo.json" {:as :json})
-(client/get "http://example.com/foo.json" {:as :json-strict})
 (client/get "http://example.com/foo.json" {:as :json-string-keys})
-(client/get "http://example.com/foo.json" {:as :json-strict-string-keys})
 
 ;; Coerce as Transit encoded JSON or MessagePack
 (client/get "http://example.com/foo" {:as :transit+json})
@@ -537,7 +543,13 @@ it's received (output coercion) from the server.
 ;; if any, defaulting to UTF-8.
 #+END_SRC
 
-Output coercion with =:as :json=, =:as :json-strict=, =:as :json-strict-string-keys=, =:as :json-string-keys= or =:as :x-www-form-urlencoded= will only work with an optional dependency, see [[#optional-dependencies][Optional Dependencies]].
+Output coercion with =:as :json=, =:as :json-string-keys= or =:as :x-www-form-urlencoded=, will only work with an optional dependency, see [[#optional-dependencies][Optional Dependencies]].
+
+By default, JSON coercion is only applied when the response's status
+is considered "unexceptional". If the =:unexceptional-status= option
+is provided, then its value is a function which specifies what status
+codes are unexceptional. =:unexceptional-status= defaults to
+=clj-http.client/unexceptional-status?=.
 
 By default, JSON coercion is only applied when the response's status
 is considered "unexceptional". If the =:unexeceptional-status= option
@@ -588,13 +600,14 @@ disabled by using with-middleware to specify different behavior.
 :CUSTOM_ID: h-dd49992c-a516-4af0-9735-4f4340773361
 :END:
 
-There are three different ways that query string parameters for array values can
+There are four different ways that query string parameters for array values can
 be generated, depending on what the resulting query string should look like,
 they are:
 
 - A repeating parameter (default)
 - Array style
 - Indexed array style
+- Comma separated style
 
 Here is an example of the input and output for the ~:query-params~ parameter,
 controlled by the ~:multi-param-style~ option:
@@ -608,6 +621,8 @@ controlled by the ~:multi-param-style~ option:
 ;; with :multi-param-style :indexed, a repeating param with array suffix and
 ;; index (Rails-style):
 :a [1 2 3] => "a[0]=1&a[1]=2&a[2]=3"
+;; with :multi-param-style :comma-separated, a param with comma-separated values
+:a [1 2 3] => "a=1,2,3"
 #+END_SRC
 
 ** Meta Tag Headers
@@ -696,7 +711,7 @@ APIs:
 
 clj-http conforms its behaviour regarding automatic redirects to the [[https://tools.ietf.org/html/rfc2616#section-10.3][RFC]].
 
-It means that redirects on status =301=, =302= and =307= are not redirected on
+It means that redirects on status =301=, =302=, =307= and =308= are not redirected on
 methods other than =GET= and =HEAD=. If you want a behaviour closer to what most
 browser have, you can set =:redirect-strategy= to =:lax= in your request to have
 automatic redirection work on all methods by transforming the method of the
@@ -722,6 +737,39 @@ this by setting =:validate-redirects false= in the request (the default is true)
 NOTE: The options =:force-redirects= and =:follow-redirects= (present in clj-http 2.x are no longer
 used). You can use =:graceful= to mostly emulate the old redirect behaviour.
 
+*** How to create a custom RedirectStrategy
+:PROPERTIES:
+:CUSTOM_ID: h:a3b8b124-411f-4c4c-ac4b-777624e76bf1
+:END:
+As mentioned earlier, it's possible to pass a custom instance of RedirectStrategy. The snippet below shows how to create a custom =RedirectStrategy= by wrapping the default strategy.
+
+#+begin_src clojure
+  (def default-strategy org.apache.http.impl.client.DefaultRedirectStrategy/INSTANCE)
+
+  (def logging-redirect-strategy
+    (reify org.apache.http.client.RedirectStrategy
+      (getRedirect [this request response context]
+        (println "attempting redirect...")
+        (.getRedirect default-strategy request response context))
+      (isRedirected [this request response context]
+        (println "checking isRedirected")
+        (.isRedirected default-strategy request response context))))
+
+  (client/get "https://httpbin.org/absolute-redirect/3" {:redirect-strategy logging-redirect-strategy})
+  ;; this will output the following:
+  ;;
+  ;;   checking isRedirected
+  ;;   attempting redirect...
+  ;;   checking isRedirected
+  ;;   attempting redirect...
+  ;;   checking isRedirected
+  ;;   attempting redirect...
+  ;;   checking isRedirected
+#+end_src
+
+NOTE: The options =:force-redirects= and =:follow-redirects= (present in clj-http 2.x are no longer
+used). You can use =:graceful= to mostly emulate the old redirect behaviour.
+
 ** Cookies
 :PROPERTIES:
 :CUSTOM_ID: h-3bb89b16-4be3-455e-98ec-c5ca5830ddb9
@@ -738,7 +786,7 @@ provided with a _cookie store_.
 #+BEGIN_SRC clojure
 (binding [clj-http.core/*cookie-store* (clj-http.cookies/cookie-store)]
   (client/post "http://example.com/login" {:form-params {:username "..."
-                                                      :password "..."}})
+                                                         :password "..."}})
   (client/get "http://example.com/secured-page")
   ...)
 #+END_SRC
@@ -755,10 +803,10 @@ each request, specify the cookie-store with the =:cookie-store= option:
 #+BEGIN_SRC clojure
 (let [my-cs (clj-http.cookies/cookie-store)]
   (client/post "http://example.com/login" {:form-params {:username "..."
-                                                      :password "..."}
-                                        :cookie-store my-cs})
+                                                         :password "..."}
+                                           :cookie-store my-cs})
   (client/post "http://example.com/update" {:body my-data
-                                         :cookie-store my-cs}))
+                                            :cookie-store my-cs}))
 #+END_SRC
 
 You can also use the =get-cookies= function to retrieve the cookies
@@ -841,7 +889,7 @@ HTTP responses other than =#{200 201 202 203 204 205 206 207 300 301 302 303 304
 ;; Or ignore an unknown host (methods return 'nil' if this is set to
 ;; true and the host does not exist:
 (client/get "http://example.invalid" {:ignore-unknown-host? true})
-;; Or customize the http statuses that will throw:
+;; Or customize the http statuses that will not throw:
 (client/get "http://example.com/broken" {:unexceptional-status #(<= 200 % 299)})
 #+END_SRC
 
@@ -1257,7 +1305,7 @@ manager must be used.
 
 ;; You can also build your own, using clj-http's helper or manually building it:
 (let [cm (conn/make-reusable-conn-manager {})
-      hclient (core/build-http-client {} cm "https://example.com" false)]
+      hclient (core/build-http-client {} false cm)]
   (client/get "http://example.com/1"
               {:connection-manager cm :http-client hclient})
   (client/get "http://example.com/2"
@@ -1267,7 +1315,7 @@ manager must be used.
 
 ;; Async http clients may also be created and re-used:
 (let [acm (conn/make-reuseable-async-conn-manager {})
-      ahclient (core/build-async-http-client {} acm "https://example.com" false)]
+      ahclient (core/build-async-http-client {} acm)]
   (client/get "http://example.com/1"
               {:connection-manager cm :http-client ahclient}
               handle-response handle-failure)
@@ -1384,6 +1432,78 @@ Each of these variables is a sequence of functions of two arguments, the http bu
 #+END_SRC
 
 The functions are run in the order they are passed in (inside a =doseq=).
+
+By specifying =:http-client-builder=, your own instance of
+=HttpClientBuilder= will be used. A supplied =HttpClientBuilder= which
+sets the connection manager, redirect strategy, retry handler, route
+planner, cache, or cookie spec registry may find these overridden by
+clj-http's =:connection-manager=, =:redirect-strategy=,
+=:retry-handler=, =:cache=, or =:cookie-policy-registry= or
+=:cookie-spec=, respectively.
+
+** Incrementally JSON Parsing
+:PROPERTIES:
+:CUSTOM_ID: h:b01c16e8-7179-468e-8890-316939ec0e38
+:END:
+[[https://github.com/dakrone/cheshire][cheshire]] supports incrementally parsing JSON using lazy sequences. This approach can useful for
+processing large top-level JSON arrays because it doesn't require upfront work consuming the entire stream.
+
+#+begin_src clojure
+  (require '[cheshire.core :as json])
+
+  (defn print-all-pokemon-names [pokemons]
+    (for [pokemon pokemons]
+      (println (get-in pokemon [:name :english]))))
+
+  (let [url "https://raw.githubusercontent.com/fanzeyi/pokemon.json/master/pokedex.json"
+        response (get url {:as :reader})]
+    (with-open [reader (:body response)]  ; closes the underlying connection when we're done
+      (let [pokemons (json/parse-stream reader true)]
+        ; You must perform all reads from the stream inside `with-open`,
+        ; any , any lazy
+        (doall (print-all-pokemon-names pokemons)))))
+#+end_src
+
+Keep in mind that the =reader= object wraps a HTTP connection. The user needs to be aware of two
+things:
+
+1. The user should close the reader after processing the stream, otherwise the underlying HTTP
+   Connection may leak and create subtle bugs. Clojure's [[https://clojuredocs.org/clojure.core/with-open][with-open]] is useful here.
+
+2. You should realize any lazy sequences before closing the connection. Use [[https://clojuredocs.org/clojure.core/doall][doall]] or [[https://clojure.org/reference/transducers][transducers]] to
+   prevent bugs from lazy IO. See [[https://stuartsierra.com/2015/08/25/clojure-donts-lazy-effects][Clojure Don'ts: Lazy Effects]].
+
+In previous versions of =clj-http= (<= 3.10.0), =clj-http= defaulted to lazily parsing JSON, but this
+was slow and also confused users who didn't expect laziness.
+
+** DNS Resolution
+
+Users may add their own DNS resolver function to override the default DNS Resolver. This is useful in situations where you are unable to change the name to IP Address mapping. It is analogous to the =--resolve= flag present in =curl=. This example uses =org.apache.http.impl.conn.InMemoryDnsResolver= to resolve =example.com= to IP Address =127.0.0.1=. 
+
+#+BEGIN_SRC clojure
+(client/get "https://example.com" {:dns-resolver (doto (InMemoryDnsResolver.)
+                                                   (.add "example.com" (into-array[(InetAddress/getByAddress (byte-array [127 0 0 1]))])))})
+#+END_SRC
+
+This option is supported for all of the connection managers.
+
+The =dns-resolver= can be any instance of =DnsResolver=. Here is an example of a custom implementation that attempts to look up the hostname in the supplied map and falls back to the default SystemDnsResolver if not found. Note how IPV6 addresses are specified.
+
+#+BEGIN_SRC clojure
+(defn custom-dns-resolver
+  [host-map]
+  (let [system-dns-resolver (org.apache.http.impl.conn.SystemDefaultDnsResolver.)]
+    (reify
+      org.apache.http.conn.DnsResolver
+      (^"[Ljava.net.InetAddress;" resolve [this ^String host]
+       (if-let [address (get host-map host)]
+         (into-array [(java.net.InetAddress/getByAddress host (byte-array address))])
+         (.resolve system-dns-resolver host))))))
+       
+(client/get "https://example.com" {:dns-resolver (custom-dns-resolver {"example.com" [127 0 0 1]
+                                                                        "www.google.com" [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1]})})
+#+END_SRC
+       
 
 * Development
 :PROPERTIES:
@@ -1511,7 +1631,7 @@ Libraries inspired by clj-http:
 - [[https://github.com/mpenet/jet][jet]]
 - [[https://github.com/hiredman/clj-http-lite][clj-http-lite]]
 
-* Other libraries providing middleware
+* Other Libraries Providing Middleware
 :PROPERTIES:
 :CUSTOM_ID: other-middleware
 :END:
@@ -1527,3 +1647,7 @@ Libraries inspired by clj-http:
 
 Released under the MIT License:
 <http://www.opensource.org/licenses/mit-license.php>
+
+# Local Variables:
+# fill-column: 100
+# End:

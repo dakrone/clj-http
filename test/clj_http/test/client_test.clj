@@ -4,8 +4,8 @@
             [clj-http.conn-mgr :as conn]
             [clj-http.test.core-test :refer [run-server localhost]]
             [clj-http.util :as util]
-            [clojure.string :as str]
             [clojure.java.io :refer [resource]]
+            [clojure.string :as str]
             [clojure.test :refer :all]
             [cognitect.transit :as transit]
             [ring.util.codec :refer [form-decode-str]]
@@ -159,7 +159,26 @@
                    exception)]
     (is (= 200 (:status @resp)))
     (is (not (realized? exception)))
-    #_(when (realized? exception) (prn @exception))))
+    #_(when (realized? exception) (prn @exception)))
+
+  ;; Regression Testing https://github.com/dakrone/clj-http/issues/560
+  (testing "multipart uploads larger than 25kb"
+    (let [resp (promise)
+          exception (promise)
+          ;; assumption: file > 5kb
+          file (clojure.java.io/file "test-resources/big_array_json.json")
+
+          _ (request {:uri "/post" :method :post
+                      :async? true
+                      :multipart [{:name "part-1" :content file}
+                                  {:name "part-2" :content file}
+                                  {:name "part-3" :content file}
+                                  {:name "part-4" :content file}
+                                  {:name "part-5" :content file}]}
+                     resp
+                     exception)]
+      (is (= 200 (:status (deref resp 500 :failed))))
+      (is (not (realized? exception))))))
 
 (deftest ^:integration nil-input
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
@@ -984,7 +1003,7 @@
                 (fn [req] {:body nil})) {:decode-body-headers true})
         resp4 ((client/wrap-additional-header-parsing
                 (fn [req] {:headers {"content-type" "application/pdf"}
-                           :body (.getBytes text)}))
+                          :body (.getBytes text)}))
                {:decode-body-headers true})]
     (is (= {"content-type" "text/html; charset=Shift_JIS"
             "content-style-type" "text/css"
@@ -1013,7 +1032,7 @@
 
 (deftest ^:integration t-reusable-conn-mgrs
   (run-server)
-  (let [cm (conn/make-reusable-conn-manager {:timeout 10 :insecure? false})
+  (let [cm (conn/make-conn-manager {:timeout 10 :insecure? false})
         resp1 (request {:uri "/redirect-to-get"
                         :method :get
                         :connection-manager cm})
@@ -1028,7 +1047,7 @@
 
 (deftest ^:integration t-reusable-async-conn-mgrs
   (run-server)
-  (let [cm (conn/make-reuseable-async-conn-manager {:timeout 10 :insecure? false})
+  (let [cm (conn/make-async-conn-manager {:timeout 10 :insecure? false})
         resp1 (promise) resp2 (promise)
         exce1 (promise) exce2 (promise)]
     (request {:async? true :uri "/redirect-to-get" :method :get :connection-manager cm}
@@ -1079,7 +1098,7 @@
       (request {:async? true :uri "/get" :method :get} resp2 exce2)
       (is (realized? exce1))
       (is (not (realized? exce2)))
-      (is (= 200 (:status @resp2))))))
+      (is (= 200 (:status (deref resp2 500 ::not-found)))))))
 
 (deftest ^:integration t-async-pool-exception-when-start
   (run-server)
@@ -1163,8 +1182,13 @@
     (is (= all-legal
            (client/url-encode-illegal-characters all-legal)))))
 
+(defmethod client/coerce-response-body :json+ms949
+  [req resp]
+  (client/coerce-json-body req resp true "MS949"))
+
 (deftest t-coercion-methods
   (let [json-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"bar\"}"))
+        json-ms949-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"안뇽\"}" "MS949"))
         auto-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"bar\"}"))
         edn-body (ByteArrayInputStream. (.getBytes "{:foo \"bar\"}"))
         transit-json-body (ByteArrayInputStream.
@@ -1178,6 +1202,8 @@
         (ByteArrayInputStream. (.getBytes "foo=bar"))
         json-resp {:body json-body :status 200
                    :headers {"content-type" "application/json"}}
+        json-ms949-resp {:body json-ms949-body :status 200
+                         :headers {"content-type" "application/json; charset=ms949"}}
         auto-resp {:body auto-body :status 200
                    :headers {"content-type" "application/json"}}
         edn-resp {:body edn-body :status 200
@@ -1206,7 +1232,21 @@
            (:body (client/coerce-response-body {:as :auto}
                                                auto-www-form-urlencoded-resp))
            (:body (client/coerce-response-body {:as :x-www-form-urlencoded}
-                                               www-form-urlencoded-resp))))))
+                                               www-form-urlencoded-resp))))
+    (is (= {:foo "안뇽"}
+           (:body (client/coerce-response-body {:as :json+ms949} json-ms949-resp))))
+
+    (testing "throws AssertionError when optional libraries are not loaded"
+      (with-redefs [client/json-enabled? false]
+        (is (thrown? AssertionError (client/coerce-response-body {:as :json} json-resp)))
+        (is (thrown? AssertionError (client/coerce-response-body {:as :auto} json-resp))))
+      (with-redefs [client/transit-enabled? false]
+        (is (thrown? AssertionError (client/coerce-response-body {:as :transit+json} transit-json-resp)))
+        (is (thrown? AssertionError (client/coerce-response-body {:as :transit+msgpack} transit-msgpack-resp))))
+      (with-redefs [client/ring-codec-enabled? false]
+        (is (thrown? AssertionError (client/coerce-response-body {:as :x-www-form-urlencoded} www-form-urlencoded-resp)))
+        (is (thrown? AssertionError (client/coerce-response-body {:as :auto} auto-www-form-urlencoded-resp)))))))
+
 
 (deftest t-reader-coercion
   (let [read-lines (fn [reader] (vec (take-while not-empty (repeatedly #(.readLine reader)))))
@@ -1308,7 +1348,17 @@
           query-string (-> resp :body form-decode-str)]
       (is (= 200 (:status resp)))
       (is (.contains query-string "a[]=1&a[]=2&a[]=3") query-string)
-      (is (.contains query-string "b[]=x&b[]=y&b[]=z") query-string))))
+      (is (.contains query-string "b[]=x&b[]=y&b[]=z") query-string)))
+  (testing "multi-valued query params in comma-separated"
+    (let [resp (request {:uri "/query-string"
+                         :method :get
+                         :multi-param-style :comma-separated
+                         :query-params {:a [1 2 3]
+                                        :b ["x" "y" "z"]}})
+          query-string (-> resp :body form-decode-str)]
+      (is (= 200 (:status resp)))
+      (is (.contains query-string "a=1,2,3") query-string)
+      (is (.contains query-string "b=x,y,z") query-string))))
 
 (deftest t-wrap-flatten-nested-params
   (is-applied client/wrap-flatten-nested-params
@@ -1357,6 +1407,11 @@
              (str "only :flatten-nested-keys or :ignore-nested-query-string/"
                   ":flatten-nested-keys may be specified, not both"))))))
 
+;; there's a couple of concerns with this approach
+;; 1. it's not a transparent conection amanger, will leak in the background
+;; 2. we need to check for conflicting values -> better if the caller passes in an explicit connection maanger
+;; 3. doesn't work async, is this something that should be done as a middleware? I thin it's a bit too davnaced
+#_
 (deftest ^:integration t-socket-capture
   (run-server)
   (let [resp (client/post (localhost "/post")

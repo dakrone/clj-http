@@ -1,0 +1,39 @@
+name: Clojure CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: ["8", "11", "14"]
+        clojure: ["1.8", "1.9", "1.10"]
+
+    name: Java ${{ matrix.java }} Clojure ${{ matrix.clojure }}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-lein-${{ hashFiles('**/project.clj') }}
+        restore-keys: |
+          ${{ runner.os }}-lein-
+
+    - name: Setup java
+      uses: actions/setup-java@v1
+      with:
+        java-version: ${{ matrix.java }}
+
+    - name: Install dependencies
+      run: lein deps
+
+    - name: Run tests
+      run: lein with-profile dev,${{matrix.clojure}} test :all
+
+    - name: Check Reflection Warnings
+      run:  '! lein with-profile dev,${{matrix.clojure}} check 2>&1 | egrep "Reflection warning|Performance warning"'

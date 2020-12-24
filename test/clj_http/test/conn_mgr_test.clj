@@ -1,17 +1,13 @@
 (ns clj-http.test.conn-mgr-test
-  (:require [clj-http.conn-mgr :as conn-mgr]
+  (:require [clojure.test :refer :all]
+            [clj-http.conn-mgr :as conn-mgr]
             [clj-http.core :as core]
             [clj-http.test.core-test :refer [run-server]]
-            [clojure.test :refer :all]
             [ring.adapter.jetty :as ring])
-  (:import (java.security KeyStore)
-           (org.apache.hc.client5.http.impl.io BasicHttpClientConnectionManager)
-           (org.apache.hc.client5.http.ssl DefaultHostnameVerifier
-                                           NoopHostnameVerifier
-                                           SSLConnectionSocketFactory)
-           (org.apache.hc.client5.http.socket PlainConnectionSocketFactory)
-           #_(org.apache.http.nio.conn NoopIOSessionStrategy)
-           #_(org.apache.http.nio.conn.ssl SSLIOSessionStrategy)))
+  (:import java.security.KeyStore
+           [javax.net.ssl KeyManagerFactory TrustManagerFactory]
+           org.apache.hc.client5.http.HttpRoute
+           org.apache.hc.core5.http.HttpHost))
 
 (def client-ks "test-resources/client-keystore")
 (def client-ks-pass "keykey")
@@ -41,26 +37,17 @@
   (let [ks (conn-mgr/get-keystore "test-resources/keystore" nil nil)]
     (is (instance? KeyStore ks))))
 
-(deftest keystore-scheme-factory
-  (let [sr (conn-mgr/get-keystore-scheme-registry
-            {:keystore client-ks :keystore-pass client-ks-pass
-             :trust-store client-ks :trust-store-pass client-ks-pass})
-        plain-socket-factory (.lookup sr "http")
-        ssl-socket-factory (.lookup sr "https")]
-    (is (instance? PlainConnectionSocketFactory plain-socket-factory))
-    (is (instance? SSLConnectionSocketFactory ssl-socket-factory))))
+(def array-of-trust-manager
+  (let [ks (conn-mgr/get-keystore "test-resources/keystore" nil "keykey")
+        tmf (doto (TrustManagerFactory/getInstance (TrustManagerFactory/getDefaultAlgorithm))
+              (.init ks))]
+    (.getTrustManagers tmf)))
 
-#_
-(deftest keystore-session-strategy
-  (let [strategy-registry (conn-mgr/get-keystore-strategy-registry
-                           {:keystore client-ks
-                            :keystore-pass client-ks-pass
-                            :trust-store client-ks
-                            :trust-store-pass client-ks-pass})
-        noop-session-strategy (.lookup strategy-registry "http")
-        ssl-session-strategy (.lookup strategy-registry "https")]
-    (is (instance? NoopIOSessionStrategy noop-session-strategy))
-    (is (instance? SSLIOSessionStrategy ssl-session-strategy))))
+(def array-of-key-manager
+  (let [ks (conn-mgr/get-keystore "test-resources/keystore" nil "keykey")
+        tmf (doto (KeyManagerFactory/getInstance (KeyManagerFactory/getDefaultAlgorithm))
+              (.init ks (.toCharArray "keykey")))]
+    (.getKeyManagers tmf)))
 
 (deftest ^:integration ssl-client-cert-get
   (let [server (ring/run-jetty secure-handler
@@ -100,48 +87,49 @@
             exception (promise)
             _ (core/request (assoc secure-request :async? true) resp exception)]
         (is (= 200 (:status (deref resp 1000 {:status :timeout})))))
+
+      (testing "with reusable connection pool"
+        (let [pool (conn-mgr/make-async-conn-manager {:timeout 10000
+                                                      :keystore client-ks :keystore-pass client-ks-pass
+                                                      :trust-store client-ks :trust-store-pass client-ks-pass
+                                                      :insecure? true})]
+          (try
+            (let [resp (promise) exception (promise)
+                  _ (core/request {:request-method :get :uri "/get"
+                                   :server-port 18084 :scheme :https
+                                   :server-name "localhost"
+                                   :connection-manager pool :async? true} resp exception)]
+              (is (= 200 (:status (deref resp 1000 {:status :timeout}))))
+              (is (:body @resp))
+              (is (not (realized? exception))))
+            (finally
+              (conn-mgr/shutdown-manager pool)))))
       (finally
         (.stop server)))))
 
+
 (deftest ^:integration t-closed-conn-mgr-for-as-stream
   (run-server)
-  (let [shutdown? (atom false)
-        cm (proxy [BasicHttpClientConnectionManager] []
-             (shutdown []
-               (reset! shutdown? true)))]
-    (try
-      (core/request {:request-method :get :uri "/timeout"
-                     :server-port 18080 :scheme :http
-                     :server-name "localhost"
-                     ;; timeouts forces an exception being thrown
-                     :socket-timeout 1
-                     :conn-timeout 1
-                     :connection-manager cm
-                     :as :stream})
-      (is false "request should have thrown an exception")
-      (catch Exception e))
-    (is @shutdown? "Connection manager has been shutdown")))
+  ;; timeouts forces an exception being thrown
+  (let [cm (conn-mgr/make-conn-manager {:socket/timeout 1})]
+    (with-redefs-fn {#'conn-mgr/make-conn-manager (constantly cm)}
+      #(try
+         (core/request {:request-method :get :uri "/timeout"
+                        :server-port 18080 :scheme :http
+                        :server-name "localhost"
+                        :as :stream})
+         (is false "request should have thrown an exception")
+         (catch Exception e)))
+
+    (is (thrown-with-msg? IllegalStateException #"Connection pool shut down"
+                          (.lease cm "12345" (HttpRoute. (HttpHost/create "https://localhost:18080"))  {})))))
 
 (deftest ^:integration t-closed-conn-mgr-for-empty-body
   (run-server)
-  (let [shutdown? (atom false)
-        cm (proxy [BasicHttpClientConnectionManager] []
-             (shutdown []
-               (reset! shutdown? true)))
-        response (core/request {:request-method :get :uri "/unmodified-resource"
-                                :server-port 18080 :scheme :http
-                                :server-name "localhost"
-                                :connection-manager cm})]
-    (is (nil? (:body response)) "response shouldn't have body")
-    (is (= 304 (:status response)))
-    (is @shutdown? "connection manager should be shutdown")))
-
-(deftest t-reusable-conn-mgrs
-  (let [regular (conn-mgr/make-regular-conn-manager {})
-        regular-reusable (conn-mgr/make-reusable-conn-manager {})
-        async (conn-mgr/make-regular-async-conn-manager {})
-        async-reusable (conn-mgr/make-reuseable-async-conn-manager {})]
-    (is (false? (conn-mgr/reusable? regular)))
-    (is (true? (conn-mgr/reusable? regular-reusable)))
-    (is (true? (conn-mgr/reusable? async)))
-    (is (true? (conn-mgr/reusable? async-reusable)))))
+  (let [cm (conn-mgr/make-conn-manager {})]
+    (with-redefs-fn {#'conn-mgr/make-conn-manager (constantly cm)}
+      #(core/request {:request-method :get :uri "/unmodified-resource"
+                      :server-port 18080 :scheme :http
+                      :server-name "localhost"}))
+    (is (thrown-with-msg? IllegalStateException #"Connection pool shut down"
+                          (.lease cm "12345" (HttpRoute. (HttpHost/create "https://localhost:18080"))  {})))))
