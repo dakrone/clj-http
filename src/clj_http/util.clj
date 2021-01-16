@@ -72,7 +72,7 @@
   "force b as byte array if it is an InputStream, also close the stream"
   ^bytes [b]
   (if (instance? InputStream b)
-    (let [^PushbackInputStream bs (PushbackInputStream. b)]
+    (let [^PushbackInputStream bs (PushbackInputStream. ^InputStream b)]
       (try
         (let [first-byte (int (try (.read bs) (catch EOFException _ -1)))]
           (case first-byte
@@ -86,7 +86,7 @@
   "Convert s (a ByteArray or InputStream) to String."
   ^String [s ^String charset]
   (if (instance? InputStream s)
-    (let [^PushbackInputStream bs (PushbackInputStream. s)]
+    (let [^PushbackInputStream bs (PushbackInputStream. ^InputStream s)]
       (try
         (let [first-byte (int (try (.read bs) (catch EOFException _ -1)))]
           (case first-byte
