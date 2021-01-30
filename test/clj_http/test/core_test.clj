@@ -744,6 +744,23 @@
 
     (is (= (:trace-redirects resp-without-redirects) []))))
 
+(deftest t-request-config
+  (let [params {:conn-timeout 100 ;; deprecated
+                :connection-timeout 200 ;; takes precedence over `:conn-timeout`
+                :conn-request-timeout 300 ;; deprecated
+                :connection-request-timeout 400 ;; takes precedence over `:conn-request-timeout`
+                :socket-timeout 500
+                :max-redirects 600
+                :cookie-spec "foo"                              
+                :normalize-uri false}
+        request-config (core/request-config params)]
+    (is (= 200 (.getConnectTimeout request-config)))
+    (is (= 400 (.getConnectionRequestTimeout request-config)))
+    (is (= 500 (.getSocketTimeout request-config)))
+    (is (= 600 (.getMaxRedirects request-config)))
+    (is (= core/CUSTOM_COOKIE_POLICY (.getCookieSpec request-config)))
+    (is (false? (.isNormalizeUri request-config)))))
+
 (deftest ^:integration t-override-request-config
   (run-server)
   (let [called-args (atom [])

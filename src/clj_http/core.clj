@@ -160,10 +160,10 @@
                               socket-timeout
                               max-redirects
                               cookie-spec
+                              normalize-uri
                               ; deprecated
                               conn-request-timeout
-                              conn-timeout
-                              normalize-uri]
+                              conn-timeout]
                        :as req}]
   (let [config (-> (RequestConfig/custom)
                    (.setConnectTimeout (or connection-timeout conn-timeout -1))
@@ -175,12 +175,12 @@
                     (boolean (opt req :allow-circular-redirects)))
                    (.setRelativeRedirectsAllowed
                     ((complement false?)
-                     (opt req :allow-relative-redirects)))
-                   (.setNormalizeUri (or normalize-uri true)))]
+                     (opt req :allow-relative-redirects))))]
     (if cookie-spec
       (.setCookieSpec config CUSTOM_COOKIE_POLICY)
       (.setCookieSpec config (get-cookie-policy req)))
     (when max-redirects (.setMaxRedirects config max-redirects))
+    (when-not (nil? normalize-uri) (.setNormalizeUri config normalize-uri))
     (.build config)))
 
 (defmulti ^:private construct-http-host (fn [proxy-host proxy-port]
