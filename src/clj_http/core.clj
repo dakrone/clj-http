@@ -162,7 +162,8 @@
                               cookie-spec
                               ; deprecated
                               conn-request-timeout
-                              conn-timeout]
+                              conn-timeout
+                              normalize-uri]
                        :as req}]
   (let [config (-> (RequestConfig/custom)
                    (.setConnectTimeout (or connection-timeout conn-timeout -1))
@@ -174,7 +175,8 @@
                     (boolean (opt req :allow-circular-redirects)))
                    (.setRelativeRedirectsAllowed
                     ((complement false?)
-                     (opt req :allow-relative-redirects))))]
+                     (opt req :allow-relative-redirects)))
+                   (.setNormalizeUri (or normalize-uri true)))]
     (if cookie-spec
       (.setCookieSpec config CUSTOM_COOKIE_POLICY)
       (.setCookieSpec config (get-cookie-policy req)))
