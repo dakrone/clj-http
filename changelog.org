@@ -9,7 +9,10 @@
 
 * Changelog
 List of user-visible changes that have gone into each release
-** 3.12.1 (unreleased)
+** 3.12.2 (unreleased)
+** 3.12.1
+- Bugfix for :normalize-uri (#584)
+  https://github.com/dakrone/clj-http/pull/584
 ** 3.12.0
 - Create SSLContext consistently for all connection managers (#575)
   https://github.com/dakrone/clj-http/pull/575
