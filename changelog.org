@@ -9,7 +9,12 @@
 
 * Changelog
 List of user-visible changes that have gone into each release
-** 3.11.1 (Unreleased)
+** 3.12.1 (unreleased)
+** 3.12.0
+- Create SSLContext consistently for all connection managers (#575)
+  https://github.com/dakrone/clj-http/pull/575
+- Adds RequestConfig Option :normalize-uri (#583)
+  https://github.com/dakrone/clj-http/pull/583
 ** 3.11.0
 - Adds workaround for Async Multipart uploads greater than 25 kb (#574)
   https://github.com/dakrone/clj-http/pull/574
