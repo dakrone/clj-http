@@ -13,7 +13,7 @@
                  [org.apache.httpcomponents/httpasyncclient "4.1.4"]
                  [org.apache.httpcomponents/httpmime "4.5.13"]
                  [commons-codec "1.12"]
-                 [commons-io "2.6"]
+                 [commons-io "2.8"]
                  [slingshot "0.12.2"]
                  [potemkin "0.4.5"]]
   :resource-paths ["resources"]
