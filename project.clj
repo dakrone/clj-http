@@ -7,7 +7,7 @@
   :global-vars {*warn-on-reflection* false}
   :min-lein-version "2.0.0"
   :exclusions [org.clojure/clojure]
-  :dependencies [[org.apache.httpcomponents/httpcore "4.4.13"]
+  :dependencies [[org.apache.httpcomponents/httpcore "4.4.14"]
                  [org.apache.httpcomponents/httpclient "4.5.13"]
                  [org.apache.httpcomponents/httpclient-cache "4.5.13"]
                  [org.apache.httpcomponents/httpasyncclient "4.1.4"]
