@@ -883,7 +883,9 @@
                  :async true}
                 (fn [resp]
                   (is (= 200 (:status resp)))
-                  (is (= {:foo "bar"} (:body resp))))
+                  (is (= {:foo "bar"} (:body resp)))
+                  (is (= hc (:http-client resp))
+                      "http-client is correctly reused"))
                 (fn [e] (is false (str "failed with " e)))))
   (let [cm (conn/make-reusable-conn-manager {})
         hc (:http-client (client/get (localhost "/get")
@@ -893,7 +895,9 @@
                           :http-client hc
                           :as :json})]
     (is (= 200 (:status resp)))
-    (is (= {:foo "bar"} (:body resp)))))
+    (is (= {:foo "bar"} (:body resp)))
+    (is (= hc (:http-client resp))
+        "http-client is correctly reused")))
 
 (deftest ^:integration t-cookies-spec
   (run-server)
