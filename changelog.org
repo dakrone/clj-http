@@ -9,7 +9,10 @@
 
 * Changelog
 List of user-visible changes that have gone into each release
-** 3.12.3 (unreleased)
+** 3.12.4 (unreleased)
+** 3.12.3
+- Allow http-client re-use in async situation (#599)
+  https://github.com/dakrone/clj-http/pull/599
 ** 3.12.2
 - Upgrade Dependencies (#598)
   https://github.com/dakrone/clj-http/pull/598
