@@ -40,76 +40,132 @@
 
 (deftest ^:integration roundtrip
   (run-server)
-  ;; roundtrip with scheme as a keyword
-  (let [resp (request {:uri "/get" :method :get})]
-    (is (= 200 (:status resp)))
-    (is (= "close" (get-in resp [:headers "connection"])))
-    (is (= "get" (:body resp))))
-  ;; roundtrip with scheme as a string
-  (let [resp (request {:uri "/get" :method :get
-                       :scheme "http"})]
-    (is (= 200 (:status resp)))
-    (is (= "close" (get-in resp [:headers "connection"])))
-    (is (= "get" (:body resp))))
-  (let [params {:a "1" :b "2"}]
-    (doseq [[content-type read-fn]
-            [[nil (comp parse-form-params slurp)]
-             [:x-www-form-urlencoded (comp parse-form-params slurp)]
-             [:edn (comp read-string slurp)]
-             [:transit+json #(client/parse-transit % :json)]
-             [:transit+msgpack #(client/parse-transit % :msgpack)]]]
-      (let [resp (request {:uri "/post"
-                           :as :stream
-                           :method :post
-                           :content-type content-type
-                           :form-params params})]
-        (is (= 200 (:status resp)))
-        (is (= "close" (get-in resp [:headers "connection"])))
-        (is (= params (read-fn (:body resp)))
-            (str "failed with content-type [" content-type "]"))))))
+  (testing "roundtrip with scheme as a keyword"
+    (let [resp (request {:uri "/get" :method :get})]
+      (is (= 200 (:status resp)))
+      (is (= "close" (get-in resp [:headers "connection"])))
+      (is (= "get" (:body resp)))))
+  (testing "roundtrip with scheme as string"
+          (let [resp (request {:uri "/get" :method :get
+                               :scheme "http"})]
+            (is (= 200 (:status resp)))
+            (is (= "close" (get-in resp [:headers "connection"])))
+            (is (= "get" (:body resp)))))
+  (testing "roundtrip with response parsing"
+    (let [params {:a "1" :b "2"}]
+      (doseq [[content-type read-fn]
+              [[nil (comp parse-form-params slurp)]
+               [:x-www-form-urlencoded (comp parse-form-params slurp)]
+               [:edn (comp read-string slurp)]
+               [:transit+json #(client/parse-transit % :json)]
+               [:transit+msgpack #(client/parse-transit % :msgpack)]]]
+        (let [resp (request {:uri "/post"
+                             :as :stream
+                             :method :post
+                             :content-type content-type
+                             :form-params params})]
+          (is (= 200 (:status resp)))
+          (is (= "close" (get-in resp [:headers "connection"])))
+          (is (= params (read-fn (:body resp)))
+              (str "failed with content-type [" content-type "]")))))))
 
 (deftest ^:integration roundtrip-async
   (run-server)
-  ;; roundtrip with scheme as a keyword
-  (let [resp (promise)
-        exception (promise)
-        _ (request {:uri "/get" :method :get
-                    :async? true} resp exception)]
-    (is (= 200 (:status @resp)))
-    (is (= "close" (get-in @resp [:headers "connection"])))
-    (is (= "get" (:body @resp)))
-    (is (not (realized? exception))))
-  ;; roundtrip with scheme as a string
-  (let [resp (promise)
-        exception (promise)
-        _ (request {:uri "/get" :method :get
-                    :scheme "http"
-                    :async? true} resp exception)]
-    (is (= 200 (:status @resp)))
-    (is (= "close" (get-in @resp [:headers "connection"])))
-    (is (= "get" (:body @resp)))
-    (is (not (realized? exception))))
-
-  (let [params {:a "1" :b "2"}]
-    (doseq [[content-type read-fn]
-            [[nil (comp parse-form-params slurp)]
-             [:x-www-form-urlencoded (comp parse-form-params slurp)]
-             [:edn (comp read-string slurp)]
-             [:transit+json #(client/parse-transit % :json)]
-             [:transit+msgpack #(client/parse-transit % :msgpack)]]]
+  (testing "roundtrip with scheme as keyword"
+    (testing "with async callback arguments"
       (let [resp (promise)
             exception (promise)
-            _ (request {:uri "/post"
-                        :as :stream
-                        :method :post
-                        :content-type content-type
-                        :flatten-nested-keys []
-                        :form-params params
+            _ (request {:uri "/get" :method :get
                         :async? true} resp exception)]
         (is (= 200 (:status @resp)))
         (is (= "close" (get-in @resp [:headers "connection"])))
-        (is (= params (read-fn (:body @resp))))
-        (is (not (realized? exception)))))))
+        (is (= "get" (:body @resp)))
+        (is (not (realized? exception)))))
+    (testing "with respond and raise attributes"
+      (let [resp (promise)
+            exception (promise)
+            _ (request {:uri "/get" :method :get
+                        :async? true
+                        :respond resp
+                        :raise exception
+                        })]
+        (is (= 200 (:status @resp)))
+        (is (= "close" (get-in @resp [:headers "connection"])))
+        (is (= "get" (:body @resp)))
+        (is (not (realized? exception))))))
+  (testing "round trip with scheme as string"
+    (let [resp (promise)
+          exception (promise)
+          _ (request {:uri "/get" :method :get
+                      :scheme "http"
+                      :async? true} resp exception)]
+      (is (= 200 (:status @resp)))
+      (is (= "close" (get-in @resp [:headers "connection"])))
+      (is (= "get" (:body @resp)))
+      (is (not (realized? exception)))))
+  (testing "roundtrip with error handling"
+    (testing "with async callback arguments"
+      (let [resp (promise)
+            exception (promise)
+            _ (request {:uri "/error" :method :get
+                        :scheme "http"
+                        :async? true} resp exception)]
+        (is (instance? Exception @exception))))
+    (testing "with respond and raise attributes"
+      (let [resp (promise)
+            exception (promise)
+            _ (request {:uri "/error" :method :get
+                        :scheme "http"
+                        :async? true
+                        :respond resp
+                        :raise exception})]
+        (is (instance? Exception @exception)))))
+  (testing "roundtrip with response parsing"
+    (testing "with async callback arguments"
+      (let [params {:a "1" :b "2"}]
+        (doseq [[content-type read-fn]
+                [[nil (comp parse-form-params slurp)]
+                 [:x-www-form-urlencoded (comp parse-form-params slurp)]
+                 [:edn (comp read-string slurp)]
+                 [:transit+json #(client/parse-transit % :json)]
+                 [:transit+msgpack #(client/parse-transit % :msgpack)]]]
+          (let [resp (promise)
+                exception (promise)
+                _ (request {:uri "/post"
+                            :as :stream
+                            :method :post
+                            :content-type content-type
+                            :flatten-nested-keys []
+                            :form-params params
+                            :async? true} resp exception)]
+            (is (= 200 (:status @resp)))
+            (is (= "close" (get-in @resp [:headers "connection"])))
+            (is (= params (read-fn (:body @resp))))
+            (is (not (realized? exception)))))))
+
+    (testing "with respond and raise attributes"
+      (let [params {:a "1" :b "2"}]
+        (doseq [[content-type read-fn]
+                [[nil (comp parse-form-params slurp)]
+                 [:x-www-form-urlencoded (comp parse-form-params slurp)]
+                 [:edn (comp read-string slurp)]
+                 [:transit+json #(client/parse-transit % :json)]
+                 [:transit+msgpack #(client/parse-transit % :msgpack)]]]
+          (let [resp (promise)
+                exception (promise)
+                _ (request {:uri "/post"
+                            :as :stream
+                            :method :post
+                            :content-type content-type
+                            :flatten-nested-keys []
+                            :form-params params
+                            :async? true
+                            :respond resp
+                            :raise exception})]
+            (is (= 200 (:status @resp)))
+            (is (= "close" (get-in @resp [:headers "connection"])))
+            (is (= params (read-fn (:body @resp))))
+            (is (not (realized? exception)))))))))
 
 (def ^:dynamic *test-dynamic-var* nil)
 
