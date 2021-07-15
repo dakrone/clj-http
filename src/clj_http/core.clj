@@ -147,7 +147,7 @@
 (defmethod get-cookie-policy :default default-cookie-policy
   [_] CookieSpecs/DEFAULT)
 (defmethod get-cookie-policy nil nil-cookie-policy
-  [_] CookieSpecs/DEFAULT)
+  [_] CookieSpecs/STANDARD)
 (defmethod get-cookie-policy :netscape netscape-cookie-policy
   [_] CookieSpecs/NETSCAPE)
 (defmethod get-cookie-policy :standard standard-cookie-policy
