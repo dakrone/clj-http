@@ -668,7 +668,7 @@ using:
 #+END_SRC
 
 Note that this feature is currently beta and uses [[https://github.com/weavejester/crouton][Crouton]] to parse the body of
-the request. If you do not want to use this feature, you can include Crouton in
+the request. If you want to use this feature, you can include Crouton in
 addition to clj-http as a dependency like so:
 
 #+BEGIN_SRC clojure
