@@ -39,7 +39,6 @@
                              [jonase/eastwood "0.2.5"]
                              [lein-kibit "0.1.5"]
                              [lein-nvd "0.5.2"]]}
-             :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
              :1.7 {:dependencies [[org.clojure/clojure "1.7.0"]]}
              :1.8 {:dependencies [[org.clojure/clojure "1.8.0"]]}
              :1.9 {:dependencies [[org.clojure/clojure "1.9.0"]]}
