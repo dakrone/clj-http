@@ -32,9 +32,9 @@
                                   ;; caching example deps
                                   [org.clojure/core.cache "1.0.207"]
                                   ;; logging
-                                  [org.apache.logging.log4j/log4j-api "2.14.1"]
-                                  [org.apache.logging.log4j/log4j-core "2.14.1"]
-                                  [org.apache.logging.log4j/log4j-1.2-api "2.14.1"]]
+                                  [org.apache.logging.log4j/log4j-api "2.17.1"]
+                                  [org.apache.logging.log4j/log4j-core "2.17.1"]
+                                  [org.apache.logging.log4j/log4j-1.2-api "2.17.1"]]
                    :plugins [[lein-ancient "0.7.0"]
                              [jonase/eastwood "0.2.5"]
                              [lein-kibit "0.1.5"]
