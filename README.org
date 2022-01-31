@@ -420,8 +420,8 @@ different ways to handle flattening them:
 :CUSTOM_ID: h-0e3eb987-5b2b-4874-97ef-b834394d083d
 :END:
 The new async HTTP request API is a Ring-style async API.
-All options for synchronous request can use in asynchronous requests.
-start an async request is easy, for example:
+All options for synchronous requests can be used in asynchronous requests.
+Starting an async request is easy, for example:
 
 #+BEGIN_SRC clojure
 ;; :async? in options map need to be true
