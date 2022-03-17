@@ -101,10 +101,15 @@
   "Resolve and apply Transit's JSON/MessagePack decoding."
   [^InputStream in type & [opts]]
   {:pre [transit-enabled?]}
-  (when (pos? (.available in))
+  (try
     (let [reader (ns-resolve 'cognitect.transit 'reader)
           read (ns-resolve 'cognitect.transit 'read)]
-      (read (reader in type (transit-read-opts opts))))))
+      (read (reader in type (transit-read-opts opts))))
+    (catch RuntimeException e
+      ;; Ignore exceptions from trying to read an empty stream.
+      (if (instance? EOFException (.getCause e))
+        nil
+        (throw e)))))
 
 (defn ^:dynamic transit-encode
   "Resolve and apply Transit's JSON/MessagePack encoding."
