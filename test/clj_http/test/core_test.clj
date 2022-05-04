@@ -104,6 +104,8 @@
     {:status 200 :body "delete-with-body"}
     [:post "/multipart"]
     {:status 200 :body (:body req)}
+    [:head "/head-with-body"]
+    {:status 200 :headers {"body" (slurp (:body req))}}
     [:get "/get-with-body"]
     {:status 200 :body (:body req)}
     [:options "/options"]
@@ -412,8 +414,10 @@
 
 (deftest ^:integration head-with-body
   (run-server)
-  (let [resp (request {:request-method :head :uri "/head" :body "foo"})]
-    (is (= 200 (:status resp)))))
+  (let [resp (request {:request-method :head :uri "/head-with-body"
+                       :body (.getBytes "foo")})]
+    (is (= 200 (:status resp)))
+    (is (= "foo" (get-in resp [:headers "body"])))))
 
 (deftest ^:integration t-clojure-output-coercion
   (run-server)

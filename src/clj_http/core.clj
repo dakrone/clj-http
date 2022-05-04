@@ -391,6 +391,7 @@
             (getMethod [] (.toUpperCase (name method) Locale/ROOT)))
       (.setURI (URI. url)))))
 
+(def proxy-head-with-body (make-proxy-method-with-body :head))
 (def proxy-delete-with-body (make-proxy-method-with-body :delete))
 (def proxy-get-with-body (make-proxy-method-with-body :get))
 (def proxy-copy-with-body (make-proxy-method-with-body :copy))
@@ -413,7 +414,9 @@
     :get     (if body
                (proxy-get-with-body http-url)
                (HttpGet. http-url))
-    :head    (HttpHead. http-url)
+    :head    (if body
+               (proxy-head-with-body http-url)
+               (HttpHead. http-url))
     :put     (HttpPut. http-url)
     :post    (HttpPost. http-url)
     :options (HttpOptions. http-url)
