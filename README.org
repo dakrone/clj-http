@@ -1578,7 +1578,7 @@ $ lein all test :all
 :CUSTOM_ID: h-3044d1f7-6772-43c2-9ded-8c71c7f9ada2
 :END:
 
-With over [[https://clojars.org/clj-http][three million]] downloads, clj-http is a widely used, battle-tested clojure library. It is
+With over [[https://clojars.org/clj-http][sixteen million]] downloads, clj-http is a widely used, battle-tested clojure library. It is
 also included in other libraries (like database clients) as a low-level http wrapper.
 
 Libraries using clj-http:
