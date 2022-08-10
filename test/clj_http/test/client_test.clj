@@ -1633,15 +1633,15 @@
                    client/wrap-request-timing))))
 
 (deftest t-detect-charset-by-content-type
-  (is (= "UTF-8" (client/detect-charset nil)))
-  (is (= "UTF-8"(client/detect-charset "application/json")))
-  (is (= "UTF-8"(client/detect-charset "text/html")))
-  (is (= "GBK"(client/detect-charset "application/json; charset=GBK")))
-  (is (= "ISO-8859-1" (client/detect-charset
-                       "application/json; charset=ISO-8859-1")))
-  (is (= "ISO-8859-1" (client/detect-charset
-                       "application/json; charset =  ISO-8859-1")))
-  (is (= "GB2312" (client/detect-charset "text/html; Charset=GB2312"))))
+  (are [content-type expected-charset] (= expected-charset (client/detect-charset content-type))
+    nil "UTF-8"
+    "application/json" "UTF-8"
+    "text/html" "UTF-8"
+    "application/json; charset=GBK" "GBK"
+    "application/json; charset=ISO-8859-1" "ISO-8859-1"
+    "application/json; charset =  ISO-8859-1" "ISO-8859-1"
+    "text/html; Charset=GB2312" "GB2312"
+    "text/html; charset=\"ISO-8859-1\"" "ISO-8859-1"))
 
 (deftest ^:integration customMethodTest
   (run-server)
