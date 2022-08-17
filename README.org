@@ -1510,8 +1510,8 @@ without them.
 :CUSTOM_ID: h-ba6b263b-74a5-40f3-afc1-b0d785554c2b
 :END:
 
-Like clj-http but need something more lightweight without as many external
-dependencies? Check out [[https://github.com/hiredman/clj-http-lite][clj-http-lite]] for a project that can be used as a
+Like clj-http but need something more lightweight without as any external
+dependencies? Check out [[https://github.com/clj-commons/clj-http-lite][clj-http-lite]] for a project that can be used as a
 drop-in replacement for clj-http.
 
 ** Troubleshooting
@@ -1590,7 +1590,7 @@ Libraries using clj-http:
 Libraries inspired by clj-http:
 
 - [[https://github.com/mpenet/jet][jet]]
-- [[https://github.com/hiredman/clj-http-lite][clj-http-lite]]
+- [[https://github.com/clj-commons/clj-http-lite][clj-http-lite]]
 
 * Other Libraries Providing Middleware
 :PROPERTIES:
