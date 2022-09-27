@@ -22,7 +22,7 @@
             (if (not (nil? (get m k)))
               (assoc newm k (get m k))
               newm))
-          (sorted-map) (sort (keys m))))
+          {} (keys m)))
 
 (defn to-cookie
   "Converts a ClientCookie object into a tuple where the first item is
