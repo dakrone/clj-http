@@ -79,7 +79,7 @@ There are branches for the major version numbers:
 
 - 2.x (no longer maintained except for security issues)
 - 3.x (current stable releases and the main Github branch)
-- master (which is 4.x, unreleased, based on version 5 of the apache http client)
+- master (which is 4.x, unreleased, based on version 5 of the Apache HTTP Client)
 
 * Introduction
 :PROPERTIES:
