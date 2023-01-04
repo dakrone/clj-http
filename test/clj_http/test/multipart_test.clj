@@ -181,3 +181,12 @@
   (testing "charset is set if a multipart-charset is supplied"
     (let [mp-entity (create-multipart-entity [] {:multipart-charset "UTF-8"})]
       (is (= "UTF-8" (EntityUtils/getContentCharSet mp-entity))))))
+
+(deftest test-multipart-boundary
+  (testing "default random boundary is set when no custom boundary is supplied"
+    (let [mp-entity (create-multipart-entity [] {})]
+      (is (re-matches #"--.+--\r\n" (-> mp-entity .getContent slurp)))))
+
+  (testing "custom boundary is set when custom boundary is supplied"
+    (let [mp-entity (create-multipart-entity [] {:boundary "CustomMultipartBoundary"})]
+      (is (re-matches #"--CustomMultipartBoundary--\r\n" (-> mp-entity .getContent slurp))))))
