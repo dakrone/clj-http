@@ -1506,6 +1506,7 @@ adding them with the clj-http dependency in your project.clj:
 [crouton] ;; for :decode-body-headers
 [org.clojure/tools.reader] ;; for :as :clojure
 [ring/ring-codec] ;; for :as :x-www-form-urlencoded
+[com.cognitect/transit-clj] ;; for transit support
 #+END_SRC
 
 Prior to 2.0.0, you can /exclude/ the dependencies and clj-http will work
