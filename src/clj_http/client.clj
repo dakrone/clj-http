@@ -11,10 +11,12 @@
             [clojure.stacktrace :refer [root-cause]]
             [clojure.string :as str]
             [clojure.walk :refer [keywordize-keys prewalk]]
+            [clojure.xml :as xml]
             [slingshot.slingshot :refer [throw+]])
   (:import [java.io BufferedReader ByteArrayInputStream ByteArrayOutputStream EOFException File InputStream]
            [java.net UnknownHostException URL]
            [org.apache.http.entity BufferedHttpEntity ByteArrayEntity FileEntity InputStreamEntity StringEntity]
+           [javax.xml.parsers SAXParserFactory]
            org.apache.http.impl.conn.PoolingHttpClientConnectionManager
            org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager))
 
@@ -472,6 +474,27 @@
                (util/force-string body charset))]
     (assoc resp :body body)))
 
+(defn- decode-xml-body [body]
+  (let [non-validating (fn [s ch]
+                         (..
+                           (doto
+                             (SAXParserFactory/newInstance)
+                             (.setFeature
+                               "http://apache.org/xml/features/nonvalidating/load-external-dtd" false))
+                           (newSAXParser)
+                           (parse s ch)))]
+    (-> body
+        (util/force-stream)
+        (xml/parse non-validating))))
+
+(defn coerce-xml-body
+  [request {:keys [body] :as resp} & [charset]]
+  (let [charset (or charset (response-charset resp))
+        body (if (can-parse-body? request resp)
+               (decode-xml-body body)
+               (util/force-string body charset))]
+    (assoc resp :body body)))
+
 (defn coerce-clojure-body
   [_request {:keys [body] :as resp}]
   (let [charset (response-charset resp)
@@ -511,6 +534,9 @@
 (defmethod coerce-content-type :application/json [req resp]
   (coerce-json-body req resp true false))
 
+(defmethod coerce-content-type :text/xml [req resp]
+  (coerce-xml-body req resp false))
+
 (defmethod coerce-content-type :application/transit+json [req resp]
   (coerce-transit-body req resp :json))
 
@@ -545,6 +571,9 @@
 
 (defmethod coerce-response-body :json-strict-string-keys [req resp]
   (coerce-json-body req resp false))
+
+(defmethod coerce-response-body :xml [req resp]
+  (coerce-xml-body req resp false))
 
 (defmethod coerce-response-body :clojure [req resp]
   (coerce-clojure-body req resp))

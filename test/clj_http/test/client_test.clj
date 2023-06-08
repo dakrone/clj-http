@@ -1539,6 +1539,8 @@
 (deftest t-coercion-methods
   (let [json-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"bar\"}"))
         json-ms949-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"안뇽\"}" "MS949"))
+        xml-body (ByteArrayInputStream. (.getBytes "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><foo>bar</foo>"))
+        xml-auto-body (ByteArrayInputStream. (.getBytes "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><foo>bar</foo>"))
         auto-body (ByteArrayInputStream. (.getBytes "{\"foo\":\"bar\"}"))
         edn-body (ByteArrayInputStream. (.getBytes "{:foo \"bar\"}"))
         transit-json-body (ByteArrayInputStream.
@@ -1554,6 +1556,10 @@
                    :headers {"content-type" "application/json"}}
         json-ms949-resp {:body json-ms949-body :status 200
                          :headers {"content-type" "application/json; charset=ms949"}}
+        xml-resp {:body xml-body :status 200
+                  :headers {"content-type" "text/xml;charset=utf-8"}}
+        xml-auto-resp {:body xml-auto-body :status 200
+                       :headers {"content-type" "text/xml;charset=utf-8"}}
         auto-resp {:body auto-body :status 200
                    :headers {"content-type" "application/json"}}
         edn-resp {:body edn-body :status 200
@@ -1583,6 +1589,9 @@
                                                auto-www-form-urlencoded-resp))
            (:body (client/coerce-response-body {:as :x-www-form-urlencoded}
                                                www-form-urlencoded-resp))))
+    (is (= {:tag :foo, :attrs nil, :content ["bar"]}
+           (:body (client/coerce-response-body {:as :xml} xml-resp))
+           (:body (client/coerce-response-body {:as :auto} xml-auto-resp))))
     (is (= {:foo "안뇽"}
            (:body (client/coerce-response-body {:as :json+ms949} json-ms949-resp))))
 
