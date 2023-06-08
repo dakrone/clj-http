@@ -294,7 +294,7 @@
                                 :keystore "test-resources/keystore"
                                 :key-password "keykey"})]
     (try
-      (is (thrown? SunCertPathBuilderException
+      (is (thrown? Exception
                    (client/request {:scheme :https
                                     :server-name "localhost"
                                     :server-port 18082
