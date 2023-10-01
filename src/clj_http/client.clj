@@ -1294,7 +1294,7 @@
 
   The following options are supported:
 
-  :timeout - Time that connections are left open before automatically closing
+  :timeout - Time in seconds that connections are left open before automatically closing
   default: 5
   :threads - Maximum number of threads that will be used for connecting
   default: 4
