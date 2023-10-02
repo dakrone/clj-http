@@ -315,6 +315,8 @@ content encodings.
 :CUSTOM_ID: h-32c8ca7a-0ef2-41b8-8158-20b0e2945e5d
 :END:
 
+Note that =:content-type= encoding only works when using =:form-params=. =:body= values are not encoded.
+
 #+BEGIN_SRC clojure
 
 ;; Various options:
