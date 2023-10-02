@@ -172,7 +172,16 @@
         (is (= "file-body" (body-mime-type body)))
         (is (= (Charset/forName "ascii") (body-charset body)))
         (is (= test-file (.getFile body) ))
-        (is (= "testname" (.getFilename body)))))))
+        (is (= "testname" (.getFilename body)))))
+
+    (testing "the :file-name key overrides the :name key"
+      (let [test-file (File. "testfile")
+            body (make-multipart-body {:content   test-file
+                                       :name      "testname"
+                                       :file-name "foo.txt"})]
+        (is (instance? FileBody body))
+        (is (= test-file (.getFile body) ))
+        (is (= "foo.txt" (.getFilename body)))))))
 
 (deftest test-multipart-content-charset
   (testing "charset is nil if no multipart-charset is supplied"
