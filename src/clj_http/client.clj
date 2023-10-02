@@ -785,13 +785,22 @@
     ([req respond raise]
      (client (accept-encoding-request req) respond raise))))
 
+(defn- strip-quotes
+  "If s starts and ends with \", returns s with quotes stripped,
+  else returns it unchanged."
+  [^String s]
+  (if (and (.startsWith s "\"")
+           (.endsWith s "\""))
+    (subs s 1 (dec (count s)))
+    s))
+
 (defn detect-charset
   "Given a charset header, detect the charset, returns UTF-8 if not found."
   [content-type]
   (or
    (when-let [found (when content-type
                       (re-find #"(?i)charset\s*=\s*([^\s]+)" content-type))]
-     (second found))
+     (strip-quotes (second found)))
    "UTF-8"))
 
 (defn- multi-param-entries [key values multi-param-style encoding]
