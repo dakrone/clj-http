@@ -1274,6 +1274,14 @@
                  :flatten-nested-keys [:form-params]})
     (is-applied (comp client/wrap-form-params
                       client/wrap-nested-params)
+                {:query-params {"a" [{"c" "d"} "e"]}
+                 :form-params {"a" [{"c" "d"} "e"]}
+                 :flatten-nested-keys [:form-params]}
+                {:query-params {"a" [{"c" "d"} "e"]}
+                 :form-params {"a[0][c]" "d" "a[1]" "e"}
+                 :flatten-nested-keys [:form-params]})
+    (is-applied (comp client/wrap-form-params
+                      client/wrap-nested-params)
                 {:query-params {"a" {"b" {"c" "d"}}}
                  :form-params {"a" {"b" {"c" "d"}}}
                  :flatten-nested-keys [:query-params :form-params]}

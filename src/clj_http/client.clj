@@ -994,20 +994,32 @@
     ([req respnd raise]
      (client (form-params-request req) respnd raise))))
 
+(defn- subscript [k i]
+  (str (name k) \[ i \]))
+
+(defn- unnest-1 [param-assoc]
+  (mapcat (fn [[k v]]
+            (if (sequential? v)
+              (map-indexed (fn [i sv] [(subscript k (str i)) sv]) v)
+              (map (fn [[i sv]] [(subscript k (name i)) sv]) (seq v))))
+          param-assoc))
+
+(defn- unnest-inner [param-assoc]
+  (let [{nested true flat false} (group-by (comp coll? second) param-assoc)]
+    (if (empty? nested)
+      param-assoc
+      (concat flat (unnest-inner (unnest-1 nested))))))
+
+(defn- unnest [params]
+  (->> (seq params)
+       unnest-inner
+       (apply concat)
+       (apply hash-map)))
+
 (defn- nest-params
   [request param-key]
   (if-let [params (request param-key)]
-    (assoc request param-key (prewalk
-                              #(if (and (vector? %) (map? (second %)))
-                                 (let [[fk m] %]
-                                   (reduce
-                                    (fn [m [sk v]]
-                                      (assoc m (str (name fk)
-                                                    \[ (name sk) \]) v))
-                                    {}
-                                    m))
-                                 %)
-                              params))
+    (assoc request param-key (unnest params))
     request))
 
 (defn- nest-params-request
