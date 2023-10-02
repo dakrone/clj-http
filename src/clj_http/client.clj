@@ -242,7 +242,7 @@
     resp
     (if (false? (opt req :throw-exceptions))
       resp
-      (let [data (assoc resp :type ::unexceptional-status)]
+      (let [data (assoc resp :type ::exceptional-status)]
         (if (opt req :throw-entire-message)
           (throw+ data "clj-http: status %d %s" (:status %) resp)
           (throw+ data "clj-http: status %s" (:status %)))))))
