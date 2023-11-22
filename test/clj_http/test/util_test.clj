@@ -46,7 +46,10 @@
      :content-type-params {:charset "utf-8"}}
     "text/html; charset=ISO-8859-4"
     {:content-type :text/html
-     :content-type-params {:charset "ISO-8859-4"}}))
+     :content-type-params {:charset "ISO-8859-4"}}
+    "text/html; charset="
+    {:content-type :text/html
+     :content-type-params {:charset nil}}))
 
 (deftest test-force-byte-array
   (testing "empty InputStream returns empty byte-array"
