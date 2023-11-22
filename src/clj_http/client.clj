@@ -1155,15 +1155,34 @@
   Automatically bound when `with-middleware` is used."
   default-middleware)
 
+(defn- async-transform
+  [client]
+  (fn
+    ([req]
+     (cond
+       (opt req :async)
+       (let [{:keys [respond raise]} req]
+         (when (some nil? [respond raise])
+           (throw (IllegalArgumentException. "If :async? is true, you must pass respond and raise")))
+         (client req respond raise))
+
+       :else
+       (client req)))
+
+    ;; In versions of clj-http older than 3.11, the 3-arity invocation implied the
+    ;; request should be handled as async
+    ([req respond raise]
+     (client (assoc req :async true) respond raise))))
+
 (defn wrap-request
   "Returns a batteries-included HTTP request function corresponding to the given
   core client. See default-middleware for the middleware wrappers that are used
   by default"
-  [request]
-  (reduce (fn wrap-request* [request middleware]
-            (middleware request))
-          request
-          default-middleware))
+  ([request]
+   (wrap-request request default-middleware))
+  ([request middleware]
+   (async-transform
+    (reduce #(%2 %1) request middleware))))
 
 (def ^:dynamic request
   "Executes the HTTP request corresponding to the given map and returns
@@ -1192,74 +1211,43 @@
   option."
   (wrap-request #'core/request))
 
+(alter-meta! #'request assoc :arglists '([req] [req respond raise]))
+
 ;; Inline function to throw a slightly more readable exception when
 ;; the URL is nil
 (definline check-url! [url]
   `(when (nil? ~url)
      (throw (IllegalArgumentException. "Host URL cannot be nil"))))
 
-(defn- request*
-  [req [respond raise]]
-  (if (opt req :async)
-    (if (some nil? [respond raise])
-      (throw (IllegalArgumentException.
-              "If :async? is true, you must pass respond and raise"))
-      (request (dissoc req :respond :raise) respond raise))
-    (request req)))
+(defn- request-method
+  ([method url]
+   (check-url! url)
+   (request {:method method :url url}))
+  ([method url req]
+   (check-url! url)
+   (request (merge req {:method method :url url})))
+  ([method url req respond raise]
+   (check-url! url)
+   (request (merge req {:method method :url url :async true :respond respond :raise raise}))))
 
-(defn get
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req & r]]
-  (check-url! url)
-  (request* (merge req {:method :get :url url}) r))
+(defmacro ^:private def-http-method [method]
+  `(do
+     (def ~method (partial request-method ~(keyword method)))
+     (alter-meta! (resolve '~method) assoc
+                  :doc ~(str "Like #'request, but sets the :method and :url as appropriate.")
+                  :arglists '([~(symbol "url")]
+                              [~(symbol "url") ~(symbol "req")]
+                              [~(symbol "url") ~(symbol "req") ~(symbol "respond") ~(symbol "raise")]))))
 
-(defn head
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req & r]]
-  (check-url! url)
-  (request* (merge req {:method :head :url url}) r))
-
-(defn post
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req & r]]
-  (check-url! url)
-  (request* (merge req {:method :post :url url}) r))
-
-(defn put
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req & r]]
-  (check-url! url)
-  (request* (merge req {:method :put :url url}) r))
-
-(defn delete
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req & r]]
-  (check-url! url)
-  (request* (merge req {:method :delete :url url}) r))
-
-(defn options
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req & r]]
-  (check-url! url)
-  (request* (merge req {:method :options :url url}) r))
-
-(defn copy
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req & r]]
-  (check-url! url)
-  (request* (merge req {:method :copy :url url}) r))
-
-(defn move
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req & r]]
-  (check-url! url)
-  (request* (merge req {:method :move :url url}) r))
-
-(defn patch
-  "Like #'request, but sets the :method and :url as appropriate."
-  [url & [req & r]]
-  (check-url! url)
-  (request* (merge req {:method :patch :url url}) r))
+(def-http-method get)
+(def-http-method head)
+(def-http-method post)
+(def-http-method put)
+(def-http-method delete)
+(def-http-method options)
+(def-http-method copy)
+(def-http-method move)
+(def-http-method patch)
 
 (defmacro with-middleware
   "Perform the body of the macro with a custom middleware list.
@@ -1272,9 +1260,7 @@
   [middleware & body]
   `(let [m# ~middleware]
      (binding [*current-middleware* m#
-               clj-http.client/request (reduce #(%2 %1)
-                                               clj-http.core/request
-                                               m#)]
+               clj-http.client/request (wrap-request clj-http.core/request m#)]
        ~@body)))
 
 (defmacro with-additional-middleware
