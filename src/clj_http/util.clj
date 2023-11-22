@@ -144,7 +144,8 @@
         (or v1 v2)))))
 
 (defn- trim-quotes [s]
-  (clojure.string/replace s #"^\s*(\"(.*)\"|(.*?))\s*$" "$2$3"))
+  (when s
+    (clojure.string/replace s #"^\s*(\"(.*)\"|(.*?))\s*$" "$2$3")))
 
 (defn parse-content-type
   "Parse `s` as an RFC 2616 media type."
