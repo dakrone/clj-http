@@ -717,8 +717,8 @@ Redirect Options:
      list of redirected URLs with key: =:trace-redirects=.
 - =:redirect-strategy= :: Sets the redirect strategy for clj-http. Accepts the following:
   - =:none=     - Perform no redirects
-  - =:default=  - See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/client/DefaultRedirectStrategy.html
-  - =:lax=      - See https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/org/apache/http/impl/client/LaxRedirectStrategy.html
+  - =:default=  - See https://hc.apache.org/httpcomponents-client-4.5.x/current/httpclient/apidocs/org/apache/http/impl/client/DefaultRedirectStrategy.html
+  - =:lax=      - See https://hc.apache.org/httpcomponents-client-4.5.x/current/httpclient/apidocs/org/apache/http/impl/client/LaxRedirectStrategy.html
   - =:graceful= - Similar to =:default=, but does not throw exceptions when max redirects is reached. This is the redirects behaviour in 2.x
   - =nil=       - When nil, assumes =:default=
 
