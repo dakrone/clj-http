@@ -372,9 +372,10 @@ content encodings.
 ;; Some Multipart bodies can also support more keys (like :encoding
 ;; and :mime-type), check src/clj-http/multipart.clj to see all flags
 
-;; Apache's http client automatically retries on IOExceptions, if you
-;; would like to handle these retries yourself, you can specify a
-;; :retry-handler. Return true to retry, false to stop trying:
+;; Apache's HTTP client automatically retries some kinds of IOExceptions:
+;; https://hc.apache.org/httpcomponents-client-4.5.x/current/httpclient/apidocs/org/apache/http/impl/client/DefaultHttpRequestRetryHandler.html
+;; If you would like to handle retries yourself, you can specify a :retry-handler.
+;; Return true to retry, false to stop trying:
 (client/post "http://example.org" {:multipart [["title" "Foo"]
                                                ["Content/type" "text/plain"]
                                                ["file" (clojure.java.io/file "/tmp/missing-file")]]
