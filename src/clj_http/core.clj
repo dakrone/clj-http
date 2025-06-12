@@ -609,7 +609,10 @@
                        (if (string? body)
                          (StringEntity. ^String body "UTF-8")
                          (ByteArrayEntity. body))))))
-     (doseq [[header-n header-v] headers]
+     (doseq [[header-n header-v] headers
+             :when (or (not multipart)
+                       (and (not= "content-type" header-n)
+                            (not= "Content-Type" header-n)))]
        (if (coll? header-v)
          (doseq [header-vth header-v]
            (.addHeader http-req header-n header-vth))
