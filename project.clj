@@ -35,7 +35,8 @@
                                   ;; logging
                                   [org.apache.logging.log4j/log4j-api "2.23.1"]
                                   [org.apache.logging.log4j/log4j-core "2.23.1"]
-                                  [org.apache.logging.log4j/log4j-1.2-api "2.23.1"]]
+                                  [org.apache.logging.log4j/log4j-1.2-api "2.23.1"]
+                                  [org.apache.logging.log4j/log4j-slf4j2-impl "2.23.1"]]
                    :plugins [[lein-ancient "0.7.0"]
                              [jonase/eastwood "0.2.5"]
                              [lein-kibit "0.1.5"]
@@ -46,6 +47,6 @@
              :1.11 {:dependencies [[org.clojure/clojure "1.11.4"]]}}
   :aliases {"all" ["with-profile" "dev,1.8:dev,1.9:dev,1.10:dev,1.11:dev"]}
   :plugins [[codox "0.6.4"]]
-  :test-selectors {:default  #(not (:integration %))
+  :test-selectors {:default #(not (:integration %))
                    :integration :integration
                    :all (constantly true)})
