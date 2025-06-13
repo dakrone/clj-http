@@ -6,12 +6,12 @@
             :distribution :repo}
   :global-vars {*warn-on-reflection* false}
   :min-lein-version "2.0.0"
-  :exclusions [org.clojure/clojure]
   :dependencies [[org.apache.httpcomponents/httpcore "4.4.16"]
                  [org.apache.httpcomponents/httpclient "4.5.14"]
                  [org.apache.httpcomponents/httpclient-cache "4.5.14"]
                  [org.apache.httpcomponents/httpasyncclient "4.1.5"]
                  [org.apache.httpcomponents/httpmime "4.5.14"]
+                 [org.clojure/clojure "[1.8,1.13)" :scope "provided"]
                  [commons-codec "1.16.1"]
                  [commons-io "2.16.1"]
                  [slingshot "0.12.2"]
