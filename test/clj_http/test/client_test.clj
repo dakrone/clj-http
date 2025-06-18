@@ -4,7 +4,7 @@
             [clj-http.conn-mgr :as conn]
             [clj-http.test.core-test :refer [run-server]]
             [clj-http.util :as util]
-            [clojure.java.io :refer [resource]]
+            [clojure.java.io :as io :refer [resource]]
             [clojure.string :as str]
             [clojure.test :refer :all]
             [cognitect.transit :as transit]
@@ -16,6 +16,7 @@
            java.io.PipedOutputStream
            java.net.UnknownHostException
            org.apache.http.HttpEntity
+           org.apache.http.HttpMessage
            org.apache.logging.log4j.LogManager))
 
 (defonce logger (LogManager/getLogger "clj-http.test.client-test"))
@@ -146,30 +147,37 @@
                 "Verify that we went through the failure path, not the success")
             (is (= @fail-p expected-var *test-dynamic-var*))))))))
 
+(defn retrieve-http-request-content-type-header
+  [response]
+  (let [http-req (get-in response [:request :http-req])]
+    (->> (.getAllHeaders ^HttpMessage http-req)
+         (map str)
+         (some #(when (str/starts-with? (str/lower-case %) "content-type") %)))))
+
 (deftest ^:integration multipart-async
   (run-server)
-  (let [resp (promise)
-        exception (promise)
-        _ (request {:uri "/post" :method :post
-                       :async? true
-                       :multipart [{:name "title" :content "some-file"}
-                                   {:name "Content/Type" :content "text/plain"}
-                                   {:name "file"
-                                    :content (clojure.java.io/file
-                                               "test-resources/m.txt")}]}
-                      resp
-                      exception
-                      )]
-    (is (= 200 (:status @resp)))
-    (is (not (realized? exception)))
-    #_(when (realized? exception) (prn @exception)))
+
+  (testing "basics"
+    (let [resp (promise)
+          exception (promise)
+          _ (request {:uri "/post" :method :post
+                      :async? true
+                      :multipart [{:name "title" :content "some-file"}
+                                  {:name "Content/Type" :content "text/plain"}
+                                  {:name "file"
+                                   :content (io/file "test-resources/m.txt")}]}
+                     resp
+                     exception)]
+      (is (= 200 (:status (deref resp 500 :failed))))
+      (is (not (realized? exception)))
+      #_(when (realized? exception) (prn @exception))))
 
   ;; Regression Testing https://github.com/dakrone/clj-http/issues/560
   (testing "multipart uploads larger than 25kb"
     (let [resp (promise)
           exception (promise)
           ;; assumption: file > 5kb
-          file (clojure.java.io/file "test-resources/big_array_json.json")
+          file (io/file "test-resources/big_array_json.json")
 
           _ (request {:uri "/post" :method :post
                       :async? true
@@ -181,7 +189,26 @@
                      resp
                      exception)]
       (is (= 200 (:status (deref resp 500 :failed))))
-      (is (not (realized? exception))))))
+      (is (not (realized? exception)))))
+
+  ;; Find the details in https://github.com/dakrone/clj-http/pull/654
+  (testing "existing \"Content-Type\" request header is discarded"
+    (let [resp (request {:uri "/post" :method :post
+                         :headers {"content-type" "multipart/form-data"}
+                         :multipart [{:name "some" :content "thing"}]
+                         :save-request? true})
+          content-type (retrieve-http-request-content-type-header resp)]
+      (is (= 200 (:status resp)))
+      (is (not= "multipart/form-data" content-type))
+      (is (nil? content-type)))
+    (let [resp (request {:uri "/post" :method :post
+                         :headers {"Content-Type" "multipart/form-data"}
+                         :multipart [{:name "some" :content "thing"}]
+                         :save-request? true})
+          content-type (retrieve-http-request-content-type-header resp)]
+      (is (= 200 (:status resp)))
+      (is (not= "multipart/form-data" content-type))
+      (is (nil? content-type)))))
 
 (deftest ^:integration nil-input
   (is (thrown-with-msg? Exception #"Host URL cannot be nil"
