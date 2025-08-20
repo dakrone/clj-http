@@ -37,10 +37,10 @@
   "Given a function that returns a new socket, create an
   SSLConnectionSocketFactory that will use that socket."
   ([socket-factory]
-   (SSLGenericSocketFactory socket-factory nil))
-  ([socket-factory ^SSLContext ssl-context]
+   (SSLGenericSocketFactory socket-factory nil nil))
+  ([socket-factory ^SSLContext ssl-context ^HostnameVerifier hostname-verifier]
    (let [^SSLContext ssl-context' (or ssl-context (SSLContexts/createDefault))]
-     (proxy [SSLConnectionSocketFactory] [ssl-context']
+     (proxy [SSLConnectionSocketFactory] [ssl-context' hostname-verifier]
        (createSocket [context]
          (socket-factory))))))
 
@@ -148,7 +148,9 @@
    (let [socket-factory #(socks-proxied-socket hostname port)
          registry (into-registry
                    {"http" (PlainGenericSocketFactory socket-factory)
-                    "https" (SSLGenericSocketFactory socket-factory (get-ssl-context config))})]
+                    "https" (SSLGenericSocketFactory socket-factory
+                             (get-ssl-context config)
+                             (get-hostname-verifier config))})]
      (PoolingHttpClientConnectionManager. registry))))
 
 (defn ^BasicHttpClientConnectionManager make-regular-conn-manager
