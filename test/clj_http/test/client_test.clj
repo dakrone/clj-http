@@ -694,6 +694,20 @@
     (is (= "gzip" (:orig-content-encoding resp)))
     (is (= nil (get-in resp [:headers "content-encoding"])))))
 
+(deftest apply-on-compressed-layered
+  (let [client (fn [req]
+                 (is (= "gzip, deflate"
+                        (get-in req [:headers "accept-encoding"])))
+                 {:body (util/gzip (util/deflate (util/utf8-bytes "foofoofoo")))
+                  :headers {"content-encoding" "deflate, gzip"}})
+        c-client (client/wrap-decompression client)
+        resp (c-client {})]
+    ;; The response body here is going to be an input stream because of the
+    ;; nesting. So we need to slurp it, or force it to be a string of some sort.
+    (is (= "foofoofoo" (slurp (:body resp))))
+    (is (= "deflate, gzip" (:orig-content-encoding resp)))
+    (is (= nil (get-in resp [:headers "content-encoding"])))))
+
 (deftest apply-on-compressed-async
   (let [client (fn [req respond raise]
                  (is (= "gzip, deflate"
