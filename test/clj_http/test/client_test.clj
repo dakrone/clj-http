@@ -1,16 +1,16 @@
 (ns clj-http.test.client-test
   (:require [cheshire.core :as json]
+            [clj-commons.slingshot :refer [try+]]
             [clj-http.client :as client]
             [clj-http.conn-mgr :as conn]
             [clj-http.test.core-test :refer [run-server]]
             [clj-http.util :as util]
             [clojure.java.io :as io :refer [resource]]
             [clojure.string :as str]
-            [clojure.test :refer :all]
+            [clojure.test :refer [deftest is testing]]
             [cognitect.transit :as transit]
             [ring.middleware.nested-params :refer [parse-nested-keys]]
-            [ring.util.codec :refer [form-decode-str]]
-            [slingshot.slingshot :refer [try+]])
+            [ring.util.codec :refer [form-decode-str]])
   (:import java.io.ByteArrayInputStream
            java.io.PipedInputStream
            java.io.PipedOutputStream
@@ -507,7 +507,7 @@
   (doseq [method [:put :post :delete]
           status [301 302 307 308]]
     (let [client (fn [req] {:status status :body (:body req)
-                           :headers {"location" "http://example.com/bat"}})
+                            :headers {"location" "http://example.com/bat"}})
           r-client (client/wrap-redirects client)
           resp (r-client {:body "ok" :url "http://example.com"
                           :request-method method})]
@@ -1380,7 +1380,7 @@
                 (fn [req] {:body nil})) {:decode-body-headers true})
         resp4 ((client/wrap-additional-header-parsing
                 (fn [req] {:headers {"content-type" "application/pdf"}
-                          :body (.getBytes text)}))
+                           :body (.getBytes text)}))
                {:decode-body-headers true})]
     (is (= {"content-type" "text/html; charset=Shift_JIS"
             "content-style-type" "text/css"
