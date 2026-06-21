@@ -238,8 +238,11 @@
 
   :timeout - Time that connections are left open before automatically closing
     default: 5
-  :threads - Maximum number of threads that will be used for connecting
+  :max-total - Maximum number of total connections kept in the pool
     default: 4
+  :threads - Deprecated alias for :max-total. Despite the name, this option
+    has never controlled a number of threads; it sets the pool's maximum
+    total connections. Prefer :max-total. If both are given, :max-total wins.
   :default-per-route - Maximum number of simultaneous connections per host
     default: 2
   :insecure? - Boolean flag to specify allowing insecure HTTPS connections
@@ -264,14 +267,14 @@
   will be used."
   [opts]
   (let [timeout (or (:timeout opts) 5)
-        threads (or (:threads opts) 4)
+        max-total (or (:max-total opts) (:threads opts) 4)
         default-per-route (:default-per-route opts)
         insecure? (opt opts :insecure)
-        leftovers (dissoc opts :timeout :threads :insecure? :insecure)
+        leftovers (dissoc opts :timeout :threads :max-total :insecure? :insecure)
         conn-man (make-reusable-conn-manager* (merge {:timeout timeout
                                                       :insecure? insecure?}
                                                      leftovers))]
-    (.setMaxTotal conn-man threads)
+    (.setMaxTotal conn-man max-total)
     (when default-per-route
       (.setDefaultMaxPerRoute conn-man default-per-route))
     conn-man))
@@ -327,13 +330,13 @@
   will be used."
   [opts]
   (let [timeout (or (:timeout opts) 5)
-        threads (or (:threads opts) 4)
+        max-total (or (:max-total opts) (:threads opts) 4)
         default-per-route (:default-per-route opts)
         insecure? (opt opts :insecure)
-        leftovers (dissoc opts :timeout :threads :insecure? :insecure)
+        leftovers (dissoc opts :timeout :threads :max-total :insecure? :insecure)
         conn-man (make-reusable-async-conn-manager*
                   (merge {:timeout timeout :insecure? insecure?} leftovers))]
-    (.setMaxTotal conn-man threads)
+    (.setMaxTotal conn-man max-total)
     (when default-per-route
       (.setDefaultMaxPerRoute conn-man default-per-route))
     conn-man))

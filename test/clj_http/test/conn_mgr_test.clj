@@ -150,3 +150,17 @@
     (is (false? (conn-mgr/reusable? async)))
     (is (true? (conn-mgr/reusable? async-reusable)))
     (is (true? (conn-mgr/reusable? async-reuseable)))))
+
+(deftest max-total-and-threads-alias
+  (testing ":threads still sets the pool's max total connections (back-compat)"
+    (let [cm (conn-mgr/make-reusable-conn-manager {:threads 7})]
+      (is (= 7 (.getMaxTotal cm)))))
+  (testing ":max-total sets the pool's max total connections"
+    (let [cm (conn-mgr/make-reusable-conn-manager {:max-total 9})]
+      (is (= 9 (.getMaxTotal cm)))))
+  (testing ":max-total takes precedence when both are given"
+    (let [cm (conn-mgr/make-reusable-conn-manager {:max-total 9 :threads 3})]
+      (is (= 9 (.getMaxTotal cm)))))
+  (testing "default max total is 4"
+    (let [cm (conn-mgr/make-reusable-conn-manager {})]
+      (is (= 4 (.getMaxTotal cm))))))
