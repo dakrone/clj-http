@@ -237,13 +237,47 @@
   [{:keys [status]}]
   (<= 500 status 599))
 
+(def default-redact-headers
+  "Header names (lower-cased) whose values are redacted in thrown exceptions by
+  default, to keep credentials out of logs."
+  #{"authorization" "proxy-authorization"})
+
+(defn- redact-headers-map
+  "Replace the values of any headers whose (lower-cased) name is in `redact`
+  with \"REDACTED\". Preserves the original header-map type and key casing."
+  [headers redact]
+  (if (and (seq headers) (seq redact))
+    (reduce (fn [hs k]
+              (if (and (string? k) (contains? redact (str/lower-case k)))
+                (assoc hs k "REDACTED")
+                hs))
+            headers (keys headers))
+    headers))
+
+(defn- redact-exception-data
+  "Redact sensitive headers in the response and the attached request before the
+  map is embedded in a thrown exception. Controlled by the request's
+  :redact-headers option (a set of header names), defaulting to
+  `default-redact-headers`. Pass `#{}` to disable."
+  [req resp]
+  (let [redact (set (map str/lower-case
+                         (clojure.core/get req :redact-headers
+                                           default-redact-headers)))]
+    (cond-> resp
+      (:headers resp)
+      (update :headers redact-headers-map redact)
+
+      (get-in resp [:request :headers])
+      (update-in [:request :headers] redact-headers-map redact))))
+
 (defn- exceptions-response
   [req {:keys [status] :as resp}]
   (if (unexceptional-status-for-request? req status)
     resp
     (if (false? (opt req :throw-exceptions))
       resp
-      (let [data (assoc resp :type ::unexceptional-status)]
+      (let [resp (redact-exception-data req resp)
+            data (assoc resp :type ::unexceptional-status)]
         (if (opt req :throw-entire-message)
           (throw+ data "clj-http: status %d %s" (:status %) resp)
           (throw+ data "clj-http: status %s" (:status %)))))))
@@ -251,7 +285,15 @@
 (defn wrap-exceptions
   "Middleware that throws a slingshot exception if the response is not a
   regular response. If :throw-entire-message? is set to true, the entire
-  response is used as the message, instead of just the status number."
+  response is used as the message, instead of just the status number.
+
+  The thrown exception carries the response and the originating request, which
+  may include credentials (e.g. an Authorization header). Headers whose
+  lower-cased name is in the request's :redact-headers option have their values
+  replaced with \"REDACTED\" in both the response and request headers before the
+  exception is thrown. :redact-headers defaults to `default-redact-headers`
+  (authorization, proxy-authorization); pass your own set to override it, or
+  `#{}` to disable redaction."
   [client]
   (fn
     ([req]
