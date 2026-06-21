@@ -31,6 +31,11 @@ jobs:
         distribution: zulu
         java-version: ${{ matrix.java }}
 
+    - name: Setup Leiningen
+      uses: DeLaGuardo/setup-clojure@13.4
+      with:
+        lein: 2.11.2
+
     - name: Install dependencies
       run: lein deps
 
