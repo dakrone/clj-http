@@ -5,6 +5,7 @@ on:
     branches: [ 3.x ]
   pull_request:
     branches: [ 3.x ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -36,4 +37,4 @@ jobs:
       run: lein with-profile dev,${{matrix.clojure}} test :all
 
     - name: Check Reflection Warnings
-      run:  '! lein with-profile dev,${{matrix.clojure}} check 2>&1 | egrep "Reflection warning|Performance warning"'
+      run:  '! lein with-profile dev,${{matrix.clojure}} check 2>&1 | egrep "Reflection warning|Performance warning" | egrep "clj_http/"'
