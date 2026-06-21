@@ -833,6 +833,14 @@
   (let [encoding (detect-charset content-type)]
     (generate-query-string-with-encoding params encoding multi-param-style)))
 
+(defn- uri-encode-query-spaces
+  "URLEncoder encodes a space as `+`, which is correct for an
+  x-www-form-urlencoded body but not for the query component of a URI, where a
+  space should be `%20` (RFC 3986). Every literal `+` is already percent-encoded
+  as `%2B` by this point, so each remaining `+` is an encoded space."
+  [query-string]
+  (str/replace query-string "+" "%20"))
+
 (defn- query-params-request
   [{:keys [query-params content-type multi-param-style]
     :or {content-type :x-www-form-urlencoded}
@@ -844,10 +852,11 @@
                      (if-not (empty? old-query-string)
                        (str old-query-string "&" new-query-string)
                        new-query-string))
-                   (generate-query-string
-                    query-params
-                    (content-type-value content-type)
-                    multi-param-style)))
+                   (uri-encode-query-spaces
+                    (generate-query-string
+                     query-params
+                     (content-type-value content-type)
+                     multi-param-style))))
     req))
 
 (defn wrap-query-params
