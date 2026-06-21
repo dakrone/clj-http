@@ -28,6 +28,7 @@ jobs:
     - name: Setup java
       uses: actions/setup-java@v5
       with:
+        distribution: zulu
         java-version: ${{ matrix.java }}
 
     - name: Install dependencies
