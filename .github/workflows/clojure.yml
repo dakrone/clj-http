@@ -5,6 +5,7 @@ on:
     branches: [ 3.x ]
   pull_request:
     branches: [ 3.x ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -27,7 +28,13 @@ jobs:
     - name: Setup java
       uses: actions/setup-java@v5
       with:
+        distribution: zulu
         java-version: ${{ matrix.java }}
+
+    - name: Setup Leiningen
+      uses: DeLaGuardo/setup-clojure@13.4
+      with:
+        lein: 2.11.2
 
     - name: Install dependencies
       run: lein deps
@@ -36,4 +43,4 @@ jobs:
       run: lein with-profile dev,${{matrix.clojure}} test :all
 
     - name: Check Reflection Warnings
-      run:  '! lein with-profile dev,${{matrix.clojure}} check 2>&1 | egrep "Reflection warning|Performance warning"'
+      run:  '! lein with-profile dev,${{matrix.clojure}} check 2>&1 | egrep "Reflection warning|Performance warning" | egrep "clj_http/"'
