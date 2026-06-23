@@ -962,7 +962,15 @@
   (is-applied client/wrap-query-params
               {:query-string "foo=1"
                :query-params {"foo" ["2" "3"]}}
-              {:query-string "foo=1&foo=2&foo=3"}))
+              {:query-string "foo=1&foo=2&foo=3"})
+  (testing "spaces in query params encode as %20, not + (#626)"
+    (is-applied client/wrap-query-params
+                {:query-params {"q" "a b c"}}
+                {:query-string "q=a%20b%20c"})
+    (testing "a literal + in a value stays percent-encoded as %2B"
+      (is-applied client/wrap-query-params
+                  {:query-params {"q" "a+b"}}
+                  {:query-string "q=a%2Bb"}))))
 
 (deftest apply-on-query-params-async
   (is-applied-async client/wrap-query-params
@@ -1123,6 +1131,12 @@
       (is (= "param1=value1&param2=value2" (:body resp)))
       (is (= "application/x-www-form-urlencoded" (:content-type resp)))
       (is (not (contains? resp :form-params)))))
+
+  (testing "spaces in form-param bodies stay + (x-www-form-urlencoded), unlike query params (#626)"
+    (let [param-client (client/wrap-form-params identity)
+          resp (param-client {:request-method :post
+                              :form-params (sorted-map :q "a b c")})]
+      (is (= "q=a+b+c" (:body resp)))))
 
   (testing "With json form params"
     (let [param-client (client/wrap-form-params identity)
