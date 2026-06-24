@@ -134,6 +134,14 @@
         (is (instance? FileBody body))
         (is (= test-file (.getFile body)))))
 
+    (testing "can create FileBody with content and name but no mime-type"
+      (let [test-file (File. "testfile")
+            body (make-multipart-body {:content test-file
+                                       :name    "testname"})]
+        (is (instance? FileBody body))
+        (is (= test-file (.getFile body)))
+        (is (= "testname" (.getFilename body)))))
+
     (testing "can create FileBody with content and mime-type"
       (let [test-file (File. "testfile")
             body (make-multipart-body {:content   test-file

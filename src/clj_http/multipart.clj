@@ -45,6 +45,9 @@
     (and mime-type content)
     (FileBody. content (ContentType/create mime-type))
 
+    (and name content)
+    (FileBody. content ContentType/DEFAULT_BINARY name)
+
     content
     (FileBody. content)
 
