@@ -13,7 +13,7 @@
                  [org.apache.httpcomponents/httpmime "4.5.14"]
                  [org.clj-commons/slingshot "0.13.0"]
                  [commons-codec "1.16.1"]
-                 [commons-io "2.16.1"]
+                 [commons-io "2.21.0"]
                  [potemkin "0.4.7"]]
   :resource-paths ["resources"]
   :profiles {:dev {:dependencies [;; optional deps
@@ -35,7 +35,10 @@
                                   [org.apache.logging.log4j/log4j-api "2.23.1"]
                                   [org.apache.logging.log4j/log4j-core "2.23.1"]
                                   [org.apache.logging.log4j/log4j-1.2-api "2.23.1"]
-                                  [org.apache.logging.log4j/log4j-slf4j2-impl "2.23.1"]]
+                                  [org.apache.logging.log4j/log4j-slf4j2-impl "2.23.1"]
+                                  ;; ring commons-io dependency bug test
+                                  [ring/ring-core "1.15.5"]
+                                  [ring/ring-mock "0.6.2"]]
                    :plugins [[lein-ancient "0.7.0"]
                              [jonase/eastwood "0.2.5"]
                              [lein-kibit "0.1.5"]
