@@ -10,11 +10,9 @@
 (def mock-app (-> mock-handler wrap-multipart-params))
 
 (def mock-req
-  (-> (request/request :get "/test")
+  (-> (request/request :post "/test")
       (request/multipart-body {:value (byte-array (range 0 128))})))
 
 (deftest test-ring-multipart-request
   (testing "Completes without throwing due to old (< 2.18) commons-io version" 
     (is (= 200 (:status (mock-app mock-req))))))
-
-(test-ring-multipart-request)
