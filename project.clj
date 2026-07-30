@@ -13,7 +13,7 @@
                  [org.apache.httpcomponents/httpmime "4.5.14"]
                  [org.clj-commons/slingshot "0.13.0"]
                  [commons-codec "1.16.1"]
-                 [commons-io "2.16.1"]
+                 [commons-io "2.21.0"]
                  [potemkin "0.4.7"]]
   :resource-paths ["resources"]
   :profiles {:dev {:dependencies [;; optional deps
