@@ -622,6 +622,42 @@
      (catch Object _
        (is false ":type selector was not caught.")))))
 
+(deftest redact-headers-in-exceptions
+  (testing "request Authorization header is redacted by default (#290)"
+    (let [client (fn [req] {:status 500 :request req})
+          e-client (client/wrap-exceptions client)]
+      (try+
+       (e-client {:headers {"Authorization" "Bearer secret" "X-Ok" "fine"}})
+       (is false "should have thrown")
+       (catch map? data
+         (is (= "REDACTED" (get-in data [:request :headers "Authorization"])))
+         (is (= "fine" (get-in data [:request :headers "X-Ok"])))))))
+  (testing "default also redacts proxy-authorization"
+    (let [client (fn [req] {:status 500 :request req})
+          e-client (client/wrap-exceptions client)]
+      (try+
+       (e-client {:headers {"proxy-authorization" "Basic zzz"}})
+       (catch map? data
+         (is (= "REDACTED" (get-in data [:request :headers "proxy-authorization"])))))))
+  (testing "custom :redact-headers redacts the named response headers"
+    (let [client (fn [req] {:status 500
+                            :headers {"x-secret" "v" "content-type" "text/plain"}})
+          e-client (client/wrap-exceptions client)]
+      (try+
+       (e-client {:redact-headers #{"x-secret"}})
+       (catch map? data
+         (is (= "REDACTED" (get-in data [:headers "x-secret"])))
+         (is (= "text/plain" (get-in data [:headers "content-type"])))))))
+  (testing ":redact-headers #{} disables redaction"
+    (let [client (fn [req] {:status 500 :request req})
+          e-client (client/wrap-exceptions client)]
+      (try+
+       (e-client {:redact-headers #{}
+                  :headers {"Authorization" "Bearer secret"}})
+       (catch map? data
+         (is (= "Bearer secret"
+                (get-in data [:request :headers "Authorization"]))))))))
+
 (deftest throw-on-exceptional-async
   (let [client (fn [req respond raise]
                  (try
