@@ -386,14 +386,12 @@
   [resp]
   (-> resp
       (update :body util/gunzip)
-      (assoc :orig-content-encoding (get-in resp [:headers "content-encoding"]))
       (dissoc-in [:headers "content-encoding"])))
 
 (defmethod decompress-body "deflate"
   [resp]
   (-> resp
       (update :body util/inflate)
-      (assoc :orig-content-encoding (get-in resp [:headers "content-encoding"]))
       (dissoc-in [:headers "content-encoding"])))
 
 (defmethod decompress-body :default [resp]
@@ -412,7 +410,34 @@
   [req resp]
   (if (false? (opt req :decompress-body))
     resp
-    (decompress-body resp)))
+    ;; If we are decompressing the body there might be multiple content
+    ;; encodings.
+    ;; https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Encoding
+    ;; Take each content encoding (in reverse order) and try to decompress the
+    ;; body using that content encording recursively. This way if content is
+    ;; compressed twice. Once with zlib and again with gzip, then we can
+    ;; properly decompress it in the correct order.
+    (loop [[encoding & rest-encodings] (some-> resp
+                                               (get-in [:headers "content-encoding"])
+                                               (str/split #",")
+                                               (reverse))
+           ;; Store the original content encoding somewhere so it can be
+           ;; referenced if needed.
+           resp (assoc resp
+                       :orig-content-encoding
+                       (get-in resp [:headers "content-encoding"]))]
+      (if encoding
+        ;; If there is an encoding then decompress the body using that encoding
+        ;; then recur with the remaining encodings.
+        (recur
+         rest-encodings
+         (decompress-body
+           ;; Force the content encoding to be a single encoding type for this.
+          (assoc-in resp
+                    [:headers "content-encoding"]
+                    (str/trim encoding))))
+        ;; If there are no encodings left then we are done.
+        resp))))
 
 (defn wrap-decompression
   "Middleware handling automatic decompression of responses from web servers. If
