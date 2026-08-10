@@ -144,12 +144,13 @@
 (defn create-multipart-entity
   "Takes a multipart vector of maps and creates a MultipartEntity with each
   map added as a part, depending on the type of content."
-  [multipart {:keys [mime-subtype multipart-mode multipart-charset]
+  [multipart {:keys [mime-subtype multipart-mode multipart-charset boundary]
               :or {mime-subtype "form-data"
                    multipart-mode HttpMultipartMode/STRICT}}]
   (let [mp-entity (doto (MultipartEntityBuilder/create)
                     (.setMode multipart-mode)
                     (.setMimeSubtype mime-subtype))]
+    (when boundary (.setBoundary mp-entity boundary))
     (when multipart-charset
       (.setCharset mp-entity (encoding-to-charset multipart-charset)))
     (doseq [m multipart]
