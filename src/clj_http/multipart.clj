@@ -31,22 +31,22 @@
 
 (defmethod make-multipart-body File
   ;; Create a FileBody object from the given map, requiring at least :content
-  [{:keys [^String name ^String mime-type ^File content ^String encoding]}]
+  [{:keys [^String name ^String mime-type ^File content ^String encoding ^String file-name]}]
   (cond
     (and name mime-type content encoding)
-    (FileBody. content (ContentType/create mime-type encoding) name)
+    (FileBody. content (ContentType/create mime-type encoding) (or file-name name))
 
     (and mime-type content encoding)
-    (FileBody. content (ContentType/create mime-type encoding))
+    (FileBody. content (ContentType/create mime-type encoding) file-name)
 
     (and name mime-type content)
-    (FileBody. content (ContentType/create mime-type) name)
+    (FileBody. content (ContentType/create mime-type) (or file-name name))
 
     (and mime-type content)
-    (FileBody. content (ContentType/create mime-type))
+    (FileBody. content (ContentType/create mime-type) file-name)
 
     content
-    (FileBody. content)
+    (FileBody. content nil file-name)
 
     :else
     (throw (Exception. "Multipart file body must contain at least :content"))))
