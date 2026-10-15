@@ -1280,13 +1280,13 @@ manager must be used.
 (let [acm (conn/make-reuseable-async-conn-manager {})
       ahclient (core/build-async-http-client {} acm)]
   (client/get "http://example.com/1"
-              {:connection-manager cm :http-client ahclient}
+              {:async? true :connection-manager acm :http-client ahclient}
               handle-response handle-failure)
   (client/get "http://example.com/2"
-              {:connection-manager cm :http-client ahclient}
+              {:async? true :connection-manager acm :http-client ahclient}
               handle-response handle-failure)
   (client/get "http://example.com/3"
-              {:connection-manager cm :http-client ahclient}
+              {:async? true :connection-manager acm :http-client ahclient}
               handle-response handle-failure))
 #+END_SRC
 
